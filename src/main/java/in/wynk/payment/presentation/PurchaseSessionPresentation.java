@@ -14,6 +14,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.PurchaseRequest;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.subscription.common.dto.ItemDTO;
+import in.wynk.subscription.common.dto.PlanDTO;
 import org.apache.http.client.utils.URIBuilder;
 import org.springframework.data.util.Pair;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -55,10 +56,17 @@ public class PurchaseSessionPresentation implements IPresentation<WynkResponseEn
                 queryBuilder.addParameter(INGRESS_INTENT, String.valueOf(request.getMiscellaneousDetails().getIngressIntent()));
                 if (request.getMiscellaneousDetails().isMandate()) {
                     queryBuilder.addParameter(PAYMENT_FLOW, PAYMENT_FLOW_MANDATE);
-                }else if(request.getMiscellaneousDetails().isTrialOpted()) {
+                } else if (request.getMiscellaneousDetails().isTrialOpted()) {
                     queryBuilder.addParameter(PAYMENT_FLOW, PAYMENT_FLOW_TRIAL_OPTED);
                 } else if (request.getMiscellaneousDetails().isAutoRenew() && !request.getMiscellaneousDetails().isTrialOpted()) {
                     queryBuilder.addParameter(PAYMENT_FLOW, PAYMENT_FLOW_AUTO_RENEW);
+                }
+                if (Objects.nonNull(request.getMiscellaneousDetails().getSku())) {
+                    PlanDTO planDto = cache.getPlan(request.getProductDetails().getId());
+                    if (Objects.nonNull(planDto.getSku()) && Objects.nonNull(planDto.getSku().get("google_iap")) &&
+                            request.getMiscellaneousDetails().getSku().equals(planDto.getSku().get("google_iap"))) {
+                        queryBuilder.addParameter(SKU, request.getMiscellaneousDetails().getSku());
+                    }
                 }
             }
             String builder = PAYMENT_OPTION_URL + id + SLASH + request.getOs() + QUESTION_MARK + queryBuilder.build().getQuery();

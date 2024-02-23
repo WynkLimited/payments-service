@@ -1,4 +1,4 @@
-package in.wynk.payment.dto.response;
+package in.wynk.payment.dto;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import in.wynk.common.enums.PaymentEvent;

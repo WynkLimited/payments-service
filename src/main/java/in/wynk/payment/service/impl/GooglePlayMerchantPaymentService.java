@@ -435,7 +435,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     //TODO:
     @Override
     public void reportExternalTransactionSubscription () {
-
+        log.info("executing google transaction report");
     }
 
     public void publishAsync (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {

@@ -12,10 +12,7 @@ import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.EmbeddedPropertyResolver;
 import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.payment.core.constant.PaymentConstants;
-import in.wynk.payment.core.dao.entity.IAppDetails;
-import in.wynk.payment.core.dao.entity.IChargingDetails;
-import in.wynk.payment.core.dao.entity.ISessionDetails;
-import in.wynk.payment.core.dao.entity.IUserDetails;
+import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.dto.request.charge.AbstractPaymentDetails;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.session.context.SessionContextHolder;
@@ -79,6 +76,11 @@ public class WebPurchaseDetails implements IChargingDetails {
 
     @Override
     public ISessionDetails getSessionDetails () {
+        return null;
+    }
+
+    @Override
+    public IAppStoreDetails getAppStoreDetails () {
         return null;
     }
 

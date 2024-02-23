@@ -421,6 +421,19 @@ public class PaymentEventListener {
         }
     }
 
+    @EventListener
+    @ClientAware(clientAlias = "#event.clientAlias")
+    @TransactionAware(txnId = "#event.transactionId", lock = false)
+    @AnalyseTransaction(name = "externalTransactionReportEvent")
+    public void onExternalTransactionReportEvent(ExternalTransactionReportEvent event) {
+            AnalyticService.update(event);
+            try {
+                sqsManagerService.publishSQSMessage(ExternalTransactionReportMessageManager.builder().build());
+            }catch (Exception e) {
+                    log.error("Exception occurred while publishing event on ExternalTransactionReport queue for transactionId: {}", event.getTransactionId(), e);
+            }
+    }
+
     private void sendNotificationToUser(IProductDetails productDetails, String tinyUrl, String msisdn, TransactionStatus txnStatus) {
         final PlanDTO plan = cachingService.getPlan(productDetails.getId());
         final String service = productDetails.getType().equalsIgnoreCase(PLAN) ? plan.getService() : cachingService.getItem(productDetails.getId()).getService();
@@ -561,18 +574,9 @@ public class PaymentEventListener {
         if (Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getAppStoreDetails())) {
             AnalyticService.update(event.getPurchaseDetails().getAppStoreDetails());
             if((event.getTransaction().getStatus() == TransactionStatus.SUCCESS)) {
-                if((PaymentEvent.TRIAL_SUBSCRIPTION == event.getTransaction().getType() || PaymentEvent.MANDATE == event.getTransaction().getType())) {
-                    //Tell google about free trial
-
-                }else if((PaymentEvent.SUBSCRIBE == event.getTransaction().getType() || PaymentEvent.PURCHASE == event.getTransaction().getType())){
-                 //tell google about the purchase with externalTransactionToken
-
-                }else if(PaymentEvent.RENEW == event.getTransaction().getType()) {
-                    //tell google about the purchase with first transaction id
-                }
+                eventPublisher.publishEvent(ExternalTransactionReportEvent.builder().transactionId(event.getTransaction().getIdStr()).clientAlias(event.getTransaction().getClientAlias()).build());
             }
         }
-
         if(event.getTransaction().getStatus().equals(TransactionStatus.AUTO_REFUND)){
             eventPublisher.publishEvent(PaymentAutoRefundEvent.builder()
                     .transaction(event.getTransaction())

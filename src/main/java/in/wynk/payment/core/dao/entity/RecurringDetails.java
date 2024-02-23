@@ -60,6 +60,11 @@ public class RecurringDetails extends MongoBaseEntity<RecurringDetails.PurchaseK
         return null;
     }
 
+    @Override
+    public IAppStoreDetails getAppStoreDetails () {
+        return null;
+    }
+
     @Getter
     @Builder
     @AllArgsConstructor

@@ -467,6 +467,13 @@ public class PaymentManager
     }
 
     @Override
+    public void reportExternalTransactionSubscription () {
+        final IMerchantIapSubscriptionAcknowledgementService externalTransactionReportService =
+                BeanLocatorFactory.getBean(BeanConstant.GOOGLE_PLAY, IMerchantIapSubscriptionAcknowledgementService.class);
+        externalTransactionReportService.reportExternalTransactionSubscription();
+    }
+
+    @Override
     public void publishAsync(AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
         final IMerchantIapSubscriptionAcknowledgementService acknowledgementService =
                 BeanLocatorFactory.getBean(abstractPaymentAcknowledgementRequest.getPaymentGateway().getCode(), IMerchantIapSubscriptionAcknowledgementService.class);

@@ -8,5 +8,6 @@ import in.wynk.payment.dto.AbstractPaymentAcknowledgementRequest;
 public interface IMerchantIapSubscriptionAcknowledgementService {
 
     void acknowledgeSubscription (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest);
+    void reportExternalTransactionSubscription ();
     void publishAsync (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest);
 }

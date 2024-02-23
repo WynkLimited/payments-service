@@ -123,6 +123,10 @@ payment:
       acknowledgement:
         enabled: true
         name: wcf-payment-receipt-ack-preprod-sqs
+      externalTransaction:
+        report:
+          enabled: true
+          name: wcf-payment-receipt-ack-preprod-sqs
         sqs:
           messages:
             extractor:

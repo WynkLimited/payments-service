@@ -21,6 +21,7 @@ import in.wynk.coupon.core.service.CouponCachingService;
 import in.wynk.coupon.core.service.ICouponCodeLinkService;
 import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
@@ -31,10 +32,7 @@ import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.invoice.GenerateInvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.InvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.InvoiceRetryTask;
-import in.wynk.payment.dto.request.AsyncTransactionRevisionRequest;
-import in.wynk.payment.dto.request.ClientCallbackRequest;
-import in.wynk.payment.dto.request.PaymentSettlementRequest;
-import in.wynk.payment.dto.request.WhatsappSessionDetails;
+import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractPaymentSettlementResponse;
 import in.wynk.payment.event.WaPayStateRespEvent;
 import in.wynk.payment.event.common.*;
@@ -76,7 +74,6 @@ import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.exception.WynkErrorType.UT025;
 import static in.wynk.exception.WynkErrorType.UT999;
 import static in.wynk.payment.core.constant.PaymentConstants.AIRTEL_TV;
-import static in.wynk.payment.core.constant.PaymentConstants.AIRTEL_XSTREAM;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_CODE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.queue.constant.BeanConstant.MESSAGE_PAYLOAD;
@@ -108,6 +105,7 @@ public class PaymentEventListener {
     private final InvoiceDetailsCachingService invoiceDetailsCachingService;
     private final ClientDetailsCachingService clientDetailsCachingService;
     private final WynkServiceDetailsCachingService wynkServiceDetailsCachingService;
+    private final ISubscriptionServiceManager subscriptionServiceManager;
 
     public static Map<String, String> map = Collections.singletonMap(AIRTEL_TV,AIRTEL_XSTREAM);
 
@@ -116,7 +114,6 @@ public class PaymentEventListener {
 
     @Value("${wynk.kafka.producers.payment.status.topic}")
     private String waPayStateRespEventTopic;
-
 
     @EventListener
     @AnalyseTransaction(name = QueueConstant.DEFAULT_SQS_MESSAGE_THRESHOLD_EXCEED_EVENT)
@@ -429,7 +426,7 @@ public class PaymentEventListener {
         final String service = productDetails.getType().equalsIgnoreCase(PLAN) ? plan.getService() : cachingService.getItem(productDetails.getId()).getService();
         final WynkService wynkService = WynkServiceUtils.fromServiceId(service);
         final Message message = wynkService.getMessages().get(PaymentConstants.USER_WINBACK).get(txnStatus.getValue());
-        if(message.isEnabled()){
+        if((Objects.nonNull(message)) && message.isEnabled()){
             Map<String, Object> contextMap = new HashMap<String, Object>() {{
                 put(PLAN, plan);
                 put(OFFER, cachingService.getOffer(plan.getLinkedOfferId()));
@@ -466,6 +463,20 @@ public class PaymentEventListener {
         final AbstractPaymentSettlementResponse response = paymentManager.settle(PaymentSettlementRequest.builder().tid(event.getTid()).build());
         AnalyticService.update(event);
         AnalyticService.update(response);
+    }
+
+    @EventListener
+    @AnalyseTransaction(name = "userSubscriptionStatus")
+    @TransactionAware(txnId = "#event.transactionId", lock = false)
+    public void onUserSubscriptionEvent(UserSubscriptionStatusEvent event) {
+        AnalyticService.update(event);
+        if (!SUBSCRIBED_STATE.equals(event.getStatus())) {
+            Transaction transaction = TransactionContext.get();
+            transaction.setType(PaymentEvent.UNSUBSCRIBE.getValue());
+            AsyncTransactionRevisionRequest request =
+                    AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(transaction.getStatus()).finalTransactionStatus(TransactionStatus.CANCELLED).build();
+            subscriptionServiceManager.unSubscribePlan(AbstractUnSubscribePlanRequest.from(request));
+        }
     }
 
     @EventListener

@@ -13,6 +13,7 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.dao.repository.IRecurringDetailsDao;
 import in.wynk.payment.core.dao.repository.receipts.IPurchasingDetailsDao;
+import in.wynk.payment.dto.AppStoreDetails;
 import in.wynk.payment.dto.request.AbstractPaymentChargingRequest;
 import in.wynk.payment.dto.request.charge.AbstractPaymentDetails;
 import in.wynk.payment.dto.request.charge.card.CardPaymentDetails;
@@ -24,6 +25,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -56,13 +58,17 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
     @CacheEvict(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
     public void save (Transaction transaction, AbstractPaymentChargingRequest details) {
         AbstractPaymentDetails abstractPaymentDetails = details.getPaymentDetails();
-        if(CardPaymentDetails.class.isAssignableFrom(abstractPaymentDetails.getClass())) {
+        if (CardPaymentDetails.class.isAssignableFrom(abstractPaymentDetails.getClass())) {
             if (CardConstants.CARD.equals(abstractPaymentDetails.getPaymentMode())) {
                 String mode = ((CardPaymentDetails) abstractPaymentDetails).getCardDetails().getCardInfo().getCategory();
-                if(mode.equals("CC") || mode.equals("DC")) {
+                if (mode.equals("CC") || mode.equals("DC")) {
                     abstractPaymentDetails.setPaymentMode(((CardPaymentDetails) abstractPaymentDetails).getCardDetails().getCardInfo().getCategory());
                 }
             }
+        }
+        AppStoreDetails.AppStoreDetailsBuilder<?, ?> builder = AppStoreDetails.builder();
+        if (Objects.nonNull(details.getAppStoreDetails())) {
+            builder.externalTransactionToken(details.getAppStoreDetails().getExternalTransactionToken()).appStore(details.getAppStoreDetails().getAppStore()).firstTransactionId(transaction.getIdStr());
         }
         PurchaseDetails purchaseDetails = PurchaseDetails.builder()
                 .id(transaction.getIdStr())
@@ -74,6 +80,7 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
                 .pageUrlDetails(details.getPageUrlDetails())
                 .callbackUrl(details.getCallbackDetails().getCallbackUrl())
                 .sessionDetails(details.getSessionDetails())
+                .appStoreDetails(builder.build())
                 .build();
         auditingListener.onBeforeSave(purchaseDetails);
         RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), IPurchasingDetailsDao.class).save(purchaseDetails);

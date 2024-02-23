@@ -591,6 +591,11 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     }
 
     @Override
+    public void reportExternalTransactionSubscription () {
+        throw new WynkRuntimeException("Method is not implemented");
+    }
+
+    @Override
     public void publishAsync (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
         throw new WynkRuntimeException("Method is not implemented");
     }

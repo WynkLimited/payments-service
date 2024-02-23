@@ -467,6 +467,11 @@ public class PaymentManager
     }
 
     @Override
+    public void reportExternalTransactionSubscription () {
+
+    }
+
+    @Override
     public void publishAsync(AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
         final IMerchantIapSubscriptionAcknowledgementService acknowledgementService =
                 BeanLocatorFactory.getBean(abstractPaymentAcknowledgementRequest.getPaymentGateway().getCode(), IMerchantIapSubscriptionAcknowledgementService.class);

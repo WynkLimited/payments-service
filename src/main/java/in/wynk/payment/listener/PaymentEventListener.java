@@ -558,6 +558,21 @@ public class PaymentEventListener {
         }
         if (Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getAppDetails()))
             AnalyticService.update(event.getPurchaseDetails().getAppDetails());
+        if (Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getAppStoreDetails())) {
+            AnalyticService.update(event.getPurchaseDetails().getAppStoreDetails());
+            if((event.getTransaction().getStatus() == TransactionStatus.SUCCESS)) {
+                if((PaymentEvent.TRIAL_SUBSCRIPTION == event.getTransaction().getType() || PaymentEvent.MANDATE == event.getTransaction().getType())) {
+                    //Tell google about free trial
+
+                }else if((PaymentEvent.SUBSCRIBE == event.getTransaction().getType() || PaymentEvent.PURCHASE == event.getTransaction().getType())){
+                 //tell google about the purchase with externalTransactionToken
+
+                }else if(PaymentEvent.RENEW == event.getTransaction().getType()) {
+                    //tell google about the purchase with first transaction id
+                }
+            }
+        }
+
         if(event.getTransaction().getStatus().equals(TransactionStatus.AUTO_REFUND)){
             eventPublisher.publishEvent(PaymentAutoRefundEvent.builder()
                     .transaction(event.getTransaction())

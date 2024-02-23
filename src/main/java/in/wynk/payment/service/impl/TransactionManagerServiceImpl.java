@@ -167,25 +167,30 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     @Override
     public Transaction init(AbstractTransactionInitRequest transactionInitRequest) {
-        final String oldTransactionId = transactionInitRequest.getTxnId();
-        final Transaction oldTransaction = get(oldTransactionId);
-        final IPurchaseDetails details = purchaseDetailsManger.get(oldTransaction);
+        PurchaseDetails purchaseDetails= null;
         final Transaction transaction = PlanTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass()) ? initPlanTransaction((PlanTransactionInitRequest) transactionInitRequest) : initPointTransaction((PointTransactionInitRequest) transactionInitRequest);
-        PurchaseDetails purchaseDetails = PurchaseDetails.builder()
-                .id(transaction.getIdStr())
-                .appDetails(details.getAppDetails())
-                .userDetails(details.getUserDetails())
-                .sessionDetails(details.getSessionDetails())
-                .productDetails(details.getProductDetails())
-                .geoLocation(details.getGeoLocation())
-                .paymentDetails(details.getPaymentDetails())
-                .pageUrlDetails(((IChargingDetails) details).getPageUrlDetails())
-                .callbackUrl(((IChargingDetails) details).getCallbackDetails().getCallbackUrl())
-                .build();
+        if (Objects.nonNull(transactionInitRequest.getTxnId())) {
+            final String oldTransactionId = transactionInitRequest.getTxnId();
+            final Transaction oldTransaction = get(oldTransactionId);
+            final IPurchaseDetails details = purchaseDetailsManger.get(oldTransaction);
+            if (Objects.nonNull(details)) {
+                purchaseDetails = PurchaseDetails.builder()
+                        .id(transaction.getIdStr())
+                        .appDetails(details.getAppDetails())
+                        .userDetails(details.getUserDetails())
+                        .sessionDetails(details.getSessionDetails())
+                        .productDetails(details.getProductDetails())
+                        .geoLocation(details.getGeoLocation())
+                        .paymentDetails(details.getPaymentDetails())
+                        .pageUrlDetails(((IChargingDetails) details).getPageUrlDetails())
+                        .callbackUrl(((IChargingDetails) details).getCallbackDetails().getCallbackUrl())
+                        .build();
+                purchaseDetailsManger.save(transaction, purchaseDetails);
+            }
+        }
         final TransactionDetails.TransactionDetailsBuilder transactionDetailsBuilder = TransactionDetails.builder();
-        Optional.ofNullable(purchaseDetails).ifPresent(transactionDetailsBuilder::purchaseDetails);
+        Optional.ofNullable(Objects.isNull(purchaseDetails) ? purchaseDetailsManger.get(transaction): purchaseDetails ).ifPresent(transactionDetailsBuilder::purchaseDetails);
         TransactionContext.set(transactionDetailsBuilder.transaction(transaction).build());
-        purchaseDetailsManger.save(transaction, purchaseDetails);
         return transaction;
     }
 

@@ -9,4 +9,5 @@ public interface IPurchaseDetails {
     IProductDetails getProductDetails();
     IGeoLocation getGeoLocation();
     ISessionDetails getSessionDetails();
+    IAppStoreDetails getAppStoreDetails();
 }

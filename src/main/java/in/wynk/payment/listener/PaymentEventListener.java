@@ -21,6 +21,7 @@ import in.wynk.coupon.core.service.CouponCachingService;
 import in.wynk.coupon.core.service.ICouponCodeLinkService;
 import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
@@ -466,10 +467,12 @@ public class PaymentEventListener {
 
     @EventListener
     @AnalyseTransaction(name = "userSubscriptionStatus")
+    @TransactionAware(txnId = "#event.transactionId", lock = false)
     public void onUserSubscriptionEvent(UserSubscriptionStatusEvent event) {
         AnalyticService.update(event);
-        if(event.getStatus().equals(CANCELLED_STATE) && Objects.nonNull(event.getTxnId())) {
-            Transaction transaction = transactionManagerService.get(event.getTxnId());
+        if (!SUBSCRIBED_STATE.equals(event.getStatus())) {
+            Transaction transaction = TransactionContext.get();
+            transaction.setType(PaymentEvent.UNSUBSCRIBE.getValue());
             AsyncTransactionRevisionRequest request =
                     AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(transaction.getStatus()).finalTransactionStatus(TransactionStatus.CANCELLED).build();
             subscriptionServiceManager.unSubscribePlan(AbstractUnSubscribePlanRequest.from(request));

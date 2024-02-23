@@ -10,7 +10,6 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -172,16 +171,17 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
             }
         }
         try {
-            RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).save(PaymentRenewal.builder()
-                    .day(nextRecurringDateTime)
-                    .transactionId(transactionId)
-                    .hour(nextRecurringDateTime.getTime())
-                    .createdTimestamp(Calendar.getInstance())
-                    .transactionEvent(PaymentEvent.SUBSCRIBE.name())
-                    .attemptSequence(attemptSequence)
-                    .build());
-            if(PaymentConstants.ADD_TO_BILL.equalsIgnoreCase(code)) {
+            if (BeanConstant.ADD_TO_BILL_PAYMENT_SERVICE.equalsIgnoreCase(code)) {
                 scheduleAtbTask(transaction, nextRecurringDateTime);
+            } else {
+                RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).save(PaymentRenewal.builder()
+                        .day(nextRecurringDateTime)
+                        .transactionId(transactionId)
+                        .hour(nextRecurringDateTime.getTime())
+                        .createdTimestamp(Calendar.getInstance())
+                        .transactionEvent(PaymentEvent.SUBSCRIBE.name())
+                        .attemptSequence(attemptSequence)
+                        .build());
             }
         } catch (Exception e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY017, e);

@@ -27,6 +27,8 @@ public class MerchantTransactionEvent {
     @Analysed
     private final String orderId;
     @Analysed
+    private final String externalTokenReferenceId;
+    @Analysed
     private final Object request;
     @Analysed
     private final Object response;
@@ -40,6 +42,7 @@ public class MerchantTransactionEvent {
         private final String transactionId;
         private String externalTransactionId;
         private String orderId;
+        private String externalTokenReferenceId;
         private Object response;
         private Object request;
 
@@ -57,6 +60,11 @@ public class MerchantTransactionEvent {
             return this;
         }
 
+        public Builder externalTokenReferenceId(String externalTokenReferenceId) {
+            this.externalTokenReferenceId = externalTokenReferenceId;
+            return this;
+        }
+
         public Builder request(Object request) {
             this.request = request;
             return this;
@@ -68,7 +76,7 @@ public class MerchantTransactionEvent {
         }
 
         public MerchantTransactionEvent build() {
-            return new MerchantTransactionEvent(transactionId, ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), externalTransactionId, orderId, request, response);
+            return new MerchantTransactionEvent(transactionId, ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), externalTransactionId, orderId, externalTokenReferenceId, request, response);
         }
     }
 }

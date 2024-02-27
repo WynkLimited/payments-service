@@ -61,14 +61,11 @@ public class PurchaseSessionPresentation implements IPresentation<WynkResponseEn
                 } else if (request.getMiscellaneousDetails().isAutoRenew() && !request.getMiscellaneousDetails().isTrialOpted()) {
                     queryBuilder.addParameter(PAYMENT_FLOW, PAYMENT_FLOW_AUTO_RENEW);
                 }
-                if (Objects.nonNull(request.getMiscellaneousDetails().getSku())) {
-                    PlanDTO planDto = cache.getPlan(request.getProductDetails().getId());
-                    if (Objects.nonNull(planDto.getSku()) && Objects.nonNull(planDto.getSku().get("google_iap")) &&
-                            request.getMiscellaneousDetails().getSku().equals(planDto.getSku().get("google_iap"))) {
-                        queryBuilder.addParameter(SKU, request.getMiscellaneousDetails().getSku());
-                    }
-                }
             }
+                PlanDTO planDto = cache.getPlan(request.getProductDetails().getId());
+                if (Objects.nonNull(planDto.getSku()) && Objects.nonNull(planDto.getSku().get("google_iap"))) {
+                    queryBuilder.addParameter(SKU, planDto.getSku().get("google_iap"));
+                }
             String builder = PAYMENT_OPTION_URL + id + SLASH + request.getOs() + QUESTION_MARK + queryBuilder.build().getQuery();
             SessionResponse.SessionData response = SessionResponse.SessionData.builder().redirectUrl(builder).sid(id).build();
             return WynkResponseEntity.<SessionResponse.SessionData>builder().data(response).build();

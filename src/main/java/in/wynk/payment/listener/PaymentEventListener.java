@@ -170,22 +170,45 @@ public class PaymentEventListener {
     @AnalyseTransaction(name = "merchantTransactionEvent")
     public void onMerchantTransactionEvent(MerchantTransactionEvent event) {
         AnalyticService.update(event);
-        MerchantTransaction.MerchantTransactionBuilder merchantTransactionBuilder = MerchantTransaction.builder()
-                .id(event.getId())
-                .externalTransactionId(event.getExternalTransactionId())
-                .request(event.getRequest())
-                .response(event.getResponse());
-        if (Objects.nonNull(event.getExternalTokenReferenceId())) {
-            merchantTransactionBuilder.externalTokenReferenceId(event.getExternalTokenReferenceId());
+        //If we get data in  merchant table then update the data else upsert the data
+        boolean isDataPresent = checkIfEntryPresentAndUpdateData(event);
+        if(!isDataPresent) {
+                MerchantTransaction merchantTransaction = MerchantTransaction.builder()
+                        .id(event.getId())
+                        .externalTransactionId(event.getExternalTransactionId())
+                        .request(event.getRequest())
+                        .response(event.getResponse())
+                        .externalTokenReferenceId(event.getExternalTokenReferenceId())
+                        .orderId(event.getOrderId())
+                        .build();
+                upsertData(merchantTransaction, event);
         }
-        if (Objects.nonNull(event.getOrderId())) {
-            merchantTransactionBuilder.orderId(event.getOrderId());
-        }
+    }
+
+    private void upsertData (MerchantTransaction merchantTransaction, MerchantTransactionEvent event) {
         try {
-            retryRegistry.retry(PaymentConstants.MERCHANT_TRANSACTION_UPSERT_RETRY_KEY).executeRunnable(() -> merchantTransactionService.upsert(
-                    merchantTransactionBuilder.build()));
+            retryRegistry.retry(PaymentConstants.MERCHANT_TRANSACTION_UPSERT_RETRY_KEY).executeRunnable(() -> merchantTransactionService.upsert(merchantTransaction));
         } catch (Exception e) {
             log.error("Exception occurred while saving data in merchant table {} {}", event, e.getMessage());
+        }
+    }
+
+    private boolean checkIfEntryPresentAndUpdateData (MerchantTransactionEvent event) {
+        try {
+            if (Objects.isNull(event.getExternalTransactionId()) || Objects.isNull(event.getOrderId())) {
+                MerchantTransaction merchantData = merchantTransactionService.getMerchantTransaction(event.getId());
+                merchantData.setRequest(event.getRequest());
+                merchantData.setResponse(event.getResponse());
+                merchantData.setExternalTransactionId(event.getExternalTransactionId());
+                merchantData.setOrderId(merchantData.getOrderId());
+                merchantData.setExternalTokenReferenceId(merchantData.getExternalTokenReferenceId());
+                upsertData(merchantData, event);
+                return true;
+            } else {
+                return false;
+            }
+        } catch (Exception e) {
+            return false;
         }
     }
 

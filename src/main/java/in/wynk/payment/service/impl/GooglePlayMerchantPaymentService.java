@@ -435,6 +435,12 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     //TODO:
     @Override
     public void reportExternalTransactionSubscription () {
+       String packageName=  MerchantServiceUtil.getPackageFromService("music");
+
+        /*String url =
+                baseUrl.concat(packageName).concat(purchaseUrl).concat(request.getProductDetails().getSkuId())
+                        .concat(TOKEN).concat(request.getPaymentDetails().getPurchaseToken()).concat(ACKNOWLEDGE).concat(API_KEY_PARAM)
+                        .concat(getApiKey(request.getAppDetails().getService()));*/
         log.info("executing google transaction report");
     }
 

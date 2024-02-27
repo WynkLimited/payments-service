@@ -123,6 +123,11 @@ public class PaymentGatewayManager
             eventPublisher.publishEvent(PurchaseInitEvent.builder().clientAlias(transaction.getClientAlias()).transactionId(transaction.getIdStr()).uid(transaction.getUid()).msisdn(transaction
                     .getMsisdn()).productDetails(request.getProductDetails()).appDetails(request.getAppDetails()).sid(Optional.ofNullable(SessionContextHolder
                     .getId())).build());
+            if(Objects.nonNull(request.getAppStoreDetails()) && Objects.nonNull(request.getAppStoreDetails().getExternalTransactionToken())) {
+                final MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
+                merchantTransactionEventBuilder.externalTokenReferenceId(request.getAppStoreDetails().getExternalTransactionToken());
+                eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
+            }
         }
     }
 

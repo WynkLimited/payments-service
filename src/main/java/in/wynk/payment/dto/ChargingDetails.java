@@ -55,9 +55,4 @@ public class ChargingDetails implements IChargingDetails {
     public ISessionDetails getSessionDetails () {
         return null;
     }
-
-    @Override
-    public IAppStoreDetails getAppStoreDetails () {
-        return null;
-    }
 }

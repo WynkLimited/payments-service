@@ -8,7 +8,6 @@ import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.EmbeddedPropertyResolver;
 import in.wynk.common.utils.MsisdnUtils;
 import in.wynk.payment.core.dao.entity.IAppDetails;
-import in.wynk.payment.core.dao.entity.IAppStoreDetails;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.core.dao.entity.ISessionDetails;
 import in.wynk.payment.dto.request.charge.AbstractPaymentDetails;
@@ -65,11 +64,6 @@ public class S2SPurchaseDetails implements IChargingDetails {
 
     @Override
     public ISessionDetails getSessionDetails () {
-        return null;
-    }
-
-    @Override
-    public IAppStoreDetails getAppStoreDetails () {
         return null;
     }
 

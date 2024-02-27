@@ -37,6 +37,10 @@ public class MerchantTransaction extends AuditableEntity {
     private String orderId;
 
     @Analysed
+    @Column(name = "external_token_reference_id")
+    private String externalTokenReferenceId;
+
+    @Analysed
     @Column(name = "merchant_transaction_reference_id")
     private String externalTransactionId;
 

@@ -151,4 +151,17 @@ public class MerchantServiceUtil {
         }*/
         return null;
     }
+
+    public static String getPackageFromService(String service) {
+        switch (service) {
+            case SERVICE_MUSIC:
+                return MUSIC_PACKAGE_NAME;
+            case SERVICE_AIRTEL_TV:
+                return AIRTEL_TV_PACKAGE_NAME;
+            case SERVICE_RAJ_TV:
+                return RAJ_TV_PACKAGE_NAME;
+            default:
+                throw new RuntimeException("Service mapping is not present for the package name");
+        }
+    }
 }

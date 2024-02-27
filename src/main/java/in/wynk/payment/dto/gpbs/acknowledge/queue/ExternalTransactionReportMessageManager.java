@@ -1,9 +1,10 @@
-package in.wynk.payment.dto;
+package in.wynk.payment.dto.gpbs.acknowledge.queue;
 
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.payment.core.event.ExternalTransactionReportMessageThresholdEvent;
+import in.wynk.payment.dto.gpbs.acknowledge.queue.AbstractExternalTransactionReportMessage;
 import in.wynk.queue.dto.MessageToEventMapper;
 import in.wynk.queue.dto.ProducerType;
 import in.wynk.queue.dto.WynkQueue;

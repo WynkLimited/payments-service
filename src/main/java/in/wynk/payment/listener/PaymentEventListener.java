@@ -29,6 +29,8 @@ import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.core.service.InvoiceDetailsCachingService;
 import in.wynk.payment.dto.*;
+import in.wynk.payment.dto.aps.common.ApsConstant;
+import in.wynk.payment.dto.gpbs.acknowledge.queue.ExternalTransactionReportMessageManager;
 import in.wynk.payment.dto.invoice.GenerateInvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.InvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.InvoiceRetryTask;
@@ -75,6 +77,7 @@ import static in.wynk.exception.WynkErrorType.UT025;
 import static in.wynk.exception.WynkErrorType.UT999;
 import static in.wynk.payment.core.constant.PaymentConstants.AIRTEL_TV;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_CODE;
+import static in.wynk.payment.core.constant.PaymentConstants.EXTERNAL_TRANSACTION_TOKEN;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.queue.constant.BeanConstant.MESSAGE_PAYLOAD;
 import static in.wynk.tinylytics.constants.TinylyticsConstants.EVENT;
@@ -459,7 +462,7 @@ public class PaymentEventListener {
             try {
                 sqsManagerService.publishSQSMessage(ExternalTransactionReportMessageManager.builder().build());
             }catch (Exception e) {
-                    log.error("Exception occurred while publishing event on ExternalTransactionReport queue for transactionId: {}", event.getTransactionId(), e);
+                    log.error("Exception occurred while publishing event on ExternalTransactionReport queue for transactionId: {}", event.getTransaction().getIdStr(), e);
             }
     }
 
@@ -597,15 +600,12 @@ public class PaymentEventListener {
                             .build());
                 }
             }
+            if (ApsConstant.APS.equals(event.getTransaction().getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(event.getTransaction().getPaymentChannel().getId())) {
+              initiateReportTransactionToMerchant(event);
+            }
         }
         if (Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getAppDetails()))
             AnalyticService.update(event.getPurchaseDetails().getAppDetails());
-        if (Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getAppStoreDetails())) {
-            AnalyticService.update(event.getPurchaseDetails().getAppStoreDetails());
-            if((event.getTransaction().getStatus() == TransactionStatus.SUCCESS)) {
-                eventPublisher.publishEvent(ExternalTransactionReportEvent.builder().transactionId(event.getTransaction().getIdStr()).clientAlias(event.getTransaction().getClientAlias()).build());
-            }
-        }
         if(event.getTransaction().getStatus().equals(TransactionStatus.AUTO_REFUND)){
             eventPublisher.publishEvent(PaymentAutoRefundEvent.builder()
                     .transaction(event.getTransaction())
@@ -616,6 +616,17 @@ public class PaymentEventListener {
         publishBranchEvent(event);
         if (EnumSet.of(TransactionStatus.SUCCESS, TransactionStatus.FAILURE).contains(event.getTransaction().getStatus())) {
             publishWaPaymentStatusEvent(event);
+        }
+    }
+
+    private void initiateReportTransactionToMerchant (TransactionSnapshotEvent event) {
+        try {
+            MerchantTransaction merchantData = merchantTransactionService.getMerchantTransaction(event.getTransaction().getIdStr());
+            if (Objects.nonNull(merchantData.getExternalTokenReferenceId())) {
+                AnalyticService.update(EXTERNAL_TRANSACTION_TOKEN, merchantData.getExternalTokenReferenceId());
+                eventPublisher.publishEvent(ExternalTransactionReportEvent.builder().transaction(event.getTransaction()).externalTokenReferenceId(merchantData.getExternalTokenReferenceId()).build());
+            }
+        } catch (Exception ignored) {
         }
     }
 

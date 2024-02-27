@@ -1,4 +1,4 @@
-package in.wynk.payment.dto;
+package in.wynk.payment.dto.gpbs.acknowledge.request;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;

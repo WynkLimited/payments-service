@@ -2,6 +2,7 @@ package in.wynk.payment.presentation;
 
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.service.ClientDetailsCachingService;
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.IPresentation;
 import in.wynk.common.dto.SessionResponse;
 import in.wynk.common.dto.WynkResponseEntity;
@@ -64,7 +65,7 @@ public class PurchaseSessionPresentation implements IPresentation<WynkResponseEn
             }
                 PlanDTO planDto = cache.getPlan(request.getProductDetails().getId());
                 if (Objects.nonNull(planDto.getSku()) && Objects.nonNull(planDto.getSku().get("google_iap"))) {
-                    queryBuilder.addParameter(SKU, planDto.getSku().get("google_iap"));
+                    queryBuilder.addParameter(PaymentConstants.SKU_ID, planDto.getSku().get("google_iap"));
                 }
             String builder = PAYMENT_OPTION_URL + id + SLASH + request.getOs() + QUESTION_MARK + queryBuilder.build().getQuery();
             SessionResponse.SessionData response = SessionResponse.SessionData.builder().redirectUrl(builder).sid(id).build();

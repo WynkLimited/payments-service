@@ -1,4 +1,4 @@
-package in.wynk.payment.dto;
+package in.wynk.payment.dto.gpbs.acknowledge.request;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
@@ -8,15 +8,13 @@ import in.wynk.payment.dto.gpbs.request.GooglePlayProductDetails;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
-import javax.validation.Valid;
-
 /**
  * @author Nishesh Pandey
  */
 @Getter
 @SuperBuilder
 @AnalysedEntity
-public class GooglePlaySubscriptionAcknowledgementRequest extends AbstractPaymentAcknowledgementRequest{
+public class GooglePlaySubscriptionAcknowledgementRequest extends AbstractPaymentAcknowledgementRequest {
     @Analysed
     private GooglePlayAppDetails appDetails;
 

@@ -170,16 +170,20 @@ public class PaymentEventListener {
     @AnalyseTransaction(name = "merchantTransactionEvent")
     public void onMerchantTransactionEvent(MerchantTransactionEvent event) {
         AnalyticService.update(event);
+        MerchantTransaction.MerchantTransactionBuilder merchantTransactionBuilder = MerchantTransaction.builder()
+                .id(event.getId())
+                .externalTransactionId(event.getExternalTransactionId())
+                .request(event.getRequest())
+                .response(event.getResponse());
+        if (Objects.nonNull(event.getExternalTokenReferenceId())) {
+            merchantTransactionBuilder.externalTokenReferenceId(event.getExternalTokenReferenceId());
+        }
+        if (Objects.nonNull(event.getOrderId())) {
+            merchantTransactionBuilder.orderId(event.getOrderId());
+        }
         try {
-            retryRegistry.retry(PaymentConstants.MERCHANT_TRANSACTION_UPSERT_RETRY_KEY).executeRunnable(() -> merchantTransactionService.upsert(MerchantTransaction.builder()
-                    .id(event.getId())
-                    .externalTransactionId(event.getExternalTransactionId())
-                    .request(event.getRequest())
-                    .externalTokenReferenceId(event.getExternalTokenReferenceId())
-                    .orderId(event.getOrderId())
-                    .response(event.getResponse())
-                    .build()
-            ));
+            retryRegistry.retry(PaymentConstants.MERCHANT_TRANSACTION_UPSERT_RETRY_KEY).executeRunnable(() -> merchantTransactionService.upsert(
+                    merchantTransactionBuilder.build()));
         } catch (Exception e) {
             log.error("Exception occurred while saving data in merchant table {} {}", event, e.getMessage());
         }

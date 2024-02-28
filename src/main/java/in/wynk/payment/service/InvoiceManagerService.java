@@ -47,7 +47,6 @@ public class InvoiceManagerService implements InvoiceManager {
 
     private final ObjectMapper objectMapper;
     private final InvoiceService invoiceService;
-    private final VasClientService vasClientService;
     private final InvoiceVasClientService invoiceVasClientService;
     private final ITransactionManagerService transactionManagerService;
     private final PaymentCachingService cachingService;
@@ -59,6 +58,7 @@ public class InvoiceManagerService implements InvoiceManager {
     private final ApplicationEventPublisher applicationEventPublisher;
     private final IPurchaseDetailsManger purchaseDetailsManager;
     private final WynkRedisLockService wynkRedisLockService;
+    private final IUserDetailsService userDetailsService;
 
     @Override
     @ClientAware(clientAlias = "#request.clientAlias")
@@ -69,9 +69,9 @@ public class InvoiceManagerService implements InvoiceManager {
                 try {
                     final Transaction transaction = transactionManagerService.get(request.getTxnId());
                     final IPurchaseDetails purchaseDetails = purchaseDetailsManager.get(transaction);
-                    final MsisdnOperatorDetails operatorDetails = getOperatorDetails(request.getMsisdn());
+                    final MsisdnOperatorDetails operatorDetails = userDetailsService.getOperatorDetails(request.getMsisdn());
                     final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(request.getClientAlias());
-                    final String accessStateCode = getAccessStateCode(operatorDetails, invoiceDetails, purchaseDetails);
+                    final String accessStateCode = userDetailsService.getAccessStateCode(operatorDetails, invoiceDetails.getDefaultGSTStateCode(), purchaseDetails);
                     AnalyticService.update(ACCESS_STATE_CODE, accessStateCode);
 
                     final TaxableRequest taxableRequest = TaxableRequest.builder()
@@ -217,63 +217,6 @@ public class InvoiceManagerService implements InvoiceManager {
         } catch(Exception ex){
             log.error(PaymentLoggingMarker.DOWNLOAD_INVOICE_ERROR, ex.getMessage(), ex);
             throw new WynkRuntimeException(PaymentErrorType.PAY451, ex);
-        }
-    }
-
-    private MsisdnOperatorDetails getOperatorDetails(String msisdn) {
-        try {
-            if (StringUtils.isNotBlank(msisdn)) {
-                MsisdnOperatorDetails operatorDetails = vasClientService.allOperatorDetails(msisdn);
-                if (Objects.nonNull(operatorDetails)) {
-                    return operatorDetails;
-                }
-            }
-            return null;
-        } catch (Exception ex) {
-            log.error(PaymentLoggingMarker.OPERATOR_DETAILS_NOT_FOUND, ex.getMessage(), ex);
-            throw new WynkRuntimeException(PaymentErrorType.PAY443, ex);
-        }
-    }
-
-    private String getAccessStateCode(MsisdnOperatorDetails operatorDetails, InvoiceDetails invoiceDetails, IPurchaseDetails purchaseDetails) {
-        String gstStateCode = (Strings.isNullOrEmpty(invoiceDetails.getDefaultGSTStateCode())) ? DEFAULT_ACCESS_STATE_CODE : invoiceDetails.getDefaultGSTStateCode();
-        AnalyticService.update(DEFAULT_GST_STATE_CODE, gstStateCode);
-        try {
-            if (Objects.nonNull(operatorDetails) &&
-                    Objects.nonNull(operatorDetails.getUserMobilityInfo()) &&
-                    Objects.nonNull(operatorDetails.getUserMobilityInfo().getGstStateCode())) {
-                String optimusGSTStateCode = operatorDetails.getUserMobilityInfo().getGstStateCode().trim();
-                if(isNumberFrom0To9(optimusGSTStateCode)){
-                    optimusGSTStateCode = "0" + optimusGSTStateCode;
-                }
-                AnalyticService.update(OPTIMUS_GST_STATE_CODE, optimusGSTStateCode);
-                if(stateCodesCachingService.containsKey(optimusGSTStateCode)){
-                    return optimusGSTStateCode;
-                }
-            }
-            if(Objects.nonNull(purchaseDetails) &&
-                    Objects.nonNull(purchaseDetails.getGeoLocation()) &&
-                    Objects.nonNull(purchaseDetails.getGeoLocation().getStateCode())){
-                final String geoLocationISOStateCode = purchaseDetails.getGeoLocation().getStateCode();
-                if(stateCodesCachingService.containsByISOStateCode(geoLocationISOStateCode)){
-                    gstStateCode = stateCodesCachingService.getByISOStateCode(geoLocationISOStateCode).getId();
-                    AnalyticService.update(GEOLOCATION_GST_STATE_CODE, gstStateCode);
-                    return gstStateCode;
-                }
-            }
-        } catch (Exception ex) {
-            log.error(PaymentLoggingMarker.GST_STATE_CODE_FAILURE, ex.getMessage(), ex);
-            throw new WynkRuntimeException(PaymentErrorType.PAY441, ex);
-        }
-        return gstStateCode;
-    }
-
-    private boolean isNumberFrom0To9(String input) {
-        try {
-            int number = Integer.parseInt(input);
-            return number >= 0 && number <= 9;
-        } catch (NumberFormatException e) {
-            return false; // Input is not a valid integer
         }
     }
 }

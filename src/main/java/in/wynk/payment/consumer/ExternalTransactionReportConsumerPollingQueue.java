@@ -4,7 +4,14 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import in.wynk.client.aspect.advice.ClientAware;
+import in.wynk.payment.aspect.advice.TransactionAware;
+import in.wynk.payment.core.dao.entity.IPurchaseDetails;
+import in.wynk.payment.core.dao.entity.PurchaseDetails;
+import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.gpbs.acknowledge.queue.ExternalTransactionReportMessageManager;
+import in.wynk.payment.dto.gpbs.acknowledge.request.AbstractPaymentAcknowledgementRequest;
+import in.wynk.payment.dto.gpbs.acknowledge.request.GooglePlayReportExternalTransactionRequest;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
@@ -46,9 +53,15 @@ public class ExternalTransactionReportConsumerPollingQueue  extends AbstractSQSM
 
     @Override
     @ClientAware(clientAlias = "#message.clientAlias")
+    @TransactionAware(txnId ="#message.transactionId" )
     @AnalyseTransaction(name = "externalTransactionReport")
     public void consume (ExternalTransactionReportMessageManager message) {
-        paymentManager.reportExternalTransactionSubscription();
+        Transaction transaction = TransactionContext.get();
+        IPurchaseDetails purchaseDetails= TransactionContext.getPurchaseDetails().orElse(null);
+        AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest =
+                GooglePlayReportExternalTransactionRequest.builder().transaction(transaction).externalTransactionToken(message.getExternalTransactionId()).paymentGateway(transaction.getPaymentChannel()).clientAlias(
+                        message.getClientAlias()).purchaseDetails(purchaseDetails).build();
+        paymentManager.acknowledgeSubscription(abstractPaymentAcknowledgementRequest);
     }
 
     @Override

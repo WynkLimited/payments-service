@@ -6,8 +6,6 @@ import in.wynk.payment.dto.gpbs.acknowledge.request.AbstractPaymentAcknowledgeme
  * @author Nishesh Pandey
  */
 public interface IMerchantIapSubscriptionAcknowledgementService {
-
     void acknowledgeSubscription (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest);
-    void reportExternalTransactionSubscription ();
     void publishAsync (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest);
 }

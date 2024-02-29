@@ -30,11 +30,11 @@ import java.util.concurrent.TimeUnit;
 public class ExternalTransactionReportConsumerPollingQueue  extends AbstractSQSMessageConsumerPollingQueue<ExternalTransactionReportMessageManager> {
     private final ExecutorService messageHandlerThreadPool;
     private final ScheduledExecutorService pollingThreadPool;
-    @Value("${payment.pooling.queue.acknowledgement.enabled}")
+    @Value("${payment.pooling.queue.externalTransaction.report.enabled}")
     private boolean subscriptionAcknowledgementPollingEnabled;
-    @Value("${payment.pooling.queue.acknowledgement.sqs.consumer.delay}")
+    @Value("${payment.pooling.queue.externalTransaction.report.sqs.consumer.delay}")
     private long subscriptionAcknowledgementPoolingDelay;
-    @Value("${payment.pooling.queue.acknowledgement.sqs.consumer.delayTimeUnit}")
+    @Value("${payment.pooling.queue.externalTransaction.report.sqs.consumer.delayTimeUnit}")
     private TimeUnit subscriptionAcknowledgementPoolingDelayTimeUnit;
 
     @Autowired

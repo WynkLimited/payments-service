@@ -186,6 +186,12 @@ public class PaymentQueuesConfig {
         return new SubscriptionAcknowledgementSQSMessageExtractor(queueName, sqsClients);
     }
 
+    @Bean
+    public ExternalTransactionSQSMessageExtractor googlePlayExternalTransactionReportAcknowledgementSQSMessageExtractor(@Value("${payment.pooling.queue.externalTransaction.report.name}") String queueName,
+                                                                                                                   @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClients) {
+        return new ExternalTransactionSQSMessageExtractor(queueName, sqsClients);
+    }
+
     private ExecutorService threadPoolExecutor(int threadCount) {
         return Executors.newFixedThreadPool(threadCount);
     }

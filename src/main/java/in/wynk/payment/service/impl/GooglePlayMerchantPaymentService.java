@@ -23,6 +23,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
+import in.wynk.payment.core.dao.repository.TestingByPassNumbersDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.core.service.GSTStateCodesCachingService;
@@ -480,8 +481,12 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         setAmountBasedOnPaymentEvent(accessStateCode, gstStateCodes.getStateName(), stateCodesCachingService.get(DEFAULT_ACCESS_STATE_CODE).getStateName(), invoiceDetails.getGstPercentage(), builder,
                 paymentEvent, request);
 
+        Optional<TestingByPassNumbers> optionalTestingByPassNumbers =
+                RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), TestingByPassNumbersDao.class).findById(request.getTransaction().getMsisdn());
         GooglePlayReportRequest body = null;
-        if (EnumSet.of(SUBSCRIBE, TRIAL_SUBSCRIPTION, MANDATE, FREE).contains(paymentEvent)) {
+        if (optionalTestingByPassNumbers.isPresent()) {
+            body = builder.testPurchase(ExternalTransactionTestPurchase.builder().externalTransactionToken(request.getExternalTransactionToken()).build()).build();
+        } else if (EnumSet.of(SUBSCRIBE, TRIAL_SUBSCRIPTION, MANDATE, FREE).contains(paymentEvent)) {
             body = builder.recurringTransaction(RecurringExternalTransaction.builder().externalTransactionToken(request.getExternalTransactionToken())
                     .externalSubscription(ExternalSubscription.builder().subscriptionType(SubscriptionType.RECURRING).build()).build()).build();
         } else if (paymentEvent == PURCHASE) {
@@ -502,7 +507,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         }
         HttpHeaders headers = getHeaders(service);
         headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
-        String url = baseUrl.concat(packageName).concat(EXTERNAL_TRANSACTION_PARAM).concat(API_KEY_PARAM).concat(getApiKey(service));
+        String url = baseUrl.concat(packageName).concat(EXTERNAL_TRANSACTION_PARAM).concat(request.getExternalTransactionToken()).concat(API_KEY_PARAM).concat(getApiKey(service));
         try {
             restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(body, headers), GooglePlayReceiptResponse.class);
             log.info("Google acknowledged successfully for the external transaction Token {}", request.getExternalTransactionToken());
@@ -535,7 +540,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         log.info("Trying to publish message on queue for google acknowledgement. ");
         GooglePlaySubscriptionAcknowledgementRequest request = (GooglePlaySubscriptionAcknowledgementRequest) abstractPaymentAcknowledgementRequest;
         SubscriptionAcknowledgeMessageManager
-                message = SubscriptionAcknowledgeMessageManager.builder().paymentGateway(request.getPaymentGateway()).packageName(request.getAppDetails().getPackageName())
+                message = SubscriptionAcknowledgeMessageManager.builder().paymentCode(request.getPaymentCode()).packageName(request.getAppDetails().getPackageName())
                 .service(request.getAppDetails().getService()).purchaseToken(request.getPaymentDetails()
                         .getPurchaseToken()).skuId(request.getProductDetails().getSkuId())
                 .developerPayload(request.getDeveloperPayload()).build();

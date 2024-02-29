@@ -350,7 +350,7 @@ public class PaymentManager
                     .productDetails(googleRequest.getProductDetails())
                     .appDetails(googleRequest.getAppDetails())
                     .paymentDetails(googleRequest.getPaymentDetails())
-                    .paymentGateway(request.getPaymentCode())
+                    .paymentCode(request.getPaymentCode().getCode())
                     .build();
         }
         return null;
@@ -464,14 +464,14 @@ public class PaymentManager
     @Override
     public void acknowledgeSubscription(AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
         final IMerchantIapSubscriptionAcknowledgementService acknowledgementService =
-                BeanLocatorFactory.getBean(abstractPaymentAcknowledgementRequest.getPaymentGateway().getCode(), IMerchantIapSubscriptionAcknowledgementService.class);
+                BeanLocatorFactory.getBean(abstractPaymentAcknowledgementRequest.getPaymentCode(), IMerchantIapSubscriptionAcknowledgementService.class);
         acknowledgementService.acknowledgeSubscription(abstractPaymentAcknowledgementRequest);
     }
 
     @Override
     public void publishAsync(AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
         final IMerchantIapSubscriptionAcknowledgementService acknowledgementService =
-                BeanLocatorFactory.getBean(abstractPaymentAcknowledgementRequest.getPaymentGateway().getCode(), IMerchantIapSubscriptionAcknowledgementService.class);
+                BeanLocatorFactory.getBean(abstractPaymentAcknowledgementRequest.getPaymentCode(), IMerchantIapSubscriptionAcknowledgementService.class);
         acknowledgementService.publishAsync(abstractPaymentAcknowledgementRequest);
     }
 }

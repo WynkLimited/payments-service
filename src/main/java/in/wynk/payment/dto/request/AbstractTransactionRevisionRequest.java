@@ -24,6 +24,9 @@ public abstract class AbstractTransactionRevisionRequest {
     @Analysed
     private final TransactionStatus existingTransactionStatus;
 
+    @Analysed
+    private final String lastSuccessTransactionId;
+
     public int getAttemptSequence() {
         return 0;
     };

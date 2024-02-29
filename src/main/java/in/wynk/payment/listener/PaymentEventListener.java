@@ -454,15 +454,15 @@ public class PaymentEventListener {
 
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
-    @TransactionAware(txnId = "#event.transactionId", lock = false)
     @AnalyseTransaction(name = "externalTransactionReportEvent")
     public void onExternalTransactionReportEvent(ExternalTransactionReportEvent event) {
-            AnalyticService.update(event);
-            try {
-                sqsManagerService.publishSQSMessage(ExternalTransactionReportMessageManager.builder().build());
-            }catch (Exception e) {
-                    log.error("Exception occurred while publishing event on ExternalTransactionReport queue for transactionId: {}", event.getTransaction().getIdStr(), e);
-            }
+        AnalyticService.update(event);
+        try {
+            sqsManagerService.publishSQSMessage(ExternalTransactionReportMessageManager.builder().clientAlias(event.getClientAlias()).transactionId(event.getTransactionId())
+                    .externalTransactionId(event.getExternalTokenReferenceId()).paymentEvent(event.getPaymentEvent()).build());
+        } catch (Exception e) {
+            log.error("Exception occurred while publishing event on ExternalTransactionReport queue for transactionId: {}", event.getTransactionId(), e);
+        }
     }
 
     private void sendNotificationToUser(IProductDetails productDetails, String tinyUrl, String msisdn, TransactionStatus txnStatus) {
@@ -623,7 +623,7 @@ public class PaymentEventListener {
             MerchantTransaction merchantData = merchantTransactionService.getMerchantTransaction(event.getTransaction().getIdStr());
             if (Objects.nonNull(merchantData.getExternalTokenReferenceId())) {
                 AnalyticService.update(EXTERNAL_TRANSACTION_TOKEN, merchantData.getExternalTokenReferenceId());
-                eventPublisher.publishEvent(ExternalTransactionReportEvent.builder().transaction(event.getTransaction()).externalTokenReferenceId(merchantData.getExternalTokenReferenceId()).build());
+                eventPublisher.publishEvent(ExternalTransactionReportEvent.builder().transactionId(event.getTransaction().getIdStr()).externalTokenReferenceId(merchantData.getExternalTokenReferenceId()).build());
             }
         } catch (Exception ignored) {
         }

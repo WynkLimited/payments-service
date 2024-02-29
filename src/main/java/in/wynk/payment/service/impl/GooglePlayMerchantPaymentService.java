@@ -21,10 +21,8 @@ import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.dao.entity.GooglePlayReceiptDetails;
-import in.wynk.payment.core.dao.entity.InvoiceDetails;
-import in.wynk.payment.core.dao.entity.ReceiptDetails;
-import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.core.service.GSTStateCodesCachingService;
@@ -80,6 +78,7 @@ import java.util.concurrent.locks.Lock;
 
 import static in.wynk.common.constant.BaseConstants.DEFAULT_ACCESS_STATE_CODE;
 import static in.wynk.common.enums.PaymentEvent.*;
+import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE;
 import static in.wynk.payment.dto.gpbs.GooglePlayConstant.*;
 
@@ -480,10 +479,18 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         } else if (paymentEvent == PURCHASE) {
             body = builder.oneTimeTransaction(OneTimeExternalTransaction.builder().externalTransactionToken(request.getExternalTransactionToken()).build()).build();
         } else if (paymentEvent == RENEW) {
-            //take initial token from db
-            body = builder.recurringTransaction(
-                    RecurringExternalTransaction.builder().initialExternalTransactionId("").externalSubscription(ExternalSubscription.builder().subscriptionType(SubscriptionType.RECURRING).build())
-                            .build()).build();
+            Optional<PaymentRenewal> renewalOptional =
+                    RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class)
+                            .findById(request.getTransaction().getIdStr());
+            if (renewalOptional.isPresent()) {
+                body = builder.recurringTransaction(
+                        RecurringExternalTransaction.builder().initialExternalTransactionId(renewalOptional.get().getInitialTransactionId())
+                                .externalSubscription(ExternalSubscription.builder().subscriptionType(SubscriptionType.RECURRING).build())
+                                .build()).build();
+            } else {
+                throw new WynkRuntimeException("Unable to report renewal transactions to google");
+            }
+
         }
         HttpHeaders headers = getHeaders(service);
         headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
@@ -503,10 +510,10 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         if (EnumSet.of(TRIAL_SUBSCRIPTION, MANDATE, FREE).contains(paymentEvent)) {
             builder.originalPreTaxAmount(Price.builder().priceMicros("0").build()).originalTaxAmount(Price.builder().priceMicros("0").build());
         } else {
-            //calculate amount to be snet to google
+            //calculate amount to be sent to google
             final MsisdnOperatorDetails operatorDetails = userDetailsService.getOperatorDetails(request.getTransaction().getMsisdn());
-            final String accessStateCode = userDetailsService.getAccessStateCode(operatorDetails, null, request.getPurchaseDetails());
             final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(request.getClientAlias());
+            final String accessStateCode = userDetailsService.getAccessStateCode(operatorDetails, invoiceDetails.getDefaultGSTStateCode(), request.getPurchaseDetails());
 
             final TaxableRequest taxableRequest = TaxableRequest.builder()
                     .consumerStateCode(accessStateCode).consumerStateName(stateCodesCachingService.get(accessStateCode).getStateName())
@@ -514,7 +521,6 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                     .amount(request.getTransaction().getAmount()).gstPercentage(invoiceDetails.getGstPercentage())
                     .build();
             TaxableResponse taxableResponse = taxManager.calculate(taxableRequest);
-
             builder.originalPreTaxAmount(Price.builder().priceMicros(String.valueOf(request.getTransaction().getAmount())).build())
                     .originalTaxAmount(Price.builder().priceMicros(String.valueOf(taxableResponse.getTaxAmount())).build());
         }

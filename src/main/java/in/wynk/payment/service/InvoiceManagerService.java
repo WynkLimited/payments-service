@@ -69,8 +69,8 @@ public class InvoiceManagerService implements InvoiceManager {
                 try {
                     final Transaction transaction = transactionManagerService.get(request.getTxnId());
                     final IPurchaseDetails purchaseDetails = purchaseDetailsManager.get(transaction);
-                    final MsisdnOperatorDetails operatorDetails = userDetailsService.getOperatorDetails(request.getMsisdn());
                     final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(request.getClientAlias());
+                    final MsisdnOperatorDetails operatorDetails = userDetailsService.getOperatorDetails(request.getMsisdn());
                     final String accessStateCode = userDetailsService.getAccessStateCode(operatorDetails, invoiceDetails.getDefaultGSTStateCode(), purchaseDetails);
                     AnalyticService.update(ACCESS_STATE_CODE, accessStateCode);
 

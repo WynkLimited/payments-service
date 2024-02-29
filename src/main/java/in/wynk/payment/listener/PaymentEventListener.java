@@ -589,9 +589,6 @@ public class PaymentEventListener {
         AnalyticService.update(PAYMENT_CODE, event.getTransaction().getPaymentChannel().name());
         AnalyticService.update(TRANSACTION_STATUS, event.getTransaction().getStatus().getValue());
         AnalyticService.update(PAYMENT_METHOD, event.getTransaction().getPaymentChannel().getCode());
-        if (ApsConstant.APS.equals(event.getTransaction().getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(event.getTransaction().getPaymentChannel().getId())) {
-            initiateReportTransactionToMerchant(event);
-        }
         if (event.getTransaction().getStatus() == TransactionStatus.SUCCESS) {
             final BaseTDRResponse tdr = paymentGatewayManager.getTDR(event.getTransaction().getIdStr());
             AnalyticService.update(TDR, tdr.getTdr());

@@ -13,9 +13,14 @@ import org.springframework.data.mongodb.core.mapping.Field;
 @Document("gst_state_codes")
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class GSTStateCodes extends MongoBaseEntity<String> {
-
     @Field("iso_state_code")
     private String stateCode;
     @Field("state_name")
     private String stateName;
+    @Field("administrative_area")
+    private String administrativeArea;
+    @Field("country_code")
+    private String countryCode;
+    @Field("country_name")
+    private String countryName;
 }

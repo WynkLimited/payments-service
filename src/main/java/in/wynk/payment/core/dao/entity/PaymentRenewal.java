@@ -44,6 +44,12 @@ public class PaymentRenewal extends AuditableEntity implements Serializable {
     @Column(name = "attempt_sequence")
     private Integer attemptSequence;
 
+    @Column(name = "initial_transaction_id")
+    private String initialTransactionId;
+
+    @Column(name = "last_success_transaction_id")
+    private String lastSuccessTransactionId;
+
     public PaymentEvent getTransactionEvent() {
         return PaymentEvent.valueOf(transactionEvent);
     }

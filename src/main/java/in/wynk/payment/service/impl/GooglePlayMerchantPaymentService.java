@@ -479,7 +479,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         PaymentEvent paymentEvent = request.getTransaction().getType();
         setAmountBasedOnPaymentEvent(accessStateCode, gstStateCodes.getStateName(), stateCodesCachingService.get(DEFAULT_ACCESS_STATE_CODE).getStateName(), invoiceDetails.getGstPercentage(), builder,
                 paymentEvent, request);
-        
+
         GooglePlayReportRequest body = null;
         if (EnumSet.of(SUBSCRIBE, TRIAL_SUBSCRIPTION, MANDATE, FREE).contains(paymentEvent)) {
             body = builder.recurringTransaction(RecurringExternalTransaction.builder().externalTransactionToken(request.getExternalTransactionToken())

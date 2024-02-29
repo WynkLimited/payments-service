@@ -198,7 +198,7 @@ public class PaymentEventListener {
 
     private boolean checkIfEntryPresentAndUpdateData (MerchantTransactionEvent event) {
         try {
-            if (Objects.isNull(event.getExternalTransactionId()) || Objects.isNull(event.getOrderId())) {
+            if (Objects.isNull(event.getExternalTokenReferenceId())) {
                 MerchantTransaction merchantData = merchantTransactionService.getMerchantTransaction(event.getId());
                 merchantData.setRequest(event.getRequest());
                 merchantData.setResponse(event.getResponse());
@@ -586,6 +586,9 @@ public class PaymentEventListener {
         AnalyticService.update(PAYMENT_CODE, event.getTransaction().getPaymentChannel().name());
         AnalyticService.update(TRANSACTION_STATUS, event.getTransaction().getStatus().getValue());
         AnalyticService.update(PAYMENT_METHOD, event.getTransaction().getPaymentChannel().getCode());
+        if (ApsConstant.APS.equals(event.getTransaction().getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(event.getTransaction().getPaymentChannel().getId())) {
+            initiateReportTransactionToMerchant(event);
+        }
         if (event.getTransaction().getStatus() == TransactionStatus.SUCCESS) {
             final BaseTDRResponse tdr = paymentGatewayManager.getTDR(event.getTransaction().getIdStr());
             AnalyticService.update(TDR, tdr.getTdr());
@@ -623,7 +626,8 @@ public class PaymentEventListener {
             MerchantTransaction merchantData = merchantTransactionService.getMerchantTransaction(event.getTransaction().getIdStr());
             if (Objects.nonNull(merchantData.getExternalTokenReferenceId())) {
                 AnalyticService.update(EXTERNAL_TRANSACTION_TOKEN, merchantData.getExternalTokenReferenceId());
-                eventPublisher.publishEvent(ExternalTransactionReportEvent.builder().transactionId(event.getTransaction().getIdStr()).externalTokenReferenceId(merchantData.getExternalTokenReferenceId()).build());
+                eventPublisher.publishEvent(ExternalTransactionReportEvent.builder().transactionId(event.getTransaction().getIdStr()).externalTokenReferenceId(merchantData.getExternalTokenReferenceId()).clientAlias(event.getTransaction()
+                        .getClientAlias()).paymentEvent(event.getTransaction().getType()).build());
             }
         } catch (Exception ignored) {
         }

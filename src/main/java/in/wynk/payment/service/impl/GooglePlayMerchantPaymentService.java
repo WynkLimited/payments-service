@@ -463,15 +463,23 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     }
 
     public void reportExternalTransactionSubscription (GooglePlayReportExternalTransactionRequest request) {
+        final MsisdnOperatorDetails operatorDetails = userDetailsService.getOperatorDetails(request.getTransaction().getMsisdn());
+        final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(request.getClientAlias());
+        final String accessStateCode = userDetailsService.getAccessStateCode(operatorDetails, invoiceDetails.getDefaultGSTStateCode(), request.getPurchaseDetails());
+        GSTStateCodes gstStateCodes = stateCodesCachingService.get(accessStateCode);
+
         String service = request.getPurchaseDetails().getAppDetails().getService(); //test in case of renewal
         String packageName = MerchantServiceUtil.getPackageFromService(service);
-        PaymentEvent paymentEvent = request.getTransaction().getType();
+
         GooglePlayReportRequest.GooglePlayReportRequestBuilder builder = GooglePlayReportRequest.builder().packageName(packageName).externalTransactionId(request.getTransaction().getIdStr())
                 .transactionTime(request.getTransaction().getExitTime().getTimeInMillis() + "").createTime(new Timestamp(System.currentTimeMillis()) + "")
-                .transactionState(TransactionState.TRANSACTION_REPORTED).userTaxAddress(ExternalTransactionAddress.builder().regionCode("").administrativeArea("").build());
+                .transactionState(TransactionState.TRANSACTION_REPORTED).userTaxAddress(
+                        ExternalTransactionAddress.builder().regionCode(stateCodesCachingService.get("+91").getCountryCode()).administrativeArea(gstStateCodes.getAdministrativeArea()).build());
 
-        setAmountBasedOnPaymentEvent(builder, paymentEvent, request);
-
+        PaymentEvent paymentEvent = request.getTransaction().getType();
+        setAmountBasedOnPaymentEvent(accessStateCode, gstStateCodes.getStateName(), stateCodesCachingService.get(DEFAULT_ACCESS_STATE_CODE).getStateName(), invoiceDetails.getGstPercentage(), builder,
+                paymentEvent, request);
+        
         GooglePlayReportRequest body = null;
         if (EnumSet.of(SUBSCRIBE, TRIAL_SUBSCRIPTION, MANDATE, FREE).contains(paymentEvent)) {
             body = builder.recurringTransaction(RecurringExternalTransaction.builder().externalTransactionToken(request.getExternalTransactionToken())
@@ -505,20 +513,17 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         }
     }
 
-    private void setAmountBasedOnPaymentEvent (GooglePlayReportRequest.GooglePlayReportRequestBuilder builder, PaymentEvent paymentEvent,
+    private void setAmountBasedOnPaymentEvent (String accessStateCode, String stateName, String defaultStateName, double gstPercentage, GooglePlayReportRequest.GooglePlayReportRequestBuilder builder,
+                                               PaymentEvent paymentEvent,
                                                GooglePlayReportExternalTransactionRequest request) {
         if (EnumSet.of(TRIAL_SUBSCRIPTION, MANDATE, FREE).contains(paymentEvent)) {
             builder.originalPreTaxAmount(Price.builder().priceMicros("0").build()).originalTaxAmount(Price.builder().priceMicros("0").build());
         } else {
             //calculate amount to be sent to google
-            final MsisdnOperatorDetails operatorDetails = userDetailsService.getOperatorDetails(request.getTransaction().getMsisdn());
-            final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(request.getClientAlias());
-            final String accessStateCode = userDetailsService.getAccessStateCode(operatorDetails, invoiceDetails.getDefaultGSTStateCode(), request.getPurchaseDetails());
-
             final TaxableRequest taxableRequest = TaxableRequest.builder()
-                    .consumerStateCode(accessStateCode).consumerStateName(stateCodesCachingService.get(accessStateCode).getStateName())
-                    .supplierStateCode(DEFAULT_ACCESS_STATE_CODE).supplierStateName(stateCodesCachingService.get(DEFAULT_ACCESS_STATE_CODE).getStateName())
-                    .amount(request.getTransaction().getAmount()).gstPercentage(invoiceDetails.getGstPercentage())
+                    .consumerStateCode(accessStateCode).consumerStateName(stateName)
+                    .supplierStateCode(DEFAULT_ACCESS_STATE_CODE).supplierStateName(defaultStateName)
+                    .amount(request.getTransaction().getAmount()).gstPercentage(gstPercentage)
                     .build();
             TaxableResponse taxableResponse = taxManager.calculate(taxableRequest);
             builder.originalPreTaxAmount(Price.builder().priceMicros(String.valueOf(request.getTransaction().getAmount())).build())

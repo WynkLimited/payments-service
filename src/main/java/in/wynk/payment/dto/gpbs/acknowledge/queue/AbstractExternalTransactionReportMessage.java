@@ -23,18 +23,8 @@ public abstract class AbstractExternalTransactionReportMessage {
     private String transactionId;
 
     @Analysed
-    private IAppStoreDetails appStoreDetails;
+    private String  externalTransactionId;
 
     @Analysed
     private PaymentEvent paymentEvent;
-
-    @Analysed
-    private double amount;
-
-    @Analysed
-    private String skuId;
-
-    @NotNull
-    @Analysed
-    private PaymentGateway paymentGateway;
 }

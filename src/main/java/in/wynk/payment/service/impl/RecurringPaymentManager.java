@@ -192,13 +192,12 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     }
 
     private String fetchInitialTransactionId (Transaction transaction, PaymentEvent event, String lastSuccessTransactionId) {
-        if(lastSuccessTransactionId != null) {
-            return null;
-        }
-
         if (PaymentEvent.RENEW != event) {
             return transaction.getIdStr();
         } else {
+            if(lastSuccessTransactionId == null) {
+                return null;
+            }
             PaymentRenewal renewal =
                     RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).findById(lastSuccessTransactionId)
                             .orElse(null);

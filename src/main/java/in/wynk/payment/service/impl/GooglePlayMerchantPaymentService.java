@@ -23,6 +23,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
+import in.wynk.payment.core.dao.repository.TestingByPassNumbersDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.core.service.GSTStateCodesCachingService;
@@ -70,9 +71,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.sql.Timestamp;
-import java.util.EnumSet;
-import java.util.Objects;
-import java.util.Optional;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
@@ -471,17 +472,26 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         String service = request.getPurchaseDetails().getAppDetails().getService(); //test in case of renewal
         String packageName = MerchantServiceUtil.getPackageFromService(service);
 
+        //Goggle requires dates in zulu format
+        DateFormat zuluFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.mmm'Z'");
+        Date transactionTime = new Date(request.getTransaction().getExitTime().getTimeInMillis());
+        Date createTime = new Date();
+
         GooglePlayReportRequest.GooglePlayReportRequestBuilder builder = GooglePlayReportRequest.builder().packageName(packageName).externalTransactionId(request.getTransaction().getIdStr())
-                .transactionTime(request.getTransaction().getExitTime().getTimeInMillis() + "").createTime(new Timestamp(System.currentTimeMillis()) + "")
+                .transactionTime(zuluFormat.format(transactionTime)).createTime(zuluFormat.format(createTime))
                 .transactionState(TransactionState.TRANSACTION_REPORTED).userTaxAddress(
-                        ExternalTransactionAddress.builder().regionCode(stateCodesCachingService.get("+91").getCountryCode()).administrativeArea(gstStateCodes.getAdministrativeArea()).build());
+                        ExternalTransactionAddress.builder().regionCode(stateCodesCachingService.get("+91").getCountryCode()).administrativeArea(gstStateCodes.getStateName().toUpperCase(Locale.ROOT)).build());
 
         PaymentEvent paymentEvent = request.getTransaction().getType();
         setAmountBasedOnPaymentEvent(accessStateCode, gstStateCodes.getStateName(), stateCodesCachingService.get(DEFAULT_ACCESS_STATE_CODE).getStateName(), invoiceDetails.getGstPercentage(), builder,
                 paymentEvent, request);
 
+        Optional<TestingByPassNumbers> optionalTestingByPassNumbers =
+                RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), TestingByPassNumbersDao.class).findById(request.getTransaction().getMsisdn());
         GooglePlayReportRequest body = null;
-        if (EnumSet.of(SUBSCRIBE, TRIAL_SUBSCRIPTION, MANDATE, FREE).contains(paymentEvent)) {
+        if (optionalTestingByPassNumbers.isPresent()) {
+            body = builder.testPurchase(ExternalTransactionTestPurchase.builder().externalTransactionToken(request.getExternalTransactionToken()).build()).build();
+        } else if (EnumSet.of(SUBSCRIBE, TRIAL_SUBSCRIPTION, MANDATE, FREE).contains(paymentEvent)) {
             body = builder.recurringTransaction(RecurringExternalTransaction.builder().externalTransactionToken(request.getExternalTransactionToken())
                     .externalSubscription(ExternalSubscription.builder().subscriptionType(SubscriptionType.RECURRING).build()).build()).build();
         } else if (paymentEvent == PURCHASE) {
@@ -502,7 +512,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         }
         HttpHeaders headers = getHeaders(service);
         headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
-        String url = baseUrl.concat(packageName).concat(EXTERNAL_TRANSACTION_PARAM).concat(API_KEY_PARAM).concat(getApiKey(service));
+        String url = baseUrl.concat(packageName).concat(EXTERNAL_TRANSACTION_PARAM).concat(request.getExternalTransactionToken()).concat(API_KEY_PARAM).concat(getApiKey(service));
         try {
             restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(body, headers), GooglePlayReceiptResponse.class);
             log.info("Google acknowledged successfully for the external transaction Token {}", request.getExternalTransactionToken());
@@ -526,7 +536,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                     .amount(request.getTransaction().getAmount()).gstPercentage(gstPercentage)
                     .build();
             TaxableResponse taxableResponse = taxManager.calculate(taxableRequest);
-            builder.originalPreTaxAmount(Price.builder().priceMicros(String.valueOf(request.getTransaction().getAmount())).build())
+            builder.originalPreTaxAmount(Price.builder().priceMicros(String.valueOf(taxableResponse.getTaxableAmount())).build())
                     .originalTaxAmount(Price.builder().priceMicros(String.valueOf(taxableResponse.getTaxAmount())).build());
         }
     }
@@ -535,7 +545,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         log.info("Trying to publish message on queue for google acknowledgement. ");
         GooglePlaySubscriptionAcknowledgementRequest request = (GooglePlaySubscriptionAcknowledgementRequest) abstractPaymentAcknowledgementRequest;
         SubscriptionAcknowledgeMessageManager
-                message = SubscriptionAcknowledgeMessageManager.builder().paymentGateway(request.getPaymentGateway()).packageName(request.getAppDetails().getPackageName())
+                message = SubscriptionAcknowledgeMessageManager.builder().paymentCode(request.getPaymentCode()).packageName(request.getAppDetails().getPackageName())
                 .service(request.getAppDetails().getService()).purchaseToken(request.getPaymentDetails()
                         .getPurchaseToken()).skuId(request.getProductDetails().getSkuId())
                 .developerPayload(request.getDeveloperPayload()).build();

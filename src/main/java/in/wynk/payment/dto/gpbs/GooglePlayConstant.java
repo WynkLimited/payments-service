@@ -1,7 +1,5 @@
 package in.wynk.payment.dto.gpbs;
 
-import com.google.common.base.Predicates;
-
 import java.util.Arrays;
 import java.util.List;
 
@@ -14,7 +12,7 @@ public class GooglePlayConstant {
     public static final String AUTH_TOKEN_PREFIX = "Bearer ";
     public static final String TOKEN = "/tokens/";
     public static final String ACKNOWLEDGE = ":acknowledge";
-    public static final String EXTERNAL_TRANSACTION_PARAM = "externalTransactions?externalTransactionId=";
+    public static final String EXTERNAL_TRANSACTION_PARAM = "/externalTransactions?externalTransactionId=";
 
     public static final Integer PURCHASE_NOTIFICATION_TYPE = 4;
     public static final String GOOGLE_PLAY_RECEIPT = "googlePlayReceipt";

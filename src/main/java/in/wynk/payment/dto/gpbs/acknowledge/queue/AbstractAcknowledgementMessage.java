@@ -1,7 +1,6 @@
 package in.wynk.payment.dto.gpbs.acknowledge.queue;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
-import in.wynk.payment.core.dao.entity.PaymentGateway;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -33,5 +32,5 @@ public abstract class AbstractAcknowledgementMessage {
     private String skuId;
 
     @Analysed
-    private PaymentGateway paymentGateway;
+    private String paymentCode;
 }

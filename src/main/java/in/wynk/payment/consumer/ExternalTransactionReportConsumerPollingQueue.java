@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.payment.aspect.advice.TransactionAware;
+import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
-import in.wynk.payment.core.dao.entity.PurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.gpbs.acknowledge.queue.ExternalTransactionReportMessageManager;
@@ -27,25 +27,25 @@ import java.util.concurrent.TimeUnit;
  * @author Nishesh Pandey
  */
 @Slf4j
-public class ExternalTransactionReportConsumerPollingQueue  extends AbstractSQSMessageConsumerPollingQueue<ExternalTransactionReportMessageManager> {
+public class ExternalTransactionReportConsumerPollingQueue extends AbstractSQSMessageConsumerPollingQueue<ExternalTransactionReportMessageManager> {
     private final ExecutorService messageHandlerThreadPool;
     private final ScheduledExecutorService pollingThreadPool;
-    @Value("${payment.pooling.queue.acknowledgement.enabled}")
-    private boolean subscriptionAcknowledgementPollingEnabled;
-    @Value("${payment.pooling.queue.acknowledgement.sqs.consumer.delay}")
-    private long subscriptionAcknowledgementPoolingDelay;
-    @Value("${payment.pooling.queue.acknowledgement.sqs.consumer.delayTimeUnit}")
-    private TimeUnit subscriptionAcknowledgementPoolingDelayTimeUnit;
+    @Value("${payment.pooling.queue.externalTransaction.report.enabled}")
+    private boolean externalTransactionReportPollingEnabled;
+    @Value("${payment.pooling.queue.externalTransaction.report.sqs.consumer.delay}")
+    private long externalTransactionReportPoolingDelay;
+    @Value("${payment.pooling.queue.externalTransaction.report.sqs.consumer.delayTimeUnit}")
+    private TimeUnit externalTransactionReportPoolingDelayTimeUnit;
 
     @Autowired
     private PaymentManager paymentManager;
 
     public ExternalTransactionReportConsumerPollingQueue (String queueName,
-                                                            AmazonSQS sqs,
-                                                            ObjectMapper objectMapper,
-                                                            ISQSMessageExtractor messagesExtractor,
-                                                            ExecutorService messageHandlerThreadPool,
-                                                            ScheduledExecutorService pollingThreadPool) {
+                                                          AmazonSQS sqs,
+                                                          ObjectMapper objectMapper,
+                                                          ISQSMessageExtractor messagesExtractor,
+                                                          ExecutorService messageHandlerThreadPool,
+                                                          ScheduledExecutorService pollingThreadPool) {
         super(queueName, sqs, objectMapper, messagesExtractor, messageHandlerThreadPool);
         this.pollingThreadPool = pollingThreadPool;
         this.messageHandlerThreadPool = messageHandlerThreadPool;
@@ -53,14 +53,15 @@ public class ExternalTransactionReportConsumerPollingQueue  extends AbstractSQSM
 
     @Override
     @ClientAware(clientAlias = "#message.clientAlias")
-    @TransactionAware(txnId ="#message.transactionId" )
+    @TransactionAware(txnId = "#message.transactionId")
     @AnalyseTransaction(name = "externalTransactionReport")
     public void consume (ExternalTransactionReportMessageManager message) {
         Transaction transaction = TransactionContext.get();
-        IPurchaseDetails purchaseDetails= TransactionContext.getPurchaseDetails().orElse(null);
+        IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().orElse(null);
         AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest =
-                GooglePlayReportExternalTransactionRequest.builder().transaction(transaction).externalTransactionToken(message.getExternalTransactionId()).paymentGateway(transaction.getPaymentChannel()).clientAlias(
-                        message.getClientAlias()).purchaseDetails(purchaseDetails).build();
+                GooglePlayReportExternalTransactionRequest.builder().transaction(transaction).externalTransactionToken(message.getExternalTransactionId()).paymentCode(BeanConstant.GOOGLE_PLAY)
+                        .clientAlias(
+                                message.getClientAlias()).purchaseDetails(purchaseDetails).build();
         paymentManager.acknowledgeSubscription(abstractPaymentAcknowledgementRequest);
     }
 
@@ -71,13 +72,13 @@ public class ExternalTransactionReportConsumerPollingQueue  extends AbstractSQSM
 
     @Override
     public void start () {
-        if (subscriptionAcknowledgementPollingEnabled) {
+        if (externalTransactionReportPollingEnabled) {
             log.info("Starting SubscriptionAcknowledgementConsumerPollingQueue...");
             pollingThreadPool.scheduleWithFixedDelay(
                     this::poll,
                     0,
-                    subscriptionAcknowledgementPoolingDelay,
-                    subscriptionAcknowledgementPoolingDelayTimeUnit
+                    externalTransactionReportPoolingDelay,
+                    externalTransactionReportPoolingDelayTimeUnit
             );
         }
 
@@ -85,7 +86,7 @@ public class ExternalTransactionReportConsumerPollingQueue  extends AbstractSQSM
 
     @Override
     public void stop () {
-        if (subscriptionAcknowledgementPollingEnabled) {
+        if (externalTransactionReportPollingEnabled) {
             log.info("Shutting down SubscriptionAcknowledgementConsumerPollingQueue ...");
             pollingThreadPool.shutdownNow();
             messageHandlerThreadPool.shutdown();

@@ -21,10 +21,11 @@ import java.util.concurrent.ScheduledExecutorService;
 public class PaymentQueuesConfig {
 
     @Bean
-    public PaymentReconciliationConsumerPollingQueue paymentReconciliationConsumerPollingQueue(@Value("${payment.pooling.queue.reconciliation.name}") String queueName,
-                                                                                               @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
-                                                                                               ObjectMapper objectMapper,
-                                                                                               PaymentReconciliationSQSMessageExtractor paymentReconciliationSQSMessageExtractor, ITransactionManagerService transactionManager, ApplicationEventPublisher eventPublisher) {
+    public PaymentReconciliationConsumerPollingQueue paymentReconciliationConsumerPollingQueue (@Value("${payment.pooling.queue.reconciliation.name}") String queueName,
+                                                                                                @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
+                                                                                                ObjectMapper objectMapper,
+                                                                                                PaymentReconciliationSQSMessageExtractor paymentReconciliationSQSMessageExtractor,
+                                                                                                ITransactionManagerService transactionManager, ApplicationEventPublisher eventPublisher) {
         return new PaymentReconciliationConsumerPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
@@ -34,10 +35,10 @@ public class PaymentQueuesConfig {
     }
 
     @Bean
-    public SubscriptionAcknowledgementConsumerPollingQueue subscriptionAcknowledgementConsumerPollingQueue(@Value("${payment.pooling.queue.acknowledgement.name}") String queueName,
-                                                                                                                @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
-                                                                                                                ObjectMapper objectMapper,
-                                                                                                                SubscriptionAcknowledgementSQSMessageExtractor subscriptionAcknowledgementSQSMessageExtractor) {
+    public SubscriptionAcknowledgementConsumerPollingQueue subscriptionAcknowledgementConsumerPollingQueue (@Value("${payment.pooling.queue.acknowledgement.name}") String queueName,
+                                                                                                            @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
+                                                                                                            ObjectMapper objectMapper,
+                                                                                                            SubscriptionAcknowledgementSQSMessageExtractor subscriptionAcknowledgementSQSMessageExtractor) {
         return new SubscriptionAcknowledgementConsumerPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
@@ -47,14 +48,27 @@ public class PaymentQueuesConfig {
     }
 
     @Bean
-    public PaymentRenewalConsumerPollingQueue paymentRenewalConsumerPollingQueue(@Value("${payment.pooling.queue.renewal.name}") String queueName,
-                                                                                 @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
-                                                                                 ObjectMapper objectMapper,
-                                                                                 PaymentRenewalSQSMessageExtractor paymentRenewalSQSMessageExtractor,
-                                                                                 ISqsManagerService sqsManagerService,
-                                                                                 ITransactionManagerService transactionManager,
-                                                                                 ISubscriptionServiceManager subscriptionServiceManager,
-                                                                                 IRecurringPaymentManagerService recurringPaymentManagerService) {
+    public ExternalTransactionReportConsumerPollingQueue externalTransactionReportConsumerPollingQueue (@Value("${payment.pooling.queue.externalTransaction.report.name}") String queueName,
+                                                                                                        @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
+                                                                                                        ObjectMapper objectMapper,
+                                                                                                        ExternalTransactionSQSMessageExtractor externalTransactionSQSMessageExtractor) {
+        return new ExternalTransactionReportConsumerPollingQueue(queueName,
+                sqsClient,
+                objectMapper,
+                externalTransactionSQSMessageExtractor,
+                threadPoolExecutor(2),
+                scheduledThreadPoolExecutor());
+    }
+
+    @Bean
+    public PaymentRenewalConsumerPollingQueue paymentRenewalConsumerPollingQueue (@Value("${payment.pooling.queue.renewal.name}") String queueName,
+                                                                                  @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
+                                                                                  ObjectMapper objectMapper,
+                                                                                  PaymentRenewalSQSMessageExtractor paymentRenewalSQSMessageExtractor,
+                                                                                  ISqsManagerService sqsManagerService,
+                                                                                  ITransactionManagerService transactionManager,
+                                                                                  ISubscriptionServiceManager subscriptionServiceManager,
+                                                                                  IRecurringPaymentManagerService recurringPaymentManagerService) {
         return new PaymentRenewalConsumerPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
@@ -67,11 +81,11 @@ public class PaymentQueuesConfig {
     }
 
     @Bean
-    public PreDebitNotificationConsumerPollingQueue preDebitNotificationConsumerPollingQueue(@Value("${payment.pooling.queue.preDebitNotification.name}") String queueName,
-                                                                                             @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
-                                                                                             ObjectMapper objectMapper,
-                                                                                             PaymentGatewayManager manager,
-                                                                                             PreDebitNotificationSQSMessageExtractor preDebitNotificationSQSMessageExtractor) {
+    public PreDebitNotificationConsumerPollingQueue preDebitNotificationConsumerPollingQueue (@Value("${payment.pooling.queue.preDebitNotification.name}") String queueName,
+                                                                                              @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
+                                                                                              ObjectMapper objectMapper,
+                                                                                              PaymentGatewayManager manager,
+                                                                                              PreDebitNotificationSQSMessageExtractor preDebitNotificationSQSMessageExtractor) {
         return new PreDebitNotificationConsumerPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
@@ -81,11 +95,11 @@ public class PaymentQueuesConfig {
     }
 
     @Bean
-    public PaymentRenewalChargingConsumerPollingQueue paymentRenewalChargingConsumerPollingQueue(@Value("${payment.pooling.queue.charging.name}") String queueName,
-                                                                                                 @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
-                                                                                                 ObjectMapper objectMapper,
-                                                                                                 PaymentRenewalChargingSQSMessageExtractor paymentRenewalChargingSQSMessageExtractor,
-                                                                                                 PaymentManager paymentManager, PaymentGatewayManager manager) {
+    public PaymentRenewalChargingConsumerPollingQueue paymentRenewalChargingConsumerPollingQueue (@Value("${payment.pooling.queue.charging.name}") String queueName,
+                                                                                                  @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
+                                                                                                  ObjectMapper objectMapper,
+                                                                                                  PaymentRenewalChargingSQSMessageExtractor paymentRenewalChargingSQSMessageExtractor,
+                                                                                                  PaymentManager paymentManager, PaymentGatewayManager manager) {
         return new PaymentRenewalChargingConsumerPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
@@ -95,11 +109,10 @@ public class PaymentQueuesConfig {
     }
 
     @Bean
-    public PaymentRecurringSchedulingPollingQueue paymentRecurringSchedulingPollingQueue(@Value("${payment.pooling.queue.schedule.name}") String queueName,
-                                                                                         @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
-                                                                                         ObjectMapper objectMapper,
-                                                                                         PaymentRecurringSchedulingSQSMessageExtractor paymentRecurringSchedulingSQSMessageExtractor,
-                                                                                         PaymentManager paymentManager) {
+    public PaymentRecurringSchedulingPollingQueue paymentRecurringSchedulingPollingQueue (@Value("${payment.pooling.queue.schedule.name}") String queueName,
+                                                                                          @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient, ObjectMapper objectMapper,
+                                                                                          PaymentRecurringSchedulingSQSMessageExtractor paymentRecurringSchedulingSQSMessageExtractor,
+                                                                                          PaymentManager paymentManager) {
         return new PaymentRecurringSchedulingPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
@@ -110,11 +123,13 @@ public class PaymentQueuesConfig {
     }
 
     @Bean
-    public PaymentRecurringUnSchedulingPollingQueue paymentRecurringUnSchedulingPollingQueue(@Value("${payment.pooling.queue.unschedule.name}") String queueName,
-                                                                                             @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
-                                                                                             ObjectMapper objectMapper,
-                                                                                             PaymentRecurringUnSchedulingSQSMessageExtractor paymentRecurringUnSchedulingSQSMessageExtractor,
-                                                                                             @Qualifier(in.wynk.payment.core.constant.BeanConstant.RECURRING_PAYMENT_RENEWAL_SERVICE) IRecurringPaymentManagerService recurringPaymentManager, ITransactionManagerService transactionManagerService, ApplicationEventPublisher eventPublisher) {
+    public PaymentRecurringUnSchedulingPollingQueue paymentRecurringUnSchedulingPollingQueue (@Value("${payment.pooling.queue.unschedule.name}") String queueName,
+                                                                                              @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
+                                                                                              ObjectMapper objectMapper,
+                                                                                              PaymentRecurringUnSchedulingSQSMessageExtractor paymentRecurringUnSchedulingSQSMessageExtractor,
+                                                                                              @Qualifier(in.wynk.payment.core.constant.BeanConstant.RECURRING_PAYMENT_RENEWAL_SERVICE)
+                                                                                                      IRecurringPaymentManagerService recurringPaymentManager,
+                                                                                              ITransactionManagerService transactionManagerService, ApplicationEventPublisher eventPublisher) {
         return new PaymentRecurringUnSchedulingPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
@@ -125,11 +140,11 @@ public class PaymentQueuesConfig {
     }
 
     @Bean
-    public PaymentUserDeactivationPollingQueue paymentUserDeactivationPollingQueue(@Value("${payment.pooling.queue.userDeactivation.name}") String queueName,
-                                                                                             @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
-                                                                                             ObjectMapper objectMapper,
-                                                                                             PaymentUserDeactivationSQSMessageExtractor paymentUserDeactivationSQSMessageExtractor,
-                                                                                             ApplicationEventPublisher eventPublisher) {
+    public PaymentUserDeactivationPollingQueue paymentUserDeactivationPollingQueue (@Value("${payment.pooling.queue.userDeactivation.name}") String queueName,
+                                                                                    @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
+                                                                                    ObjectMapper objectMapper,
+                                                                                    PaymentUserDeactivationSQSMessageExtractor paymentUserDeactivationSQSMessageExtractor,
+                                                                                    ApplicationEventPublisher eventPublisher) {
         return new PaymentUserDeactivationPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
@@ -153,64 +168,70 @@ public class PaymentQueuesConfig {
     }
 
     @Bean
-    public PaymentReconciliationSQSMessageExtractor paymentReconciliationSQSMessageExtractor(@Value("${payment.pooling.queue.reconciliation.name}") String queueName,
-                                                                                             @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient) {
+    public PaymentReconciliationSQSMessageExtractor paymentReconciliationSQSMessageExtractor (@Value("${payment.pooling.queue.reconciliation.name}") String queueName,
+                                                                                              @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient) {
         return new PaymentReconciliationSQSMessageExtractor(queueName, sqsClient);
     }
 
     @Bean
-    public PaymentRenewalSQSMessageExtractor paymentRenewalSQSMessageExtractor(@Value("${payment.pooling.queue.renewal.name}") String queueName,
-                                                                               @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient) {
+    public PaymentRenewalSQSMessageExtractor paymentRenewalSQSMessageExtractor (@Value("${payment.pooling.queue.renewal.name}") String queueName,
+                                                                                @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient) {
         return new PaymentRenewalSQSMessageExtractor(queueName, sqsClient);
     }
 
     @Bean
-    public PreDebitNotificationSQSMessageExtractor preDebitNotificationSQSMessageExtractor(@Value("${payment.pooling.queue.preDebitNotification.name}") String queueName,
-                                                                               @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient) {
+    public PreDebitNotificationSQSMessageExtractor preDebitNotificationSQSMessageExtractor (@Value("${payment.pooling.queue.preDebitNotification.name}") String queueName,
+                                                                                            @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient) {
         return new PreDebitNotificationSQSMessageExtractor(queueName, sqsClient);
     }
 
     @Bean
-    public PaymentRenewalChargingSQSMessageExtractor paymentRenewalChargingSQSMessageExtractor(@Value("${payment.pooling.queue.charging.name}") String queueName,
-                                                                                               @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient) {
+    public PaymentRenewalChargingSQSMessageExtractor paymentRenewalChargingSQSMessageExtractor (@Value("${payment.pooling.queue.charging.name}") String queueName,
+                                                                                                @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient) {
         return new PaymentRenewalChargingSQSMessageExtractor(queueName, sqsClient);
     }
 
     @Bean
-    public PaymentRecurringSchedulingSQSMessageExtractor paymentRecurringSchedulingSQSMessageExtractor(@Value("${payment.pooling.queue.schedule.name}") String queueName,
-                                                                                                       @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClients) {
+    public PaymentRecurringSchedulingSQSMessageExtractor paymentRecurringSchedulingSQSMessageExtractor (@Value("${payment.pooling.queue.schedule.name}") String queueName,
+                                                                                                        @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClients) {
         return new PaymentRecurringSchedulingSQSMessageExtractor(queueName, sqsClients);
     }
 
     @Bean
-    public PaymentRecurringUnSchedulingSQSMessageExtractor paymentRecurringUnSchedulingSQSMessageExtractor(@Value("${payment.pooling.queue.unschedule.name}") String queueName,
-                                                                                                           @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClients) {
+    public PaymentRecurringUnSchedulingSQSMessageExtractor paymentRecurringUnSchedulingSQSMessageExtractor (@Value("${payment.pooling.queue.unschedule.name}") String queueName,
+                                                                                                            @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClients) {
         return new PaymentRecurringUnSchedulingSQSMessageExtractor(queueName, sqsClients);
     }
 
     @Bean
-    public PaymentUserDeactivationSQSMessageExtractor paymentUserDeactivationSQSMessageExtractor(@Value("${payment.pooling.queue.userDeactivation.name}") String queueName,
-                                                                                                           @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClients) {
+    public PaymentUserDeactivationSQSMessageExtractor paymentUserDeactivationSQSMessageExtractor (@Value("${payment.pooling.queue.userDeactivation.name}") String queueName,
+                                                                                                  @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClients) {
         return new PaymentUserDeactivationSQSMessageExtractor(queueName, sqsClients);
     }
 
     @Bean
-    public SubscriptionAcknowledgementSQSMessageExtractor googlePlaySubscriptionAcknowledgementSQSMessageExtractor(@Value("${payment.pooling.queue.acknowledgement.name}") String queueName,
-                                                                                                                   @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClients) {
+    public SubscriptionAcknowledgementSQSMessageExtractor googlePlaySubscriptionAcknowledgementSQSMessageExtractor (@Value("${payment.pooling.queue.acknowledgement.name}") String queueName,
+                                                                                                                    @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClients) {
         return new SubscriptionAcknowledgementSQSMessageExtractor(queueName, sqsClients);
     }
-
     @Bean
     public PaymentRefundSQSMessageExtractor paymentRefundSQSMessageExtractor(@Value("${payment.pooling.queue.refund.name}") String queueName,
-                                                                                                           @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClients) {
+                                                                             @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClients) {
         return new PaymentRefundSQSMessageExtractor(queueName, sqsClients);
     }
 
-    private ExecutorService threadPoolExecutor(int threadCount) {
+    @Bean
+    public ExternalTransactionSQSMessageExtractor googlePlayExternalTransactionReportAcknowledgementSQSMessageExtractor (
+            @Value("${payment.pooling.queue.externalTransaction.report.name}") String queueName,
+            @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClients) {
+        return new ExternalTransactionSQSMessageExtractor(queueName, sqsClients);
+    }
+
+    private ExecutorService threadPoolExecutor (int threadCount) {
         return Executors.newFixedThreadPool(threadCount);
     }
 
-    private ScheduledExecutorService scheduledThreadPoolExecutor() {
+    private ScheduledExecutorService scheduledThreadPoolExecutor () {
         return Executors.newScheduledThreadPool(2);
     }
 

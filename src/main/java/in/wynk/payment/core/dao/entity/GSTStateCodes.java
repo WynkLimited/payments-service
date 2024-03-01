@@ -17,8 +17,6 @@ public class GSTStateCodes extends MongoBaseEntity<String> {
     private String stateCode;
     @Field("state_name")
     private String stateName;
-    @Field("administrative_area")
-    private String administrativeArea;
     @Field("country_code")
     private String countryCode;
     @Field("country_name")

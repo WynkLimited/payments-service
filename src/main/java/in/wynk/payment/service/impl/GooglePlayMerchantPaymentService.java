@@ -71,9 +71,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.sql.Timestamp;
-import java.util.EnumSet;
-import java.util.Objects;
-import java.util.Optional;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
@@ -472,10 +472,15 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         String service = request.getPurchaseDetails().getAppDetails().getService(); //test in case of renewal
         String packageName = MerchantServiceUtil.getPackageFromService(service);
 
+        //Goggle requires dates in zulu format
+        DateFormat zuluFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.mmm'Z'");
+        Date transactionTime = new Date(request.getTransaction().getExitTime().getTimeInMillis());
+        Date createTime = new Date();
+
         GooglePlayReportRequest.GooglePlayReportRequestBuilder builder = GooglePlayReportRequest.builder().packageName(packageName).externalTransactionId(request.getTransaction().getIdStr())
-                .transactionTime(request.getTransaction().getExitTime().getTimeInMillis() + "").createTime(new Timestamp(System.currentTimeMillis()) + "")
+                .transactionTime(zuluFormat.format(transactionTime)).createTime(zuluFormat.format(createTime))
                 .transactionState(TransactionState.TRANSACTION_REPORTED).userTaxAddress(
-                        ExternalTransactionAddress.builder().regionCode(stateCodesCachingService.get("+91").getCountryCode()).administrativeArea(gstStateCodes.getAdministrativeArea()).build());
+                        ExternalTransactionAddress.builder().regionCode(stateCodesCachingService.get("+91").getCountryCode()).administrativeArea(gstStateCodes.getStateName().toUpperCase(Locale.ROOT)).build());
 
         PaymentEvent paymentEvent = request.getTransaction().getType();
         setAmountBasedOnPaymentEvent(accessStateCode, gstStateCodes.getStateName(), stateCodesCachingService.get(DEFAULT_ACCESS_STATE_CODE).getStateName(), invoiceDetails.getGstPercentage(), builder,
@@ -531,7 +536,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                     .amount(request.getTransaction().getAmount()).gstPercentage(gstPercentage)
                     .build();
             TaxableResponse taxableResponse = taxManager.calculate(taxableRequest);
-            builder.originalPreTaxAmount(Price.builder().priceMicros(String.valueOf(request.getTransaction().getAmount())).build())
+            builder.originalPreTaxAmount(Price.builder().priceMicros(String.valueOf(taxableResponse.getTaxableAmount())).build())
                     .originalTaxAmount(Price.builder().priceMicros(String.valueOf(taxableResponse.getTaxAmount())).build());
         }
     }

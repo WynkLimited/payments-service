@@ -30,6 +30,7 @@ import in.wynk.payment.core.event.*;
 import in.wynk.payment.core.service.InvoiceDetailsCachingService;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.aps.common.ApsConstant;
+import in.wynk.payment.dto.gpbs.GooglePlayReportEvent;
 import in.wynk.payment.dto.gpbs.acknowledge.queue.ExternalTransactionReportMessageManager;
 import in.wynk.payment.dto.invoice.GenerateInvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.InvoiceKafkaMessage;
@@ -463,6 +464,12 @@ public class PaymentEventListener {
         } catch (Exception e) {
             log.error("Exception occurred while publishing event on ExternalTransactionReport queue for transactionId: {}", event.getTransactionId(), e);
         }
+    }
+
+    @EventListener
+    @AnalyseTransaction(name = "GooglePlayReportEvent")
+    public void onGooglePlayReportEvent(GooglePlayReportEvent event) {
+        AnalyticService.update(event);
     }
 
     private void sendNotificationToUser(IProductDetails productDetails, String tinyUrl, String msisdn, TransactionStatus txnStatus) {

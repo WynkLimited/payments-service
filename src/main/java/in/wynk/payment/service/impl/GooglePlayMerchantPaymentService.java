@@ -23,15 +23,12 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
-import in.wynk.payment.core.dao.repository.TestingByPassNumbersDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.core.service.GSTStateCodesCachingService;
 import in.wynk.payment.core.service.InvoiceDetailsCachingService;
 import in.wynk.payment.dto.*;
-import in.wynk.payment.dto.gpbs.GooglePlayLatestReceiptResponse;
-import in.wynk.payment.dto.gpbs.GooglePlayNotificationType;
-import in.wynk.payment.dto.gpbs.GooglePlayStatusCodes;
+import in.wynk.payment.dto.gpbs.*;
 import in.wynk.payment.dto.gpbs.acknowledge.queue.SubscriptionAcknowledgeMessageManager;
 import in.wynk.payment.dto.gpbs.acknowledge.request.AbstractPaymentAcknowledgementRequest;
 import in.wynk.payment.dto.gpbs.acknowledge.request.GooglePlayReportExternalTransactionRequest;
@@ -39,9 +36,14 @@ import in.wynk.payment.dto.gpbs.acknowledge.request.GooglePlaySubscriptionAcknow
 import in.wynk.payment.dto.gpbs.notification.request.DeveloperNotification;
 import in.wynk.payment.dto.gpbs.notification.request.GooglePlayNotificationMessage;
 import in.wynk.payment.dto.gpbs.notification.request.SubscriptionNotification;
-import in.wynk.payment.dto.gpbs.receipt.GooglePlayReceiptResponse;
 import in.wynk.payment.dto.gpbs.request.*;
-import in.wynk.payment.dto.gpbs.request.externalTransaction.*;
+import in.wynk.payment.dto.gpbs.request.externalTransaction.ExternalSubscription;
+import in.wynk.payment.dto.gpbs.request.externalTransaction.ExternalTransactionAddress;
+import in.wynk.payment.dto.gpbs.request.externalTransaction.OneTimeExternalTransaction;
+import in.wynk.payment.dto.gpbs.request.externalTransaction.RecurringExternalTransaction;
+import in.wynk.payment.dto.gpbs.response.externalTransaction.GooglePlayReportResponse;
+import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayLatestReceiptResponse;
+import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayReceiptResponse;
 import in.wynk.payment.dto.invoice.TaxableRequest;
 import in.wynk.payment.dto.invoice.TaxableResponse;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
@@ -476,24 +478,18 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         DateFormat zuluFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.mmm'Z'");
         zuluFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
         Date transactionTime = new Date(request.getTransaction().getExitTime().getTimeInMillis());
-        Date createTime = new Date();
+        // Date createTime = new Date();
 
-        GooglePlayReportRequest.GooglePlayReportRequestBuilder builder = GooglePlayReportRequest.builder().packageName(packageName)/*.externalTransactionId(request.getTransaction().getIdStr())*/
-                .transactionTime(zuluFormat.format(transactionTime)).createTime(zuluFormat.format(createTime))
-                .transactionState(TransactionState.TRANSACTION_REPORTED).userTaxAddress(
-                        ExternalTransactionAddress.builder().regionCode(stateCodesCachingService.get("+91").getCountryCode()).administrativeArea(gstStateCodes.getStateName().toUpperCase(Locale.ROOT)).build());
+        GooglePlayReportRequest.GooglePlayReportRequestBuilder builder = GooglePlayReportRequest.builder().transactionTime(zuluFormat.format(transactionTime)).userTaxAddress(
+                ExternalTransactionAddress.builder().regionCode(stateCodesCachingService.get("+91").getCountryCode()).administrativeArea(gstStateCodes.getStateName().toUpperCase(Locale.ROOT))
+                        .build());
 
         PaymentEvent paymentEvent = request.getTransaction().getType();
         setAmountBasedOnPaymentEvent(accessStateCode, gstStateCodes.getStateName(), stateCodesCachingService.get(DEFAULT_ACCESS_STATE_CODE).getStateName(), invoiceDetails.getGstPercentage(), builder,
                 paymentEvent, request);
 
-        Optional<TestingByPassNumbers> optionalTestingByPassNumbers =
-                RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), TestingByPassNumbersDao.class).findById(request.getTransaction().getMsisdn());
-        if (optionalTestingByPassNumbers.isPresent()) {
-            builder.testPurchase(ExternalTransactionTestPurchase.builder().build()).build();
-        }
         GooglePlayReportRequest body = null;
-         if (EnumSet.of(SUBSCRIBE, TRIAL_SUBSCRIPTION, MANDATE, FREE).contains(paymentEvent)) {
+        if (EnumSet.of(SUBSCRIBE, TRIAL_SUBSCRIPTION, MANDATE, FREE).contains(paymentEvent)) {
             body = builder.recurringTransaction(RecurringExternalTransaction.builder().externalTransactionToken(request.getExternalTransactionToken())
                     .externalSubscription(ExternalSubscription.builder().subscriptionType(SubscriptionType.RECURRING).build()).build()).build();
         } else if (paymentEvent == PURCHASE) {
@@ -516,15 +512,22 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
         String url = baseUrl.concat(packageName).concat(EXTERNAL_TRANSACTION_PARAM).concat(request.getTransaction().getIdStr()).concat(ETERNAL_TRANSACTION_API_KEY_PARAM).concat(getApiKey(service));
         try {
-            restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(body, headers), GooglePlayReceiptResponse.class);
+            ResponseEntity<GooglePlayReportResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(body, headers), GooglePlayReportResponse.class);
+            if (responseEntity.getStatusCode() == HttpStatus.OK) {
+                GooglePlayReportResponse response = responseEntity.getBody();
+                eventPublisher.publishEvent(GooglePlayReportEvent.builder().transactionId(response.getExternalTransactionId())
+                        .transactionState(response.getTransactionState()).createTime(response.getCreateTime())
+                        .currentPreTaxAmount(response.getCurrentPreTaxAmount()).currentTaxAmount(response.getCurrentTaxAmount())
+                        .service(MerchantServiceUtil.getService(response.getPackageName())).isTestPurchase(Objects.nonNull(response.getTestPurchase())).build());
+            }
             log.info("Google acknowledged successfully for the external transaction Token {}", request.getExternalTransactionToken());
         } catch (HttpClientErrorException ex) {
-            if(ex.getStatusCode() == HttpStatus.CONFLICT) {
+            if (ex.getStatusCode() == HttpStatus.CONFLICT) {
                 log.info("An external transaction with the provided id already exists.");
             } else {
                 throw new WynkRuntimeException(PaymentErrorType.PAY050, ex);
             }
-        } catch(Exception e) {
+        } catch (Exception e) {
             log.error(PaymentLoggingMarker.GOOGLE_PLAY_ACKNOWLEDGEMENT_FAILURE, "Exception occurred while acknowledging external transaction to google for the external transaction token {}: ",
                     request.getExternalTransactionToken());
             throw new WynkRuntimeException(PaymentErrorType.PAY050, e);
@@ -545,8 +548,8 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                     .build();
             TaxableResponse taxableResponse = taxManager.calculate(taxableRequest);
             //amount should be in 1/million of the currency base unit
-            builder.originalPreTaxAmount(Price.builder().priceMicros(String.valueOf(Math.round(taxableResponse.getTaxableAmount()*1000000))).build())
-                    .originalTaxAmount(Price.builder().priceMicros(String.valueOf(Math.round(taxableResponse.getTaxAmount()*1000000))).build());
+            builder.originalPreTaxAmount(Price.builder().priceMicros(String.valueOf(Math.round(taxableResponse.getTaxableAmount() * 1000000))).build())
+                    .originalTaxAmount(Price.builder().priceMicros(String.valueOf(Math.round(taxableResponse.getTaxAmount() * 1000000))).build());
         }
     }
 

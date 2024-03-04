@@ -1,8 +1,8 @@
-package in.wynk.payment.dto.gpbs;
+package in.wynk.payment.dto.gpbs.response.receipt;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import in.wynk.payment.dto.gpbs.receipt.GooglePlayReceiptResponse;
+import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayReceiptResponse;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
 import lombok.Getter;
 import lombok.Setter;

@@ -1,4 +1,4 @@
-package in.wynk.payment.dto.gpbs.receipt;
+package in.wynk.payment.dto.gpbs.response.receipt;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Getter;

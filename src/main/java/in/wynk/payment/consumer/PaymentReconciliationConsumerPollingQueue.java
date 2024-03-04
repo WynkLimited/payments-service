@@ -10,6 +10,7 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.event.PaymentRefundInitEvent;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
@@ -23,8 +24,10 @@ import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.ParameterizedTypeReference;
 
+import java.util.EnumSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -35,6 +38,7 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
     private final ExecutorService messageHandlerThreadPool;
     private final ScheduledExecutorService pollingThreadPool;
     private final ITransactionManagerService transactionManager;
+    private final ApplicationEventPublisher eventPublisher;
     @Value("${payment.pooling.queue.reconciliation.enabled}")
     private boolean reconciliationPollingEnabled;
     @Value("${payment.pooling.queue.reconciliation.sqs.consumer.delay}")
@@ -50,11 +54,12 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
                                                      ObjectMapper objectMapper,
                                                      ISQSMessageExtractor messagesExtractor,
                                                      ExecutorService messageHandlerThreadPool,
-                                                     ScheduledExecutorService pollingThreadPool, ITransactionManagerService transactionManager) {
+                                                     ScheduledExecutorService pollingThreadPool, ITransactionManagerService transactionManager, ApplicationEventPublisher eventPublisher) {
         super(queueName, sqs, objectMapper, messagesExtractor, messageHandlerThreadPool);
         this.pollingThreadPool = pollingThreadPool;
         this.messageHandlerThreadPool = messageHandlerThreadPool;
         this.transactionManager = transactionManager;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -92,6 +97,11 @@ public class PaymentReconciliationConsumerPollingQueue extends AbstractSQSMessag
                 else BeanLocatorFactory.getBean(PaymentManager.class).status(transactionStatusRequest);
             };
             delegate.reconcile(transactionStatusRequest);
+        } else if (EnumSet.of(TransactionStatus.SUCCESS).contains(transaction.getStatus()) && transaction.getPaymentChannel().isTrialRefundSupported() && (EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION, PaymentEvent.MANDATE).contains(transaction.getType()))) {
+            eventPublisher.publishEvent(PaymentRefundInitEvent.builder()
+                    .reason("trial plan amount refund")
+                    .originalTransactionId(transaction.getIdStr())
+                    .build());
         }
     }
 

@@ -9,7 +9,6 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.event.PaymentRefundInitEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.gateway.callback.DefaultPaymentCallbackResponse;
@@ -115,7 +114,6 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
                             redirectionUrl = chargingDetails.getPageUrlDetails().getUnknownPageUrl();
                         } else if (transaction.getStatus() == TransactionStatus.SUCCESS) {
                             redirectionUrl = chargingDetails.getPageUrlDetails().getSuccessPageUrl();
-                            initiateRefund(transaction);
                         } else {
                             redirectionUrl = chargingDetails.getPageUrlDetails().getFailurePageUrl();
                         }
@@ -156,14 +154,5 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
         final String generatedHash = EncryptionUtils.generateSHA512Hash(generatedString);
         assert generatedHash != null;
         return generatedHash.equals(payUResponseHash);
-    }
-
-    private void initiateRefund (Transaction transaction) {
-        if (transaction.getPaymentChannel().isTrialRefundSupported() && (EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION, PaymentEvent.MANDATE).contains(transaction.getType()))) {
-            eventPublisher.publishEvent(PaymentRefundInitEvent.builder()
-                    .reason("trial plan amount refund")
-                    .originalTransactionId(transaction.getIdStr())
-                    .build());
-        }
     }
 }

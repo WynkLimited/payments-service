@@ -311,8 +311,10 @@ public class PaymentEventListener {
     @AnalyseTransaction(name = "paymentRefundInitEvent")
     public void onPaymentRefundInitEvent(PaymentRefundInitEvent event) {
         AnalyticService.update(event);
-        WynkResponseEntity<?> response = paymentManager.refund(PaymentRefundInitRequest.builder().originalTransactionId(event.getOriginalTransactionId()).reason(event.getReason()).build());
-        AnalyticService.update(response.getBody());
+        sqsManagerService.publishSQSMessage(PaymentRefundInitMessage.builder()
+                .originalTransactionId(event.getOriginalTransactionId())
+                .reason(event.getReason())
+                .build());
     }
 
     @EventListener

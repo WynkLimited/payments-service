@@ -13,5 +13,4 @@ import lombok.Setter;
 @Setter
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ExternalTransactionTestPurchase {
-    private String externalTransactionToken;
 }

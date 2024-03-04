@@ -68,6 +68,8 @@ import org.springframework.data.util.Pair;
 import org.springframework.http.*;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.sql.Timestamp;
@@ -474,10 +476,11 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
 
         //Goggle requires dates in zulu format
         DateFormat zuluFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.mmm'Z'");
+        zuluFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
         Date transactionTime = new Date(request.getTransaction().getExitTime().getTimeInMillis());
         Date createTime = new Date();
 
-        GooglePlayReportRequest.GooglePlayReportRequestBuilder builder = GooglePlayReportRequest.builder().packageName(packageName).externalTransactionId(request.getTransaction().getIdStr())
+        GooglePlayReportRequest.GooglePlayReportRequestBuilder builder = GooglePlayReportRequest.builder().packageName(packageName)/*.externalTransactionId(request.getTransaction().getIdStr())*/
                 .transactionTime(zuluFormat.format(transactionTime)).createTime(zuluFormat.format(createTime))
                 .transactionState(TransactionState.TRANSACTION_REPORTED).userTaxAddress(
                         ExternalTransactionAddress.builder().regionCode(stateCodesCachingService.get("+91").getCountryCode()).administrativeArea(gstStateCodes.getStateName().toUpperCase(Locale.ROOT)).build());
@@ -488,10 +491,11 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
 
         Optional<TestingByPassNumbers> optionalTestingByPassNumbers =
                 RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), TestingByPassNumbersDao.class).findById(request.getTransaction().getMsisdn());
-        GooglePlayReportRequest body = null;
         if (optionalTestingByPassNumbers.isPresent()) {
-            body = builder.testPurchase(ExternalTransactionTestPurchase.builder().externalTransactionToken(request.getExternalTransactionToken()).build()).build();
-        } else if (EnumSet.of(SUBSCRIBE, TRIAL_SUBSCRIPTION, MANDATE, FREE).contains(paymentEvent)) {
+            builder.testPurchase(ExternalTransactionTestPurchase.builder().build()).build();
+        }
+        GooglePlayReportRequest body = null;
+         if (EnumSet.of(SUBSCRIBE, TRIAL_SUBSCRIPTION, MANDATE, FREE).contains(paymentEvent)) {
             body = builder.recurringTransaction(RecurringExternalTransaction.builder().externalTransactionToken(request.getExternalTransactionToken())
                     .externalSubscription(ExternalSubscription.builder().subscriptionType(SubscriptionType.RECURRING).build()).build()).build();
         } else if (paymentEvent == PURCHASE) {
@@ -512,11 +516,17 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         }
         HttpHeaders headers = getHeaders(service);
         headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
-        String url = baseUrl.concat(packageName).concat(EXTERNAL_TRANSACTION_PARAM).concat(request.getExternalTransactionToken()).concat(API_KEY_PARAM).concat(getApiKey(service));
+        String url = baseUrl.concat(packageName).concat(EXTERNAL_TRANSACTION_PARAM).concat(request.getTransaction().getIdStr()).concat(ETERNAL_TRANSACTION_API_KEY_PARAM).concat(getApiKey(service));
         try {
             restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(body, headers), GooglePlayReceiptResponse.class);
             log.info("Google acknowledged successfully for the external transaction Token {}", request.getExternalTransactionToken());
-        } catch (Exception e) {
+        } catch (HttpClientErrorException ex) {
+            if(ex.getStatusCode() == HttpStatus.CONFLICT) {
+                log.info("An external transaction with the provided id already exists.");
+            } else {
+                throw new WynkRuntimeException(PaymentErrorType.PAY050, ex);
+            }
+        } catch(Exception e) {
             log.error(PaymentLoggingMarker.GOOGLE_PLAY_ACKNOWLEDGEMENT_FAILURE, "Exception occurred while acknowledging external transaction to google for the external transaction token {}: ",
                     request.getExternalTransactionToken());
             throw new WynkRuntimeException(PaymentErrorType.PAY050, e);
@@ -536,8 +546,9 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                     .amount(request.getTransaction().getAmount()).gstPercentage(gstPercentage)
                     .build();
             TaxableResponse taxableResponse = taxManager.calculate(taxableRequest);
-            builder.originalPreTaxAmount(Price.builder().priceMicros(String.valueOf(taxableResponse.getTaxableAmount())).build())
-                    .originalTaxAmount(Price.builder().priceMicros(String.valueOf(taxableResponse.getTaxAmount())).build());
+            //amount should be in 1/million of the currency base unit
+            builder.originalPreTaxAmount(Price.builder().priceMicros(String.valueOf(Math.round(taxableResponse.getTaxableAmount()*1000000))).build())
+                    .originalTaxAmount(Price.builder().priceMicros(String.valueOf(Math.round(taxableResponse.getTaxAmount()*1000000))).build());
         }
     }
 

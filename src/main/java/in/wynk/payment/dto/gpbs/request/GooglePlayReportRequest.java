@@ -12,10 +12,10 @@ import lombok.Setter;
 @Getter
 @Setter
 @Builder
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class GooglePlayReportRequest {
     private String packageName;
-    private String externalTransactionId;
+   // private String externalTransactionId;
     private Price originalPreTaxAmount;
     private Price originalTaxAmount;
     private Price currentPreTaxAmount;

@@ -144,11 +144,7 @@ public class MerchantServiceUtil {
             return SERVICE_MUSIC;
         } else if (AIRTEL_TV_PACKAGE_NAME.equals(packageName)) {
             return SERVICE_AIRTEL_TV;
-        } else if (RAJ_TV_PACKAGE_NAME.equals(packageName)) {
-            return SERVICE_RAJ_TV;
-        } /*else if (ENTERR10_PACKAGE_NAME.equals(packageName)) {
-            return SERVICE_ENTERR10;
-        }*/
+        }
         return null;
     }
 
@@ -158,8 +154,6 @@ public class MerchantServiceUtil {
                 return MUSIC_PACKAGE_NAME;
             case SERVICE_AIRTEL_TV:
                 return AIRTEL_TV_PACKAGE_NAME;
-            case SERVICE_RAJ_TV:
-                return RAJ_TV_PACKAGE_NAME;
             default:
                 throw new RuntimeException("Service mapping is not present for the package name");
         }

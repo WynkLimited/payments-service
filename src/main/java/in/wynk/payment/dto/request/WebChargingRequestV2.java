@@ -17,7 +17,6 @@ import in.wynk.payment.core.dao.entity.ISessionDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.AppDetails;
-import in.wynk.payment.dto.AppStoreDetails;
 import in.wynk.payment.dto.PageUrlDetails;
 import in.wynk.payment.dto.UserDetails;
 import in.wynk.payment.dto.request.charge.AbstractPaymentDetails;

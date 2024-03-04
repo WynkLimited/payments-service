@@ -15,7 +15,6 @@ import lombok.Setter;
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class GooglePlayReportRequest {
     private String packageName;
-   // private String externalTransactionId;
     private Price originalPreTaxAmount;
     private Price originalTaxAmount;
     private Price currentPreTaxAmount;

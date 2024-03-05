@@ -44,7 +44,7 @@ public class MerchantServiceUtil {
 
             if (latestReceiptResponse.getSuccessUrl() != null || Objects.nonNull(payload.get("successWebUrl"))) {
                 builder.pageDetails(
-                        PageResponseDetails.builder().pageUrl(Objects.nonNull(latestReceiptResponse.getSuccessUrl()) ? latestReceiptResponse.getSuccessUrl() : (String) payload.get("successPageUrl"))
+                        PageResponseDetails.builder().pageUrl(Objects.nonNull(latestReceiptResponse.getSuccessUrl()) ? latestReceiptResponse.getSuccessUrl() : (String) payload.get("successWebUrl"))
                                 .build());
             } else {
                 addSuccessUrl(builder);
@@ -52,7 +52,7 @@ public class MerchantServiceUtil {
         } else {
             if (latestReceiptResponse.getFailureUrl() != null || Objects.nonNull(payload.get("failureWebUrl"))) {
                 builder.pageDetails(
-                        PageResponseDetails.builder().pageUrl(Objects.nonNull(latestReceiptResponse.getFailureUrl()) ? latestReceiptResponse.getFailureUrl() : (String) payload.get("failurePageUrl"))
+                        PageResponseDetails.builder().pageUrl(Objects.nonNull(latestReceiptResponse.getFailureUrl()) ? latestReceiptResponse.getFailureUrl() : (String) payload.get("failureWebUrl"))
                                 .build());
             } else {
                 addFailureUrl(builder);

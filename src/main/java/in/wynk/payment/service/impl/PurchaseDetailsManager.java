@@ -45,6 +45,7 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
                 .productDetails(details.getProductDetails())
                 .geoLocation(details.getGeoLocation())
                 .paymentDetails(details.getPaymentDetails())
+                .sessionDetails(details.getSessionDetails())
                 .pageUrlDetails(((IChargingDetails) details).getPageUrlDetails())
                 .callbackUrl(((IChargingDetails) details).getCallbackDetails().getCallbackUrl())
                 .build();

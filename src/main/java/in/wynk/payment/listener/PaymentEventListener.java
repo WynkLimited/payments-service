@@ -557,9 +557,6 @@ public class PaymentEventListener {
         AnalyticService.update(ITEM_ID, event.getTransaction().getItemId());
         AnalyticService.update(AMOUNT_PAID, event.getTransaction().getAmount());
         AnalyticService.update(CLIENT, event.getTransaction().getClientAlias());
-        final WynkService service = wynkServiceDetailsCachingService.get(AIRTEL_TV);
-        final String clientAlias = map.getOrDefault(CLIENT, service.getLinkedClient());
-        AnalyticService.update(SERVICE, clientAlias);
         AnalyticService.update(COUPON_CODE, event.getTransaction().getCoupon());
         if( Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getGeoLocation())){
             AnalyticService.update(ACCESS_COUNTRY_CODE, event.getPurchaseDetails().getGeoLocation().getAccessCountryCode());

@@ -4,9 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import in.wynk.payment.dto.gpbs.request.externalTransaction.ExternalTransactionTestPurchase;
 import in.wynk.payment.dto.gpbs.Price;
 import in.wynk.payment.dto.gpbs.TransactionState;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 /**
  * @author Nishesh Pandey
@@ -14,6 +12,8 @@ import lombok.Setter;
 @Getter
 @Setter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class GooglePlayReportResponse {
     private String packageName;

@@ -7,6 +7,4 @@ import java.io.Serializable;
  */
 public interface IAppStoreDetails extends Serializable {
     String getExternalTransactionToken();
-    String getAppStore();
-   /* String getTransactionId();*/
 }

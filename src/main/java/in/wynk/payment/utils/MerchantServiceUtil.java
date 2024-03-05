@@ -17,6 +17,7 @@ import in.wynk.payment.dto.response.LatestReceiptResponse;
 import in.wynk.payment.dto.response.gpbs.GooglePlayBillingResponse;
 import in.wynk.session.context.SessionContextHolder;
 
+import java.util.Map;
 import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.*;
@@ -29,19 +30,30 @@ public class MerchantServiceUtil {
 
     public static GooglePlayBillingResponse.GooglePlayBillingData getUrl (Transaction transaction, LatestReceiptResponse latestReceiptResponse,
                                                                           GooglePlayBillingResponse.GooglePlayBillingData.GooglePlayBillingDataBuilder builder){
+        SessionDTO sessionDTO = SessionContextHolder.getBody();
+        Map<String, Object> payload = null;
+        if(Objects.nonNull(sessionDTO)) {
+             payload = sessionDTO.getSessionPayload();
+        }
         if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
             GooglePlayLatestReceiptResponse googlePlayVerificationResponse = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
 
-            GooglePlayPaymentDetails paymentDetails = GooglePlayPaymentDetails.builder().valid(true).orderId(googlePlayVerificationResponse.getSubscriptionId()).purchaseToken(googlePlayVerificationResponse.getPurchaseToken()).build();
+            GooglePlayPaymentDetails paymentDetails =
+                    GooglePlayPaymentDetails.builder().valid(true).orderId(googlePlayVerificationResponse.getSubscriptionId()).purchaseToken(googlePlayVerificationResponse.getPurchaseToken()).build();
             builder.paymentDetails(paymentDetails);
-            if (latestReceiptResponse != null && latestReceiptResponse.getSuccessUrl() != null) {
-                builder.pageDetails(PageResponseDetails.builder().pageUrl(latestReceiptResponse.getSuccessUrl()).build());
+
+            if (latestReceiptResponse.getSuccessUrl() != null || Objects.nonNull(payload.get("successWebUrl"))) {
+                builder.pageDetails(
+                        PageResponseDetails.builder().pageUrl(Objects.nonNull(latestReceiptResponse.getSuccessUrl()) ? latestReceiptResponse.getSuccessUrl() : (String) payload.get("successPageUrl"))
+                                .build());
             } else {
                 addSuccessUrl(builder);
             }
         } else {
-            if (latestReceiptResponse.getFailureUrl() != null) {
-                builder.pageDetails(PageResponseDetails.builder().pageUrl(latestReceiptResponse.getFailureUrl()).build());
+            if (latestReceiptResponse.getFailureUrl() != null || Objects.nonNull(payload.get("failureWebUrl"))) {
+                builder.pageDetails(
+                        PageResponseDetails.builder().pageUrl(Objects.nonNull(latestReceiptResponse.getFailureUrl()) ? latestReceiptResponse.getFailureUrl() : (String) payload.get("failurePageUrl"))
+                                .build());
             } else {
                 addFailureUrl(builder);
             }

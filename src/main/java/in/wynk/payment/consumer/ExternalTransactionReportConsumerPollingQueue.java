@@ -3,6 +3,7 @@ package in.wynk.payment.consumer;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.BeanConstant;
@@ -56,12 +57,12 @@ public class ExternalTransactionReportConsumerPollingQueue extends AbstractSQSMe
     @TransactionAware(txnId = "#message.transactionId")
     @AnalyseTransaction(name = "externalTransactionReport")
     public void consume (ExternalTransactionReportMessageManager message) {
+        AnalyticService.update(message);
         Transaction transaction = TransactionContext.get();
         IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().orElse(null);
         AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest =
                 GooglePlayReportExternalTransactionRequest.builder().transaction(transaction).externalTransactionToken(message.getExternalTransactionId()).paymentCode(BeanConstant.GOOGLE_PLAY)
-                        .clientAlias(
-                                message.getClientAlias()).purchaseDetails(purchaseDetails).build();
+                        .clientAlias(message.getClientAlias()).purchaseDetails(purchaseDetails).build();
         paymentManager.acknowledgeSubscription(abstractPaymentAcknowledgementRequest);
     }
 

@@ -25,7 +25,6 @@ public class AppStoreDetails implements IAppStoreDetails, Serializable {
     @Analysed
     @Builder.Default
     private String appStore = "ANDROID";
-    //This field to be used in case of google play to store data in mongo in purchaseDetails
-    private String firstTransactionId;
+
 }
 

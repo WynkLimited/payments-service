@@ -1,4 +1,4 @@
-package in.wynk.payment.dto.gpbs.request.externalTransaction;
+package in.wynk.payment.dto.gpbs;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;

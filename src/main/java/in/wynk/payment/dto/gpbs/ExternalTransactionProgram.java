@@ -1,4 +1,4 @@
-package in.wynk.payment.dto.gpbs.request.externalTransaction;
+package in.wynk.payment.dto.gpbs;
 
 /**
  * @author Nishesh Pandey

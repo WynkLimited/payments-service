@@ -14,7 +14,7 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.dto.*;
-import in.wynk.payment.dto.gpbs.GooglePlayLatestReceiptResponse;
+import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayLatestReceiptResponse;
 import in.wynk.payment.dto.gpbs.GooglePlayStatusCodes;
 import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
 import in.wynk.payment.dto.request.*;

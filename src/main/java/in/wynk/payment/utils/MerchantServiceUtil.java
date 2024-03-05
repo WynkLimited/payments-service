@@ -10,7 +10,7 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PageResponseDetails;
-import in.wynk.payment.dto.gpbs.GooglePlayLatestReceiptResponse;
+import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayLatestReceiptResponse;
 import in.wynk.payment.dto.gpbs.request.GooglePlayPaymentDetails;
 import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
@@ -144,11 +144,7 @@ public class MerchantServiceUtil {
             return SERVICE_MUSIC;
         } else if (AIRTEL_TV_PACKAGE_NAME.equals(packageName)) {
             return SERVICE_AIRTEL_TV;
-        } else if (RAJ_TV_PACKAGE_NAME.equals(packageName)) {
-            return SERVICE_RAJ_TV;
-        } /*else if (ENTERR10_PACKAGE_NAME.equals(packageName)) {
-            return SERVICE_ENTERR10;
-        }*/
+        }
         return null;
     }
 
@@ -158,8 +154,6 @@ public class MerchantServiceUtil {
                 return MUSIC_PACKAGE_NAME;
             case SERVICE_AIRTEL_TV:
                 return AIRTEL_TV_PACKAGE_NAME;
-            case SERVICE_RAJ_TV:
-                return RAJ_TV_PACKAGE_NAME;
             default:
                 throw new RuntimeException("Service mapping is not present for the package name");
         }

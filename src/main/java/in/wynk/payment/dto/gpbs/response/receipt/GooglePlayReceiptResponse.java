@@ -1,11 +1,11 @@
-package in.wynk.payment.dto.gpbs.receipt;
+package in.wynk.payment.dto.gpbs.response.receipt;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.payment.dto.gpbs.response.receipt.IntroductoryPriceInfo;
+import in.wynk.payment.dto.gpbs.response.receipt.SubscriptionCancelSurveyResult;
+import in.wynk.payment.dto.gpbs.response.receipt.SubscriptionPriceChange;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.List;
 
 /**
  * @author Nishesh Pandey

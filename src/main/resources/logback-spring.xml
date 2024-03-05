@@ -85,6 +85,14 @@
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
+    <logger name="GooglePlayReportEvent" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
+    </logger>
+
+    <logger name="externalTransactionReport" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
+    </logger>
+
     <logger name="paymentStatus" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>

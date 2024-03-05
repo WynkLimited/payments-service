@@ -63,12 +63,13 @@ public abstract class IapVerificationRequestV2 {
         this.originalSid = StringUtils.isNotBlank(this.sessionDetails.getSessionId());
     }
 
-    public PurchaseDetails getPurchaseDetails(){
+    public PurchaseDetails getPurchaseDetails() {
         return PurchaseDetails.builder()
                 .appDetails(getAppDetails())
                 .userDetails(getUserDetails())
                 .productDetails(getProductDetails())
                 .pageUrlDetails(getPageDetails())
+                .sessionDetails(getSessionDetails())
                 .geoLocation(getGeoLocation())
                 .build();
     }

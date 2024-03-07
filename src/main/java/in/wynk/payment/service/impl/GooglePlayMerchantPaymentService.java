@@ -99,15 +99,10 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     private String baseUrl;
     @Value("${payment.googlePlay.purchaseUrl}")
     private String purchaseUrl;
-    @Value("${payment.googlePlay.rajTv.key}")
-    private String rajTvKey;
     @Value("${payment.googlePlay.music.key}")
     private String musicKey;
     @Value("${payment.googlePlay.airteltv.key}")
     private String airtelTvKey;
-    /*@Value("${payment.googlePlay.enterr10.key}")
-    private String enterr10Key;*/
-
     @Value("${payment.googlePlay.mockUrl}")
     private String mockUrl;
 
@@ -222,7 +217,6 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         return request;
     }
 
-    //handle notification
     @Override
     public DecodedNotificationWrapper<GooglePlayCallbackRequest> isNotificationEligible (String requestPayload) {
         DeveloperNotification decodedData = mapAndDecodeData(requestPayload);
@@ -409,13 +403,9 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     private String getApiKey (String service) {
         if (SERVICE_MUSIC.equals(service)) {
             return musicKey;
-        } else if (SERVICE_RAJ_TV.equals(service)) {
-            return rajTvKey;
         } else if (SERVICE_AIRTEL_TV.equals(service)) {
             return airtelTvKey;
-        }/*else if(SERVICE_ENTERR10.equals(service)){
-            return enterr10Key;
-        }*/
+        }
         throw new WynkRuntimeException("This service is not configured for API Key");
     }
 
@@ -471,14 +461,13 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         final String accessStateCode = userDetailsService.getAccessStateCode(operatorDetails, invoiceDetails.getDefaultGSTStateCode(), request.getPurchaseDetails());
         GSTStateCodes gstStateCodes = stateCodesCachingService.get(accessStateCode);
 
-        String service = request.getPurchaseDetails().getAppDetails().getService(); //test in case of renewal
+        String service = request.getPurchaseDetails().getAppDetails().getService();
         String packageName = MerchantServiceUtil.getPackageFromService(service);
 
         //Goggle requires dates in zulu format
         DateFormat zuluFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.mmm'Z'");
         zuluFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
         Date transactionTime = new Date(request.getTransaction().getExitTime().getTimeInMillis());
-        // Date createTime = new Date();
 
         GooglePlayReportRequest.GooglePlayReportRequestBuilder builder = GooglePlayReportRequest.builder().transactionTime(zuluFormat.format(transactionTime)).userTaxAddress(
                 ExternalTransactionAddress.builder().regionCode(stateCodesCachingService.get("+91").getCountryCode()).administrativeArea(gstStateCodes.getStateName().toUpperCase(Locale.ROOT))

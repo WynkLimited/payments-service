@@ -74,7 +74,7 @@ public class ExternalTransactionReportConsumerPollingQueue extends AbstractSQSMe
     @Override
     public void start () {
         if (externalTransactionReportPollingEnabled) {
-            log.info("Starting SubscriptionAcknowledgementConsumerPollingQueue...");
+            log.info("Starting ExternalTransactionReportConsumerPollingQueue...");
             pollingThreadPool.scheduleWithFixedDelay(
                     this::poll,
                     0,
@@ -88,10 +88,9 @@ public class ExternalTransactionReportConsumerPollingQueue extends AbstractSQSMe
     @Override
     public void stop () {
         if (externalTransactionReportPollingEnabled) {
-            log.info("Shutting down SubscriptionAcknowledgementConsumerPollingQueue ...");
+            log.info("Shutting down ExternalTransactionReportConsumerPollingQueue...");
             pollingThreadPool.shutdownNow();
             messageHandlerThreadPool.shutdown();
         }
-
     }
 }

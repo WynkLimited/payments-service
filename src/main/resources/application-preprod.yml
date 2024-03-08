@@ -121,7 +121,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       acknowledgement:
-        enabled: false
+        enabled: true
         name: wcf-payment-receipt-ack-preprod-sqs
         sqs:
           messages:
@@ -135,7 +135,7 @@ payment:
             delayTimeUnit: SECONDS
       externalTransaction:
         report:
-          enabled: false
+          enabled: true
           name: wcf-payment-transaction-ack-preprod-sqs
           sqs:
             messages:

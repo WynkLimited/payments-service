@@ -140,7 +140,7 @@ payment:
             delayTimeUnit: SECONDS
       externalTransaction:
         report:
-          enabled: true
+          enabled: false
           name: wcf-payment-transaction-ack-prod-sqs
           sqs:
             messages:

@@ -21,11 +21,10 @@ import java.util.concurrent.ScheduledExecutorService;
 public class PaymentQueuesConfig {
 
     @Bean
-    public PaymentReconciliationConsumerPollingQueue paymentReconciliationConsumerPollingQueue (@Value("${payment.pooling.queue.reconciliation.name}") String queueName,
-                                                                                                @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
-                                                                                                ObjectMapper objectMapper,
-                                                                                                PaymentReconciliationSQSMessageExtractor paymentReconciliationSQSMessageExtractor,
-                                                                                                ITransactionManagerService transactionManager, ApplicationEventPublisher eventPublisher) {
+    public PaymentReconciliationConsumerPollingQueue paymentReconciliationConsumerPollingQueue(@Value("${payment.pooling.queue.reconciliation.name}") String queueName,
+                                                                                               @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
+                                                                                               ObjectMapper objectMapper,
+                                                                                               PaymentReconciliationSQSMessageExtractor paymentReconciliationSQSMessageExtractor, ITransactionManagerService transactionManager, ApplicationEventPublisher eventPublisher) {
         return new PaymentReconciliationConsumerPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
@@ -35,10 +34,10 @@ public class PaymentQueuesConfig {
     }
 
     @Bean
-    public SubscriptionAcknowledgementConsumerPollingQueue subscriptionAcknowledgementConsumerPollingQueue (@Value("${payment.pooling.queue.acknowledgement.name}") String queueName,
-                                                                                                            @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
-                                                                                                            ObjectMapper objectMapper,
-                                                                                                            SubscriptionAcknowledgementSQSMessageExtractor subscriptionAcknowledgementSQSMessageExtractor) {
+    public SubscriptionAcknowledgementConsumerPollingQueue subscriptionAcknowledgementConsumerPollingQueue(@Value("${payment.pooling.queue.acknowledgement.name}") String queueName,
+                                                                                                           @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
+                                                                                                           ObjectMapper objectMapper,
+                                                                                                           SubscriptionAcknowledgementSQSMessageExtractor subscriptionAcknowledgementSQSMessageExtractor) {
         return new SubscriptionAcknowledgementConsumerPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
@@ -155,10 +154,10 @@ public class PaymentQueuesConfig {
 
     @Bean
     public PaymentRefundConsumerPollingQueue paymentRefundConsumerPollingQueue(@Value("${payment.pooling.queue.refund.name}") String queueName,
-                                                                                    @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
-                                                                                    ObjectMapper objectMapper,
-                                                                                    PaymentRefundSQSMessageExtractor paymentRefundSQSMessageExtractor,
-                                                                                    PaymentManager paymentManager) {
+                                                                               @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
+                                                                               ObjectMapper objectMapper,
+                                                                               PaymentRefundSQSMessageExtractor paymentRefundSQSMessageExtractor,
+                                                                               PaymentManager paymentManager) {
         return new PaymentRefundConsumerPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
@@ -214,11 +213,6 @@ public class PaymentQueuesConfig {
                                                                                                                     @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClients) {
         return new SubscriptionAcknowledgementSQSMessageExtractor(queueName, sqsClients);
     }
-    @Bean
-    public PaymentRefundSQSMessageExtractor paymentRefundSQSMessageExtractor(@Value("${payment.pooling.queue.refund.name}") String queueName,
-                                                                             @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClients) {
-        return new PaymentRefundSQSMessageExtractor(queueName, sqsClients);
-    }
 
     @Bean
     public ExternalTransactionSQSMessageExtractor googlePlayExternalTransactionReportAcknowledgementSQSMessageExtractor (
@@ -227,7 +221,13 @@ public class PaymentQueuesConfig {
         return new ExternalTransactionSQSMessageExtractor(queueName, sqsClients);
     }
 
-    private ExecutorService threadPoolExecutor (int threadCount) {
+    @Bean
+    public PaymentRefundSQSMessageExtractor paymentRefundSQSMessageExtractor(@Value("${payment.pooling.queue.refund.name}") String queueName,
+                                                                             @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClients) {
+        return new PaymentRefundSQSMessageExtractor(queueName, sqsClients);
+    }
+
+    private ExecutorService threadPoolExecutor(int threadCount) {
         return Executors.newFixedThreadPool(threadCount);
     }
 

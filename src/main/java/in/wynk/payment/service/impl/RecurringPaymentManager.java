@@ -94,6 +94,16 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
                 }
                 nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planPeriodDTO.getTimeUnit().toMillis(planPeriodDTO.getRetryInterval()));
                 scheduleRecurringPayment(request.getTransactionId(), request.getLastSuccessTransactionId(), request.getTransaction().getType(), request.getTransaction().getPaymentChannel().getCode(), nextRecurringDateTime, request.getAttemptSequence(), request.getTransaction());
+            } else if (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS && request.getFinalTransactionStatus() == TransactionStatus.INPROGRESS &&
+                    request.getTransaction().getType() == PaymentEvent.RENEW && request.getTransaction().getPaymentChannel().isInternalRecurring()) {
+                PaymentRenewal renewal =
+                        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).findById(request.getTransaction().getIdStr())
+                                .orElse(null);
+                if(renewal != null) {
+                    return;
+                }
+                nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planDTO.getPeriod().getTimeUnit().toMillis(planDTO.getPeriod().getValidity()));
+                scheduleRecurringPayment(request.getTransaction().getIdStr(), request.getLastSuccessTransactionId(), request.getTransaction().getType(), request.getTransaction().getPaymentChannel().getCode(), nextRecurringDateTime, request.getAttemptSequence(), request.getTransaction());
             }
         }
     }
@@ -175,16 +185,11 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
             if (BeanConstant.ADD_TO_BILL_PAYMENT_SERVICE.equalsIgnoreCase(code)) {
                 scheduleAtbTask(transaction, nextRecurringDateTime);
             } else {
-                RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).save(PaymentRenewal.builder()
-                        .day(nextRecurringDateTime)
-                        .transactionId(transactionId)
-                        .hour(nextRecurringDateTime.getTime())
-                        .createdTimestamp(Calendar.getInstance())
-                        .transactionEvent(PaymentEvent.SUBSCRIBE.name())
-                        .initialTransactionId(initialTransactionId)
-                        .lastSuccessTransactionId(lastSuccessTransactionId)
-                        .attemptSequence(attemptSequence)
-                        .build());
+                PaymentRenewal paymentRenewal =
+                        PaymentRenewal.builder().day(nextRecurringDateTime).transactionId(transactionId).hour(nextRecurringDateTime.getTime()).createdTimestamp(Calendar.getInstance())
+                                .transactionEvent(PaymentEvent.SUBSCRIBE.name()).initialTransactionId(initialTransactionId).lastSuccessTransactionId(lastSuccessTransactionId)
+                                .attemptSequence(attemptSequence).build();
+                upsert(paymentRenewal);
             }
         } catch (Exception e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY017, e);
@@ -256,5 +261,10 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
         } catch (Exception e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY045, e);
         }
+    }
+
+    @Override
+    public void upsert (PaymentRenewal paymentRenewal) {
+        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).save(paymentRenewal);
     }
 }

@@ -285,7 +285,7 @@ public class PaymentGatewayManager
             }
             final TransactionStatus finalStatus = transaction.getStatus();
             transactionManager.revision(AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus)
-                    .attemptSequence(request.getAttemptSequence() + 1).transactionId(request.getId()).build());
+                    .attemptSequence(request.getAttemptSequence() + 1).originalTransactionId(request.getId()).build());
         }
     }
 
@@ -352,7 +352,7 @@ public class PaymentGatewayManager
                 if (transaction.getType() == PaymentEvent.RENEW) {
                     RenewalChargingTransactionReconciliationStatusRequest renewalChargingTransactionReconciliationStatusRequest = (RenewalChargingTransactionReconciliationStatusRequest) request;
                     builder.attemptSequence(renewalChargingTransactionReconciliationStatusRequest.getOriginalAttemptSequence())
-                            .transactionId(renewalChargingTransactionReconciliationStatusRequest.getOriginalTransactionId());
+                            .originalTransactionId(renewalChargingTransactionReconciliationStatusRequest.getOriginalTransactionId());
                 }
                 reviseTransactionAndExhaustCoupon(transaction, existingStatus, builder.build());
                 publishEventsOnReconcileCompletion(existingStatus, finalStatus, transaction);

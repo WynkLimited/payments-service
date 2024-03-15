@@ -71,7 +71,6 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
             callbackType = PAYMENT_STATUS_CALLBACK_TYPE;
         }
         final IPaymentCallback callbackService = delegator.get(callbackType);
-        final Transaction transaction = TransactionContext.get();
         if (isValid(request)) {
             return callbackService.handle(request);
         } else {

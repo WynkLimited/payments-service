@@ -241,7 +241,7 @@ public class PaymentManager
             if (transaction.getType() == PaymentEvent.RENEW) {
                 RenewalChargingTransactionReconciliationStatusRequest renewalChargingTransactionReconciliationStatusRequest = (RenewalChargingTransactionReconciliationStatusRequest) request;
                 builder.attemptSequence(renewalChargingTransactionReconciliationStatusRequest.getOriginalAttemptSequence())
-                        .transactionId(renewalChargingTransactionReconciliationStatusRequest.getOriginalTransactionId());
+                        .originalTransactionId(renewalChargingTransactionReconciliationStatusRequest.getOriginalTransactionId());
             }
             transactionManager.revision(builder.build());
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
@@ -377,7 +377,7 @@ public class PaymentManager
             }
             final TransactionStatus finalStatus = transaction.getStatus();
             transactionManager.revision(AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus)
-                    .attemptSequence(request.getAttemptSequence() + 1).transactionId(request.getId()).lastSuccessTransactionId(request.getId()).build());
+                    .attemptSequence(request.getAttemptSequence() + 1).originalTransactionId(request.getId()).lastSuccessTransactionId(request.getId()).build());
             if (PaymentConstants.IAP_PAYMENT_METHODS.contains(transaction.getPaymentChannel().getId())) {
                 eventPublisher.publishEvent(RecurringPaymentEvent.builder().transactionId(request.getId()).paymentEvent(PaymentEvent.UNSUBSCRIBE).build());
             }

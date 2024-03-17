@@ -9,7 +9,6 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.aps.common.WebhookConfigType;
@@ -17,7 +16,6 @@ import in.wynk.payment.dto.aps.request.callback.ApsAutoRefundCallbackRequestPayl
 import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
 import in.wynk.payment.dto.aps.request.callback.ApsOrderStatusCallBackPayload;
 import in.wynk.payment.dto.aps.request.callback.ApsRedirectCallBackCheckSumPayload;
-import in.wynk.payment.dto.aps.request.status.refund.RefundStatusRequest;
 import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.gateway.callback.DefaultPaymentCallbackResponse;
@@ -71,7 +69,6 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
             callbackType = PAYMENT_STATUS_CALLBACK_TYPE;
         }
         final IPaymentCallback callbackService = delegator.get(callbackType);
-        final Transaction transaction = TransactionContext.get();
         if (isValid(request)) {
             return callbackService.handle(request);
         } else {

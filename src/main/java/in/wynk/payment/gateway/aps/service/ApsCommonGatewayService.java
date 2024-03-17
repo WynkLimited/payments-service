@@ -144,14 +144,10 @@ public class ApsCommonGatewayService {
     }
 
     public void syncRefundTransactionFromSource (Transaction transaction, String refundId) {
-        final MerchantTransactionEvent.Builder mBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
         try {
             final RefundStatusRequest refundStatusRequest = RefundStatusRequest.builder().refundId(refundId).build();
-            mBuilder.request(refundStatusRequest);
             ExternalPaymentRefundStatusResponse externalPaymentRefundStatusResponse = exchange(transaction.getClientAlias(), REFUND_STATUS_ENDPOINT, HttpMethod.POST, getLoginId(transaction.getMsisdn()), refundStatusRequest, ExternalPaymentRefundStatusResponse.class);
-            mBuilder.response(externalPaymentRefundStatusResponse);
-            mBuilder.externalTransactionId(externalPaymentRefundStatusResponse.getRefundId());
             AnalyticService.update(BaseConstants.EXTERNAL_TRANSACTION_ID, externalPaymentRefundStatusResponse.getRefundId());
 
             if (!StringUtils.isEmpty(externalPaymentRefundStatusResponse.getRefundStatus()) && externalPaymentRefundStatusResponse.getRefundStatus().equalsIgnoreCase("REFUND_SUCCESS")) {
@@ -160,7 +156,6 @@ public class ApsCommonGatewayService {
                 finalTransactionStatus = TransactionStatus.FAILURE;
             }
         } catch (Exception e) {
-            mBuilder.response(e.getMessage());
             if (e instanceof WynkRuntimeException) {
                 log.error(APS_REFUND_STATUS, e.getMessage());
                 throw new WynkRuntimeException(((WynkRuntimeException) e).getErrorCode(), ((WynkRuntimeException) e).getErrorTitle(), e.getMessage());
@@ -169,7 +164,6 @@ public class ApsCommonGatewayService {
             throw new WynkRuntimeException(PAY998, e);
         } finally {
             transaction.setStatus(finalTransactionStatus.name());
-            eventPublisher.publishEvent(mBuilder.build());
         }
     }
 

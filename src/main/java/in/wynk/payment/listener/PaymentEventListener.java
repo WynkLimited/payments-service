@@ -173,6 +173,11 @@ public class PaymentEventListener {
     @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "merchantTransactionEvent")
     public void onMerchantTransactionEvent(MerchantTransactionEvent event) {
+        Transaction transaction = transactionManagerService.get(event.getId());
+        //Do not update transaction table for refunded transaction
+        if(transaction.getStatus() == TransactionStatus.REFUNDED) {
+            return;
+        }
         AnalyticService.update(event);
         //If we get data in  merchant table then update the data else upsert the data
         boolean isDataPresent = checkIfEntryPresentAndUpdateData(event);

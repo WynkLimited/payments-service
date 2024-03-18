@@ -71,7 +71,6 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
             callbackType = PAYMENT_STATUS_CALLBACK_TYPE;
         }
         final IPaymentCallback callbackService = delegator.get(callbackType);
-        final Transaction transaction = TransactionContext.get();
         if (isValid(request)) {
             return callbackService.handle(request);
         } else {
@@ -181,17 +180,19 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
         private void updateTransaction (ApsAutoRefundCallbackRequestPayload request, Transaction transaction) {
             TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
             final MerchantTransactionEvent.Builder mBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
-            try {
-                final RefundStatusRequest refundStatusRequest = RefundStatusRequest.builder().refundId(request.getRefundId()).build();
-                mBuilder.request(refundStatusRequest);
-                mBuilder.externalTransactionId(request.getRefundId());
-                if (!StringUtils.isEmpty(request.getStatus()) && request.getStatus().toString().equalsIgnoreCase("SUCCESS")) {
-                    finalTransactionStatus = TransactionStatus.SUCCESS;
-                } else if (!StringUtils.isEmpty(request.getStatus()) && request.getStatus().toString().equalsIgnoreCase("FAILED")) {
-                    finalTransactionStatus = TransactionStatus.FAILURE;
-                }
-            } finally {
-                transaction.setStatus(finalTransactionStatus.name());
+
+            final RefundStatusRequest refundStatusRequest = RefundStatusRequest.builder().refundId(request.getRefundId()).build();
+            mBuilder.request(refundStatusRequest);
+            mBuilder.externalTransactionId(request.getRefundId());
+            if (!StringUtils.isEmpty(request.getStatus()) && request.getStatus().toString().equalsIgnoreCase("SUCCESS")) {
+                finalTransactionStatus = TransactionStatus.SUCCESS;
+            } else if (!StringUtils.isEmpty(request.getStatus()) && request.getStatus().toString().equalsIgnoreCase("FAILED")) {
+                finalTransactionStatus = TransactionStatus.FAILURE;
+            }
+            transaction.setStatus(finalTransactionStatus.name());
+            if (EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION, PaymentEvent.MANDATE).contains(transaction.getType())) {
+                common.syncChargingTransactionFromSource(transaction, Optional.empty());
+            } else {
                 eventPublisher.publishEvent(mBuilder.build());
             }
         }

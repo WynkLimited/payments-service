@@ -2,7 +2,7 @@ package in.wynk.payment.controller;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import in.wynk.common.dto.EmptyResponse;
-import in.wynk.payment.service.DataRefreshService;
+import in.wynk.payment.service.IDataRefreshService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RequestMapping("wynk/s2s/v1/refresh")
 public class DataRefreshController {
-    private final DataRefreshService dataRefreshService;
+    private final IDataRefreshService dataRefreshService;
 
     @GetMapping("/merchant/data/{txnId}/{partner}")
     @AnalyseTransaction(name = "merchantDataRefresh")

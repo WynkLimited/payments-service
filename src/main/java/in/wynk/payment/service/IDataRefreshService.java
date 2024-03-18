@@ -3,7 +3,7 @@ package in.wynk.payment.service;
 /**
  * @author Nishesh Pandey
  */
-public interface DataRefreshService {
+public interface IDataRefreshService {
 
     void refreshMerchantTableData (String transactionId, String paymentCode);
 }

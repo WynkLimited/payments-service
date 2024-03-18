@@ -1,9 +1,10 @@
 package in.wynk.payment.service.impl;
 
+import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.gateway.aps.service.ApsCommonGatewayService;
 import in.wynk.payment.gateway.payu.service.PayUCommonGateway;
-import in.wynk.payment.service.DataRefreshService;
+import in.wynk.payment.service.IDataRefreshService;
 import in.wynk.payment.service.ITransactionManagerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +17,7 @@ import java.util.Optional;
  */
 @Service
 @Slf4j
-public class DataRefreshServiceImpl implements DataRefreshService {
+public class DataRefreshServiceImpl implements IDataRefreshService {
     @Autowired
     private ApsCommonGatewayService apsCommonGatewayService;
     @Autowired
@@ -25,6 +26,7 @@ public class DataRefreshServiceImpl implements DataRefreshService {
     private ITransactionManagerService transactionManagerService;
 
     @Override
+    @TransactionAware(txnId = "#transactionId")
     public void refreshMerchantTableData (String transactionId, String paymentCode) {
         Transaction transaction = transactionManagerService.get(transactionId);
         try {

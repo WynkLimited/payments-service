@@ -9,6 +9,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.aps.common.WebhookConfigType;
@@ -16,6 +17,7 @@ import in.wynk.payment.dto.aps.request.callback.ApsAutoRefundCallbackRequestPayl
 import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
 import in.wynk.payment.dto.aps.request.callback.ApsOrderStatusCallBackPayload;
 import in.wynk.payment.dto.aps.request.callback.ApsRedirectCallBackCheckSumPayload;
+import in.wynk.payment.dto.aps.request.status.refund.RefundStatusRequest;
 import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.gateway.callback.DefaultPaymentCallbackResponse;
@@ -177,14 +179,21 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
 
         private void updateTransaction (ApsAutoRefundCallbackRequestPayload request, Transaction transaction) {
             TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
-            try {
-                if (!StringUtils.isEmpty(request.getStatus()) && request.getStatus().toString().equalsIgnoreCase("SUCCESS")) {
-                    finalTransactionStatus = TransactionStatus.SUCCESS;
-                } else if (!StringUtils.isEmpty(request.getStatus()) && request.getStatus().toString().equalsIgnoreCase("FAILED")) {
-                    finalTransactionStatus = TransactionStatus.FAILURE;
-                }
-            } finally {
-                transaction.setStatus(finalTransactionStatus.name());
+            final MerchantTransactionEvent.Builder mBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
+
+            final RefundStatusRequest refundStatusRequest = RefundStatusRequest.builder().refundId(request.getRefundId()).build();
+            mBuilder.request(refundStatusRequest);
+            mBuilder.externalTransactionId(request.getRefundId());
+            if (!StringUtils.isEmpty(request.getStatus()) && request.getStatus().toString().equalsIgnoreCase("SUCCESS")) {
+                finalTransactionStatus = TransactionStatus.SUCCESS;
+            } else if (!StringUtils.isEmpty(request.getStatus()) && request.getStatus().toString().equalsIgnoreCase("FAILED")) {
+                finalTransactionStatus = TransactionStatus.FAILURE;
+            }
+            transaction.setStatus(finalTransactionStatus.name());
+            if (EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION, PaymentEvent.MANDATE).contains(transaction.getType())) {
+                common.syncChargingTransactionFromSource(transaction, Optional.empty());
+            } else {
+                eventPublisher.publishEvent(mBuilder.build());
             }
         }
 

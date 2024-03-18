@@ -4,10 +4,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.client.core.dao.entity.ClientDetails;
+import in.wynk.client.data.utils.RepositoryUtils;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.Message;
@@ -25,6 +27,7 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.core.service.InvoiceDetailsCachingService;
 import in.wynk.payment.dto.*;
@@ -565,7 +568,21 @@ public class PaymentEventListener {
         }
         if (EnumSet.of(PaymentEvent.SUBSCRIBE, PaymentEvent.RENEW).contains(event.getTransaction().getType()) && !IAP_PAYMENT_METHODS.contains(event.getTransaction().getPaymentChannel().name())) {
             AnalyticService.update(MANDATE_AMOUNT, event.getTransaction().getMandateAmount());
+            AnalyticService.update(RENEWAL_ATTEMPT_SEQUENCE, event.getAttemptSequence());
+            String referenceTransactionId = event.getTransaction().getIdStr();
+            if (PaymentEvent.RENEW == event.getTransaction().getType()) {
+                //get data
+                PaymentRenewal renewal =
+                        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class)
+                                .findById(event.getTransaction().getIdStr())
+                                .orElse(null);
+                if (renewal != null) {
+                    referenceTransactionId = renewal.getInitialTransactionId();
+                }
+            }
+            AnalyticService.update(REFERENCE_TRANSACTION_ID, referenceTransactionId);
         }
+       
         if (Objects.nonNull(event.getTransaction().getCoupon())) {
             String couponCode = event.getTransaction().getCoupon();
             CouponCodeLink couponLinkOption = BeanLocatorFactory.getBean(ICouponCodeLinkService.class).fetchCouponCodeLink(couponCode.toUpperCase(Locale.ROOT));

@@ -70,7 +70,7 @@ public class PayUGateway extends PayUMerchantPaymentService implements
         super(gson, mapper, eventPublisher, payCache, merchantTransactionService, errorCodeCache, restTemplate, transactionManagerService);
         this.statusGateway = new PayUStatusGatewayImpl(commonGateway);
         this.callbackGateway = new PayUCallbackGatewayImpl(commonGateway, mapper, eventPublisher);
-        this.refundGateway = new PayURefundGatewayImpl(commonGateway, eventPublisher);
+        this.refundGateway = new PayURefundGatewayImpl(commonGateway, eventPublisher, transactionManagerService);
         this.verificationGateway = new PayUVerificationGatewayImpl(commonGateway, mapper);
         this.chargeGateway = new PayUChargingGatewayImpl(commonGateway, cache, paymentApi);
         this.renewalGateway = new PayURenewalGatewayImpl(commonGateway, gson, mapper, payCache, eventPublisher, merchantTransactionService, transactionManagerService);

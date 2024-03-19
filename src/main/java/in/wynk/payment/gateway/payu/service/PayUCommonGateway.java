@@ -38,6 +38,7 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Objects;
 
@@ -125,7 +126,8 @@ public class PayUCommonGateway {
         final MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         PayUVerificationResponse<PayUChargingTransactionDetails> payUChargingVerificationResponse;
         try {
-            final MultiValueMap<String, String> payUChargingVerificationRequest = buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.VERIFY_PAYMENT.getCode(), transaction.getId().toString());
+            final MultiValueMap<String, String> payUChargingVerificationRequest =
+                    buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.VERIFY_PAYMENT.getCode(), transaction.getId().toString());
             merchantTransactionEventBuilder.request(payUChargingVerificationRequest);
             payUChargingVerificationResponse = exchange(INFO_API, payUChargingVerificationRequest, new TypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
             });
@@ -134,18 +136,23 @@ public class PayUCommonGateway {
             }
             merchantTransactionEventBuilder.response(payUChargingVerificationResponse);
             final PayUChargingTransactionDetails payUChargingTransactionDetails = payUChargingVerificationResponse.getTransactionDetails(transaction.getId().toString());
-            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getMode()))
+            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getMode())) {
                 AnalyticService.update(PAYMENT_MODE, payUChargingTransactionDetails.getMode());
-            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getBankCode()))
+            }
+            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getBankCode())) {
                 AnalyticService.update(BANK_CODE, payUChargingTransactionDetails.getBankCode());
-            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getCardType()))
+            }
+            if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getCardType())) {
                 AnalyticService.update(PAYU_CARD_TYPE, payUChargingTransactionDetails.getCardType());
+            }
             merchantTransactionEventBuilder.externalTransactionId(payUChargingTransactionDetails.getPayUExternalTxnId());
             AnalyticService.update(EXTERNAL_TRANSACTION_ID, payUChargingTransactionDetails.getPayUExternalTxnId());
             syncTransactionWithSourceResponse(transaction, payUChargingVerificationResponse);
             if (transaction.getStatus() == TransactionStatus.FAILURE) {
                 if (!StringUtils.isEmpty(payUChargingTransactionDetails.getErrorCode()) || !StringUtils.isEmpty(payUChargingTransactionDetails.getErrorMessage())) {
-                    eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(Objects.nonNull(payUChargingTransactionDetails.getErrorCode()) ? payUChargingTransactionDetails.getErrorCode() : "UNKNOWN").description(payUChargingTransactionDetails.getErrorMessage()).build());
+                    eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr())
+                            .code(Objects.nonNull(payUChargingTransactionDetails.getErrorCode()) ? payUChargingTransactionDetails.getErrorCode() : "UNKNOWN")
+                            .description(payUChargingTransactionDetails.getErrorMessage()).build());
                 }
             }
         } catch (HttpStatusCodeException e) {
@@ -154,10 +161,11 @@ public class PayUCommonGateway {
         } catch (Exception e) {
             log.error(PAYU_CHARGING_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to ", e);
             throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
-        } finally {
-            if (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE)
-                eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
         }
+        if (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE) {
+            eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
+        }
+
         return payUChargingVerificationResponse;
     }
 
@@ -175,14 +183,19 @@ public class PayUCommonGateway {
             AnalyticService.update(EXTERNAL_TRANSACTION_ID, payURefundTransactionDetails.get(refundRequestId).getRequestId());
             payURefundTransactionDetails.put(transaction.getIdStr(), payURefundTransactionDetails.get(refundRequestId));
             payURefundTransactionDetails.remove(refundRequestId);
-            syncTransactionWithSourceResponse(transaction, PayUVerificationResponse.<PayURefundTransactionDetails>builder().transactionDetails(payURefundTransactionDetails).message(payUPaymentRefundResponse.getMessage()).status(payUPaymentRefundResponse.getStatus()).build());
+            syncTransactionWithSourceResponse(transaction,
+                    PayUVerificationResponse.<PayURefundTransactionDetails>builder().transactionDetails(payURefundTransactionDetails).message(payUPaymentRefundResponse.getMessage())
+                            .status(payUPaymentRefundResponse.getStatus()).build());
         } catch (HttpStatusCodeException e) {
             merchantTransactionEventBuilder.response(e.getResponseBodyAsString());
             throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
         } catch (Exception e) {
             log.error(PAYU_CHARGING_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to ", e);
             throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
-        } finally {
+        }
+        if (EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION, PaymentEvent.MANDATE).contains(transaction.getType())) {
+            syncChargingTransactionFromSource(transaction);
+        } else {
             eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
         }
     }

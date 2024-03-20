@@ -174,7 +174,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       charging:
-        enabled: true
+        enabled: false
         name: wcf-preprod-payment-charging.fifo
         sqs:
           messages:

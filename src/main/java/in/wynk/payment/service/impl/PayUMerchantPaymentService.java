@@ -775,14 +775,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             if (response.getStatus().equalsIgnoreCase(INTEGER_VALUE)) {
                 log.info(PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS, "invoiceId: " + response.getInvoiceId() + " invoiceStatus: " + response.getInvoiceStatus());
             } else {
-                if(ERROR_REASAONS.contains(response.getMessage())){
-                    eventPublisher.publishEvent(UnScheduleRecurringPaymentEvent.builder().transactionId(message.getTransactionId()).clientAlias(message.getClientAlias()).reason("Stopping Payment Renewal because" + response.getMessage() ).build());
-                    eventPublisher.publishEvent(PreDebitStatusEvent.builder().txnId(message.getTransactionId()).type(String.valueOf(PaymentEvent.MANDATE_STATUS)).clientAlias(message.getClientAlias()).errorReason(response.getMessage()).build());
-                    transaction.setType(PaymentEvent.UNSUBSCRIBE.getValue());
-                    AsyncTransactionRevisionRequest request =
-                            AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(transaction.getStatus()).finalTransactionStatus(TransactionStatus.CANCELLED).build();
-                    subscriptionServiceManager.unSubscribePlan(AbstractUnSubscribePlanRequest.from(request));
-                }
+                handleResponse(message,response);
                 throw new WynkRuntimeException(PAY111, response.getMessage());
             }
             return PayUPreDebitNotification.builder().tid(message.getTransactionId()).transactionStatus(TransactionStatus.SUCCESS).build();
@@ -794,6 +787,20 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             throw new WynkRuntimeException(PAY111);
         }
     }
+
+    private void handleResponse(PreDebitNotificationMessage message, PayUPreDebitNotificationResponse response){
+        Transaction transaction = transactionManagerService.get(message.getTransactionId());
+        if(ERROR_REASAONS.contains(response.getMessage())){
+            eventPublisher.publishEvent(UnScheduleRecurringPaymentEvent.builder().transactionId(message.getTransactionId()).clientAlias(message.getClientAlias()).reason("Stopping Payment Renewal because" + response.getMessage() ).build());
+            eventPublisher.publishEvent(PreDebitStatusEvent.builder().txnId(message.getTransactionId()).type(String.valueOf(PaymentEvent.MANDATE_STATUS)).clientAlias(message.getClientAlias()).errorReason(response.getMessage()).build());
+            transaction.setType(PaymentEvent.UNSUBSCRIBE.getValue());
+            AsyncTransactionRevisionRequest request =
+                    AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(transaction.getStatus()).finalTransactionStatus(TransactionStatus.CANCELLED).build();
+            subscriptionServiceManager.unSubscribePlan(AbstractUnSubscribePlanRequest.from(request));
+        }
+
+    }
+
 
     @Override
     public void cancelRecurring(String transactionId) {

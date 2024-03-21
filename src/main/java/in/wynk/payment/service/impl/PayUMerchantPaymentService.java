@@ -24,6 +24,8 @@ import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
+import in.wynk.payment.core.event.PreDebitStatusEvent;
+import in.wynk.payment.core.event.UnScheduleRecurringPaymentEvent;
 import in.wynk.payment.dto.BaseTDRResponse;
 import in.wynk.payment.dto.PreDebitNotificationMessage;
 import in.wynk.payment.dto.TransactionContext;
@@ -94,6 +96,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     private final RateLimiter rateLimiter = RateLimiter.create(6.0);
     private final IMerchantTransactionService merchantTransactionService;
     private final ITransactionManagerService transactionManagerService;
+    private final ISubscriptionServiceManager subscriptionServiceManager;
     private final IMerchantPaymentCallbackService<AbstractCallbackResponse, PayUCallbackRequestPayload> callbackHandler;
 
     @Value("${payment.merchant.payu.api.info}")
@@ -109,7 +112,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     private String payUSalt;
 
 
-    public PayUMerchantPaymentService(Gson gson, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher, PaymentCachingService cachingService, IMerchantTransactionService merchantTransactionService, IErrorCodesCacheService errorCodesCacheServiceImpl, @Qualifier(EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ITransactionManagerService transactionManagerService) {
+    public PayUMerchantPaymentService(Gson gson, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher, PaymentCachingService cachingService, IMerchantTransactionService merchantTransactionService, IErrorCodesCacheService errorCodesCacheServiceImpl, @Qualifier(EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ITransactionManagerService transactionManagerService, ISubscriptionServiceManager subscriptionServiceManager) {
         super(cachingService, errorCodesCacheServiceImpl);
         this.gson = gson;
         this.objectMapper = objectMapper;
@@ -119,6 +122,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         this.callbackHandler = new DelegatePayUCallbackHandler();
         this.merchantTransactionService = merchantTransactionService;
         this.transactionManagerService = transactionManagerService;
+        this.subscriptionServiceManager= subscriptionServiceManager;
     }
 
     @Override
@@ -768,9 +772,17 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             MultiValueMap<String, String> requestMap = buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.PRE_DEBIT_SI.getCode(), variable);
             PayUPreDebitNotificationResponse response = this.getInfoFromPayU(requestMap, new TypeReference<PayUPreDebitNotificationResponse>() {
             });
-            if (response.getStatus() == 1) {
+            if (response.getStatus().equalsIgnoreCase(INTEGER_VALUE)) {
                 log.info(PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS, "invoiceId: " + response.getInvoiceId() + " invoiceStatus: " + response.getInvoiceStatus());
             } else {
+                if(ERROR_REASAONS.contains(response.getMessage())){
+                    eventPublisher.publishEvent(UnScheduleRecurringPaymentEvent.builder().transactionId(message.getTransactionId()).clientAlias(message.getClientAlias()).reason("Stopping Payment Renewal because" + response.getMessage() ).build());
+                    eventPublisher.publishEvent(PreDebitStatusEvent.builder().txnId(message.getTransactionId()).type(String.valueOf(PaymentEvent.MANDATE_STATUS)).clientAlias(message.getClientAlias()).errorReason(response.getMessage()).build());
+                    transaction.setType(PaymentEvent.UNSUBSCRIBE.getValue());
+                    AsyncTransactionRevisionRequest request =
+                            AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(transaction.getStatus()).finalTransactionStatus(TransactionStatus.CANCELLED).build();
+                    subscriptionServiceManager.unSubscribePlan(AbstractUnSubscribePlanRequest.from(request));
+                }
                 throw new WynkRuntimeException(PAY111, response.getMessage());
             }
             return PayUPreDebitNotification.builder().tid(message.getTransactionId()).transactionStatus(TransactionStatus.SUCCESS).build();

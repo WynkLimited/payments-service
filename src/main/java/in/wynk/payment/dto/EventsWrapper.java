@@ -50,6 +50,7 @@ public class EventsWrapper {
     private String coupon;
     private String exitTime;
     private String consentTime;
+    private String errorReason;
 
     private IAppDetails appDetails;
     private IUserDetails userDetails;

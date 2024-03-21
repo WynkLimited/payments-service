@@ -4,12 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
-import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.client.core.dao.entity.ClientDetails;
-import in.wynk.client.data.utils.RepositoryUtils;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.Message;
@@ -27,7 +25,6 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.*;
-import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.core.service.InvoiceDetailsCachingService;
 import in.wynk.payment.dto.*;
@@ -76,14 +73,15 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.common.constant.BaseConstants.PLAN;
+import static in.wynk.common.constant.BaseConstants.UID;
 import static in.wynk.exception.WynkErrorType.UT025;
 import static in.wynk.exception.WynkErrorType.UT999;
 import static in.wynk.payment.core.constant.PaymentConstants.AIRTEL_TV;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_CODE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.queue.constant.BeanConstant.MESSAGE_PAYLOAD;
-import static in.wynk.tinylytics.constants.TinylyticsConstants.EVENT;
-import static in.wynk.tinylytics.constants.TinylyticsConstants.TRANSACTION_SNAPShOT_EVENT;
+import static in.wynk.tinylytics.constants.TinylyticsConstants.*;
 
 @Slf4j
 @Service
@@ -498,6 +496,28 @@ public class PaymentEventListener {
         }
     }
 
+    private void publishPreDebitEvent(PreDebitStatusEvent event) {
+        try{
+            EventsWrapper.EventsWrapperBuilder eventsWrapperBuilder= EventsWrapper.builder();
+            eventsWrapperBuilder.transactionId(event.getTxnId())
+                    .paymentEvent(event.getTxnId())
+                    .clientAlias(event.getClientAlias())
+                    .errorReason(event.getErrorReason());
+            publishBranchEvent(branchMeta(eventsWrapperBuilder.build()), PREDEBIT_EVENT);
+        } catch (Exception e) {
+            log.error("error occurred while trying to build BranchRawDataEvent from payment Service", e);
+        }
+    }
+
+    @EventListener
+    @ClientAware(clientAlias = "#event.clientAlias")
+    @AnalyseTransaction(name = "PreDebitStatusEvent")
+    private void preDebitEvent (PreDebitStatusEvent event) {
+        AnalyticService.update(event);
+        publishPreDebitEvent(event);
+
+    }
+
     private void sendClientCallback(String clientAlias, ClientCallbackRequest request) {
         clientCallbackService.sendCallback(ClientCallbackPayloadWrapper.<ClientCallbackRequest>builder().clientAlias(clientAlias).payload(request).build());
     }
@@ -711,7 +731,6 @@ public class PaymentEventListener {
         meta.put(EVENT, event);
         BranchEvent branchEvent= AppUtils.from(BranchRawDataEvent.builder().data(meta).build());
         BeanLocatorFactory.getBean(IKinesisEventPublisher.class).publish(dpStream, branchEvent.getEvent_name(), branchEvent);
-        log.debug("Transaction Snapshot Event {}", branchEvent);
     }
 
     private Map<String, Object> branchMeta(EventsWrapper eventsWrapper) {

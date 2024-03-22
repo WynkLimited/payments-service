@@ -31,7 +31,7 @@ public abstract class AbstractTransactionRevisionRequest {
         return 0;
     };
 
-    public String getTransactionId() {
+    public String getOriginalTransactionId () {
         throw new WynkRuntimeException(UT025);
     }
 

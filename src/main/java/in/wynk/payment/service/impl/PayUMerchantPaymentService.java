@@ -796,15 +796,17 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     @TransactionAware(txnId = "#message.transactionId")
     private void handlePreDebitResponse(PreDebitNotificationMessage message, PayUPreDebitNotificationResponse response) {
         Transaction transaction = TransactionContext.get();
-        PaymentRenewal renewal = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).findById(transaction.getIdStr()).orElse(null);
-        final String referenceTransactionId = renewal.getInitialTransactionId();
         if (ERROR_REASONS.contains(response.getMessage())) {
-            eventPublisher.publishEvent(UnScheduleRecurringPaymentEvent.builder().transactionId(message.getTransactionId()).clientAlias(message.getClientAlias()).reason("Stopping Payment Renewal because " + response.getMessage()).build());
-            eventPublisher.publishEvent(PreDebitStatusEvent.builder().txnId(message.getTransactionId()).paymentEvent(String.valueOf(PaymentEvent.MANDATE_STATUS)).clientAlias(message.getClientAlias()).errorReason(response.getMessage()).referenceTransactionId(referenceTransactionId).build());
-            transaction.setType(PaymentEvent.UNSUBSCRIBE.getValue());
-            AsyncTransactionRevisionRequest request =
-                    AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(transaction.getStatus()).finalTransactionStatus(TransactionStatus.CANCELLED).build();
-            subscriptionServiceManager.unSubscribePlan(AbstractUnSubscribePlanRequest.from(request));
+            PaymentRenewal renewal = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).findById(transaction.getIdStr()).orElse(null);
+            if (Objects.nonNull(renewal)) {
+                final String referenceTransactionId = renewal.getInitialTransactionId();
+                eventPublisher.publishEvent(UnScheduleRecurringPaymentEvent.builder().transactionId(message.getTransactionId()).clientAlias(message.getClientAlias()).reason("Stopping Payment Renewal because " + response.getMessage()).build());
+                eventPublisher.publishEvent(PreDebitStatusEvent.builder().txnId(message.getTransactionId()).paymentEvent(String.valueOf(PaymentEvent.MANDATE_STATUS)).clientAlias(message.getClientAlias()).errorReason(response.getMessage()).referenceTransactionId(referenceTransactionId).build());
+                transaction.setType(PaymentEvent.UNSUBSCRIBE.getValue());
+                AsyncTransactionRevisionRequest request =
+                        AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(transaction.getStatus()).finalTransactionStatus(TransactionStatus.CANCELLED).build();
+                subscriptionServiceManager.unSubscribePlan(AbstractUnSubscribePlanRequest.from(request));
+            }
         }
     }
 

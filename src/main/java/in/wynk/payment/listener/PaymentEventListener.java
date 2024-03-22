@@ -110,7 +110,7 @@ public class PaymentEventListener {
     private final WynkServiceDetailsCachingService wynkServiceDetailsCachingService;
     private final ISubscriptionServiceManager subscriptionServiceManager;
 
-    public static Map<String, String> map = Collections.singletonMap(AIRTEL_TV,AIRTEL_XSTREAM);
+    public static Map<String, String> map = Collections.singletonMap(AIRTEL_TV, AIRTEL_XSTREAM);
 
     @Value("${event.stream.dp}")
     private String dpStream;
@@ -175,20 +175,20 @@ public class PaymentEventListener {
         AnalyticService.update(event);
         //If we get data in  merchant table then update the data else upsert the data
         boolean isDataPresent = checkIfEntryPresentAndUpdateData(event);
-        if(!isDataPresent) {
-                MerchantTransaction merchantTransaction = MerchantTransaction.builder()
-                        .id(event.getId())
-                        .externalTransactionId(event.getExternalTransactionId())
-                        .request(event.getRequest())
-                        .response(event.getResponse())
-                        .externalTokenReferenceId(event.getExternalTokenReferenceId())
-                        .orderId(event.getOrderId())
-                        .build();
-                upsertData(merchantTransaction, event);
+        if (!isDataPresent) {
+            MerchantTransaction merchantTransaction = MerchantTransaction.builder()
+                    .id(event.getId())
+                    .externalTransactionId(event.getExternalTransactionId())
+                    .request(event.getRequest())
+                    .response(event.getResponse())
+                    .externalTokenReferenceId(event.getExternalTokenReferenceId())
+                    .orderId(event.getOrderId())
+                    .build();
+            upsertData(merchantTransaction, event);
         }
     }
 
-    private void upsertData (MerchantTransaction merchantTransaction, MerchantTransactionEvent event) {
+    private void upsertData(MerchantTransaction merchantTransaction, MerchantTransactionEvent event) {
         try {
             retryRegistry.retry(PaymentConstants.MERCHANT_TRANSACTION_UPSERT_RETRY_KEY).executeRunnable(() -> merchantTransactionService.upsert(merchantTransaction));
         } catch (Exception e) {
@@ -196,7 +196,7 @@ public class PaymentEventListener {
         }
     }
 
-    private boolean checkIfEntryPresentAndUpdateData (MerchantTransactionEvent event) {
+    private boolean checkIfEntryPresentAndUpdateData(MerchantTransactionEvent event) {
         try {
             if (Objects.isNull(event.getExternalTokenReferenceId())) {
                 MerchantTransaction merchantData = merchantTransactionService.getMerchantTransaction(event.getId());
@@ -257,10 +257,10 @@ public class PaymentEventListener {
             AnalyticService.update(event);
             int retryCount = event.getRetryCount();
             final Invoice invoice = invoiceService.getInvoiceByTransactionId(event.getTxnId());
-            if(Objects.nonNull(invoice)){
+            if (Objects.nonNull(invoice)) {
                 retryCount = invoice.getRetryCount();
             }
-            if(retryCount < event.getRetries().size()){
+            if (retryCount < event.getRetries().size()) {
                 final long attemptDelayedBy = event.getRetries().get(retryCount);
                 final Date taskScheduleTime = new Date(System.currentTimeMillis() + (attemptDelayedBy * 1000));
                 taskScheduler.schedule(TaskDefinition.<InvoiceRetryTask>builder()
@@ -282,11 +282,11 @@ public class PaymentEventListener {
     @EventListener
     @AnalyseTransaction(name = "triggerInvoiceRetryEvent")
     public void onInvoiceRetryTaskEvent(InvoiceRetryTaskEvent event) {
-        try{
+        try {
             AnalyticService.update(event);
             final Invoice invoice = invoiceService.getInvoiceByTransactionId(event.getTransactionId());
-            if (Objects.nonNull(invoice)){
-                if(!invoice.getStatus().equalsIgnoreCase("SUCCESS")){
+            if (Objects.nonNull(invoice)) {
+                if (!invoice.getStatus().equalsIgnoreCase("SUCCESS")) {
                     final GenerateInvoiceEvent generateInvoiceEvent = GenerateInvoiceEvent.builder()
                             .msisdn(event.getMsisdn())
                             .txnId(event.getTransactionId())
@@ -301,14 +301,15 @@ public class PaymentEventListener {
                     invoiceService.upsert(invoice);
 
                     final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(event.getClientAlias());
-                    if(event.getRetryCount() + 1 < invoiceDetails.getRetries().size()){
+                    if (event.getRetryCount() + 1 < invoiceDetails.getRetries().size()) {
                         eventPublisher.publishEvent(InvoiceRetryEvent.builder()
                                 .msisdn(event.getMsisdn())
                                 .clientAlias(event.getClientAlias())
                                 .txnId(event.getTransactionId())
                                 .retries(invoiceDetails.getRetries())
                                 .retryCount(event.getRetryCount() + 1).build());
-                    };
+                    }
+                    ;
                 }
             } else {
                 final GenerateInvoiceEvent generateInvoiceEvent = GenerateInvoiceEvent.builder()
@@ -322,7 +323,7 @@ public class PaymentEventListener {
                 invoiceKafkaPublisher.publish(GenerateInvoiceKafkaMessage.from(generateInvoiceEvent, clientAlias));
 
                 final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(event.getClientAlias());
-                if(event.getRetryCount() + 1 < invoiceDetails.getRetries().size()){
+                if (event.getRetryCount() + 1 < invoiceDetails.getRetries().size()) {
                     eventPublisher.publishEvent(InvoiceRetryEvent.builder()
                             .msisdn(event.getMsisdn())
                             .clientAlias(event.getClientAlias())
@@ -403,11 +404,11 @@ public class PaymentEventListener {
     @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "purchaseRecordEvent")
     public void onPurchaseRecordEvent(PurchaseRecordEvent event) {
-        try{
+        try {
             AnalyticService.update(event);
             final Transaction lastTransaction = transactionManagerService.get(event.getTransactionId());
             final boolean sendDropOutNotification = lastTransaction.getStatus() != TransactionStatus.SUCCESS;
-            if (!sendDropOutNotification){
+            if (!sendDropOutNotification) {
                 log.info("Skipping to send drop out notification as user has completed transaction for {}", event);
                 return;
             }
@@ -424,7 +425,7 @@ public class PaymentEventListener {
     @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "paymentAutoRefundEvent")
     public void onPaymentAutoRefundEvent(PaymentAutoRefundEvent event) {
-        try{
+        try {
             AnalyticService.update(event);
             final String tinyUrl = quickPayLinkGenerator.generate(event.getTransaction().getIdStr(), event.getClientAlias(), event.getPurchaseDetails().getAppDetails(), event.getPurchaseDetails().getProductDetails());
             AnalyticService.update(WINBACK_NOTIFICATION_URL, tinyUrl);
@@ -439,10 +440,10 @@ public class PaymentEventListener {
     @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "generateInvoiceEvent")
     public void onGenerateInvoiceEvent(GenerateInvoiceEvent event) {
-        try{
+        try {
             AnalyticService.update(event);
             final Invoice invoice = invoiceService.getInvoiceByTransactionId(event.getTxnId());
-            if(Objects.isNull(invoice)){
+            if (Objects.isNull(invoice)) {
                 final Transaction transaction = transactionManagerService.get(event.getTxnId());
                 final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
                 final String clientAlias = clientDetailsCachingService.getClientByService(plan.getService()).getAlias();
@@ -478,7 +479,7 @@ public class PaymentEventListener {
         final String service = productDetails.getType().equalsIgnoreCase(PLAN) ? plan.getService() : cachingService.getItem(productDetails.getId()).getService();
         final WynkService wynkService = WynkServiceUtils.fromServiceId(service);
         final Message message = wynkService.getMessages().get(PaymentConstants.USER_WINBACK).get(txnStatus.getValue());
-        if((Objects.nonNull(message)) && message.isEnabled()){
+        if ((Objects.nonNull(message)) && message.isEnabled()) {
             Map<String, Object> contextMap = new HashMap<String, Object>() {{
                 put(PLAN, plan);
                 put(OFFER, cachingService.getOffer(plan.getLinkedOfferId()));
@@ -496,26 +497,11 @@ public class PaymentEventListener {
         }
     }
 
-    private void publishPreDebitEvent(PreDebitStatusEvent event) {
-        try{
-            EventsWrapper.EventsWrapperBuilder eventsWrapperBuilder= EventsWrapper.builder();
-            eventsWrapperBuilder.transactionId(event.getTxnId())
-                    .paymentEvent(event.getTxnId())
-                    .clientAlias(event.getClientAlias())
-                    .errorReason(event.getErrorReason());
-            publishBranchEvent(branchMeta(eventsWrapperBuilder.build()), PREDEBIT_EVENT);
-        } catch (Exception e) {
-            log.error("error occurred while trying to build BranchRawDataEvent from payment Service", e);
-        }
-    }
 
     @EventListener
-    @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "PreDebitStatusEvent")
-    private void preDebitEvent (PreDebitStatusEvent event) {
+    private void preDebitEvent(PreDebitStatusEvent event) {
         AnalyticService.update(event);
-        publishPreDebitEvent(event);
-
     }
 
     private void sendClientCallback(String clientAlias, ClientCallbackRequest request) {
@@ -581,7 +567,7 @@ public class PaymentEventListener {
         AnalyticService.update(AMOUNT_PAID, event.getTransaction().getAmount());
         AnalyticService.update(CLIENT, event.getTransaction().getClientAlias());
         AnalyticService.update(COUPON_CODE, event.getTransaction().getCoupon());
-        if( Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getGeoLocation())){
+        if (Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getGeoLocation())) {
             AnalyticService.update(ACCESS_COUNTRY_CODE, event.getPurchaseDetails().getGeoLocation().getAccessCountryCode());
             AnalyticService.update(STATE_CODE, event.getPurchaseDetails().getGeoLocation().getStateCode());
             AnalyticService.update(IP, event.getPurchaseDetails().getGeoLocation().getIp());
@@ -617,8 +603,8 @@ public class PaymentEventListener {
             final BaseTDRResponse tdr = paymentGatewayManager.getTDR(event.getTransaction().getIdStr());
             AnalyticService.update(TDR, tdr.getTdr());
             //Invoice should not be generated for Trial or mandate subscription WCF-4350
-            if((PaymentEvent.MANDATE != event.getTransaction().getType() && PaymentEvent.TRIAL_SUBSCRIPTION != event.getTransaction().getType()) && event.getTransaction().getPaymentChannel().isInvoiceSupported()){
-                if(PaymentEvent.REFUND != event.getTransaction().getType()  || (PaymentEvent.REFUND == event.getTransaction().getType() && event.getTransaction().getAmount() != MANDATE_FLOW_AMOUNT)) {
+            if ((PaymentEvent.MANDATE != event.getTransaction().getType() && PaymentEvent.TRIAL_SUBSCRIPTION != event.getTransaction().getType()) && event.getTransaction().getPaymentChannel().isInvoiceSupported()) {
+                if (PaymentEvent.REFUND != event.getTransaction().getType() || (PaymentEvent.REFUND == event.getTransaction().getType() && event.getTransaction().getAmount() != MANDATE_FLOW_AMOUNT)) {
                     eventPublisher.publishEvent(GenerateInvoiceEvent.builder()
                             .msisdn(event.getTransaction().getMsisdn())
                             .txnId(event.getTransaction().getIdStr())
@@ -627,12 +613,12 @@ public class PaymentEventListener {
                 }
             }
             if (ApsConstant.APS.equals(event.getTransaction().getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(event.getTransaction().getPaymentChannel().getId())) {
-              initiateReportTransactionToMerchant(event);
+                initiateReportTransactionToMerchant(event);
             }
         }
         if (Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getAppDetails()))
             AnalyticService.update(event.getPurchaseDetails().getAppDetails());
-        if(event.getTransaction().getStatus().equals(TransactionStatus.AUTO_REFUND)){
+        if (event.getTransaction().getStatus().equals(TransactionStatus.AUTO_REFUND)) {
             eventPublisher.publishEvent(PaymentAutoRefundEvent.builder()
                     .transaction(event.getTransaction())
                     .clientAlias(event.getTransaction().getClientAlias())
@@ -645,7 +631,7 @@ public class PaymentEventListener {
         }
     }
 
-    private void initiateReportTransactionToMerchant (TransactionSnapshotEvent event) {
+    private void initiateReportTransactionToMerchant(TransactionSnapshotEvent event) {
         try {
             MerchantTransaction merchantData = merchantTransactionService.getMerchantTransaction(event.getTransaction().getIdStr());
             if (Objects.nonNull(merchantData.getExternalTokenReferenceId())) {
@@ -703,7 +689,7 @@ public class PaymentEventListener {
                         .status(event.getTransaction().getStatus().getValue())
                         .event(event.getTransaction().getType().getValue())
                         .errorCode("PAY001")
-                        .errorMessage(Objects.nonNull(paymentError) ? paymentError.getDescription(): "Transaction is failed")
+                        .errorMessage(Objects.nonNull(paymentError) ? paymentError.getDescription() : "Transaction is failed")
                         .build());
             }
             paymentStatusKafkaPublisher.publish(waPayStateRespEventTopic, null, System.currentTimeMillis(), null, builder.build(), headers);
@@ -729,7 +715,7 @@ public class PaymentEventListener {
 
     private void publishBranchEvent(Map<String, Object> meta, String event) {
         meta.put(EVENT, event);
-        BranchEvent branchEvent= AppUtils.from(BranchRawDataEvent.builder().data(meta).build());
+        BranchEvent branchEvent = AppUtils.from(BranchRawDataEvent.builder().data(meta).build());
         BeanLocatorFactory.getBean(IKinesisEventPublisher.class).publish(dpStream, branchEvent.getEvent_name(), branchEvent);
     }
 

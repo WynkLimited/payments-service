@@ -74,5 +74,5 @@ public interface PayUConstants {
     String AUTO_REFUND = "autoRefund";
     String CURRENCY_INR="INR";
     String INTEGER_VALUE = String.valueOf(1);
-    ArrayList<String> ERROR_REASAONS = new ArrayList<>(Arrays.asList(" Mandate entry not found", "Mandate is not Active", "Request failed"));
+    ArrayList<String> ERROR_REASONS = new ArrayList<>(Arrays.asList("Mandate entry not found", "Mandate is not Active", "Request failed"));
 }

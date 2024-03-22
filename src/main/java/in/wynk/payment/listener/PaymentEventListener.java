@@ -591,7 +591,11 @@ public class PaymentEventListener {
             }
             AnalyticService.update(REFERENCE_TRANSACTION_ID, referenceTransactionId);
         }
-       
+        if (PaymentEvent.RENEW.equals(event.getTransaction().getType())) {
+            if (Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getAppDetails())) {
+                AnalyticService.update(SERVICE, event.getPurchaseDetails().getAppDetails().getService());
+            }
+        }
         if (Objects.nonNull(event.getTransaction().getCoupon())) {
             String couponCode = event.getTransaction().getCoupon();
             CouponCodeLink couponLinkOption = BeanLocatorFactory.getBean(ICouponCodeLinkService.class).fetchCouponCodeLink(couponCode.toUpperCase(Locale.ROOT));

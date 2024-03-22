@@ -1,5 +1,9 @@
 package in.wynk.payment.dto.payu;
 
+
+import java.util.ArrayList;
+import java.util.Arrays;
+
 public interface PayUConstants {
 
     String GENERIC_CALLBACK_ACTION = "generic";
@@ -69,4 +73,6 @@ public interface PayUConstants {
     String PAYU_PG_NET_BANKING_VALUE = "NB";
     String AUTO_REFUND = "autoRefund";
     String CURRENCY_INR="INR";
+    String INTEGER_VALUE = String.valueOf(1);
+    ArrayList<String> ERROR_REASONS = new ArrayList<>(Arrays.asList("Mandate entry not found", "Mandate is not Active", "Request failed"));
 }

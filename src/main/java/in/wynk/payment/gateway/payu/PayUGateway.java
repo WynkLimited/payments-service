@@ -18,10 +18,7 @@ import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.dto.response.AbstractPaymentChargingResponse;
 import in.wynk.payment.gateway.*;
 import in.wynk.payment.gateway.payu.service.*;
-import in.wynk.payment.service.IMerchantTDRService;
-import in.wynk.payment.service.IMerchantTransactionService;
-import in.wynk.payment.service.ITransactionManagerService;
-import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.payment.service.*;
 import in.wynk.payment.service.impl.PayUMerchantPaymentService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -66,8 +63,9 @@ public class PayUGateway extends PayUMerchantPaymentService implements
                        ApplicationEventPublisher eventPublisher,
                        ITransactionManagerService transactionManagerService,
                        IMerchantTransactionService merchantTransactionService,
+                       ISubscriptionServiceManager subscriptionServiceManager,
                        @Qualifier(EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate) {
-        super(gson, mapper, eventPublisher, payCache, merchantTransactionService, errorCodeCache, restTemplate, transactionManagerService);
+        super(gson, mapper, eventPublisher, payCache, merchantTransactionService, errorCodeCache, restTemplate, transactionManagerService, subscriptionServiceManager);
         this.statusGateway = new PayUStatusGatewayImpl(commonGateway);
         this.callbackGateway = new PayUCallbackGatewayImpl(commonGateway, mapper, eventPublisher);
         this.refundGateway = new PayURefundGatewayImpl(commonGateway, eventPublisher, transactionManagerService);

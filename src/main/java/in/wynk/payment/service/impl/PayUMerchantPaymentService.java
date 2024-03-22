@@ -26,10 +26,10 @@ import in.wynk.payment.common.utils.BillingUtils;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
+import in.wynk.payment.core.event.MandateStatusEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.core.event.PreDebitStatusEvent;
 import in.wynk.payment.core.event.UnScheduleRecurringPaymentEvent;
 import in.wynk.payment.dto.BaseTDRResponse;
 import in.wynk.payment.dto.PreDebitNotificationMessage;
@@ -801,7 +801,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             if (Objects.nonNull(renewal)) {
                 final String referenceTransactionId = renewal.getInitialTransactionId();
                 eventPublisher.publishEvent(UnScheduleRecurringPaymentEvent.builder().transactionId(message.getTransactionId()).clientAlias(message.getClientAlias()).reason("Stopping Payment Renewal because " + response.getMessage()).build());
-                eventPublisher.publishEvent(PreDebitStatusEvent.builder().txnId(message.getTransactionId()).paymentEvent(String.valueOf(PaymentEvent.MANDATE_STATUS)).clientAlias(message.getClientAlias()).errorReason(response.getMessage()).referenceTransactionId(referenceTransactionId).build());
+                eventPublisher.publishEvent(MandateStatusEvent.builder().txnId(message.getTransactionId()).clientAlias(message.getClientAlias()).errorReason(response.getMessage()).referenceTransactionId(referenceTransactionId).build());
                 transaction.setType(PaymentEvent.UNSUBSCRIBE.getValue());
                 AsyncTransactionRevisionRequest request =
                         AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(transaction.getStatus()).finalTransactionStatus(TransactionStatus.CANCELLED).build();

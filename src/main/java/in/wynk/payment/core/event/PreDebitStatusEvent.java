@@ -13,14 +13,17 @@ public class PreDebitStatusEvent {
     @Analysed
     private String txnId;
     @Analysed
-    private String type;
+    private String paymentEvent;
     @Analysed
     private String clientAlias;
     @Analysed
     private String errorReason;
+    @Analysed
+    private String referenceTransactionId;
 
-    public PaymentEvent getType() {
-        return PaymentEvent.valueOf(type);
+    public PaymentEvent getEvent() {
+        return PaymentEvent.valueOf(paymentEvent);
     }
+
 
 }

@@ -503,8 +503,8 @@ public class PaymentEventListener {
 
 
     @EventListener
-    @AnalyseTransaction(name = "PreDebitStatusEvent")
-    private void preDebitEvent(PreDebitStatusEvent event) {
+    @AnalyseTransaction(name = "MandateStatusEvent")
+    private void onMandateStatusEvent(MandateStatusEvent event) {
         AnalyticService.update(event);
     }
 

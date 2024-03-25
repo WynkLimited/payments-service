@@ -92,8 +92,6 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
                     AnalyticService.update(MESSAGE, "Maximum Attempts Reached. No More Entry In Payment Renewal");
                     return;
                 }
-
-                //check if renewal call breaks how it is updated and made deferred
                 nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planPeriodDTO.getTimeUnit().toMillis(planPeriodDTO.getRetryInterval()));
                 scheduleRecurringPayment(request.getTransaction().getIdStr(), request.getLastSuccessTransactionId(), request.getTransaction().getType(), request.getTransaction().getPaymentChannel().getCode(), nextRecurringDateTime, request.getAttemptSequence(), request.getTransaction());
             }
@@ -165,7 +163,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     }
 
     @Override
-    public void scheduleRecurringPayment (String transactionId, String lastSuccessTransactionId, PaymentEvent event, String code, Calendar nextRecurringDateTime, int attemptSequence,
+    public void scheduleRecurringPayment (String transactionId, String lastSuccessTransactionId, PaymentEvent paymentEvent, String code, Calendar nextRecurringDateTime, int attemptSequence,
                                            Transaction transaction) {
         if (BeanConstant.ADD_TO_BILL_PAYMENT_SERVICE.equalsIgnoreCase(code)) {
             scheduleAtbTask(transaction, nextRecurringDateTime);
@@ -180,15 +178,15 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
         }
         PaymentRenewal renewal = null;
         try {
-            if (lastSuccessTransactionId != null && PaymentEvent.RENEW == event) {
+            if (lastSuccessTransactionId != null && PaymentEvent.RENEW == paymentEvent) {
                 renewal =
                         RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).findById(lastSuccessTransactionId)
                                 .orElse(null);
-                if(Objects.nonNull(renewal)) {
+                if(Objects.nonNull(renewal) && transaction.getStatus() != TransactionStatus.SUCCESS) {
                     attemptSequence = renewal.getAttemptSequence() +1;
                 }
             }
-            String initialTransactionId = Objects.nonNull(renewal) ? renewal.getInitialTransactionId() : fetchInitialTransactionId(transaction, event);
+            String initialTransactionId = Objects.nonNull(renewal) ? renewal.getInitialTransactionId() : fetchInitialTransactionId(transaction, paymentEvent);
             String updatedLastSuccessTransactionId = Objects.nonNull(renewal) && Objects.nonNull(renewal.getLastSuccessTransactionId()) ? renewal.getLastSuccessTransactionId() : lastSuccessTransactionId;
             PaymentRenewal paymentRenewal =
                     PaymentRenewal.builder().day(nextRecurringDateTime).transactionId(transactionId).hour(nextRecurringDateTime.getTime()).createdTimestamp(Calendar.getInstance())
@@ -203,7 +201,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     private String fetchInitialTransactionId (Transaction transaction, PaymentEvent event) {
          if (PaymentEvent.RENEW != event) {
             return transaction.getIdStr();
-        }else {
+        } else {
             return null;
         }
     }

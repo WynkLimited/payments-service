@@ -6,9 +6,9 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.client.validations.IClientValidatorRequest;
 import in.wynk.common.dto.GeoLocation;
 import in.wynk.common.dto.MiscellaneousDetails;
-import in.wynk.subscription.common.request.SessionRequest;
-import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.identity.client.utils.IdentityUtils;
+import in.wynk.payment.core.dao.entity.IChargingDetails;
+import in.wynk.subscription.common.request.SessionRequest;
 import in.wynk.wynkservice.api.validations.IWynkServiceValidatorRequest;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -64,7 +64,7 @@ public class PurchaseRequest implements IClientValidatorRequest, IWynkServiceVal
 
     public SessionRequest toSession() {
         final Optional<IChargingDetails.IPageUrlDetails> pageUrlDetailsOption = Optional.ofNullable(getPageUrlDetails());
-        return SessionRequest.builder()
+        SessionRequest.SessionRequestBuilder sessionRequestBuilder = SessionRequest.builder()
                 .appId(getAppDetails().getAppId())
                 .appVersion(getAppDetails().getAppVersion())
                 .buildNo(getAppDetails().getBuildNo())
@@ -80,8 +80,14 @@ public class PurchaseRequest implements IClientValidatorRequest, IWynkServiceVal
                 .failureUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getFailurePageUrl).orElse(null))
                 .successUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getSuccessPageUrl).orElse(null))
                 .pendingUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getPendingPageUrl).orElse(null))
-                .unknownUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getUnknownPageUrl).orElse(null))
-                .build();
+                .unknownUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getUnknownPageUrl).orElse(null));
+        if (productDetails.getType().equalsIgnoreCase("POINT")) {
+            PointDetails pointDetails = (PointDetails) productDetails;
+            sessionRequestBuilder.itemId(pointDetails.getItemId());
+            sessionRequestBuilder.itemPrice(pointDetails.getPrice());
+            sessionRequestBuilder.title(pointDetails.getTitle());
+            sessionRequestBuilder.skuId(pointDetails.getSkuId());
+        }
+        return sessionRequestBuilder.build();
     }
-
 }

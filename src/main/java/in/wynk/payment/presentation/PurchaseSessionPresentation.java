@@ -12,6 +12,7 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.identity.client.utils.IdentityUtils;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.dto.PointDetails;
 import in.wynk.payment.dto.PurchaseRequest;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.subscription.common.dto.ItemDTO;
@@ -41,11 +42,11 @@ public class PurchaseSessionPresentation implements IPresentation<WynkResponseEn
             if (request.getProductDetails().getType().equalsIgnoreCase(PLAN)) {
                 queryBuilder.addParameter(PLAN_ID, request.getProductDetails().getId());
             } else {
-                final ItemDTO item = cache.getItem(request.getProductDetails().getId());
-                queryBuilder.addParameter(TITLE, item.getName());
-                queryBuilder.addParameter(SUBTITLE, item.getName());
-                queryBuilder.addParameter(ITEM_ID, item.getId());
-                queryBuilder.addParameter(POINT_PURCHASE_ITEM_PRICE, String.valueOf(item.getPrice()));
+                PointDetails pointDetails = (PointDetails) request.getProductDetails();
+                queryBuilder.addParameter(ITEM_ID, pointDetails.getItemId());
+                queryBuilder.addParameter(TITLE, pointDetails.getTitle());
+                queryBuilder.addParameter(ITEM_PRICE, pointDetails.getPrice());
+                queryBuilder.addParameter(SKU_ID, pointDetails.getSkuId());
             }
             queryBuilder.addParameter(UID, IdentityUtils.getUidFromUserName(request.getUserDetails().getMsisdn(), request.getAppDetails().getService()));
             queryBuilder.addParameter(APP_ID, String.valueOf(request.getAppDetails().getAppId()));

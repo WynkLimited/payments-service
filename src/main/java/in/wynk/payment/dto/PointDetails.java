@@ -23,10 +23,13 @@ public class PointDetails extends AbstractProductDetails {
     @NotNull
     @Analysed
     private String itemId;
+    @NotNull
     @Analysed
     private String title;
+    @NotNull
     @Analysed
     private String price;
+    @NotNull
     @Analysed
     private String skuId;
 

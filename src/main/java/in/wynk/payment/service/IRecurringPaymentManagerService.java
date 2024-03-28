@@ -25,4 +25,6 @@ public interface IRecurringPaymentManagerService {
     void unScheduleRecurringPayment (String transactionId, PaymentEvent paymentEvent, long validUntil, long deferredUntil);
 
     void upsert (PaymentRenewal paymentRenewal);
+
+    PaymentRenewal getRenewalById (String txnId);
 }

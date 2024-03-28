@@ -4,12 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
-import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.client.core.dao.entity.ClientDetails;
-import in.wynk.client.data.utils.RepositoryUtils;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.Message;
@@ -27,7 +25,6 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.*;
-import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.core.service.InvoiceDetailsCachingService;
 import in.wynk.payment.dto.*;
@@ -112,7 +109,7 @@ public class PaymentEventListener {
     private final WynkServiceDetailsCachingService wynkServiceDetailsCachingService;
     private final ISubscriptionServiceManager subscriptionServiceManager;
 
-    public static Map<String, String> map = Collections.singletonMap(AIRTEL_TV,AIRTEL_XSTREAM);
+    public static Map<String, String> map = Collections.singletonMap(AIRTEL_TV, AIRTEL_XSTREAM);
 
     @Value("${event.stream.dp}")
     private String dpStream;
@@ -122,7 +119,7 @@ public class PaymentEventListener {
 
     @EventListener
     @AnalyseTransaction(name = QueueConstant.DEFAULT_SQS_MESSAGE_THRESHOLD_EXCEED_EVENT)
-    public void onAnyOrderMessageThresholdExceedEvent(MessageThresholdExceedEvent event) throws JsonProcessingException {
+    public void onAnyOrderMessageThresholdExceedEvent (MessageThresholdExceedEvent event) throws JsonProcessingException {
         AnalyticService.update(event);
         AnalyticService.update(MESSAGE_PAYLOAD, mapper.writeValueAsString(event));
     }
@@ -130,7 +127,7 @@ public class PaymentEventListener {
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "paymentReconciliationThresholdExceedEvent")
-    public void onPaymentReconThresholdExceedEvent(PaymentReconciliationThresholdExceedEvent event) {
+    public void onPaymentReconThresholdExceedEvent (PaymentReconciliationThresholdExceedEvent event) {
         AnalyticService.update(event);
         final Transaction transaction = transactionManagerService.get(event.getTransactionId());
         final TransactionStatus existingTransactionStatus = transaction.getStatus();
@@ -142,7 +139,7 @@ public class PaymentEventListener {
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "paymentRenewalMessageThresholdExceedEvent")
-    public void onPaymentRenewalMessageThresholdExceedEvent(PaymentRenewalMessageThresholdExceedEvent event) {
+    public void onPaymentRenewalMessageThresholdExceedEvent (PaymentRenewalMessageThresholdExceedEvent event) {
         AnalyticService.update(event);
         Transaction transaction = transactionManagerService.get(event.getTransactionId());
         sqsManagerService.publishSQSMessage(PaymentRenewalChargingMessage.builder()
@@ -159,12 +156,13 @@ public class PaymentEventListener {
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "recurringPaymentEvent")
-    public void onRecurringPaymentEvent(RecurringPaymentEvent event) {
+    public void onRecurringPaymentEvent (RecurringPaymentEvent event) {
         try {
             AnalyticService.update(event);
-            if (event.getPaymentEvent() == PaymentEvent.UNSUBSCRIBE)
+            if (event.getPaymentEvent() == PaymentEvent.UNSUBSCRIBE) {
                 BeanLocatorFactory.getBean(transactionManagerService.get(event.getTransactionId()).getPaymentChannel().getCode(), ICancellingRecurringService.class)
                         .cancelRecurring(event.getTransactionId());
+            }
         } catch (Exception e) {
             throw new WynkRuntimeException(UT025, e);
         }
@@ -173,20 +171,20 @@ public class PaymentEventListener {
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "merchantTransactionEvent")
-    public void onMerchantTransactionEvent(MerchantTransactionEvent event) {
+    public void onMerchantTransactionEvent (MerchantTransactionEvent event) {
         AnalyticService.update(event);
         //If we get data in  merchant table then update the data else upsert the data
         boolean isDataPresent = checkIfEntryPresentAndUpdateData(event);
-        if(!isDataPresent) {
-                MerchantTransaction merchantTransaction = MerchantTransaction.builder()
-                        .id(event.getId())
-                        .externalTransactionId(event.getExternalTransactionId())
-                        .request(event.getRequest())
-                        .response(event.getResponse())
-                        .externalTokenReferenceId(event.getExternalTokenReferenceId())
-                        .orderId(event.getOrderId())
-                        .build();
-                upsertData(merchantTransaction, event);
+        if (!isDataPresent) {
+            MerchantTransaction merchantTransaction = MerchantTransaction.builder()
+                    .id(event.getId())
+                    .externalTransactionId(event.getExternalTransactionId())
+                    .request(event.getRequest())
+                    .response(event.getResponse())
+                    .externalTokenReferenceId(event.getExternalTokenReferenceId())
+                    .orderId(event.getOrderId())
+                    .build();
+            upsertData(merchantTransaction, event);
         }
     }
 
@@ -220,18 +218,47 @@ public class PaymentEventListener {
     @EventListener
     @AnalyseTransaction(name = "paymentErrorEvent")
     @ClientAware(clientAlias = "#event.clientAlias")
-    public void onPaymentErrorEvent(PaymentErrorEvent event) {
+    public void onPaymentErrorEvent (PaymentErrorEvent event) {
         AnalyticService.update(event);
+        publishTransactionData(event);
         retryRegistry.retry(PaymentConstants.PAYMENT_ERROR_UPSERT_RETRY_KEY).executeRunnable(() -> paymentErrorService.upsert(PaymentError.builder()
                 .id(event.getId())
                 .code(Objects.nonNull(event.getCode()) ? event.getCode() : "UNKNOWN")
-                .description(Objects.nonNull(event.getDescription()) && event.getDescription().length() > 255 ? event.getDescription().substring(0, Math.min(event.getDescription().length(), 255)) : "No description found")
+                .description(Objects.nonNull(event.getDescription()) && event.getDescription().length() > 255 ? event.getDescription().substring(0, Math.min(event.getDescription().length(), 255)) :
+                        "No description found")
                 .build()));
+    }
+
+    private void publishTransactionData (PaymentErrorEvent event) {
+        Transaction transaction = transactionManagerService.get(event.getId());
+        if (Objects.nonNull(transaction)) {
+            AnalyticService.update(UID, transaction.getUid());
+            if (Objects.nonNull(transaction.getPlanId())) {
+                AnalyticService.update(PLAN_ID, transaction.getPlanId());
+            }
+            if (Objects.nonNull(transaction.getItemId())) {
+                AnalyticService.update(PLAN_ID, transaction.getItemId());
+            }
+            AnalyticService.update(PAYMENT_CODE, transaction.getPaymentChannel().getId());
+        }
+        if (transaction.getType() == PaymentEvent.RENEW) {
+            PaymentRenewal renewal = recurringPaymentManagerService.getRenewalById(event.getId());
+            if (Objects.nonNull(renewal)) {
+                AnalyticService.update(RENEWAL_ATTEMPT_SEQUENCE, renewal.getAttemptSequence());
+            }
+            cancelRenewalBasedOnErrorReason(event.getDescription(), event, transaction.getPlanId(), renewal.getAttemptSequence());
+        }
+    }
+
+    private void cancelRenewalBasedOnErrorReason (String description, PaymentErrorEvent event, Integer planId, Integer attemptSequence) {
+        if (ERROR_REASONS.contains(description)) {
+            recurringPaymentManagerService.unScheduleRecurringPayment(event.getClientAlias(), event.getId(), PaymentEvent.CANCELLED);
+        }
     }
 
     @EventListener
     @AnalyseTransaction(name = "invoiceEvent")
-    public void onInvoiceEvent(InvoiceEvent event) {
+    public void onInvoiceEvent (InvoiceEvent event) {
         AnalyticService.update(event);
         AnalyticService.update(INVOICE_ID, event.getInvoice().getId());
         AnalyticService.update(TRANSACTION_ID, event.getInvoice().getTransactionId());
@@ -254,15 +281,15 @@ public class PaymentEventListener {
 
     @EventListener
     @AnalyseTransaction(name = "scheduleInvoiceRetryEvent")
-    public void onInvoiceRetryEvent(InvoiceRetryEvent event) {
+    public void onInvoiceRetryEvent (InvoiceRetryEvent event) {
         try {
             AnalyticService.update(event);
             int retryCount = event.getRetryCount();
             final Invoice invoice = invoiceService.getInvoiceByTransactionId(event.getTxnId());
-            if(Objects.nonNull(invoice)){
+            if (Objects.nonNull(invoice)) {
                 retryCount = invoice.getRetryCount();
             }
-            if(retryCount < event.getRetries().size()){
+            if (retryCount < event.getRetries().size()) {
                 final long attemptDelayedBy = event.getRetries().get(retryCount);
                 final Date taskScheduleTime = new Date(System.currentTimeMillis() + (attemptDelayedBy * 1000));
                 taskScheduler.schedule(TaskDefinition.<InvoiceRetryTask>builder()
@@ -283,12 +310,12 @@ public class PaymentEventListener {
 
     @EventListener
     @AnalyseTransaction(name = "triggerInvoiceRetryEvent")
-    public void onInvoiceRetryTaskEvent(InvoiceRetryTaskEvent event) {
-        try{
+    public void onInvoiceRetryTaskEvent (InvoiceRetryTaskEvent event) {
+        try {
             AnalyticService.update(event);
             final Invoice invoice = invoiceService.getInvoiceByTransactionId(event.getTransactionId());
-            if (Objects.nonNull(invoice)){
-                if(!invoice.getStatus().equalsIgnoreCase("SUCCESS")){
+            if (Objects.nonNull(invoice)) {
+                if (!invoice.getStatus().equalsIgnoreCase("SUCCESS")) {
                     final GenerateInvoiceEvent generateInvoiceEvent = GenerateInvoiceEvent.builder()
                             .msisdn(event.getMsisdn())
                             .txnId(event.getTransactionId())
@@ -303,14 +330,15 @@ public class PaymentEventListener {
                     invoiceService.upsert(invoice);
 
                     final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(event.getClientAlias());
-                    if(event.getRetryCount() + 1 < invoiceDetails.getRetries().size()){
+                    if (event.getRetryCount() + 1 < invoiceDetails.getRetries().size()) {
                         eventPublisher.publishEvent(InvoiceRetryEvent.builder()
                                 .msisdn(event.getMsisdn())
                                 .clientAlias(event.getClientAlias())
                                 .txnId(event.getTransactionId())
                                 .retries(invoiceDetails.getRetries())
                                 .retryCount(event.getRetryCount() + 1).build());
-                    };
+                    }
+                    ;
                 }
             } else {
                 final GenerateInvoiceEvent generateInvoiceEvent = GenerateInvoiceEvent.builder()
@@ -324,7 +352,7 @@ public class PaymentEventListener {
                 invoiceKafkaPublisher.publish(GenerateInvoiceKafkaMessage.from(generateInvoiceEvent, clientAlias));
 
                 final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(event.getClientAlias());
-                if(event.getRetryCount() + 1 < invoiceDetails.getRetries().size()){
+                if (event.getRetryCount() + 1 < invoiceDetails.getRetries().size()) {
                     eventPublisher.publishEvent(InvoiceRetryEvent.builder()
                             .msisdn(event.getMsisdn())
                             .clientAlias(event.getClientAlias())
@@ -342,7 +370,7 @@ public class PaymentEventListener {
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "paymentRefundInitEvent")
-    public void onPaymentRefundInitEvent(PaymentRefundInitEvent event) {
+    public void onPaymentRefundInitEvent (PaymentRefundInitEvent event) {
         AnalyticService.update(event);
         sqsManagerService.publishSQSMessage(PaymentRefundInitMessage.builder()
                 .originalTransactionId(event.getOriginalTransactionId())
@@ -352,14 +380,14 @@ public class PaymentEventListener {
 
     @EventListener
     @AnalyseTransaction(name = "paymentRefundedEvent")
-    public void onPaymentRefundEvent(PaymentRefundReconciledEvent event) {
+    public void onPaymentRefundEvent (PaymentRefundReconciledEvent event) {
         AnalyticService.update(event);
     }
 
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "paymentReconciledEvent")
-    public void onPaymentReconciledEvent(PaymentChargingReconciledEvent event) {
+    public void onPaymentReconciledEvent (PaymentChargingReconciledEvent event) {
         AnalyticService.update(event);
         initRefundIfApplicable(event);
     }
@@ -367,7 +395,7 @@ public class PaymentEventListener {
     @EventListener
     @AnalyseTransaction(name = "clientCallback")
     @ClientAware(clientAlias = "#event.clientAlias")
-    public void onClientCallbackEvent(ClientCallbackEvent callbackEvent) {
+    public void onClientCallbackEvent (ClientCallbackEvent callbackEvent) {
         AnalyticService.update(callbackEvent);
         sendClientCallback(callbackEvent.getClientAlias(), ClientCallbackRequest.from(callbackEvent));
     }
@@ -376,7 +404,7 @@ public class PaymentEventListener {
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "purchaseInitEvent")
-    public void onPurchaseInitEvent(PurchaseInitEvent event) {
+    public void onPurchaseInitEvent (PurchaseInitEvent event) {
         try {
             AnalyticService.update(event);
             PurchaseRecord purchaseRecord = PurchaseRecord.from(event);
@@ -404,12 +432,12 @@ public class PaymentEventListener {
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "purchaseRecordEvent")
-    public void onPurchaseRecordEvent(PurchaseRecordEvent event) {
-        try{
+    public void onPurchaseRecordEvent (PurchaseRecordEvent event) {
+        try {
             AnalyticService.update(event);
             final Transaction lastTransaction = transactionManagerService.get(event.getTransactionId());
             final boolean sendDropOutNotification = lastTransaction.getStatus() != TransactionStatus.SUCCESS;
-            if (!sendDropOutNotification){
+            if (!sendDropOutNotification) {
                 log.info("Skipping to send drop out notification as user has completed transaction for {}", event);
                 return;
             }
@@ -425,10 +453,11 @@ public class PaymentEventListener {
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "paymentAutoRefundEvent")
-    public void onPaymentAutoRefundEvent(PaymentAutoRefundEvent event) {
-        try{
+    public void onPaymentAutoRefundEvent (PaymentAutoRefundEvent event) {
+        try {
             AnalyticService.update(event);
-            final String tinyUrl = quickPayLinkGenerator.generate(event.getTransaction().getIdStr(), event.getClientAlias(), event.getPurchaseDetails().getAppDetails(), event.getPurchaseDetails().getProductDetails());
+            final String tinyUrl = quickPayLinkGenerator.generate(event.getTransaction().getIdStr(), event.getClientAlias(), event.getPurchaseDetails().getAppDetails(),
+                    event.getPurchaseDetails().getProductDetails());
             AnalyticService.update(WINBACK_NOTIFICATION_URL, tinyUrl);
             sendNotificationToUser(event.getPurchaseDetails().getProductDetails(), tinyUrl, event.getTransaction().getMsisdn(), event.getTransaction().getStatus());
         } catch (Exception e) {
@@ -440,11 +469,11 @@ public class PaymentEventListener {
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "generateInvoiceEvent")
-    public void onGenerateInvoiceEvent(GenerateInvoiceEvent event) {
-        try{
+    public void onGenerateInvoiceEvent (GenerateInvoiceEvent event) {
+        try {
             AnalyticService.update(event);
             final Invoice invoice = invoiceService.getInvoiceByTransactionId(event.getTxnId());
-            if(Objects.isNull(invoice)){
+            if (Objects.isNull(invoice)) {
                 final Transaction transaction = transactionManagerService.get(event.getTxnId());
                 final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
                 final String clientAlias = clientDetailsCachingService.getClientByService(plan.getService()).getAlias();
@@ -459,7 +488,7 @@ public class PaymentEventListener {
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "externalTransactionReportEvent")
-    public void onExternalTransactionReportEvent(ExternalTransactionReportEvent event) {
+    public void onExternalTransactionReportEvent (ExternalTransactionReportEvent event) {
         AnalyticService.update(event);
         try {
             sqsManagerService.publishSQSMessage(ExternalTransactionReportMessageManager.builder().clientAlias(event.getClientAlias()).transactionId(event.getTransactionId())
@@ -471,16 +500,16 @@ public class PaymentEventListener {
 
     @EventListener
     @AnalyseTransaction(name = "GooglePlayReportEvent")
-    public void onGooglePlayReportEvent(GooglePlayReportEvent event) {
+    public void onGooglePlayReportEvent (GooglePlayReportEvent event) {
         AnalyticService.update(event);
     }
 
-    private void sendNotificationToUser(IProductDetails productDetails, String tinyUrl, String msisdn, TransactionStatus txnStatus) {
+    private void sendNotificationToUser (IProductDetails productDetails, String tinyUrl, String msisdn, TransactionStatus txnStatus) {
         final PlanDTO plan = cachingService.getPlan(productDetails.getId());
         final String service = productDetails.getType().equalsIgnoreCase(PLAN) ? plan.getService() : cachingService.getItem(productDetails.getId()).getService();
         final WynkService wynkService = WynkServiceUtils.fromServiceId(service);
         final Message message = wynkService.getMessages().get(PaymentConstants.USER_WINBACK).get(txnStatus.getValue());
-        if((Objects.nonNull(message)) && message.isEnabled()){
+        if ((Objects.nonNull(message)) && message.isEnabled()) {
             Map<String, Object> contextMap = new HashMap<String, Object>() {{
                 put(PLAN, plan);
                 put(OFFER, cachingService.getOffer(plan.getLinkedOfferId()));
@@ -498,12 +527,20 @@ public class PaymentEventListener {
         }
     }
 
-    private void sendClientCallback(String clientAlias, ClientCallbackRequest request) {
+
+    @EventListener
+    @AnalyseTransaction(name = "MandateStatusEvent")
+    private void onMandateStatusEvent (MandateStatusEvent event) {
+        AnalyticService.update(event);
+    }
+
+    private void sendClientCallback (String clientAlias, ClientCallbackRequest request) {
         clientCallbackService.sendCallback(ClientCallbackPayloadWrapper.<ClientCallbackRequest>builder().clientAlias(clientAlias).payload(request).build());
     }
 
-    private void initRefundIfApplicable(PaymentChargingReconciledEvent event) {
-        if (EnumSet.of(TransactionStatus.SUCCESS).contains(event.getTransactionStatus()) && event.getPaymentGateway().isTrialRefundSupported() && (EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION, PaymentEvent.MANDATE).contains(event.getPaymentEvent()))) {
+    private void initRefundIfApplicable (PaymentChargingReconciledEvent event) {
+        if (EnumSet.of(TransactionStatus.SUCCESS).contains(event.getTransactionStatus()) && event.getPaymentGateway().isTrialRefundSupported() &&
+                (EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION, PaymentEvent.MANDATE).contains(event.getPaymentEvent()))) {
             eventPublisher.publishEvent(PaymentRefundInitEvent.builder()
                     .reason("trial plan amount refund")
                     .originalTransactionId(event.getTransactionId())
@@ -513,7 +550,7 @@ public class PaymentEventListener {
 
     @EventListener
     @AnalyseTransaction(name = "paymentSettlement")
-    public void onPaymentSettlementEvent(PaymentSettlementEvent event) {
+    public void onPaymentSettlementEvent (PaymentSettlementEvent event) {
         final AbstractPaymentSettlementResponse response = paymentManager.settle(PaymentSettlementRequest.builder().tid(event.getTid()).build());
         AnalyticService.update(event);
         AnalyticService.update(response);
@@ -522,7 +559,7 @@ public class PaymentEventListener {
     @EventListener
     @AnalyseTransaction(name = "userSubscriptionStatus")
     @TransactionAware(txnId = "#event.transactionId", lock = false)
-    public void onUserSubscriptionEvent(UserSubscriptionStatusEvent event) {
+    public void onUserSubscriptionEvent (UserSubscriptionStatusEvent event) {
         AnalyticService.update(event);
         if (!SUBSCRIBED_STATE.equals(event.getStatus())) {
             Transaction transaction = TransactionContext.get();
@@ -535,7 +572,7 @@ public class PaymentEventListener {
 
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
-    public void onPaymentUserDeactivationEvent(PaymentUserDeactivationEvent event) {
+    public void onPaymentUserDeactivationEvent (PaymentUserDeactivationEvent event) {
         try {
             transactionManagerService.migrateOldTransactions(event.getId(), event.getUid(), event.getOldUid(), event.getService());
         } catch (Exception e) {
@@ -545,14 +582,14 @@ public class PaymentEventListener {
 
     @EventListener
     @AnalyseTransaction(name = "paymentUserDeactivationMigrationEvent")
-    public void onPaymentUserDeactivationMigrationEvent(PaymentUserDeactivationMigrationEvent event) {
+    public void onPaymentUserDeactivationMigrationEvent (PaymentUserDeactivationMigrationEvent event) {
         AnalyticService.update(event);
     }
 
     @EventListener
     @AnalyseTransaction(name = "transactionSnapshot")
     @ClientAware(clientAlias = "#event.transaction.clientAlias")
-    public void onTransactionSnapshotEvent(TransactionSnapshotEvent event) {
+    public void onTransactionSnapshotEvent (TransactionSnapshotEvent event) {
         Optional.ofNullable(event.getPurchaseDetails()).ifPresent(AnalyticService::update);
         AnalyticService.update(UID, event.getTransaction().getUid());
         AnalyticService.update(MSISDN, event.getTransaction().getMsisdn());
@@ -561,7 +598,7 @@ public class PaymentEventListener {
         AnalyticService.update(AMOUNT_PAID, event.getTransaction().getAmount());
         AnalyticService.update(CLIENT, event.getTransaction().getClientAlias());
         AnalyticService.update(COUPON_CODE, event.getTransaction().getCoupon());
-        if( Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getGeoLocation())){
+        if (Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getGeoLocation())) {
             AnalyticService.update(ACCESS_COUNTRY_CODE, event.getPurchaseDetails().getGeoLocation().getAccessCountryCode());
             AnalyticService.update(STATE_CODE, event.getPurchaseDetails().getGeoLocation().getStateCode());
             AnalyticService.update(IP, event.getPurchaseDetails().getGeoLocation().getIp());
@@ -571,18 +608,14 @@ public class PaymentEventListener {
             AnalyticService.update(RENEWAL_ATTEMPT_SEQUENCE, event.getAttemptSequence());
             String referenceTransactionId = event.getTransaction().getIdStr();
             if (PaymentEvent.RENEW == event.getTransaction().getType()) {
-                //get data
-                PaymentRenewal renewal =
-                        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class)
-                                .findById(event.getTransaction().getIdStr())
-                                .orElse(null);
+                PaymentRenewal renewal = recurringPaymentManagerService.getRenewalById(event.getTransaction().getIdStr());
                 if (renewal != null) {
                     referenceTransactionId = renewal.getInitialTransactionId();
                 }
             }
             AnalyticService.update(REFERENCE_TRANSACTION_ID, referenceTransactionId);
         }
-       
+
         if (Objects.nonNull(event.getTransaction().getCoupon())) {
             String couponCode = event.getTransaction().getCoupon();
             CouponCodeLink couponLinkOption = BeanLocatorFactory.getBean(ICouponCodeLinkService.class).fetchCouponCodeLink(couponCode.toUpperCase(Locale.ROOT));
@@ -601,8 +634,9 @@ public class PaymentEventListener {
         }
         AnalyticService.update(TRANSACTION_ID, event.getTransaction().getIdStr());
         AnalyticService.update(INIT_TIMESTAMP, event.getTransaction().getInitTime().getTime().getTime());
-        if (Objects.nonNull(event.getTransaction().getExitTime()))
+        if (Objects.nonNull(event.getTransaction().getExitTime())) {
             AnalyticService.update(EXIT_TIMESTAMP, event.getTransaction().getExitTime().getTime().getTime());
+        }
         AnalyticService.update(PAYMENT_EVENT, event.getTransaction().getType().getValue());
         AnalyticService.update(PAYMENT_CODE, event.getTransaction().getPaymentChannel().name());
         AnalyticService.update(TRANSACTION_STATUS, event.getTransaction().getStatus().getValue());
@@ -611,8 +645,9 @@ public class PaymentEventListener {
             final BaseTDRResponse tdr = paymentGatewayManager.getTDR(event.getTransaction().getIdStr());
             AnalyticService.update(TDR, tdr.getTdr());
             //Invoice should not be generated for Trial or mandate subscription WCF-4350
-            if((PaymentEvent.MANDATE != event.getTransaction().getType() && PaymentEvent.TRIAL_SUBSCRIPTION != event.getTransaction().getType()) && event.getTransaction().getPaymentChannel().isInvoiceSupported()){
-                if(PaymentEvent.REFUND != event.getTransaction().getType()  || (PaymentEvent.REFUND == event.getTransaction().getType() && event.getTransaction().getAmount() != MANDATE_FLOW_AMOUNT)) {
+            if ((PaymentEvent.MANDATE != event.getTransaction().getType() && PaymentEvent.TRIAL_SUBSCRIPTION != event.getTransaction().getType()) &&
+                    event.getTransaction().getPaymentChannel().isInvoiceSupported()) {
+                if (PaymentEvent.REFUND != event.getTransaction().getType() || (PaymentEvent.REFUND == event.getTransaction().getType() && event.getTransaction().getAmount() != MANDATE_FLOW_AMOUNT)) {
                     eventPublisher.publishEvent(GenerateInvoiceEvent.builder()
                             .msisdn(event.getTransaction().getMsisdn())
                             .txnId(event.getTransaction().getIdStr())
@@ -621,12 +656,13 @@ public class PaymentEventListener {
                 }
             }
             if (ApsConstant.APS.equals(event.getTransaction().getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(event.getTransaction().getPaymentChannel().getId())) {
-              initiateReportTransactionToMerchant(event);
+                initiateReportTransactionToMerchant(event);
             }
         }
-        if (Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getAppDetails()))
+        if (Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getAppDetails())) {
             AnalyticService.update(event.getPurchaseDetails().getAppDetails());
-        if(event.getTransaction().getStatus().equals(TransactionStatus.AUTO_REFUND)){
+        }
+        if (event.getTransaction().getStatus().equals(TransactionStatus.AUTO_REFUND)) {
             eventPublisher.publishEvent(PaymentAutoRefundEvent.builder()
                     .transaction(event.getTransaction())
                     .clientAlias(event.getTransaction().getClientAlias())
@@ -644,14 +680,16 @@ public class PaymentEventListener {
             MerchantTransaction merchantData = merchantTransactionService.getMerchantTransaction(event.getTransaction().getIdStr());
             if (Objects.nonNull(merchantData.getExternalTokenReferenceId())) {
                 AnalyticService.update(EXTERNAL_TRANSACTION_TOKEN, merchantData.getExternalTokenReferenceId());
-                eventPublisher.publishEvent(ExternalTransactionReportEvent.builder().transactionId(event.getTransaction().getIdStr()).externalTokenReferenceId(merchantData.getExternalTokenReferenceId()).clientAlias(event.getTransaction()
-                        .getClientAlias()).paymentEvent(event.getTransaction().getType()).build());
+                eventPublisher.publishEvent(
+                        ExternalTransactionReportEvent.builder().transactionId(event.getTransaction().getIdStr()).externalTokenReferenceId(merchantData.getExternalTokenReferenceId())
+                                .clientAlias(event.getTransaction()
+                                        .getClientAlias()).paymentEvent(event.getTransaction().getType()).build());
             }
         } catch (Exception ignored) {
         }
     }
 
-    public void publishWaPaymentStatusEvent(TransactionSnapshotEvent event) {
+    public void publishWaPaymentStatusEvent (TransactionSnapshotEvent event) {
         final IPurchaseDetails purchaseDetails = event.getPurchaseDetails();
         if (purchaseDetails != null && purchaseDetails.getSessionDetails() != null && WhatsappSessionDetails.class.isAssignableFrom(purchaseDetails.getSessionDetails().getClass())) {
             final WhatsappSessionDetails waSessionDetails = (WhatsappSessionDetails) purchaseDetails.getSessionDetails();
@@ -672,7 +710,8 @@ public class PaymentEventListener {
                             .title(selectedPlan.getTitle())
                             .id(String.valueOf(selectedPlan.getId()))
                             .description(selectedPlan.getDescription())
-                            .priceDetails(PriceDetails.builder().currency(selectedPlan.getPrice().getCurrency()).price((int) selectedPlan.getPrice().getDisplayAmount()).discountPrice((int) selectedPlan.getPrice().getAmount()).build())
+                            .priceDetails(PriceDetails.builder().currency(selectedPlan.getPrice().getCurrency()).price((int) selectedPlan.getPrice().getDisplayAmount())
+                                    .discountPrice((int) selectedPlan.getPrice().getAmount()).build())
                             .periodDetails(PeriodDetails.builder().validity(selectedPlan.getPeriod().getValidity()).validityUnit(selectedPlan.getPeriod().getTimeUnit()).build())
                             .build());
 
@@ -697,7 +736,7 @@ public class PaymentEventListener {
                         .status(event.getTransaction().getStatus().getValue())
                         .event(event.getTransaction().getType().getValue())
                         .errorCode("PAY001")
-                        .errorMessage(Objects.nonNull(paymentError) ? paymentError.getDescription(): "Transaction is failed")
+                        .errorMessage(Objects.nonNull(paymentError) ? paymentError.getDescription() : "Transaction is failed")
                         .build());
             }
             paymentStatusKafkaPublisher.publish(waPayStateRespEventTopic, null, System.currentTimeMillis(), null, builder.build(), headers);
@@ -705,7 +744,7 @@ public class PaymentEventListener {
     }
 
     @EventListener
-    private void publishPaymentEventToBranch(PaymentsBranchEvent event) {
+    private void publishPaymentEventToBranch (PaymentsBranchEvent event) {
         Map<String, Object> map = new HashMap<>();
         if (event.getData() instanceof EventsWrapper) {
             map.putAll(branchMeta((EventsWrapper) event.getData()));
@@ -716,23 +755,23 @@ public class PaymentEventListener {
 
     @ClientAware(clientAlias = "#event.clientAlias")
     @EventListener(UnScheduleRecurringPaymentEvent.class)
-    private void unScheduleTransactionRecurring(UnScheduleRecurringPaymentEvent event) {
+    private void unScheduleTransactionRecurring (UnScheduleRecurringPaymentEvent event) {
         AnalyticService.update(event);
         recurringPaymentManagerService.unScheduleRecurringPayment(event.getClientAlias(), event.getTransactionId(), PaymentEvent.CANCELLED);
     }
 
-    private void publishBranchEvent(Map<String, Object> meta, String event) {
+    private void publishBranchEvent (Map<String, Object> meta, String event) {
         meta.put(EVENT, event);
-        BranchEvent branchEvent= AppUtils.from(BranchRawDataEvent.builder().data(meta).build());
+        BranchEvent branchEvent = AppUtils.from(BranchRawDataEvent.builder().data(meta).build());
         BeanLocatorFactory.getBean(IKinesisEventPublisher.class).publish(dpStream, branchEvent.getEvent_name(), branchEvent);
         log.debug("Transaction Snapshot Event {}", branchEvent);
     }
 
-    private Map<String, Object> branchMeta(EventsWrapper eventsWrapper) {
+    private Map<String, Object> branchMeta (EventsWrapper eventsWrapper) {
         return mapper.convertValue(eventsWrapper, Map.class);
     }
 
-    private void publishBranchEvent(TransactionSnapshotEvent event) {
+    private void publishBranchEvent (TransactionSnapshotEvent event) {
         try {
             EventsWrapper.EventsWrapperBuilder eventsWrapperBuilder = EventsWrapper.builder();
             eventsWrapperBuilder.uid(event.getTransaction().getUid())

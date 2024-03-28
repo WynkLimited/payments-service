@@ -22,8 +22,13 @@ public class PointDetails extends AbstractProductDetails {
 
     @NotNull
     @Analysed
-    @MongoBaseEntityConstraint(beanName = ITEM_DTO)
     private String itemId;
+    @Analysed
+    private String title;
+    @Analysed
+    private String price;
+    @Analysed
+    private String skuId;
 
     @Override
     public String getId() {

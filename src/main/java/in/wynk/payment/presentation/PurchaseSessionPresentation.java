@@ -41,6 +41,10 @@ public class PurchaseSessionPresentation implements IPresentation<WynkResponseEn
             final PaymentCachingService cache = BeanLocatorFactory.getBean(PaymentCachingService.class);
             if (request.getProductDetails().getType().equalsIgnoreCase(PLAN)) {
                 queryBuilder.addParameter(PLAN_ID, request.getProductDetails().getId());
+                PlanDTO planDto = cache.getPlan(request.getProductDetails().getId());
+                if (Objects.nonNull(planDto.getSku()) && Objects.nonNull(planDto.getSku().get("google_iap"))) {
+                    queryBuilder.addParameter(PaymentConstants.SKU_ID, planDto.getSku().get("google_iap"));
+                }
             } else {
                 PointDetails pointDetails = (PointDetails) request.getProductDetails();
                 queryBuilder.addParameter(ITEM_ID, pointDetails.getItemId());
@@ -64,10 +68,7 @@ public class PurchaseSessionPresentation implements IPresentation<WynkResponseEn
                     queryBuilder.addParameter(PAYMENT_FLOW, PAYMENT_FLOW_AUTO_RENEW);
                 }
             }
-                PlanDTO planDto = cache.getPlan(request.getProductDetails().getId());
-                if (Objects.nonNull(planDto.getSku()) && Objects.nonNull(planDto.getSku().get("google_iap"))) {
-                    queryBuilder.addParameter(PaymentConstants.SKU_ID, planDto.getSku().get("google_iap"));
-                }
+
             String builder = PAYMENT_OPTION_URL + id + SLASH + request.getOs() + QUESTION_MARK + queryBuilder.build().getQuery();
             SessionResponse.SessionData response = SessionResponse.SessionData.builder().redirectUrl(builder).sid(id).build();
             return WynkResponseEntity.<SessionResponse.SessionData>builder().data(response).build();

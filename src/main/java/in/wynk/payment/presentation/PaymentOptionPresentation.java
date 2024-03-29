@@ -12,6 +12,7 @@ import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.service.PaymentGroupCachingService;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
+import in.wynk.payment.dto.PointDetails;
 import in.wynk.payment.dto.UserDetails;
 import in.wynk.payment.dto.addtobill.AddToBillConstants;
 import in.wynk.payment.dto.aps.common.HealthStatus;
@@ -122,11 +123,19 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
 
             @Override
             public PaymentOptionsDTO.PointDetails transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
-                final ItemDTO item = payCache.getItem(payload.getFirst().getProductDetails().getId());
+                ItemDTO item = payCache.getItem(payload.getFirst().getProductDetails().getId());
+                if(Objects.nonNull(item)) {
+                    return PaymentOptionsDTO.PointDetails.builder()
+                            .id(item.getId())
+                            .title(item.getName())
+                            .price(item.getPrice())
+                            .build();
+                }
+                PointDetails pointDetails=(PointDetails)payload.getFirst().getProductDetails();
                 return PaymentOptionsDTO.PointDetails.builder()
-                        .id(item.getId())
-                        .title(item.getName())
-                        .price(item.getPrice())
+                        .id(pointDetails.getItemId())
+                        .title(pointDetails.getTitle())
+                        .price(Objects.nonNull(pointDetails.getPrice()) ? Double.parseDouble(pointDetails.getPrice()) :0.0)
                         .build();
             }
         }

@@ -83,7 +83,7 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
             ApsChargeStatusResponse[] apsChargeStatusResponses = (merchantTransaction== null) ?  common.syncChargingTransactionFromSource(transactionManager.get(paymentRenewalChargingRequest.getId()), Optional.empty()) : objectMapper.convertValue(merchantTransaction.getResponse(), ApsChargeStatusResponse[].class);
             ApsChargeStatusResponse merchantData = apsChargeStatusResponses[0];
 
-            if (!(merchantData.getLob().equals(LOB.AUTO_PAY_REGISTER_WYNK.toString()))) {
+            if (merchantData.getLob().equals(LOB.WYNK.toString())) {
                 transaction.setStatus(TransactionStatus.FAILURE.getValue());
                 recurringPaymentManagerService.unScheduleRecurringPayment(transaction.getClientAlias(), paymentRenewalChargingRequest.getId(), PaymentEvent.CANCELLED);
                 return;

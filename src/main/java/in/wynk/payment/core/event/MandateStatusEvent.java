@@ -5,6 +5,9 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.Builder;
 import lombok.Getter;
 
+/**
+ * @author Nishesh Pandey
+ */
 @Getter
 @Builder
 @AnalysedEntity
@@ -17,6 +20,4 @@ public class MandateStatusEvent {
     private String errorReason;
     @Analysed
     private String referenceTransactionId;
-
-
 }

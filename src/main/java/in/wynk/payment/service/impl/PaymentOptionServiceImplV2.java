@@ -1,10 +1,12 @@
 package in.wynk.payment.service.impl;
 
+import in.wynk.common.dto.SessionDTO;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.FraudAware;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
+import in.wynk.payment.dto.PointDetails;
 import in.wynk.payment.dto.common.FilteredPaymentOptionsResult;
 import in.wynk.payment.dto.request.AbstractPaymentOptionsRequest;
 import in.wynk.payment.dto.request.SelectivePlanEligibilityRequest;
@@ -15,6 +17,7 @@ import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
 import in.wynk.payment.eligibility.service.IPaymentOptionComputationManager;
 import in.wynk.payment.service.IPaymentOptionServiceV2;
 import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.ItemDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.enums.PlanType;
@@ -89,7 +92,21 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
     }
 
     private FilteredPaymentOptionsResult getPaymentOptionsDetailsForPoint(IPaymentOptionsRequest request) {
-        final ItemDTO item = paymentCachingService.getItem(request.getProductDetails().getId());
+        ItemDTO item = paymentCachingService.getItem(request.getProductDetails().getId());
+        if (Objects.isNull(item)) {
+            PointDetails pointDetails = (PointDetails) request.getProductDetails();
+            SessionDTO sessionDTO = SessionContextHolder.getBody();
+            if (Objects.nonNull(sessionDTO.get("itemId")) && sessionDTO.get("itemId").equals(pointDetails.getItemId())) {
+                ItemDTO.ItemDTOBuilder builder = ItemDTO.builder().id(pointDetails.getItemId());
+                if (Objects.nonNull(sessionDTO.get("title"))) {
+                    builder.name(sessionDTO.get("title"));
+                }
+                if (Objects.nonNull(sessionDTO.get("price"))) {
+                    builder.price(Double.parseDouble(sessionDTO.get("price")));
+                }
+                item = builder.build();
+            }
+        }
         PaymentOptionsEligibilityRequest eligibilityRequest = PaymentOptionsEligibilityRequest.from(PaymentOptionsComputationDTO.builder().itemDTO(item)
                 .client(request.getClient())
                 .couponCode(request.getCouponId())
@@ -98,8 +115,9 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
                 .buildNo(request.getAppDetails().getBuildNo())
                 .countryCode(request.getUserDetails().getCountryCode())
                 .si(request.getUserDetails().getSi())
+                .msisdn(request.getUserDetails().getMsisdn())
                 .build());
-        final List<in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentMethodDTO> filteredMethods = getFilteredPaymentGroups((paymentMethod -> true), (() -> false), eligibilityRequest);
+        final List<in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentMethodDTO> filteredMethods = getFilteredPaymentGroups((PaymentMethod::isItemPurchaseSupported), (() -> false), eligibilityRequest);
         return FilteredPaymentOptionsResult.builder().eligibilityRequest(eligibilityRequest).methods(filteredMethods).build();
     }
 

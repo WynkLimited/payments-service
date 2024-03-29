@@ -38,6 +38,7 @@ import in.wynk.payment.dto.response.AbstractChargingStatusResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.addtobill.AddToBillChargingResponse;
 import in.wynk.payment.dto.response.addtobill.UserAddToBillDetails;
+import in.wynk.payment.eligibility.request.PaymentOptionsItemEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
 import in.wynk.payment.gateway.IPaymentInstrumentsProxy;
 import in.wynk.payment.service.*;
@@ -343,6 +344,11 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
         } catch (Exception e) {
             return false;
         }
+    }
+    //AddToBill is not supported for item
+    @Override
+    public boolean isEligible (PaymentMethod entity, PaymentOptionsItemEligibilityRequest request) {
+        return false;
     }
 
     @Override

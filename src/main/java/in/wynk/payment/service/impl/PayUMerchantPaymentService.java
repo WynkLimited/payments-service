@@ -102,6 +102,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     private final IMerchantTransactionService merchantTransactionService;
     private final ITransactionManagerService transactionManagerService;
     private final ISubscriptionServiceManager subscriptionServiceManager;
+    private final IRecurringPaymentManagerService recurringPaymentManagerService;
     private final IMerchantPaymentCallbackService<AbstractCallbackResponse, PayUCallbackRequestPayload> callbackHandler;
 
     @Value("${payment.merchant.payu.api.info}")
@@ -117,7 +118,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     private String payUSalt;
 
 
-    public PayUMerchantPaymentService(Gson gson, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher, PaymentCachingService cachingService, IMerchantTransactionService merchantTransactionService, IErrorCodesCacheService errorCodesCacheServiceImpl, @Qualifier(EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ITransactionManagerService transactionManagerService, ISubscriptionServiceManager subscriptionServiceManager) {
+    public PayUMerchantPaymentService(Gson gson, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher, PaymentCachingService cachingService, IMerchantTransactionService merchantTransactionService, IErrorCodesCacheService errorCodesCacheServiceImpl, @Qualifier(EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ITransactionManagerService transactionManagerService, ISubscriptionServiceManager subscriptionServiceManager, IRecurringPaymentManagerService recurringPaymentManagerService) {
         super(cachingService, errorCodesCacheServiceImpl);
         this.gson = gson;
         this.objectMapper = objectMapper;
@@ -128,6 +129,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         this.merchantTransactionService = merchantTransactionService;
         this.transactionManagerService = transactionManagerService;
         this.subscriptionServiceManager = subscriptionServiceManager;
+        this.recurringPaymentManagerService =  recurringPaymentManagerService;
     }
 
     @Override
@@ -183,17 +185,22 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
             throw new WynkRuntimeException("Need to break the chain in Payment Renewal as maximum attempts are already exceeded");
         }
-        MerchantTransaction merchantTransaction = getMerchantData(paymentRenewalChargingRequest.getId());
-        PayUVerificationResponse<PayUChargingTransactionDetails> currentStatus = (merchantTransaction == null) ? syncChargingTransactionFromSource(transactionManagerService.get(paymentRenewalChargingRequest.getId()), Optional.empty()) : null;
+        String txnId = paymentRenewalChargingRequest.getId();
+        PaymentRenewal renewal = recurringPaymentManagerService.getRenewalById(txnId);
+        if (Objects.nonNull(renewal) && Objects.nonNull(renewal.getLastSuccessTransactionId())) {
+            txnId = renewal.getLastSuccessTransactionId();
+        }
+        MerchantTransaction merchantTransaction = getMerchantData(txnId);
+        PayUVerificationResponse<PayUChargingTransactionDetails> currentStatus = (merchantTransaction ==null) ? syncChargingTransactionFromSource(transactionManagerService.get(txnId), Optional.empty()): null;
         try {
             PayURenewalResponse payURenewalResponse = (merchantTransaction == null) ? objectMapper.convertValue(currentStatus, PayURenewalResponse.class) : objectMapper.convertValue(merchantTransaction.getResponse(), PayURenewalResponse.class);
-            PayUChargingTransactionDetails payUChargingTransactionDetails = payURenewalResponse.getTransactionDetails().get(paymentRenewalChargingRequest.getId());
+            PayUChargingTransactionDetails payUChargingTransactionDetails = payURenewalResponse.getTransactionDetails().get(txnId);
             String mode = payUChargingTransactionDetails.getMode();
             AnalyticService.update(PAYMENT_MODE, mode);
             boolean isUpi = StringUtils.isNotEmpty(mode) && mode.equals("UPI");
-            String externalTransactionId = (merchantTransaction != null) ? merchantTransaction.getExternalTransactionId() : currentStatus.getTransactionDetails(paymentRenewalChargingRequest.getId()).getPayUExternalTxnId();
+            String externalTransactionId = (merchantTransaction != null) ? merchantTransaction.getExternalTransactionId() : currentStatus.getTransactionDetails(txnId).getPayUExternalTxnId();
             if (!isUpi || validateStatusForRenewal(externalTransactionId, transaction)) {
-                payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest, externalTransactionId);
+                payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest, externalTransactionId, txnId);
                 payUChargingTransactionDetails = payURenewalResponse.getTransactionDetails().get(transaction.getIdStr());
                 int retryInterval = planPeriodDTO.getRetryInterval();
                 if (payURenewalResponse.getStatus() == 1) {
@@ -520,7 +527,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         return paymentResponse != null && paymentResponse.getStatus().equals("active");
     }
 
-    private PayURenewalResponse doChargingForRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest, String mihpayid) {
+    private PayURenewalResponse doChargingForRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest, String mihpayid, String lastSuccessTxnId) {
         Transaction transaction = TransactionContext.get();
         LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
         String uid = paymentRenewalChargingRequest.getUid();
@@ -528,7 +535,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         double amount = cachingService.getPlan(transaction.getPlanId()).getFinalPrice();
         final String email = uid + BASE_USER_EMAIL;
         orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID_SMALL, mihpayid);
-        orderedMap.put(PAYU_INVOICE_DISPLAY_NUMBER, paymentRenewalChargingRequest.getId());
+        orderedMap.put(PAYU_INVOICE_DISPLAY_NUMBER, lastSuccessTxnId);
         orderedMap.put(PAYU_TRANSACTION_AMOUNT, amount);
         orderedMap.put(PAYU_REQUEST_TRANSACTION_ID, transaction.getIdStr());
         orderedMap.put(PAYU_CUSTOMER_MSISDN, msisdn);

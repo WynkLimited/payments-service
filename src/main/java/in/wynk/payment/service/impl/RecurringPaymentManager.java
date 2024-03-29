@@ -179,9 +179,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
         PaymentRenewal renewal = null;
         try {
             if (lastSuccessTransactionId != null && PaymentEvent.RENEW == paymentEvent) {
-                renewal =
-                        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).findById(lastSuccessTransactionId)
-                                .orElse(null);
+                renewal = getRenewalById(lastSuccessTransactionId);
                 if(Objects.nonNull(renewal) && transaction.getStatus() != TransactionStatus.SUCCESS) {
                     attemptSequence = renewal.getAttemptSequence() +1;
                 }
@@ -265,5 +263,12 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     @Override
     public void upsert (PaymentRenewal paymentRenewal) {
         RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).save(paymentRenewal);
+    }
+
+    @Override
+    public PaymentRenewal getRenewalById (String txnId) {
+        return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).findById(txnId)
+                .orElse(null);
+
     }
 }

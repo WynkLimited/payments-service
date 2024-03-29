@@ -94,6 +94,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     private final RateLimiter rateLimiter = RateLimiter.create(6.0);
     private final IMerchantTransactionService merchantTransactionService;
     private final ITransactionManagerService transactionManagerService;
+    private final IRecurringPaymentManagerService recurringPaymentManagerService;
     private final IMerchantPaymentCallbackService<AbstractCallbackResponse, PayUCallbackRequestPayload> callbackHandler;
 
     @Value("${payment.merchant.payu.api.info}")
@@ -109,7 +110,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     private String payUSalt;
 
 
-    public PayUMerchantPaymentService(Gson gson, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher, PaymentCachingService cachingService, IMerchantTransactionService merchantTransactionService, IErrorCodesCacheService errorCodesCacheServiceImpl, @Qualifier(EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ITransactionManagerService transactionManagerService) {
+    public PayUMerchantPaymentService(Gson gson, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher, PaymentCachingService cachingService, IMerchantTransactionService merchantTransactionService, IErrorCodesCacheService errorCodesCacheServiceImpl, @Qualifier(EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ITransactionManagerService transactionManagerService, IRecurringPaymentManagerService recurringPaymentManagerService) {
         super(cachingService, errorCodesCacheServiceImpl);
         this.gson = gson;
         this.objectMapper = objectMapper;
@@ -119,6 +120,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         this.callbackHandler = new DelegatePayUCallbackHandler();
         this.merchantTransactionService = merchantTransactionService;
         this.transactionManagerService = transactionManagerService;
+        this.recurringPaymentManagerService =  recurringPaymentManagerService;
     }
 
     @Override

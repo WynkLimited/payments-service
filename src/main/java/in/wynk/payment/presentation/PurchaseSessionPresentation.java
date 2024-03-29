@@ -49,7 +49,6 @@ public class PurchaseSessionPresentation implements IPresentation<WynkResponseEn
                 PointDetails pointDetails = (PointDetails) request.getProductDetails();
                 queryBuilder.addParameter(ITEM_ID, pointDetails.getItemId());
                 queryBuilder.addParameter(TITLE, pointDetails.getTitle());
-                queryBuilder.addParameter(ITEM_PRICE, pointDetails.getPrice());
                 queryBuilder.addParameter(SKU_ID, pointDetails.getSkuId());
             }
             queryBuilder.addParameter(UID, IdentityUtils.getUidFromUserName(request.getUserDetails().getMsisdn(), request.getAppDetails().getService()));

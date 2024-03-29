@@ -2,6 +2,7 @@ package in.wynk.payment.gateway.aps.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
@@ -18,6 +19,7 @@ import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.gateway.IPaymentRenewal;
 import in.wynk.payment.service.IMerchantTransactionService;
+import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
@@ -49,6 +51,7 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
     private final ApplicationEventPublisher eventPublisher;
     private final IMerchantTransactionService merchantTransactionService;
     private final ITransactionManagerService transactionManager;
+    private final IRecurringPaymentManagerService recurringPaymentManagerService;
 
 
     public ApsRenewalGatewayServiceImpl(String siPaymentApi,
@@ -56,7 +59,7 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
                                         ApsCommonGatewayService common,
                                         PaymentCachingService cachingService,
                                         IMerchantTransactionService merchantTransactionService,
-                                        ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager) {
+                                        ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager, IRecurringPaymentManagerService recurringPaymentManagerService) {
         this.common = common;
         this.objectMapper = objectMapper;
         this.SI_PAYMENT_API = siPaymentApi;
@@ -64,6 +67,7 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
         this.eventPublisher = eventPublisher;
         this.merchantTransactionService = merchantTransactionService;
         this.transactionManager = transactionManager;
+        this.recurringPaymentManagerService = recurringPaymentManagerService;
     }
 
     @Override
@@ -82,12 +86,17 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
                 apsChargeStatusResponses = common.syncChargingTransactionFromSource(transactionManager.get(paymentRenewalChargingRequest.getId()), Optional.empty());
                 merchantData = apsChargeStatusResponses[0];
             }
+            if (!(merchantData.getLob().equals(LOB.AUTO_PAY_REGISTER_WYNK.toString()))) {
+                transaction.setStatus(TransactionStatus.FAILURE.getValue());
+                recurringPaymentManagerService.unScheduleRecurringPayment(transaction.getClientAlias(), paymentRenewalChargingRequest.getId(), PaymentEvent.CANCELLED);
+            }
             AnalyticService.update(PaymentConstants.PAYMENT_MODE, merchantData.getPaymentMode());
             if (Objects.nonNull(merchantData.getMandateId())) {
                 SiPaymentRecurringResponse apsRenewalResponse = doChargingForRenewal(merchantData);
                 updateTransactionStatus(planPeriodDTO, apsRenewalResponse, transaction);
             } else {
                 log.error("Mandate Id is missing for the transaction Id {}", merchantData.getOrderId());
+                transaction.setStatus(TransactionStatus.FAILURE.getValue());
             }
         } catch (WynkRuntimeException e) {
             if (e.getErrorCode().equals(PAY009.getErrorCode()) || e.getErrorCode().equals(PAY035.getErrorCode())) {

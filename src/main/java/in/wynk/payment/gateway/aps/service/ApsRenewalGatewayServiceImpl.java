@@ -2,6 +2,7 @@ package in.wynk.payment.gateway.aps.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
@@ -88,6 +89,13 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
             ApsChargeStatusResponse[] apsChargeStatusResponses = (merchantTransaction == null) ? common.syncChargingTransactionFromSource(transactionManager.get(txnId), Optional.empty()) :
                     objectMapper.convertValue(merchantTransaction.getResponse(), ApsChargeStatusResponse[].class);
             ApsChargeStatusResponse merchantData = apsChargeStatusResponses[0];
+
+            if (!(merchantData.getLob().equals(LOB.AUTO_PAY_REGISTER_WYNK.toString()))) {
+                transaction.setStatus(TransactionStatus.FAILURE.getValue());
+                recurringPaymentManagerService.unScheduleRecurringPayment(transaction.getClientAlias(), paymentRenewalChargingRequest.getId(), PaymentEvent.CANCELLED);
+                return;
+            }
+
             if (Objects.isNull(merchantData.getMandateId())) {
                 apsChargeStatusResponses = common.syncChargingTransactionFromSource(transactionManager.get(txnId), Optional.empty());
                 merchantData = apsChargeStatusResponses[0];
@@ -98,6 +106,7 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
                 updateTransactionStatus(planPeriodDTO, apsRenewalResponse, transaction);
             } else {
                 log.error("Mandate Id is missing for the transaction Id {}", merchantData.getOrderId());
+                transaction.setStatus(TransactionStatus.FAILURE.getValue());
             }
         } catch (WynkRuntimeException e) {
             if (e.getErrorCode().equals(PAY009.getErrorCode()) || e.getErrorCode().equals(PAY035.getErrorCode())) {

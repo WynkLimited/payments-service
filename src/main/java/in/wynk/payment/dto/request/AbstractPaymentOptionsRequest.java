@@ -7,7 +7,7 @@ import in.wynk.payment.core.dao.entity.IPaymentDetails;
 import in.wynk.payment.core.dao.entity.IProductDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
-import in.wynk.payment.validations.IPlanValidatorRequest;
+import in.wynk.payment.validations.IProductValidatorRequest;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,7 +22,7 @@ import java.util.Objects;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-public class AbstractPaymentOptionsRequest <T extends IPaymentOptionsRequest> implements IPlanValidatorRequest {
+public class AbstractPaymentOptionsRequest <T extends IPaymentOptionsRequest> implements IProductValidatorRequest {
     @Analysed
     private T paymentOptionRequest;
 

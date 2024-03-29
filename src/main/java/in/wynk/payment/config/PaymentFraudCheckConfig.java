@@ -4,7 +4,7 @@ import in.wynk.common.validations.IHandler;
 import in.wynk.client.validations.ClientValidator;
 import in.wynk.payment.validations.CouponValidator;
 import in.wynk.payment.validations.PaymentMethodValidator;
-import in.wynk.payment.validations.PlanValidator;
+import in.wynk.payment.validations.ProductValidator;
 import in.wynk.payment.validations.ReceiptValidator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,7 +18,7 @@ public class PaymentFraudCheckConfig {
 
     @Bean(CHARGING_FRAUD_DETECTION_CHAIN)
     public IHandler chargingFraudDetectionChain() {
-        final PlanValidator planValidator = new PlanValidator();
+        final ProductValidator planValidator = new ProductValidator();
         final CouponValidator couponValidator = new CouponValidator();
         final ClientValidator clientValidator = new ClientValidator();
         final PaymentMethodValidator paymentMethodValidator = new PaymentMethodValidator();
@@ -40,7 +40,7 @@ public class PaymentFraudCheckConfig {
 
     @Bean(OPTION_FRAUD_DETECTION_CHAIN)
     public IHandler optionFraudDetectionChain() {
-        final PlanValidator planValidator = new PlanValidator();
+        final ProductValidator planValidator = new ProductValidator();
         return planValidator;
     }
 }

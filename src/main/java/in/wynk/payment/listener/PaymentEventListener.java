@@ -4,12 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
-import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.client.core.dao.entity.ClientDetails;
-import in.wynk.client.data.utils.RepositoryUtils;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.Message;
@@ -27,7 +25,6 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.*;
-import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.core.service.InvoiceDetailsCachingService;
 import in.wynk.payment.dto.*;
@@ -606,6 +603,9 @@ public class PaymentEventListener {
                             .build());
                 }
             }
+            if(event.getTransaction().getType() == PaymentEvent.POINT_PURCHASE) {
+                publishDataToWynkKafka(event.getTransaction());
+            }
             if (ApsConstant.APS.equals(event.getTransaction().getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(event.getTransaction().getPaymentChannel().getId())) {
               initiateReportTransactionToMerchant(event);
             }
@@ -623,6 +623,12 @@ public class PaymentEventListener {
         if (EnumSet.of(TransactionStatus.SUCCESS, TransactionStatus.FAILURE).contains(event.getTransaction().getStatus())) {
             publishWaPaymentStatusEvent(event);
         }
+    }
+
+    private void publishDataToWynkKafka (Transaction transaction) {
+        GenerateItemEvent event =
+                GenerateItemEvent.builder().transactionId(transaction.getIdStr()).itemId(transaction.getItemId()).uid(transaction.getUid()).createdDate(String.valueOf(transaction.getInitTime()))
+                        .updatedDate(String.valueOf(transaction.getExitTime())).transactionStatus(transaction.getStatus()).event(transaction.getType()).build();
     }
 
     private void initiateReportTransactionToMerchant (TransactionSnapshotEvent event) {

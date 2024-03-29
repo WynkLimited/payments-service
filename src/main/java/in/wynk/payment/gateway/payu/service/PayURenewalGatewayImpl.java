@@ -79,7 +79,7 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
         }
         String txnId = paymentRenewalChargingRequest.getId();
         PaymentRenewal renewal = recurringPaymentManagerService.getRenewalById(txnId);
-        if (Objects.nonNull(renewal) && Objects.nonNull(renewal.getLastSuccessTransactionId())) {
+        if (Objects.nonNull(renewal) && StringUtils.isNotBlank(renewal.getLastSuccessTransactionId())) {
             txnId = renewal.getLastSuccessTransactionId();
         }
         MerchantTransaction merchantTransaction = getMerchantData(txnId);

@@ -61,15 +61,17 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     @Value("${payment.preDebitNotification.offset.hour}")
     private int duePreDebitNotificationOffsetTime;
 
-    private final Map<String, Integer> CODE_TO_RENEW_OFFSET = new HashMap<String, Integer>(){{
+    private final Map<String, Integer> CODE_TO_RENEW_OFFSET = new HashMap<String, Integer>() {{
         put(ApsConstant.AIRTEL_PAY_STACK, -2);
     }};
 
     @Override
-    public void scheduleRecurringPayment(AbstractTransactionRevisionRequest request) {
+    public void scheduleRecurringPayment (AbstractTransactionRevisionRequest request) {
         if (MigrationTransactionRevisionRequest.class.isAssignableFrom(request.getClass()) && request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS &&
                 request.getFinalTransactionStatus() == TransactionStatus.MIGRATED && request.getTransaction().getType() == PaymentEvent.SUBSCRIBE) {
-            scheduleRecurringPayment(request.getTransaction().getIdStr(), request.getLastSuccessTransactionId(), request.getTransaction().getType(), request.getTransaction().getPaymentChannel().getCode(), ((MigrationTransactionRevisionRequest) request).getNextChargingDate(), 0, request.getTransaction());
+            scheduleRecurringPayment(request.getTransaction().getIdStr(), request.getLastSuccessTransactionId(), request.getTransaction().getType(),
+                    request.getTransaction().getPaymentChannel().getCode(), ((MigrationTransactionRevisionRequest) request).getNextChargingDate(), 0, request.getTransaction(),
+                    request.getFinalTransactionStatus(), null);
         } else {
             Calendar nextRecurringDateTime = Calendar.getInstance();
             Integer planId = subscriptionServiceManager.getUpdatedPlanId(request.getTransaction().getPlanId(), request.getTransaction().getType());
@@ -78,22 +80,33 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
                     request.getTransaction().getPaymentChannel().isInternalRecurring()) {
                 if (EnumSet.of(PaymentEvent.SUBSCRIBE, PaymentEvent.RENEW).contains(request.getTransaction().getType())) {
                     nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planDTO.getPeriod().getTimeUnit().toMillis(planDTO.getPeriod().getValidity()));
-                    scheduleRecurringPayment(request.getTransaction().getIdStr(), request.getLastSuccessTransactionId(), request.getTransaction().getType(), request.getTransaction().getPaymentChannel().getCode(), nextRecurringDateTime, request.getAttemptSequence(), request.getTransaction());
+                    scheduleRecurringPayment(request.getTransaction().getIdStr(), request.getLastSuccessTransactionId(), request.getTransaction().getType(),
+                            request.getTransaction().getPaymentChannel().getCode(), nextRecurringDateTime, request.getAttemptSequence(), request.getTransaction(), request.getFinalTransactionStatus(),
+                            null);
                 } else if (request.getTransaction().getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
                     nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planDTO.getPeriod().getTimeUnit().toMillis(planDTO.getPeriod().getValidity()));
-                    scheduleRecurringPayment(request.getTransaction().getIdStr(), request.getLastSuccessTransactionId(), request.getTransaction().getType(), request.getTransaction().getPaymentChannel().getCode(), nextRecurringDateTime, request.getAttemptSequence(),request.getTransaction());
-                } else if(request.getTransaction().getType() == PaymentEvent.MANDATE) {
+                    scheduleRecurringPayment(request.getTransaction().getIdStr(), request.getLastSuccessTransactionId(), request.getTransaction().getType(),
+                            request.getTransaction().getPaymentChannel().getCode(), nextRecurringDateTime, request.getAttemptSequence(), request.getTransaction(), request.getFinalTransactionStatus(),
+                            null);
+                } else if (request.getTransaction().getType() == PaymentEvent.MANDATE) {
                     setRenewalDate(request, nextRecurringDateTime, planDTO);
                 }
             } else if (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS && request.getFinalTransactionStatus() == TransactionStatus.FAILURE &&
                     request.getTransaction().getType() == PaymentEvent.RENEW && request.getTransaction().getPaymentChannel().isInternalRecurring()) {
+                PaymentRenewal renewal = getRenewalById(request.getTransaction().getIdStr());
+                if (Objects.nonNull(renewal) && renewal.getTransactionEvent() == PaymentEvent.CANCELLED) {
+                    log.info("Renewal is already cancelled for the transaction id {} ", request.getTransaction().getIdStr());
+                    return;
+                }
                 PlanPeriodDTO planPeriodDTO = planDTO.getPeriod();
                 if (planPeriodDTO.getMaxRetryCount() < request.getAttemptSequence()) {
                     AnalyticService.update(MESSAGE, "Maximum Attempts Reached. No More Entry In Payment Renewal");
                     return;
                 }
                 nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planPeriodDTO.getTimeUnit().toMillis(planPeriodDTO.getRetryInterval()));
-                scheduleRecurringPayment(request.getTransaction().getIdStr(), request.getLastSuccessTransactionId(), request.getTransaction().getType(), request.getTransaction().getPaymentChannel().getCode(), nextRecurringDateTime, request.getAttemptSequence(), request.getTransaction());
+                scheduleRecurringPayment(request.getTransaction().getIdStr(), request.getLastSuccessTransactionId(), request.getTransaction().getType(),
+                        request.getTransaction().getPaymentChannel().getCode(), nextRecurringDateTime, request.getAttemptSequence(), request.getTransaction(), request.getFinalTransactionStatus(),
+                        renewal);
             }
         }
     }
@@ -104,19 +117,22 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
                     .filter(status -> status.getPlanId() == request.getTransaction().getPlanId()).findAny();
             if (subscriptionStatusOptional.isPresent()) {
                 nextRecurringDateTime.setTimeInMillis(subscriptionStatusOptional.get().getValidity());
-                scheduleRecurringPayment(request.getTransaction().getIdStr(), request.getLastSuccessTransactionId(), request.getTransaction().getType(), request.getTransaction().getPaymentChannel().getCode(), nextRecurringDateTime, request.getAttemptSequence(), request.getTransaction());
+                scheduleRecurringPayment(request.getTransaction().getIdStr(), request.getLastSuccessTransactionId(), request.getTransaction().getType(),
+                        request.getTransaction().getPaymentChannel().getCode(), nextRecurringDateTime, request.getAttemptSequence(), request.getTransaction(), request.getFinalTransactionStatus(),
+                        null);
                 return;
             }
             throw new WynkRuntimeException("No end date found from subscription. So, setting default time for renewal for plan id " + planDTO.getId());
         } catch (Exception e) {
             nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + ((long) dueRecurringRetryTime * 60 * 60 * 1000));
-            scheduleRecurringPayment(request.getTransaction().getIdStr(), request.getLastSuccessTransactionId(), request.getTransaction().getType(), request.getTransaction().getPaymentChannel().getCode(), nextRecurringDateTime, request.getAttemptSequence(), request.getTransaction());
+            scheduleRecurringPayment(request.getTransaction().getIdStr(), request.getLastSuccessTransactionId(), request.getTransaction().getType(),
+                    request.getTransaction().getPaymentChannel().getCode(), nextRecurringDateTime, request.getAttemptSequence(), request.getTransaction(), request.getFinalTransactionStatus(), null);
         }
     }
 
     @Override
     @Transactional(transactionManager = "#clientAlias", source = "payments")
-    public void unScheduleRecurringPayment(String clientAlias, String transactionId, PaymentEvent paymentEvent) {
+    public void unScheduleRecurringPayment (String clientAlias, String transactionId, PaymentEvent paymentEvent) {
         final IPaymentRenewalDao paymentRenewalDao = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class);
         paymentRenewalDao.findById(transactionId).ifPresent(recurringPayment -> {
             recurringPayment.setTransactionEvent(paymentEvent.name());
@@ -127,17 +143,17 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
 
     @Override
     @Transactional(transactionManager = "#clientAlias", source = "payments")
-    public Stream<PaymentRenewal> getCurrentDueNotifications(String clientAlias) {
+    public Stream<PaymentRenewal> getCurrentDueNotifications (String clientAlias) {
         return getPaymentRenewalStream(duePreDebitNotificationOffsetDay, duePreDebitNotificationOffsetTime, preDebitNotificationPreOffsetDay);
     }
 
     @Override
     @Transactional(transactionManager = "#clientAlias", source = "payments")
-    public Stream<PaymentRenewal> getCurrentDueRecurringPayments(String clientAlias) {
+    public Stream<PaymentRenewal> getCurrentDueRecurringPayments (String clientAlias) {
         return getPaymentRenewalStream(dueRecurringOffsetDay, dueRecurringOffsetTime, 0);
     }
 
-    private Stream<PaymentRenewal> getPaymentRenewalStream(int offsetDay, int offsetTime, int preOffsetDays) {
+    private Stream<PaymentRenewal> getPaymentRenewalStream (int offsetDay, int offsetTime, int preOffsetDays) {
         final Calendar currentDay = Calendar.getInstance();
         currentDay.add(Calendar.DAY_OF_MONTH, preOffsetDays);
         final Calendar currentDayTimeWithOffset = Calendar.getInstance();
@@ -157,18 +173,20 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
             currentDayTimeWithOffset.set(Calendar.MILLISECOND, 999);
             final Date[] lowerRangeBound = new Date[]{currentTime, currentDayTimeWithOffset.getTime()};
             final Date[] upperRangeBound = new Date[]{currentDay.getTime(), currentTimeWithOffset};
-            return Stream.concat(paymentRenewalDao.getRecurrentPayment(currentDay, currentDay, lowerRangeBound[0], upperRangeBound[0]), paymentRenewalDao.getRecurrentPayment(currentDayTimeWithOffset, currentDayTimeWithOffset, lowerRangeBound[1], upperRangeBound[1]));
+            return Stream.concat(paymentRenewalDao.getRecurrentPayment(currentDay, currentDay, lowerRangeBound[0], upperRangeBound[0]),
+                    paymentRenewalDao.getRecurrentPayment(currentDayTimeWithOffset, currentDayTimeWithOffset, lowerRangeBound[1], upperRangeBound[1]));
         }
         return paymentRenewalDao.getRecurrentPayment(currentDay, currentDayTimeWithOffset, currentTime, currentTimeWithOffset);
     }
 
     @Override
-    public void scheduleRecurringPayment (String transactionId, String lastSuccessTransactionId, PaymentEvent paymentEvent, String code, Calendar nextRecurringDateTime, int attemptSequence,
-                                           Transaction transaction) {
+    public void scheduleRecurringPayment (String transactionId, String originalTransactionId, PaymentEvent paymentEvent, String code, Calendar nextRecurringDateTime, int attemptSequence,
+                                          Transaction transaction, TransactionStatus finalTransactionStatus, PaymentRenewal renewal) {
         if (BeanConstant.ADD_TO_BILL_PAYMENT_SERVICE.equalsIgnoreCase(code)) {
             scheduleAtbTask(transaction, nextRecurringDateTime);
             return;
         }
+
         if (CODE_TO_RENEW_OFFSET.containsKey(code)) {
             final Calendar day = Calendar.getInstance();
             day.add(Calendar.DAY_OF_MONTH, 3);
@@ -176,34 +194,31 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
                 nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, CODE_TO_RENEW_OFFSET.get(code));
             }
         }
-        PaymentRenewal renewal = null;
-        try {
-            if (lastSuccessTransactionId != null && PaymentEvent.RENEW == paymentEvent) {
-                renewal = getRenewalById(lastSuccessTransactionId);
-                if(Objects.nonNull(renewal) && transaction.getStatus() != TransactionStatus.SUCCESS) {
-                    attemptSequence = renewal.getAttemptSequence() +1;
-                }
+
+        if (originalTransactionId != null && PaymentEvent.RENEW == paymentEvent) {
+            renewal = getRenewalById(originalTransactionId);
+            if (Objects.nonNull(renewal) && transaction.getStatus() == TransactionStatus.INPROGRESS) {
+                attemptSequence = renewal.getAttemptSequence() + 1;
             }
-            String initialTransactionId = Objects.nonNull(renewal) ? renewal.getInitialTransactionId() : fetchInitialTransactionId(transaction, paymentEvent);
-            String updatedLastSuccessTransactionId = Objects.nonNull(renewal) && Objects.nonNull(renewal.getLastSuccessTransactionId()) ? renewal.getLastSuccessTransactionId() : lastSuccessTransactionId;
-            PaymentRenewal paymentRenewal =
-                    PaymentRenewal.builder().day(nextRecurringDateTime).transactionId(transactionId).hour(nextRecurringDateTime.getTime()).createdTimestamp(Calendar.getInstance())
-                            .transactionEvent(PaymentEvent.SUBSCRIBE.name()).initialTransactionId(initialTransactionId).lastSuccessTransactionId(updatedLastSuccessTransactionId)
-                            .attemptSequence(attemptSequence).build();
-            upsert(paymentRenewal);
-        } catch (Exception e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY017, e);
         }
+        String initialTransactionId = Objects.nonNull(renewal) ? renewal.getInitialTransactionId() : fetchInitialTransactionId(transaction, paymentEvent);
+        String updatedLastSuccessTransactionId = Objects.nonNull(renewal) && Objects.nonNull(renewal.getLastSuccessTransactionId()) ? renewal.getLastSuccessTransactionId() : originalTransactionId;
+        PaymentRenewal paymentRenewal = PaymentRenewal.builder().day(nextRecurringDateTime).transactionId(transactionId).hour(nextRecurringDateTime.getTime()).createdTimestamp(Calendar.getInstance())
+                .transactionEvent((PaymentEvent.RENEW == paymentEvent && finalTransactionStatus == TransactionStatus.FAILURE) ? PaymentEvent.DEFERRED.name() : PaymentEvent.SUBSCRIBE.name())
+                .initialTransactionId(initialTransactionId).lastSuccessTransactionId(updatedLastSuccessTransactionId)
+                .attemptSequence(attemptSequence).build();
+        upsert(paymentRenewal);
     }
 
     private String fetchInitialTransactionId (Transaction transaction, PaymentEvent event) {
-         if (PaymentEvent.RENEW != event) {
+        if (PaymentEvent.RENEW != event) {
             return transaction.getIdStr();
         } else {
             return null;
         }
     }
 
+    @Override
     public void scheduleAtbTask (Transaction transaction, Calendar nextRecurringDateTime) {
         try {
             taskScheduler.schedule(TaskDefinition.builder()
@@ -219,13 +234,13 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
                             .scheduleBuilder(SimpleScheduleBuilder.simpleSchedule().withIntervalInSeconds(0).withRepeatCount(0))
                             .build())
                     .build());
-        }catch (Exception e) {
+        } catch (Exception e) {
             log.error("Unable to schedule addtoBill Task for checking mandate status of ATB on renewal date: {}", e.getMessage());
         }
     }
 
     @Override
-    public void unScheduleRecurringPayment(String transactionId, PaymentEvent paymentEvent, long validUntil, long deferredUntil) {
+    public void unScheduleRecurringPayment (String transactionId, PaymentEvent paymentEvent, long validUntil, long deferredUntil) {
         try {
             final IPaymentRenewalDao paymentRenewalDao = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class);
             paymentRenewalDao.findById(transactionId).ifPresent(recurringPayment -> {
@@ -262,7 +277,11 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
 
     @Override
     public void upsert (PaymentRenewal paymentRenewal) {
-        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).save(paymentRenewal);
+        try {
+            RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).save(paymentRenewal);
+        } catch (Exception e) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY017, e);
+        }
     }
 
     @Override

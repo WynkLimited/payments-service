@@ -287,16 +287,20 @@ public class PaymentGatewayManager
                     eventPublisher.publishEvent(errorEventBuilder.build());
                     throw new WynkRuntimeException(PAY036);
                 } else {
-                    handleException(errorEventBuilder, paymentGateway, e);
+                    handleException(errorEventBuilder, paymentGateway, e, transaction);
                 }
             } else {
-                handleException(errorEventBuilder, paymentGateway, e);
+                handleException(errorEventBuilder, paymentGateway, e, transaction);
             }
+        } catch (Exception ex) {
+            transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            throw new WynkRuntimeException(PAY024, ex);
         } finally {
             eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
             if (renewalService.canRenewalReconciliation()) {
                 sqsManagerService.publishSQSMessage(
-                        PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transactionManager.get(request.getId()))).paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
+                        PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transactionManager.get(request.getId()))).paymentCode(transaction.getPaymentChannel().getId())
+                                .paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
                                 .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid())
                                 .originalAttemptSequence(request.getAttemptSequence() + 1).originalTransactionId(request.getId()).build());
             }
@@ -306,9 +310,10 @@ public class PaymentGatewayManager
         }
     }
 
-    private void handleException(PaymentErrorEvent.Builder errorEventBuilder, PaymentGateway paymentGateway, RestClientException e) {
+    private void handleException(PaymentErrorEvent.Builder errorEventBuilder, PaymentGateway paymentGateway, RestClientException e, Transaction transaction) {
+        transaction.setStatus(TransactionStatus.FAILURE.getValue());
         errorEventBuilder.code(PAY024.getErrorCode());
-        errorEventBuilder.description(PAY024.getErrorMessage() + "for " + paymentGateway);
+        errorEventBuilder.description(PAY024.getErrorMessage() + "for " + paymentGateway.getCode());
         eventPublisher.publishEvent(errorEventBuilder.build());
         throw new WynkRuntimeException(PAY024, e);
     }

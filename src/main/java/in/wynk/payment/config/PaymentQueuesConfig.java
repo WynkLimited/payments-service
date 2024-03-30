@@ -67,7 +67,7 @@ public class PaymentQueuesConfig {
                                                                                   ISqsManagerService sqsManagerService,
                                                                                   ITransactionManagerService transactionManager,
                                                                                   ISubscriptionServiceManager subscriptionServiceManager,
-                                                                                  IRecurringPaymentManagerService recurringPaymentManagerService) {
+                                                                                  IRecurringPaymentManagerService recurringPaymentManagerService, PaymentCachingService cachingService) {
         return new PaymentRenewalConsumerPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
@@ -76,7 +76,7 @@ public class PaymentQueuesConfig {
                 scheduledThreadPoolExecutor(),
                 sqsManagerService,
                 transactionManager,
-                subscriptionServiceManager, recurringPaymentManagerService);
+                subscriptionServiceManager, recurringPaymentManagerService, cachingService);
     }
 
     @Bean

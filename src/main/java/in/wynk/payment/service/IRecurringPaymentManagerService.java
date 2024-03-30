@@ -1,6 +1,7 @@
 package in.wynk.payment.service;
 
 import in.wynk.common.enums.PaymentEvent;
+import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -18,7 +19,7 @@ public interface IRecurringPaymentManagerService {
     void scheduleRecurringPayment (AbstractTransactionRevisionRequest request);
 
     void scheduleRecurringPayment (String transactionId, String lastSuccessTransactionId, PaymentEvent event, String code, Calendar nextRecurringDateTime, int attemptSequence,
-                                   Transaction transaction);
+                                   Transaction transaction, TransactionStatus finalTransactionStatus, PaymentRenewal renewal);
 
     void unScheduleRecurringPayment (String clientAlias, String transactionId, PaymentEvent paymentEvent);
 
@@ -27,4 +28,6 @@ public interface IRecurringPaymentManagerService {
     void upsert (PaymentRenewal paymentRenewal);
 
     PaymentRenewal getRenewalById (String txnId);
+
+   void scheduleAtbTask (Transaction transaction, Calendar nextRecurringDateTime);
 }

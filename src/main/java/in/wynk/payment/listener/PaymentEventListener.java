@@ -246,13 +246,19 @@ public class PaymentEventListener {
             if (Objects.nonNull(renewal)) {
                 AnalyticService.update(RENEWAL_ATTEMPT_SEQUENCE, renewal.getAttemptSequence());
             }
-            cancelRenewalBasedOnErrorReason(event.getDescription(), event, transaction.getPlanId(), renewal.getAttemptSequence());
+            cancelRenewalBasedOnErrorReason(event.getDescription(), event, transaction.getPlanId(), transaction.getUid());
         }
     }
 
-    private void cancelRenewalBasedOnErrorReason (String description, PaymentErrorEvent event, Integer planId, Integer attemptSequence) {
+    private void cancelRenewalBasedOnErrorReason (String description, PaymentErrorEvent event, Integer planId, String uid) {
         if (ERROR_REASONS.contains(description)) {
-            recurringPaymentManagerService.unScheduleRecurringPayment(event.getClientAlias(), event.getId(), PaymentEvent.CANCELLED);
+            try {
+                recurringPaymentManagerService.unScheduleRecurringPayment(event.getClientAlias(), event.getId(), PaymentEvent.CANCELLED);
+                eventPublisher.publishEvent(
+                        MandateStatusEvent.builder().errorReason(description).clientAlias(event.getClientAlias()).referenceTransactionId(event.getId()).uid(uid).planId(planId).build());
+            } catch (Exception e) {
+                log.error("Unable to cancel the subscription", e);
+            }
         }
     }
 

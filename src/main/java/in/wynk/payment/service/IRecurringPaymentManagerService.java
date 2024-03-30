@@ -28,4 +28,6 @@ public interface IRecurringPaymentManagerService {
     void upsert (PaymentRenewal paymentRenewal);
 
     PaymentRenewal getRenewalById (String txnId);
+
+   void scheduleAtbTask (Transaction transaction, Calendar nextRecurringDateTime);
 }

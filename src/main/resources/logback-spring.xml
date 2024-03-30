@@ -86,7 +86,7 @@
     </logger>
 
     <logger name="mandateStatusEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="GooglePlayReportEvent" additivity="false" level="INFO">

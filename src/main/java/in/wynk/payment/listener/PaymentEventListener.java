@@ -60,6 +60,7 @@ import in.wynk.wynkservice.core.dao.entity.WynkService;
 import io.github.resilience4j.retry.RetryRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.quartz.SimpleScheduleBuilder;
@@ -242,20 +243,25 @@ public class PaymentEventListener {
             AnalyticService.update(PAYMENT_CODE, transaction.getPaymentChannel().getId());
         }
         if (transaction.getType() == PaymentEvent.RENEW) {
+            String txnId = event.getId();
             PaymentRenewal renewal = recurringPaymentManagerService.getRenewalById(event.getId());
             if (Objects.nonNull(renewal)) {
+                if (StringUtils.isNotBlank(renewal.getLastSuccessTransactionId())) {
+                    txnId = renewal.getLastSuccessTransactionId();
+                }
                 AnalyticService.update(RENEWAL_ATTEMPT_SEQUENCE, renewal.getAttemptSequence());
             }
-            cancelRenewalBasedOnErrorReason(event.getDescription(), event, transaction.getPlanId(), transaction.getUid());
+
+            cancelRenewalBasedOnErrorReason(event.getDescription(), event, transaction.getPlanId(), transaction.getUid(), txnId);
         }
     }
 
-    private void cancelRenewalBasedOnErrorReason (String description, PaymentErrorEvent event, Integer planId, String uid) {
+    private void cancelRenewalBasedOnErrorReason (String description, PaymentErrorEvent event, Integer planId, String uid, String referenceTransactionId) {
         if (ERROR_REASONS.contains(description)) {
             try {
                 recurringPaymentManagerService.unScheduleRecurringPayment(event.getClientAlias(), event.getId(), PaymentEvent.CANCELLED);
                 eventPublisher.publishEvent(
-                        MandateStatusEvent.builder().errorReason(description).clientAlias(event.getClientAlias()).referenceTransactionId(event.getId()).uid(uid).planId(planId).build());
+                        MandateStatusEvent.builder().errorReason(description).clientAlias(event.getClientAlias()).txnId(event.getId()).referenceTransactionId(referenceTransactionId).uid(uid).planId(planId).build());
             } catch (Exception e) {
                 log.error("Unable to cancel the subscription", e);
             }

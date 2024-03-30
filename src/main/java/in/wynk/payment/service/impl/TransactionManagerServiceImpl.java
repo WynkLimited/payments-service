@@ -170,12 +170,13 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     }
 
     private void addEntryInRenewalTable (Transaction txn, String originalTransactionId) {
-        if(txn.getType() == PaymentEvent.RENEW && txn.getPaymentChannel().isInternalRecurring() && !(BeanConstant.ADD_TO_BILL_PAYMENT_SERVICE.equalsIgnoreCase(txn.getPaymentChannel().getCode()))) {
+        if (txn.getType() == PaymentEvent.RENEW && txn.getPaymentChannel().isInternalRecurring() && !(BeanConstant.ADD_TO_BILL_PAYMENT_SERVICE.equalsIgnoreCase(txn.getPaymentChannel().getCode()))) {
             Integer planId = subscriptionServiceManager.getUpdatedPlanId(txn.getPlanId(), txn.getType());
             PlanDTO planDTO = BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(planId);
             Calendar nextRecurringDateTime = Calendar.getInstance();
             nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planDTO.getPeriod().getTimeUnit().toMillis(planDTO.getPeriod().getValidity()));
-            recurringPaymentManagerService.scheduleRecurringPayment(txn.getIdStr(), originalTransactionId, txn.getType(), txn.getPaymentChannel().getCode(), nextRecurringDateTime, 0, txn);
+            recurringPaymentManagerService.scheduleRecurringPayment(txn.getIdStr(), originalTransactionId, txn.getType(), txn.getPaymentChannel().getCode(), nextRecurringDateTime, 0, txn,
+                    TransactionStatus.INPROGRESS, null);
         }
     }
 

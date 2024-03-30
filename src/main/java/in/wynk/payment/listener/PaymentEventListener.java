@@ -535,7 +535,7 @@ public class PaymentEventListener {
 
 
     @EventListener
-    @AnalyseTransaction(name = "MandateStatusEvent")
+    @AnalyseTransaction(name = "mandateStatusEvent")
     private void onMandateStatusEvent (MandateStatusEvent event) {
         AnalyticService.update(event);
     }

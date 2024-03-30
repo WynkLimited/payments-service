@@ -13,6 +13,8 @@ import lombok.Getter;
 @AnalysedEntity
 public class MandateStatusEvent {
     @Analysed
+    private String txnId;
+    @Analysed
     private String referenceTransactionId;
     @Analysed
     private String uid;

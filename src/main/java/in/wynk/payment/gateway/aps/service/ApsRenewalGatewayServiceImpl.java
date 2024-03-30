@@ -69,7 +69,6 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
     @Override
     public void renew (PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
         Transaction transaction = TransactionContext.get();
-<<<<<<< Updated upstream
         String txnId = paymentRenewalChargingRequest.getId();
         PaymentRenewal renewal = recurringPaymentManagerService.getRenewalById(txnId);
         if (Objects.nonNull(renewal) && StringUtils.isNotBlank(renewal.getLastSuccessTransactionId())) {
@@ -78,23 +77,13 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
         MerchantTransaction merchantTransaction = getMerchantData(txnId);
         ApsChargeStatusResponse[] apsChargeStatusResponses =
                 (merchantTransaction == null) ? common.syncChargingTransactionFromSource(transactionManager.get(txnId), Optional.empty()) :
-=======
-        MerchantTransaction merchantTransaction = getMerchantData(paymentRenewalChargingRequest.getId());
-        ApsChargeStatusResponse[] apsChargeStatusResponses =
-                (merchantTransaction == null) ? common.syncChargingTransactionFromSource(transactionManager.get(paymentRenewalChargingRequest.getId()), Optional.empty()) :
->>>>>>> Stashed changes
                         objectMapper.convertValue(merchantTransaction.getResponse(), ApsChargeStatusResponse[].class);
         ApsChargeStatusResponse merchantData = apsChargeStatusResponses[0];
 
         if (merchantData.getLob().equals(LOB.WYNK.toString())) {
-<<<<<<< Updated upstream
             log.error("This lob is not eligible for renewal for txnId {}", txnId);
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
             recurringPaymentManagerService.unScheduleRecurringPayment(transaction.getClientAlias(), txnId, PaymentEvent.CANCELLED);
-=======
-            transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            recurringPaymentManagerService.unScheduleRecurringPayment(transaction.getClientAlias(), paymentRenewalChargingRequest.getId(), PaymentEvent.CANCELLED);
->>>>>>> Stashed changes
             return;
         }
 

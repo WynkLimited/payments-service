@@ -183,7 +183,9 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     public void scheduleRecurringPayment (String transactionId, String originalTransactionId, PaymentEvent paymentEvent, String code, Calendar nextRecurringDateTime, int attemptSequence,
                                           Transaction transaction, TransactionStatus finalTransactionStatus, PaymentRenewal renewal) {
         if (BeanConstant.ADD_TO_BILL_PAYMENT_SERVICE.equalsIgnoreCase(code)) {
-            scheduleAtbTask(transaction, nextRecurringDateTime);
+            if(finalTransactionStatus != TransactionStatus.FAILURE) {
+                scheduleAtbTask(transaction, nextRecurringDateTime);
+            }
             return;
         }
 

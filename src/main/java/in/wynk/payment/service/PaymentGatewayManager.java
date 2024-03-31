@@ -294,7 +294,19 @@ public class PaymentGatewayManager
             }
         } catch (Exception ex) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            throw new WynkRuntimeException(PAY024, ex);
+            PaymentErrorEvent.Builder errorEventBuilder = PaymentErrorEvent.builder(transaction.getIdStr());
+            if (ex instanceof WynkRuntimeException) {
+                final WynkRuntimeException original = (WynkRuntimeException) ex;
+                final IWynkErrorType errorType = original.getErrorType();
+                errorEventBuilder.code(Objects.nonNull(errorType) ? errorType.getErrorCode() : original.getErrorCode());
+                errorEventBuilder.description(Objects.nonNull(errorType) ? errorType.getErrorMessage() : original.getMessage());
+                eventPublisher.publishEvent(errorEventBuilder.build());
+                throw ex;
+            } else {
+                errorEventBuilder.code(PaymentErrorType.PAY024.getErrorCode()).description(ex.getMessage());
+                eventPublisher.publishEvent(errorEventBuilder.build());
+                throw new WynkRuntimeException(PAY024, ex);
+            }
         } finally {
             eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
             if (renewalService.canRenewalReconciliation()) {

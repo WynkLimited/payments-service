@@ -198,19 +198,18 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
             }
         }
 
-        attemptSequence = getUpdatedAttemptSequence(originalTransactionId, paymentEvent, renewal, transaction);
+        int updatedAttemptSequence = updateAttemptSequence(originalTransactionId, paymentEvent, renewal, transaction, attemptSequence);
 
         String initialTransactionId = Objects.nonNull(renewal) ? renewal.getInitialTransactionId() : fetchInitialTransactionId(transaction, paymentEvent);
         String updatedLastSuccessTransactionId = Objects.nonNull(renewal) && Objects.nonNull(renewal.getLastSuccessTransactionId()) ? renewal.getLastSuccessTransactionId() : originalTransactionId;
         PaymentRenewal paymentRenewal = PaymentRenewal.builder().day(nextRecurringDateTime).transactionId(transactionId).hour(nextRecurringDateTime.getTime()).createdTimestamp(Calendar.getInstance())
                 .transactionEvent((PaymentEvent.RENEW == paymentEvent && finalTransactionStatus == TransactionStatus.FAILURE) ? PaymentEvent.DEFERRED.name() : PaymentEvent.SUBSCRIBE.name())
                 .initialTransactionId(initialTransactionId).lastSuccessTransactionId(updatedLastSuccessTransactionId)
-                .attemptSequence(attemptSequence).build();
+                .attemptSequence(updatedAttemptSequence).build();
         upsert(paymentRenewal);
     }
 
-    private int getUpdatedAttemptSequence (String originalTransactionId, PaymentEvent paymentEvent, PaymentRenewal renewal, Transaction transaction) {
-        int attemptSequence = 0;
+    private int updateAttemptSequence (String originalTransactionId, PaymentEvent paymentEvent, PaymentRenewal renewal, Transaction transaction, int attemptSequence) {
         if (originalTransactionId != null && PaymentEvent.RENEW == paymentEvent) {
             Transaction originalTransaction =
                     RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).findById(originalTransactionId)
@@ -218,7 +217,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
             if (originalTransaction.getStatus() == TransactionStatus.SUCCESS && originalTransaction.getType() == PaymentEvent.RENEW) {
                 attemptSequence = attemptSequence + 1;
             } else {
-                renewal = getRenewalById(originalTransactionId);
+                renewal = Objects.nonNull(renewal) ? renewal : getRenewalById(originalTransactionId);
                 if (Objects.nonNull(renewal) && transaction.getStatus() == TransactionStatus.INPROGRESS) {
                     attemptSequence = renewal.getAttemptSequence() + 1;
                 }
@@ -305,6 +304,5 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     public PaymentRenewal getRenewalById (String txnId) {
         return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).findById(txnId)
                 .orElse(null);
-
     }
 }

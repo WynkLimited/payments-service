@@ -14,6 +14,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
+import in.wynk.payment.core.dao.repository.ITransactionDao;
 import in.wynk.payment.core.event.RecurringPaymentEvent;
 import in.wynk.payment.dto.SubscriptionStatus;
 import in.wynk.payment.dto.addtobill.AddToBillUserSubscriptionStatusTask;
@@ -183,7 +184,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     public void scheduleRecurringPayment (String transactionId, String originalTransactionId, PaymentEvent paymentEvent, String code, Calendar nextRecurringDateTime, int attemptSequence,
                                           Transaction transaction, TransactionStatus finalTransactionStatus, PaymentRenewal renewal) {
         if (BeanConstant.ADD_TO_BILL_PAYMENT_SERVICE.equalsIgnoreCase(code)) {
-            if(finalTransactionStatus != TransactionStatus.FAILURE) {
+            if (finalTransactionStatus != TransactionStatus.FAILURE) {
                 scheduleAtbTask(transaction, nextRecurringDateTime);
             }
             return;
@@ -197,12 +198,8 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
             }
         }
 
-        if (originalTransactionId != null && PaymentEvent.RENEW == paymentEvent) {
-            renewal = getRenewalById(originalTransactionId);
-            if (Objects.nonNull(renewal) && transaction.getStatus() == TransactionStatus.INPROGRESS) {
-                attemptSequence = renewal.getAttemptSequence() + 1;
-            }
-        }
+        attemptSequence = getUpdatedAttemptSequence(originalTransactionId, paymentEvent, renewal, transaction);
+
         String initialTransactionId = Objects.nonNull(renewal) ? renewal.getInitialTransactionId() : fetchInitialTransactionId(transaction, paymentEvent);
         String updatedLastSuccessTransactionId = Objects.nonNull(renewal) && Objects.nonNull(renewal.getLastSuccessTransactionId()) ? renewal.getLastSuccessTransactionId() : originalTransactionId;
         PaymentRenewal paymentRenewal = PaymentRenewal.builder().day(nextRecurringDateTime).transactionId(transactionId).hour(nextRecurringDateTime.getTime()).createdTimestamp(Calendar.getInstance())
@@ -210,6 +207,24 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
                 .initialTransactionId(initialTransactionId).lastSuccessTransactionId(updatedLastSuccessTransactionId)
                 .attemptSequence(attemptSequence).build();
         upsert(paymentRenewal);
+    }
+
+    private int getUpdatedAttemptSequence (String originalTransactionId, PaymentEvent paymentEvent, PaymentRenewal renewal, Transaction transaction) {
+        int attemptSequence = 0;
+        if (originalTransactionId != null && PaymentEvent.RENEW == paymentEvent) {
+            Transaction originalTransaction =
+                    RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).findById(originalTransactionId)
+                            .orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY010, originalTransactionId));
+            if (originalTransaction.getStatus() == TransactionStatus.SUCCESS && originalTransaction.getType() == PaymentEvent.RENEW) {
+                attemptSequence = attemptSequence + 1;
+            } else {
+                renewal = getRenewalById(originalTransactionId);
+                if (Objects.nonNull(renewal) && transaction.getStatus() == TransactionStatus.INPROGRESS) {
+                    attemptSequence = renewal.getAttemptSequence() + 1;
+                }
+            }
+        }
+        return attemptSequence;
     }
 
     private String fetchInitialTransactionId (Transaction transaction, PaymentEvent event) {

@@ -1,0 +1,42 @@
+package in.wynk.payment.dto.point;
+
+import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.common.enums.PaymentEvent;
+import in.wynk.common.enums.TransactionStatus;
+import in.wynk.payment.dto.GenerateItemEvent;
+import in.wynk.payment.dto.invoice.ItemKafkaMessage;
+import in.wynk.stream.advice.KafkaEvent;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.SuperBuilder;
+
+/**
+ * @author Nishesh Pandey
+ */
+@Getter
+@SuperBuilder
+@AnalysedEntity
+@RequiredArgsConstructor
+@KafkaEvent(topic = "${wynk.kafka.producers.item.generate.topic}")
+public class GenerateItemKafkaMessage extends ItemKafkaMessage {
+    private String transactionId;
+    private String itemId;
+    private String uid;
+    private String createdDate;
+    private String updatedDate;
+    private TransactionStatus transactionStatus;
+    private PaymentEvent event;
+
+    public static GenerateItemKafkaMessage from (GenerateItemEvent event) {
+        return GenerateItemKafkaMessage.builder()
+                .transactionId(event.getTransactionId())
+                .itemId(event.getItemId())
+                .uid(event.getUid())
+                .createdDate(event.getCreatedDate())
+                .updatedDate(event.getUpdatedDate())
+                .transactionStatus(event.getTransactionStatus())
+                .event(event.getEvent())
+                .build();
+    }
+}
+

@@ -6,7 +6,7 @@ import in.wynk.payment.core.dao.entity.IPaymentDetails;
 import in.wynk.payment.core.dao.entity.IProductDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
 
-public interface IPlanValidatorRequest extends IBaseRequest {
+public interface IProductValidatorRequest extends IBaseRequest {
 
     boolean isTrialOpted();
 

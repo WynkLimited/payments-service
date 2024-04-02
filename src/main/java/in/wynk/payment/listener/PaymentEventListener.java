@@ -673,6 +673,9 @@ public class PaymentEventListener {
                             .build());
                 }
             }
+            if(event.getTransaction().getType() == PaymentEvent.POINT_PURCHASE) {
+                publishDataToWynkKafka(event.getTransaction());
+            }
             if (ApsConstant.APS.equals(event.getTransaction().getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(event.getTransaction().getPaymentChannel().getId())) {
                 initiateReportTransactionToMerchant(event);
             }
@@ -691,6 +694,12 @@ public class PaymentEventListener {
         if (EnumSet.of(TransactionStatus.SUCCESS, TransactionStatus.FAILURE).contains(event.getTransaction().getStatus())) {
             publishWaPaymentStatusEvent(event);
         }
+    }
+
+    private void publishDataToWynkKafka (Transaction transaction) {
+        GenerateItemEvent event =
+                GenerateItemEvent.builder().transactionId(transaction.getIdStr()).itemId(transaction.getItemId()).uid(transaction.getUid()).createdDate(String.valueOf(transaction.getInitTime()))
+                        .updatedDate(String.valueOf(transaction.getExitTime())).transactionStatus(transaction.getStatus()).event(transaction.getType()).build();
     }
 
     private void initiateReportTransactionToMerchant(TransactionSnapshotEvent event) {

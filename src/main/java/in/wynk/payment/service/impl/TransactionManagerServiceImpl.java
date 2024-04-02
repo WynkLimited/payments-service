@@ -215,6 +215,11 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             purchaseDetailsManger.save(transaction, request);
             TransactionContext.set(TransactionDetails.builder().transaction(transaction).request(request).build());
             return transaction;
+        }else if (PointTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass())) {
+            final Transaction transaction = initPointTransaction((PointTransactionInitRequest) transactionInitRequest);
+            purchaseDetailsManger.save(transaction, request);
+            TransactionContext.set(TransactionDetails.builder().transaction(transaction).request(request).build());
+            return transaction;
         }
         return init(transactionInitRequest);
     }

@@ -112,7 +112,7 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
 
     private boolean isEligibleForRenewal (Transaction transaction, int attemptSequence) {
         PlanPeriodDTO planPeriodDTO = cachingService.getPlan(transaction.getPlanId()).getPeriod();
-        if (planPeriodDTO.getMaxRetryCount() < attemptSequence) {
+        if (planPeriodDTO.getMaxRetryCount() <= attemptSequence) {
             log.error(PaymentLoggingMarker.MAX_RENEWAL_ATTEMPT_ERROR, "Need to break the chain in Payment Renewal as maximum attempts are already exceeded for transactionId {}", transaction.getIdStr());
             throw new WynkRuntimeException("Need to break the chain in Payment Renewal as maximum attempts are already exceeded");
         }

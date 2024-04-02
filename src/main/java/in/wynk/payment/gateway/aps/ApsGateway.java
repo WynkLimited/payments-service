@@ -87,6 +87,7 @@ public class ApsGateway implements
                       ApplicationEventPublisher eventPublisher,
                       ITransactionManagerService transactionManager,
                       IMerchantTransactionService merchantTransactionService,
+                      IRecurringPaymentManagerService recurringPaymentManagerService,
                       @Qualifier("apsHttpTemplate") RestTemplate httpTemplate) {
         this.eligibilityGateway = new ApsEligibilityGatewayServiceImpl();
         this.statusGateway = new ApsStatusGatewayServiceImpl(commonGateway);
@@ -97,7 +98,7 @@ public class ApsGateway implements
         this.deleteGateway = new ApsDeleteGatewayServiceImpl(deleteCardEndpoint, deleteVpaEndpoint, commonGateway);
         this.chargeGateway = new ApsChargeGatewayServiceImpl(upiChargeEndpoint, chargeEndpoint, upiPayDigiChargeEndpoint, payDigiChargeEndpoint, paymentMethodCachingService, commonGateway);
         this.verificationGateway = new ApsVerificationGatewayImpl(vpaVerifyEndpoint, binVerifyEndpoint, httpTemplate, commonGateway);
-        this.renewalGateway = new ApsRenewalGatewayServiceImpl(siPaymentApi, mapper, commonGateway, paymentCachingService, merchantTransactionService, eventPublisher, transactionManager);
+        this.renewalGateway = new ApsRenewalGatewayServiceImpl(siPaymentApi, mapper, commonGateway, paymentCachingService, merchantTransactionService, eventPublisher, transactionManager, recurringPaymentManagerService);
         this.mandateCancellationGateway = new ApsCancelMandateGatewayServiceImpl(mapper, transactionManager, merchantTransactionService, cancelMandateEndpoint, commonGateway, gson);
         this.iMerchantTDRService = new ApsTdrGatewayServiceImpl(tdrEndPoint, httpTemplate, commonGateway, merchantTransactionService);
     }

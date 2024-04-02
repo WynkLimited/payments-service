@@ -564,9 +564,9 @@ wynk:
          topic: wcf_preprod.pay_state_retry_resp
        dlt:
          topic: wcf_preprod.pay_state_dlt_resp
-     item:
-      generate:
-        topic: wcf_local.generate_item
+      item:
+       generate:
+         topic: wcf_local.generate_item
     consumers:
       enabled: true
       listenerFactory:

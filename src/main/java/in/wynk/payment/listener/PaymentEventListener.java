@@ -34,6 +34,8 @@ import in.wynk.payment.dto.gpbs.acknowledge.queue.ExternalTransactionReportMessa
 import in.wynk.payment.dto.invoice.GenerateInvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.InvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.InvoiceRetryTask;
+import in.wynk.payment.dto.invoice.ItemKafkaMessage;
+import in.wynk.payment.dto.point.GenerateItemKafkaMessage;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractPaymentSettlementResponse;
 import in.wynk.payment.event.WaPayStateRespEvent;
@@ -103,6 +105,7 @@ public class PaymentEventListener {
     private final IQuickPayLinkGenerator quickPayLinkGenerator;
     private final InvoiceService invoiceService;
     private final IKafkaEventPublisher<String, InvoiceKafkaMessage> invoiceKafkaPublisher;
+    private final IKafkaEventPublisher<String, ItemKafkaMessage> itemKafkaPublisher;
     private final IKafkaEventPublisher<String, WaPayStateRespEvent> paymentStatusKafkaPublisher;
     private final InvoiceDetailsCachingService invoiceDetailsCachingService;
     private final ClientDetailsCachingService clientDetailsCachingService;
@@ -603,12 +606,13 @@ public class PaymentEventListener {
                             .build());
                 }
             }
-            if(event.getTransaction().getType() == PaymentEvent.POINT_PURCHASE) {
-                publishDataToWynkKafka(event.getTransaction());
-            }
             if (ApsConstant.APS.equals(event.getTransaction().getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(event.getTransaction().getPaymentChannel().getId())) {
               initiateReportTransactionToMerchant(event);
             }
+        }
+        if ((event.getTransaction().getStatus() == TransactionStatus.SUCCESS || event.getTransaction().getStatus() == TransactionStatus.FAILURE) &&
+                event.getTransaction().getType() == PaymentEvent.POINT_PURCHASE) {
+            publishDataToWynkKafka(event.getTransaction());
         }
         if (Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getAppDetails()))
             AnalyticService.update(event.getPurchaseDetails().getAppDetails());
@@ -629,7 +633,16 @@ public class PaymentEventListener {
         GenerateItemEvent event =
                 GenerateItemEvent.builder().transactionId(transaction.getIdStr()).itemId(transaction.getItemId()).uid(transaction.getUid()).createdDate(String.valueOf(transaction.getInitTime()))
                         .updatedDate(String.valueOf(transaction.getExitTime())).transactionStatus(transaction.getStatus()).event(transaction.getType()).build();
+        eventPublisher.publishEvent(event);
     }
+
+    @EventListener
+    @AnalyseTransaction(name = "generateItemEvent")
+    public void onPaymentSettlementEvent(GenerateItemEvent event) {
+        itemKafkaPublisher.publish(GenerateItemKafkaMessage.from(event));
+        AnalyticService.update(event);
+    }
+
 
     private void initiateReportTransactionToMerchant (TransactionSnapshotEvent event) {
         try {

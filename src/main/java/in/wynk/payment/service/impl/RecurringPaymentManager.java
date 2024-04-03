@@ -199,6 +199,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
             }
         }
         int updatedAttemptSequence= attemptSequence;
+        String updatedLastSuccessTransactionId = null;
         if (originalTransactionId != null && PaymentEvent.RENEW == paymentEvent) {
             Transaction originalTransaction =
                     RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).findById(originalTransactionId)
@@ -211,6 +212,9 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
                     if (Objects.nonNull(renewal)) {
                         updatedAttemptSequence = renewal.getAttemptSequence() + 1;
                     }
+                    if (originalTransaction.getStatus() == TransactionStatus.SUCCESS) {
+                        updatedLastSuccessTransactionId = originalTransactionId;
+                    }
                 } else {
                     renewal = Objects.nonNull(renewal) ? renewal : getRenewalById(transaction.getIdStr());
                     updatedAttemptSequence = renewal.getAttemptSequence();
@@ -219,7 +223,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
             }
         }
         String initialTransactionId = Objects.nonNull(renewal) ? renewal.getInitialTransactionId() : fetchInitialTransactionId(transaction, paymentEvent);
-        String updatedLastSuccessTransactionId = Objects.nonNull(renewal) && StringUtils.isNotBlank(renewal.getLastSuccessTransactionId()) ? renewal.getLastSuccessTransactionId() : originalTransactionId;
+        updatedLastSuccessTransactionId = (Objects.nonNull(renewal) && StringUtils.isEmpty(updatedLastSuccessTransactionId) && StringUtils.isNotBlank(renewal.getLastSuccessTransactionId())) ? renewal.getLastSuccessTransactionId() : originalTransactionId;
         PaymentRenewal paymentRenewal = PaymentRenewal.builder().day(nextRecurringDateTime).transactionId(transactionId).hour(nextRecurringDateTime.getTime()).createdTimestamp(Calendar.getInstance())
                 .transactionEvent((PaymentEvent.RENEW == paymentEvent && finalTransactionStatus == TransactionStatus.FAILURE) ? PaymentEvent.DEFERRED.name() : PaymentEvent.SUBSCRIBE.name())
                 .initialTransactionId(initialTransactionId).lastSuccessTransactionId(updatedLastSuccessTransactionId)

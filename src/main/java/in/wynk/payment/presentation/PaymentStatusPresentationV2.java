@@ -136,10 +136,15 @@ public class PaymentStatusPresentationV2 implements IWynkPresentation<PaymentSta
                                 paymentMethodCachingService.get(purchaseDetails.getPaymentDetails().getPaymentId()).getGroup());
             } else {
                 SuccessPaymentStatusResponse.SuccessPaymentStatusResponseBuilder<?, ?> builder = SuccessPaymentStatusResponse.builder()
-                        .transactionStatus(payload.getTransactionStatus()).planId(transaction.getPlanId())
+                        .transactionStatus(payload.getTransactionStatus())
                         .tid(payload.getTid()).transactionType(payload.getTransactionType())
-                        .validity(cachingService.validTillDate(transaction.getPlanId(),transaction.getMsisdn()))
                         .paymentGroup(paymentMethodCachingService.get(purchaseDetails.getPaymentDetails().getPaymentId()).getGroup());
+                if (transaction.getType() == PaymentEvent.POINT_PURCHASE) {
+                    builder.itemId(Integer.parseInt(transaction.getItemId()));
+                } else {
+                    builder.validity(cachingService.validTillDate(transaction.getPlanId(), transaction.getMsisdn()));
+                    builder.planId(transaction.getPlanId());
+                }
                 if (txnStatus == TransactionStatus.SUCCESS) {
                     builder.packDetails(getPackDetails(transaction));
                     builder.redirectUrl(pageUrlDetails.getSuccessPageUrl());

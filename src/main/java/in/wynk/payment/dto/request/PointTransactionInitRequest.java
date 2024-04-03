@@ -14,7 +14,10 @@ public class PointTransactionInitRequest extends AbstractTransactionInitRequest 
     private String itemId;
 
     @Override
-    public double getAmount() {
+    public double getAmount () {
+        if (super.getAmount() != 0.0) {
+            return super.getAmount();
+        }
         SessionDTO sessionDto = SessionContextHolder.getBody();
         return Objects.nonNull(sessionDto.get("price")) ? Double.parseDouble(sessionDto.get("price")) : 0.0;
     }

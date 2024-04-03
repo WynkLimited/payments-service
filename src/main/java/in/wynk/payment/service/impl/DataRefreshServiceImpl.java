@@ -54,7 +54,7 @@ public class DataRefreshServiceImpl implements IDataRefreshService {
     @Override
     public void handleCallback (String paymentCode, String applicationAlias, HttpHeaders headers, String payload) {
         try {
-            if ("aps".equalsIgnoreCase(paymentCode)) {
+            if ("aps".equalsIgnoreCase(paymentCode) && payload.contains("PAYMENT_STATUS")) {
                 ApsCallBackRequestPayload apsCallBackRequestPayload = objectMapper.readValue(payload, ApsCallBackRequestPayload.class);
                 ApsChargeStatusResponse[] response = ApsChargeStatusResponse.from(apsCallBackRequestPayload);
                 MerchantTransactionEvent.Builder builder = MerchantTransactionEvent.builder(apsCallBackRequestPayload.getTransactionId());

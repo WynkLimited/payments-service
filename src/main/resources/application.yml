@@ -49,8 +49,8 @@ logging:
     org.apache.catalina: off
     org.quartz: DEBUG
     in.wynk.scheduler.core: DEBUG
-  path: /data
-  path.analytics: /logs
+  path: /tmp
+  path.analytics: /tmp
 
 ##### resilience props for lib-queue ######
 resilience:

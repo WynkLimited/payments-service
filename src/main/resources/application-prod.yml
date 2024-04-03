@@ -113,7 +113,7 @@ payment:
   pooling:
     queue:
       preDebitNotification:
-        enabled: true
+        enabled: false
         name: wcf-production-mandate-notification-sqs-queue
         sqs:
           messages:
@@ -126,7 +126,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       acknowledgement:
-        enabled: true
+        enabled: false
         name: wcf-payment-receipt-ack-prod-sqs
         sqs:
           messages:
@@ -153,7 +153,7 @@ payment:
               delay: 20
               delayTimeUnit: SECONDS
       reconciliation:
-        enabled: true
+        enabled: false
         name: wcf-production-revenue-payment-reconcilation
         sqs:
           messages:
@@ -166,7 +166,7 @@ payment:
             delay: 1
             delayTimeUnit: SECONDS
       renewal:
-        enabled: true
+        enabled: false
         name: wcf-production-revenue-renewal
         sqs:
           messages:
@@ -179,7 +179,7 @@ payment:
             delay: 1
             delayTimeUnit: SECONDS
       charging:
-        enabled: true
+        enabled: false
         name: wcf-production-revenue-payment-charging.fifo
         sqs:
           messages:
@@ -192,7 +192,7 @@ payment:
             delay: 10
             delayTimeUnit: SECONDS
       schedule:
-        enabled: true
+        enabled: false
         name: wcf-production-revenue-subscription-payment
         sqs:
           messages:
@@ -205,7 +205,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       unschedule:
-        enabled: true
+        enabled: false
         name: wcf-production-revenue-recurring
         sqs:
           messages:
@@ -218,7 +218,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       userDeactivation:
-        enabled: true
+        enabled: false
         name: wcf-prod-payment-user-deactivation
         sqs:
           messages:
@@ -231,7 +231,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       refund:
-        enabled: true
+        enabled: false
         name: wcf-prod-payment-refund
         sqs:
           messages:
@@ -258,7 +258,7 @@ payment:
         api:
           base: https://paydigi.airtel.in
       encryption:
-        key: file:///opt/public.key
+        key: classpath:/cryptography/aps/public.key
       airtelxstream:
         intpay:
           id: wynk
@@ -419,7 +419,7 @@ subscription:
   pooling:
     queue:
       provisioning:
-        enabled: true
+        enabled: false
         name: wcf-production-revenue-subscription
         sqs:
           producer:
@@ -551,18 +551,21 @@ wynk:
     producers:
       invoice:
         generate:
-          topic: wcf_prod.generate_invoice
+          topic: wcf_local.generate_invoice
         inform:
-          topic: wcf_prod.inform_invoice_generate
+          topic: wcf_local.inform_invoice_generate
       payment:
         charge:
-          topic: wcf_prod.pay_link_resp
+          topic: wcf_local.pay_link_resp
         status:
-          topic: wcf_prod.pay_state_resp
+          topic: wcf_local.pay_state_resp
         retry:
-          topic: wcf_prod.pay_state_retry_resp
+          topic: wcf_local.pay_state_retry_resp
         dlt:
-          topic: wcf_prod.pay_state_dlt_resp
+          topic: wcf_local.pay_state_dlt_resp
+      item:
+        generate:
+          topic: wcf_local.generate_item
     consumers:
       enabled: true
       listenerFactory:
@@ -579,7 +582,7 @@ wynk:
               maxPollInterval: 600000
               maxPollRecords: 50
               sessionTimeout: 180000
-              topic: wcf_prod.generate_invoice
+              topic: wcf_local.generate_invoice
               valueDeserializer: in.wynk.payment.consumer.InvoiceGeneratorKafkaSerializer
             name: GENERATE_INVOICE_BEAN
           - concurrency: 3
@@ -594,7 +597,7 @@ wynk:
               maxPollInterval: 600000
               maxPollRecords: 50
               sessionTimeout: 180000
-              topic: wcf_prod.inform_invoice_state
+              topic: wcf_local.inform_invoice_state
               valueDeserializer: in.wynk.payment.consumer.InvoiceCallbackKafkaSerializer
             name: INVOICE_CALLBACK_BEAN
         payment:
@@ -611,7 +614,7 @@ wynk:
                 maxPollInterval: 600000
                 maxPollRecords: 50
                 sessionTimeout: 180000
-                topic: wcf_prod.pay_link_req
+                topic: wcf_local.pay_link_req
                 valueDeserializer: in.wynk.payment.consumer.PaymentChargeCallbackKafkaSerializer
               name: PAYMENT_CHARGE_BEAN
             - concurrency: 3
@@ -626,7 +629,7 @@ wynk:
                 maxPollInterval: 600000
                 maxPollRecords: 50
                 sessionTimeout: 180000
-                topic: wcf_prod.pay_link_req_retry
+                topic: wcf_local.pay_link_req_retry
                 valueDeserializer: in.wynk.payment.consumer.PaymentChargeCallbackKafkaSerializer
               name: PAYMENT_CHARGE_RETRY_BEAN
   multi:

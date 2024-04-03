@@ -108,7 +108,7 @@ payment:
   pooling:
     queue:
       preDebitNotification:
-        enabled: true
+        enabled: false
         name: wcf-preprod-mandate-notification-sqs
         sqs:
           messages:
@@ -121,7 +121,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       acknowledgement:
-        enabled: true
+        enabled: false
         name: wcf-payment-receipt-ack-preprod-sqs
         sqs:
           messages:
@@ -135,7 +135,7 @@ payment:
             delayTimeUnit: SECONDS
       externalTransaction:
         report:
-          enabled: true
+          enabled: false
           name: wcf-payment-transaction-ack-preprod-sqs
           sqs:
             messages:
@@ -148,7 +148,7 @@ payment:
               delay: 20
               delayTimeUnit: SECONDS
       reconciliation:
-        enabled: true
+        enabled: false
         name: wcf-preprod-payment-reconciliation
         sqs:
           messages:
@@ -161,7 +161,7 @@ payment:
             delay: 3
             delayTimeUnit: SECONDS
       renewal:
-        enabled: true
+        enabled: false
         name: wcf-preprod-payment-renewal
         sqs:
           messages:
@@ -187,7 +187,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       schedule:
-        enabled: true
+        enabled: false
         name: wcf-preprod-subscription-payment
         sqs:
           messages:
@@ -200,7 +200,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       unschedule:
-        enabled: true
+        enabled: false
         name: wcf-preprod-payment-recurring
         sqs:
           messages:
@@ -213,7 +213,7 @@ payment:
             delay: 20
             delayTimeUnit: SECONDS
       userDeactivation:
-        enabled: true
+        enabled: false
         name: wcf-preprod-payment-user-deactivation
         sqs:
           messages:
@@ -254,7 +254,7 @@ payment:
         api:
           base: https://paydigi.airtel.in
       encryption:
-        key: file:///opt/public.key
+        key: classpath:/cryptography/aps/public.key
       airtelxstream:
         intpay:
           id: wynk
@@ -413,7 +413,7 @@ subscription:
   pooling:
     queue:
       provisioning:
-        enabled: true
+        enabled: false
         name: wcf-preprod-subscription
         sqs:
           producer:
@@ -552,18 +552,21 @@ wynk:
     producers:
       invoice:
         generate:
-          topic: wcf_preprod.generate_invoice
+          topic: wcf_local.generate_invoice
         inform:
-          topic: wcf_preprod.inform_invoice_generate
+          topic: wcf_local.inform_invoice_generate
       payment:
        charge:
-         topic: wcf_preprod.pay_link_resp
+         topic: wcf_local.pay_link_resp
        status:
-         topic: wcf_preprod.pay_state_resp
+         topic: wcf_local.pay_state_resp
        retry:
-         topic: wcf_preprod.pay_state_retry_resp
+         topic: wcf_local.pay_state_retry_resp
        dlt:
-         topic: wcf_preprod.pay_state_dlt_resp
+         topic: wcf_local.pay_state_dlt_resp
+      item:
+       generate:
+         topic: wcf_local.generate_item
     consumers:
       enabled: true
       listenerFactory:
@@ -580,7 +583,7 @@ wynk:
               maxPollInterval: 600000
               maxPollRecords: 50
               sessionTimeout: 180000
-              topic: wcf_preprod.generate_invoice
+              topic: wcf_local.generate_invoice
               valueDeserializer: in.wynk.payment.consumer.InvoiceGeneratorKafkaSerializer
             name: GENERATE_INVOICE_BEAN
           - concurrency: 3
@@ -595,7 +598,7 @@ wynk:
               maxPollInterval: 600000
               maxPollRecords: 50
               sessionTimeout: 180000
-              topic: wcf_preprod.inform_invoice_state
+              topic: wcf_local.inform_invoice_state
               valueDeserializer: in.wynk.payment.consumer.InvoiceCallbackKafkaSerializer
             name: INVOICE_CALLBACK_BEAN
         payment:
@@ -612,7 +615,7 @@ wynk:
                 maxPollInterval: 600000
                 maxPollRecords: 50
                 sessionTimeout: 180000
-                topic: wcf_preprod.pay_link_req
+                topic: wcf_local.pay_link_req
                 valueDeserializer: in.wynk.payment.consumer.PaymentChargeCallbackKafkaSerializer
               name: PAYMENT_CHARGE_BEAN
             - concurrency: 3
@@ -627,7 +630,7 @@ wynk:
                 maxPollInterval: 600000
                 maxPollRecords: 50
                 sessionTimeout: 180000
-                topic: wcf_preprod.pay_link_req_retry
+                topic: wcf_local.pay_link_req_retry
                 valueDeserializer: in.wynk.payment.consumer.PaymentChargeCallbackKafkaSerializer
               name: PAYMENT_CHARGE_RETRY_BEAN
   multi:

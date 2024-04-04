@@ -10,6 +10,10 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import java.util.Calendar;
+
 /**
  * @author Nishesh Pandey
  */
@@ -22,8 +26,10 @@ public class GenerateItemKafkaMessage extends ItemKafkaMessage {
     private String transactionId;
     private String itemId;
     private String uid;
-    private String createdDate;
-    private String updatedDate;
+    @Temporal(TemporalType.TIMESTAMP)
+    private Calendar createdDate;
+    @Temporal(TemporalType.TIMESTAMP)
+    private Calendar updatedDate;
     private TransactionStatus transactionStatus;
     private PaymentEvent event;
 

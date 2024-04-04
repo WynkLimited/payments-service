@@ -636,8 +636,8 @@ public class PaymentEventListener {
 
     private void publishDataToWynkKafka (Transaction transaction) {
         GenerateItemEvent event =
-                GenerateItemEvent.builder().transactionId(transaction.getIdStr()).itemId(transaction.getItemId()).uid(transaction.getUid()).createdDate(String.valueOf(transaction.getInitTime()))
-                        .updatedDate(String.valueOf(transaction.getExitTime())).transactionStatus(transaction.getStatus()).event(transaction.getType()).build();
+                GenerateItemEvent.builder().transactionId(transaction.getIdStr()).itemId(transaction.getItemId()).uid(transaction.getUid()).createdDate(transaction.getInitTime())
+                        .updatedDate(transaction.getExitTime()).transactionStatus(transaction.getStatus()).event(transaction.getType()).build();
         eventPublisher.publishEvent(event);
     }
 

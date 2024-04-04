@@ -58,7 +58,7 @@ public class DataRefreshServiceImpl implements IDataRefreshService {
                 ApsCallBackRequestPayload apsCallBackRequestPayload = objectMapper.readValue(payload, ApsCallBackRequestPayload.class);
                 ApsChargeStatusResponse[] response = ApsChargeStatusResponse.from(apsCallBackRequestPayload);
                 MerchantTransactionEvent.Builder builder = MerchantTransactionEvent.builder(apsCallBackRequestPayload.getTransactionId());
-                builder.response(response[0]);
+                builder.response(response);
                 builder.externalTransactionId(response[0].getPgId());
                 eventPublisher.publishEvent(builder.build());
             } else {

@@ -617,11 +617,11 @@ public class PaymentEventListener {
         }
         if (EnumSet.of(PaymentEvent.SUBSCRIBE, PaymentEvent.RENEW).contains(event.getTransaction().getType()) && !IAP_PAYMENT_METHODS.contains(event.getTransaction().getPaymentChannel().name())) {
             AnalyticService.update(MANDATE_AMOUNT, event.getTransaction().getMandateAmount());
-            AnalyticService.update(RENEWAL_ATTEMPT_SEQUENCE, event.getAttemptSequence());
             String referenceTransactionId = event.getTransaction().getIdStr();
             if (PaymentEvent.RENEW == event.getTransaction().getType()) {
                 PaymentRenewal renewal = recurringPaymentManagerService.getRenewalById(event.getTransaction().getIdStr());
                 if (renewal != null) {
+                    AnalyticService.update(RENEWAL_ATTEMPT_SEQUENCE, renewal.getAttemptSequence());
                     referenceTransactionId = renewal.getInitialTransactionId();
                 }
             }

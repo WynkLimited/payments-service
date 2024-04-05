@@ -14,6 +14,4 @@ import lombok.NoArgsConstructor;
 public class TransactionSnapshotEvent {
     private Transaction transaction;
     private IPurchaseDetails purchaseDetails;
-    @Builder.Default
-    private Integer attemptSequence = 0;
 }

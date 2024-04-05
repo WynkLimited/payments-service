@@ -1,15 +1,25 @@
 package in.wynk.payment.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.TransactionAware;
+import in.wynk.payment.core.constant.PaymentConstants;
+import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
+import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
 import in.wynk.payment.gateway.aps.service.ApsCommonGatewayService;
 import in.wynk.payment.gateway.payu.service.PayUCommonGateway;
 import in.wynk.payment.service.IDataRefreshService;
+import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.ITransactionManagerService;
+import io.github.resilience4j.retry.RetryRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -24,6 +34,12 @@ public class DataRefreshServiceImpl implements IDataRefreshService {
     private PayUCommonGateway payUCommonGateway;
     @Autowired
     private ITransactionManagerService transactionManagerService;
+    @Autowired
+    private ObjectMapper objectMapper;
+    @Autowired
+    private IMerchantTransactionService merchantTransactionService;
+    @Autowired
+    private RetryRegistry retryRegistry;
 
     @Override
     @TransactionAware(txnId = "#transactionId")
@@ -36,7 +52,52 @@ public class DataRefreshServiceImpl implements IDataRefreshService {
                 payUCommonGateway.syncChargingTransactionFromSource(transaction);
             }
         } catch (Exception e) {
-            log.error("Exception occurred while refreshing merchnat transactio  table with PG data");
+            log.error("Exception occurred while refreshing merchnat transaction  table with PG data");
+        }
+    }
+
+    @Override
+    public void handleCallback (String paymentCode, String applicationAlias, HttpHeaders headers, String payload) {
+        try {
+            if ("aps".equalsIgnoreCase(paymentCode) && payload.contains("PAYMENT_STATUS")) {
+                ApsCallBackRequestPayload apsCallBackRequestPayload = objectMapper.readValue(payload, ApsCallBackRequestPayload.class);
+                ApsChargeStatusResponse[] response = ApsChargeStatusResponse.from(apsCallBackRequestPayload);
+                MerchantTransaction merchantTransaction = MerchantTransaction.builder().id(response[0].getOrderId()).response(response).externalTransactionId(response[0].getPgId()).build();
+                upsertData(merchantTransaction);
+            } else {
+                throw new WynkRuntimeException("No support provided for the paymentCode " + paymentCode);
+            }
+        } catch (Exception ex) {
+            throw new WynkRuntimeException("exception occured while updating merchant table for paymentCode " + paymentCode);
+        }
+    }
+
+    private void upsertData (MerchantTransaction merchantTransaction) {
+
+        MerchantTransaction merchantData = getMerchantData(merchantTransaction.getId());
+        if (Objects.nonNull(merchantData)) {
+            merchantData.setExternalTokenReferenceId(merchantData.getExternalTokenReferenceId());
+            merchantData.setOrderId(merchantData.getOrderId());
+            merchantData.setExternalTransactionId(merchantTransaction.getExternalTransactionId());
+            merchantData.setRequest(merchantTransaction.getRequest());
+            merchantData.setResponse(merchantTransaction.getResponse());
+        } else {
+            merchantData = merchantTransaction;
+        }
+        try {
+            MerchantTransaction finalMerchantData = merchantData;
+            retryRegistry.retry(PaymentConstants.MERCHANT_TRANSACTION_UPSERT_RETRY_KEY).executeRunnable(() -> merchantTransactionService.upsert(finalMerchantData));
+        } catch (Exception e) {
+            log.error("Unable to refresh data in merchant table");
+
+        }
+    }
+
+    private MerchantTransaction getMerchantData (String id) {
+        try {
+            return merchantTransactionService.getMerchantTransaction(id);
+        } catch (Exception e) {
+            return null;
         }
     }
 }

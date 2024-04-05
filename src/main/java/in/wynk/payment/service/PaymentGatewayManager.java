@@ -282,10 +282,10 @@ public class PaymentGatewayManager
             if (e.getRootCause() != null) {
                 if (e.getRootCause() instanceof SocketTimeoutException || e.getRootCause() instanceof ConnectTimeoutException) {
                     log.error(RENEWAL_STATUS_ERROR, "Socket timeout but valid for reconciliation for request : due to {}", e.getMessage(), e);
-                    errorEventBuilder.code(PAY036.getErrorCode());
-                    errorEventBuilder.description(PAY036.getErrorMessage() + "for " + paymentGateway);
+                    errorEventBuilder.code(APS007.getErrorCode());
+                    errorEventBuilder.description(APS007.getErrorMessage() + "for " + paymentGateway);
                     eventPublisher.publishEvent(errorEventBuilder.build());
-                    throw new WynkRuntimeException(PAY036);
+                    throw new WynkRuntimeException(APS007);
                 } else {
                     handleException(errorEventBuilder, paymentGateway, e, transaction);
                 }

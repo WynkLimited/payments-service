@@ -70,7 +70,7 @@ public class ApsDeleteGatewayServiceImpl implements IPaymentAccountDeletion<Abst
                         return DeleteCardResponse.builder().deleted(false).build();
                     }
                     log.error(APS_SAVED_CARD_DELETION, "Card deletion failure due to ", e);
-                    throw new WynkRuntimeException(PaymentErrorType.PAY042, e);
+                    throw new WynkRuntimeException(PaymentErrorType.APS003, e);
                 }
             }
         }
@@ -86,7 +86,7 @@ public class ApsDeleteGatewayServiceImpl implements IPaymentAccountDeletion<Abst
                     return DeleteVpaResponse.builder().deleted(response).build();
                 } catch (Exception e) {
                     log.error(APS_SAVED_VPA_DELETION, "Vpa deletion failure due to ", e);
-                    throw new WynkRuntimeException(PaymentErrorType.PAY043, e);
+                    throw new WynkRuntimeException(PaymentErrorType.APS004, e);
                 }
             }
         }

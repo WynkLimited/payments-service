@@ -515,7 +515,15 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             log.error(PAYU_API_FAILURE, ex.getMessage(), ex);
             throw new WynkRuntimeException(PAY015, ex);
         }
-        return paymentResponse != null && paymentResponse.getStatus().equals("active");
+        boolean isMandateActive = false;
+        if(paymentResponse != null) {
+            isMandateActive = "active".equalsIgnoreCase(paymentResponse.getStatus());
+            if (!isMandateActive) {
+                log.info(PAYU_MANDATE_VALIDATION, "mandate status is: " + paymentResponse.getStatus());
+                eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PAY005.getErrorCode()).description(PAY005.getErrorMessage()).build());
+            }
+        }
+        return isMandateActive;
     }
 
     private PayURenewalResponse doChargingForRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest, String mihpayid, String lastSuccessTxnId) {

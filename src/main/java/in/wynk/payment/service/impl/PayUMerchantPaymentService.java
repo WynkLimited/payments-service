@@ -519,6 +519,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         if(paymentResponse != null) {
             isMandateActive = "active".equalsIgnoreCase(paymentResponse.getStatus());
             if (!isMandateActive) {
+                transaction.setStatus(TransactionStatus.FAILURE.getValue());
                 log.info(PAYU_MANDATE_VALIDATION, "mandate status is: " + paymentResponse.getStatus());
                 eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PAY005.getErrorCode()).description(PAY005.getErrorMessage()).build());
             }

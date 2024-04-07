@@ -227,6 +227,23 @@ public class PaymentQueuesConfig {
         return new PaymentRefundSQSMessageExtractor(queueName, sqsClients);
     }
 
+
+
+    //PUBSUB
+
+
+    @Bean
+    public PaymentReconciliationPubSubMessageExtractor paymentReconciliationPubSubMessageExtractor (@Value("prj-wynk-stg-wcf-svc-01") String projectId, @Value("wcf-starter-poc-sub")String subscriptionName) {
+        return new PaymentReconciliationPubSubMessageExtractor( projectId,subscriptionName);
+    }
+
+
+    @Bean
+    public PaymentReconciliationConsumerPollingPubSub paymentReconciliationConsumerPollingPubSub(@Value("wcf-starter-poc-sub") String subscriptionName, @Value("wcf-starter-poc") String topic, @Value("prj-wynk-stg-wcf-svc-01") String projectName, ObjectMapper objectMapper, PaymentReconciliationPubSubMessageExtractor pubSubMessageExtractor) {
+        return new PaymentReconciliationConsumerPollingPubSub(subscriptionName,topic,projectName,threadPoolExecutor(4),objectMapper,pubSubMessageExtractor, scheduledThreadPoolExecutor());
+    }
+
+
     private ExecutorService threadPoolExecutor(int threadCount) {
         return Executors.newFixedThreadPool(threadCount);
     }

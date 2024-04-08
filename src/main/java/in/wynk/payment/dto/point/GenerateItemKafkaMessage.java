@@ -21,7 +21,7 @@ import java.util.Calendar;
 @SuperBuilder
 @AnalysedEntity
 @RequiredArgsConstructor
-@KafkaEvent(topic = "${wynk.multi.kafka.templates[0].producers.item.generate.topic}")
+@KafkaEvent(topic = "${wynk.multi.kafka.templates.item.producers.generateItem.topic}")
 public class GenerateItemKafkaMessage extends ItemKafkaMessage {
     private String transactionId;
     private String itemId;

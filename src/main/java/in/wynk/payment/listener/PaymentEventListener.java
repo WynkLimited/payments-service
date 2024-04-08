@@ -115,7 +115,7 @@ public class PaymentEventListener {
     private final WynkServiceDetailsCachingService wynkServiceDetailsCachingService;
     private final ISubscriptionServiceManager subscriptionServiceManager;
     @Lazy
-    @Qualifier("music")
+    @Qualifier("item")
     private IKafkaEventPublisher<String, ItemKafkaMessage> itemKafkaPublisher;
     public static Map<String, String> map = Collections.singletonMap(AIRTEL_TV,AIRTEL_XSTREAM);
 

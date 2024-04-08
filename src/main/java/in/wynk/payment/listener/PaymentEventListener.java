@@ -252,12 +252,12 @@ public class PaymentEventListener {
                 AnalyticService.update(RENEWAL_ATTEMPT_SEQUENCE, renewal.getAttemptSequence());
             }
 
-            cancelRenewalBasedOnErrorReason(event.getDescription(), event, transaction.getPlanId(), transaction.getUid(), txnId);
+            cancelRenewalBasedOnErrorReason(event.getDescription(), event, transaction.getPlanId(), transaction.getUid(), txnId, transaction.getPaymentChannel().getId());
         }
     }
 
-    private void cancelRenewalBasedOnErrorReason (String description, PaymentErrorEvent event, Integer planId, String uid, String referenceTransactionId) {
-        if (ERROR_REASONS.contains(description)) {
+    private void cancelRenewalBasedOnErrorReason (String description, PaymentErrorEvent event, Integer planId, String uid, String referenceTransactionId, String paymentCode) {
+        if (ERROR_REASONS.contains(description) || (paymentCode.equalsIgnoreCase("aps") && description.toLowerCase().contains("pdn"))) {
             try {
                 recurringPaymentManagerService.unScheduleRecurringPayment(event.getClientAlias(), event.getId(), PaymentEvent.CANCELLED);
                 eventPublisher.publishEvent(

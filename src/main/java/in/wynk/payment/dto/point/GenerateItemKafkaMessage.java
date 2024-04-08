@@ -5,7 +5,6 @@ import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.dto.GenerateItemEvent;
 import in.wynk.payment.dto.invoice.ItemKafkaMessage;
-import in.wynk.stream.advice.KafkaEvent;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -21,7 +20,6 @@ import java.util.Calendar;
 @SuperBuilder
 @AnalysedEntity
 @RequiredArgsConstructor
-@KafkaEvent(topic = "${wynk.multi.kafka.templates.item.producers.generateItem.topic}")
 public class GenerateItemKafkaMessage extends ItemKafkaMessage {
     private String transactionId;
     private String itemId;

@@ -114,9 +114,9 @@ public class PaymentEventListener {
     private final ClientDetailsCachingService clientDetailsCachingService;
     private final WynkServiceDetailsCachingService wynkServiceDetailsCachingService;
     private final ISubscriptionServiceManager subscriptionServiceManager;
-    @Lazy
+
     @Qualifier("item")
-    private IKafkaEventPublisher<String, ItemKafkaMessage> itemKafkaPublisher;
+    private final IKafkaEventPublisher<String, ItemKafkaMessage> itemKafkaPublisher;
     public static Map<String, String> map = Collections.singletonMap(AIRTEL_TV,AIRTEL_XSTREAM);
 
     @Value("${event.stream.dp}")
@@ -648,8 +648,8 @@ public class PaymentEventListener {
 
     @EventListener
     @AnalyseTransaction(name = "generateItemEvent")
-    public void onPaymentSettlementEvent(GenerateItemEvent event) {
-        itemKafkaPublisher.publish(GenerateItemKafkaMessage.from(event));
+    public void onGenerateItemEvent(GenerateItemEvent event) {
+        itemKafkaPublisher.publish("wcf_ringtone_transactions", GenerateItemKafkaMessage.from(event));
         AnalyticService.update(event);
     }
 

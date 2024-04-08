@@ -637,9 +637,6 @@ wynk:
         item:
          enabled: true
          nodes: 10.70.3.4:9092,10.70.3.128:9092,10.70.3.180:9092,10.70.3.245:9092,10.70.3.44:9092,10.70.3.80:9092,10.70.1.57:9092,10.70.3.152:9092
-         producers:
-            generateItem:
-             topic: wcf_ringtone_transactions
   ########### MONGO CONFIG ###########
   mongodb:
     enabled: true

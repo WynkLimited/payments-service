@@ -34,7 +34,6 @@ import in.wynk.payment.dto.gpbs.acknowledge.queue.ExternalTransactionReportMessa
 import in.wynk.payment.dto.invoice.GenerateInvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.InvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.InvoiceRetryTask;
-import in.wynk.payment.dto.invoice.ItemKafkaMessage;
 import in.wynk.payment.dto.point.GenerateItemKafkaMessage;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractPaymentSettlementResponse;
@@ -60,12 +59,10 @@ import in.wynk.wynkservice.api.service.WynkServiceDetailsCachingService;
 import in.wynk.wynkservice.api.utils.WynkServiceUtils;
 import in.wynk.wynkservice.core.dao.entity.WynkService;
 import io.github.resilience4j.retry.RetryRegistry;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.quartz.SimpleScheduleBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -89,7 +86,6 @@ import static in.wynk.tinylytics.constants.TinylyticsConstants.TRANSACTION_SNAPS
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class PaymentEventListener {
     private final TaxUtils taxUtils;
     private final ObjectMapper mapper;
@@ -108,22 +104,59 @@ public class PaymentEventListener {
     private final IQuickPayLinkGenerator quickPayLinkGenerator;
     private final InvoiceService invoiceService;
     private final IKafkaEventPublisher<String, InvoiceKafkaMessage> invoiceKafkaPublisher;
-
     private final IKafkaEventPublisher<String, WaPayStateRespEvent> paymentStatusKafkaPublisher;
     private final InvoiceDetailsCachingService invoiceDetailsCachingService;
     private final ClientDetailsCachingService clientDetailsCachingService;
     private final WynkServiceDetailsCachingService wynkServiceDetailsCachingService;
     private final ISubscriptionServiceManager subscriptionServiceManager;
+    private final IKafkaEventPublisher<String, GenerateItemKafkaMessage> itemKafkaPublisher;
 
-    @Qualifier("item")
-    private final IKafkaEventPublisher<String, ItemKafkaMessage> itemKafkaPublisher;
     public static Map<String, String> map = Collections.singletonMap(AIRTEL_TV,AIRTEL_XSTREAM);
 
     @Value("${event.stream.dp}")
     private String dpStream;
-
     @Value("${wynk.kafka.producers.payment.status.topic}")
     private String waPayStateRespEventTopic;
+    @Value("${wynk.multi.kafka.templates.item.topic}")
+    private String itemTopic;
+
+    public PaymentEventListener (TaxUtils taxUtils, ObjectMapper mapper, RetryRegistry retryRegistry, PaymentManager paymentManager,
+                                 PaymentGatewayManager paymentGatewayManager, ITaskScheduler<TaskDefinition<?>> taskScheduler,
+                                 ISqsManagerService<Object> sqsManagerService, IPaymentErrorService paymentErrorService, ApplicationEventPublisher eventPublisher,
+                                 IClientCallbackService clientCallbackService, ITransactionManagerService transactionManagerService,
+                                 IMerchantTransactionService merchantTransactionService, IRecurringPaymentManagerService recurringPaymentManagerService,
+                                 PaymentCachingService cachingService, IQuickPayLinkGenerator quickPayLinkGenerator, InvoiceService invoiceService,
+                                 IKafkaEventPublisher<String, InvoiceKafkaMessage> invoiceKafkaPublisher,
+                                 IKafkaEventPublisher<String, WaPayStateRespEvent> paymentStatusKafkaPublisher, InvoiceDetailsCachingService invoiceDetailsCachingService,
+                                 ClientDetailsCachingService clientDetailsCachingService, WynkServiceDetailsCachingService wynkServiceDetailsCachingService,
+                                 ISubscriptionServiceManager subscriptionServiceManager,
+                                 @Qualifier("item")
+                                 @Lazy
+                                 IKafkaEventPublisher<String, GenerateItemKafkaMessage> itemKafkaPublisher) {
+        this.taxUtils = taxUtils;
+        this.mapper = mapper;
+        this.retryRegistry = retryRegistry;
+        this.paymentManager = paymentManager;
+        this.paymentGatewayManager = paymentGatewayManager;
+        this.taskScheduler = taskScheduler;
+        this.sqsManagerService = sqsManagerService;
+        this.paymentErrorService = paymentErrorService;
+        this.eventPublisher = eventPublisher;
+        this.clientCallbackService = clientCallbackService;
+        this.transactionManagerService = transactionManagerService;
+        this.merchantTransactionService = merchantTransactionService;
+        this.recurringPaymentManagerService = recurringPaymentManagerService;
+        this.cachingService = cachingService;
+        this.quickPayLinkGenerator = quickPayLinkGenerator;
+        this.invoiceService = invoiceService;
+        this.invoiceKafkaPublisher = invoiceKafkaPublisher;
+        this.paymentStatusKafkaPublisher = paymentStatusKafkaPublisher;
+        this.invoiceDetailsCachingService = invoiceDetailsCachingService;
+        this.clientDetailsCachingService = clientDetailsCachingService;
+        this.wynkServiceDetailsCachingService = wynkServiceDetailsCachingService;
+        this.subscriptionServiceManager = subscriptionServiceManager;
+        this.itemKafkaPublisher = itemKafkaPublisher;
+    }
 
     @EventListener
     @AnalyseTransaction(name = QueueConstant.DEFAULT_SQS_MESSAGE_THRESHOLD_EXCEED_EVENT)
@@ -649,7 +682,7 @@ public class PaymentEventListener {
     @EventListener
     @AnalyseTransaction(name = "generateItemEvent")
     public void onGenerateItemEvent(GenerateItemEvent event) {
-        itemKafkaPublisher.publish("wcf_ringtone_transactions", GenerateItemKafkaMessage.from(event));
+        itemKafkaPublisher.publish(itemTopic, null, System.currentTimeMillis(), null, GenerateItemKafkaMessage.from(event), null);
         AnalyticService.update(event);
     }
 

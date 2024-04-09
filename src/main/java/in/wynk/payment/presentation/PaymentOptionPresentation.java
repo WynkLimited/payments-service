@@ -138,7 +138,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                         .id(pointDetails.getItemId())
                         .title(pointDetails.getTitle())
                         .price(Objects.nonNull(pointDetails.getPrice()) ? Double.parseDouble(pointDetails.getPrice()) :0.0)
-                        .discountedPrice(item.getPrice())
+                        .discountedPrice(Objects.nonNull(pointDetails.getPrice()) ? Double.parseDouble(pointDetails.getPrice()) :0.0)
                         .currency("INR")
                         .build();
             }

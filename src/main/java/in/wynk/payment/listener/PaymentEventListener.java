@@ -782,7 +782,6 @@ public class PaymentEventListener {
         meta.put(EVENT, event);
         BranchEvent branchEvent = AppUtils.from(BranchRawDataEvent.builder().data(meta).build());
         BeanLocatorFactory.getBean(IKinesisEventPublisher.class).publish(dpStream, branchEvent.getEvent_name(), branchEvent);
-        log.debug("Transaction Snapshot Event {}", branchEvent);
     }
 
     private Map<String, Object> branchMeta (EventsWrapper eventsWrapper) {

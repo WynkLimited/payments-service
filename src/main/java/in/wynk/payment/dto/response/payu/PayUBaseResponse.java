@@ -4,7 +4,7 @@ import lombok.Getter;
 
 @Getter
 public class PayUBaseResponse {
-    private int status;
+    private String status;
     private String action;
     private String message;
 }

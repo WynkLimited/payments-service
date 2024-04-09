@@ -16,6 +16,10 @@ public class MandateStatusEvent {
     @Analysed
     private String errorReason;
     @Analysed
+    private int planId;
+    @Analysed
+    private String uid;
+    @Analysed
     private String referenceTransactionId;
 
 

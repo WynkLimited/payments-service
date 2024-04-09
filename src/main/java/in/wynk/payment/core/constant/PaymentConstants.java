@@ -2,6 +2,7 @@ package in.wynk.payment.core.constant;
 
 import in.wynk.common.constant.BaseConstants;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -102,4 +103,7 @@ public interface PaymentConstants extends BaseConstants {
     String PAYMENT_FLOW_AUTO_RENEW = "AUTORENEW";
     String ADD_TO_BILL_USER_SUBSCRIPTION_STATUS_TASK= "AddToBillUserSubscriptionStatusTask";
     String EXTERNAL_TRANSACTION_TOKEN = "externalTransactionToken";
+
+    ArrayList<String> ERROR_REASONS = new ArrayList<>(Arrays.asList("Mandate entry not found", "Mandate is not Active", "Request failed"));
+
 }

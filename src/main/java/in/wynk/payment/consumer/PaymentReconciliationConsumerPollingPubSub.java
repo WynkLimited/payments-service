@@ -25,6 +25,7 @@ public class PaymentReconciliationConsumerPollingPubSub extends AbstractPubSubMe
 
     @Override
     public void consume(PaymentReconciliationMessagePubSub message) {
+            log.info("message", message);
             return;
     }
 

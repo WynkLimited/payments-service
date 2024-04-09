@@ -75,6 +75,7 @@ import static in.wynk.payment.constant.UpiConstants.UPI;
 import static in.wynk.payment.core.constant.BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE;
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
+import static in.wynk.payment.core.constant.PaymentConstants.ERROR_REASONS;
 import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 import static in.wynk.payment.dto.payu.PayUCommand.PAYU_GETTDR;
@@ -801,7 +802,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             if (Objects.nonNull(renewal)) {
                 final String referenceTransactionId = renewal.getInitialTransactionId();
                 eventPublisher.publishEvent(UnScheduleRecurringPaymentEvent.builder().transactionId(message.getTransactionId()).clientAlias(message.getClientAlias()).reason("Stopping Payment Renewal because " + response.getMessage()).build());
-                eventPublisher.publishEvent(MandateStatusEvent.builder().txnId(message.getTransactionId()).clientAlias(message.getClientAlias()).errorReason(response.getMessage()).referenceTransactionId(referenceTransactionId).build());
+                eventPublisher.publishEvent(MandateStatusEvent.builder().txnId(message.getTransactionId()).clientAlias(message.getClientAlias()).errorReason(response.getMessage()).referenceTransactionId(referenceTransactionId).planId(transaction.getPlanId()).uid(transaction.getUid()).build());
                 transaction.setType(PaymentEvent.UNSUBSCRIBE.getValue());
                 AsyncTransactionRevisionRequest request =
                         AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(transaction.getStatus()).finalTransactionStatus(TransactionStatus.CANCELLED).build();

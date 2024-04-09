@@ -308,8 +308,7 @@ public class PaymentEventListener {
                                 .txnId(event.getTransactionId())
                                 .retries(invoiceDetails.getRetries())
                                 .retryCount(event.getRetryCount() + 1).build());
-                    }
-                    ;
+                    };
                 }
             } else {
                 final GenerateInvoiceEvent generateInvoiceEvent = GenerateInvoiceEvent.builder()

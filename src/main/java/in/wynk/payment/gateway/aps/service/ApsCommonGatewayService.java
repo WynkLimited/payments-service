@@ -217,9 +217,7 @@ public class ApsCommonGatewayService {
             log.error(APS_CHARGING_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to " + e.getMessage());
             throw new WynkRuntimeException(PAY998, e);
         }
-        if (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE) {
-            eventPublisher.publishEvent(builder.build());
-        }
+        eventPublisher.publishEvent(builder.build());
         return apsChargeStatusResponses;
     }
 

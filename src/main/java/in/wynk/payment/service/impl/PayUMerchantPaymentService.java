@@ -310,7 +310,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         final Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         PayUVerificationResponse<PayUChargingTransactionDetails> payUChargingVerificationResponse;
         try {
-            final MultiValueMap<String, String> payUChargingVerificationRequest = this.buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.VERIFY_PAYMENT.getCode(), transaction.getId().toString());
+            final MultiValueMap<String, String> payUChargingVerificationRequest =
+                    this.buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.VERIFY_PAYMENT.getCode(), transaction.getId().toString());
             merchantTransactionEventBuilder.request(payUChargingVerificationRequest);
             payUChargingVerificationResponse =
                     verifyOption.orElseGet(() -> getInfoFromPayU(payUChargingVerificationRequest, new TypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
@@ -341,10 +342,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         } catch (Exception e) {
             log.error(PAYU_CHARGING_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to ", e);
             throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
-        } finally {
-            if (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE)
-                eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
         }
+        eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
         return payUChargingVerificationResponse;
     }
 
@@ -811,6 +810,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             final MultiValueMap<String, String> requestMap = buildPayUInfoRequest(transaction.getClientAlias(), PAYU_GETTDR.getCode(), midPayId);
             final PayUTdrResponse response = this.getInfoFromPayU(requestMap, new TypeReference<PayUTdrResponse>() {
             });
+            AnalyticService.update("Tdr response from payu", String.valueOf(response));
             return BaseTDRResponse.from(response.getMessage().getTdr());
         } catch (Exception e) {
             log.error(PAYU_TDR_ERROR, e.getMessage());

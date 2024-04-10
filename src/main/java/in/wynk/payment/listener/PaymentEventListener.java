@@ -60,6 +60,7 @@ import in.wynk.wynkservice.api.utils.WynkServiceUtils;
 import in.wynk.wynkservice.core.dao.entity.WynkService;
 import io.github.resilience4j.retry.RetryRegistry;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.quartz.SimpleScheduleBuilder;
@@ -260,6 +261,9 @@ public class PaymentEventListener {
     @ClientAware(clientAlias = "#event.clientAlias")
     public void onPaymentErrorEvent(PaymentErrorEvent event) {
         AnalyticService.update(event);
+        if (StringUtils.equals(event.getCode(), E6002) && Objects.isNull(event.getDescription())) {
+            AnalyticService.update("description", ERROR_DESCRIPTION_FOR_E6002);
+        }
         retryRegistry.retry(PaymentConstants.PAYMENT_ERROR_UPSERT_RETRY_KEY).executeRunnable(() -> paymentErrorService.upsert(PaymentError.builder()
                 .id(event.getId())
                 .code(Objects.nonNull(event.getCode()) ? event.getCode() : "UNKNOWN")

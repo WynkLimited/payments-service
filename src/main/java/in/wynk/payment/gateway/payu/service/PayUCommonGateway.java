@@ -162,10 +162,7 @@ public class PayUCommonGateway {
             log.error(PAYU_CHARGING_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to ", e);
             throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
         }
-        if (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE) {
-            eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
-        }
-
+        eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
         return payUChargingVerificationResponse;
     }
 

@@ -183,7 +183,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                 log.info("Notification is already processed for the purchase token {}", latestReceipt.getPurchaseToken());
                 return null;
             }
-            PlanDTO planDTO = cachingService.getPlanFromSku(callbackRequest.getSubscriptionId());
+            PlanDTO planDTO = cachingService.getPlanFromSku(googlePlayReceiptDetails.getSkuId());
             boolean isFreeTrial = Objects.equals(googlePlayReceiptResponse.getPaymentState(), FREE_TRIAL_PAYMENT_STATE) || FREE_TRIAL_AMOUNT.equals(googlePlayReceiptResponse.getPriceAmountMicros());
             //if free trial plan applied, perform events on that plan
             if (isFreeTrial) {

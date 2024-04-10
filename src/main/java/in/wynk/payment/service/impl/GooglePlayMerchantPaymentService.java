@@ -340,10 +340,10 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                             receiptDetails.setNotificationType(notificationType);
                             receiptDetails.setRenew(transaction.getType().equals(RENEW));
                             receiptDetails.setExpiry(Long.parseLong(latestResponse.getExpiryTimeMillis()));
-                            receiptDetails.setSubscriptionId(latestReceipt.getGooglePlayResponse().getOrderId());
-                            code = GooglePlayStatusCodes.GOOGLE_31022;
                             transaction.setStatus(TransactionStatus.SUCCESS.name());
                         }
+                        receiptDetails.setSubscriptionId(latestReceipt.getGooglePlayResponse().getOrderId());
+                        receiptDetails.setPaymentTransactionId(transaction.getIdStr());
                         auditingListener.onBeforeSave(receiptDetails);
                         RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
                                 .save(receiptDetails);
@@ -638,7 +638,10 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                             .findByPaymentTransactionId(paymentRenewalChargingRequest.getId());
             if (Objects.nonNull(receiptDetails)) {
                 final GooglePlayReceiptResponse googlePlayReceipt = googlePlayResponse(receiptDetails.getId(), receiptDetails.getSkuId(), receiptDetails.getPackageName(), receiptDetails.getService());
-
+                if(googlePlayReceipt.getOrderId().equals(receiptDetails.getSubscriptionId())) {
+                    AnalyticService.update(GOOGLE_PLAY_ORDER_ID, googlePlayReceipt.getOrderId());
+                    throw new WynkRuntimeException(PaymentErrorType.PLAY005);
+                }
                 GooglePlayAppDetails appDetails = new GooglePlayAppDetails();
                 appDetails.setService(MerchantServiceUtil.getService(receiptDetails.getPackageName()));
                 appDetails.setOs(BaseConstants.ANDROID);

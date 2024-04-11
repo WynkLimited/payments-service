@@ -139,6 +139,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
         paymentRenewalDao.findById(transactionId).ifPresent(recurringPayment -> {
             recurringPayment.setTransactionEvent(paymentEvent.name());
             recurringPayment.setUpdatedTimestamp(Calendar.getInstance());
+            log.info("Marking {} cancelled", transactionId);
             paymentRenewalDao.save(recurringPayment);
         });
     }
@@ -297,6 +298,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     }
 
     @Override
+    @Transactional(source = "payments", rollbackFor = Exception.class)
     public void upsert (PaymentRenewal paymentRenewal) {
         try {
             RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).save(paymentRenewal);

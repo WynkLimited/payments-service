@@ -32,4 +32,11 @@ public class DataRefreshController {
         dataRefreshService.handleCallback(partner, applicationAlias, headers, payload);
         return EmptyResponse.response();
     }
+
+    @PostMapping("/transaction/{txnId}/{partner}/recon")
+    @AnalyseTransaction(name = "merchantDataRefreshCallBack")
+    public EmptyResponse refresh (@RequestHeader HttpHeaders headers, @PathVariable String txnId, @PathVariable String partner) {
+        dataRefreshService.handleCallback(applicationAlias, headers, txnId,  partner);
+        return EmptyResponse.response();
+    }
 }

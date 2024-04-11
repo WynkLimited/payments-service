@@ -146,4 +146,5 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker INVOICE_SCHEDULE_RETRY_FAILURE = MarkerFactory.getMarker("INVOICE_SCHEDULE_RETRY_FAILURE");
     Marker INVOICE_TRIGGER_RETRY_FAILURE = MarkerFactory.getMarker("INVOICE_TRIGGER_RETRY_FAILURE");
     Marker LOCK_ACQUIRE_FAILURE = MarkerFactory.getMarker("LOCK_ACQUIRE_FAILURE");
+    Marker BEST_VALUE_PLAN_API_ERROR = MarkerFactory.getMarker("BEST_VALUE_PLAN_API_ERROR");
 }

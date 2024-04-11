@@ -106,5 +106,7 @@ public interface PaymentConstants extends BaseConstants {
     String E6002 = "E6002";
     String ERROR_DESCRIPTION_FOR_E6002 = "Invalid vpa ! please try again";
     ArrayList<String> ERROR_REASONS = new ArrayList<>(Arrays.asList("Mandate entry not found", "Mandate is not Active", "Request failed", "PDN Failed. Mandate is not Active",
-            "Mandate is in FAILURE state. Recurring cannot be executed", "Mandate is in CREATED state. Recurring cannot be executed", "Mandate is in REVOKED state. Recurring cannot be executed"));
+            "Mandate is in FAILURE state. Recurring cannot be executed", "Mandate is in CREATED state. Recurring cannot be executed", "Mandate is in REVOKED state. Recurring cannot be executed",
+            "PDN Failed. Unable to process the request with PG. Please try again",
+            "Mandate is already pause", "Mandate is already revoked", "PDN Failed. Consent is Not Enrolled Or Not IN Active State"));
 }

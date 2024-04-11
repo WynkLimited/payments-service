@@ -79,12 +79,11 @@ public class DataRefreshServiceImpl implements IDataRefreshService {
 
     @Override
     @TransactionAware(txnId = "#txnId")
-    public void handleCallback (String applicationAlias, HttpHeaders headers, String txnId, String paymentCode) {
+    public void handleCallback (String applicationAlias, HttpHeaders headers, String txnId) {
         Transaction transaction = TransactionContext.get();
-        if("aps".equalsIgnoreCase(paymentCode)) {
-            ChargingTransactionReconciliationStatusRequest request = ChargingTransactionReconciliationStatusRequest.builder().transactionId(txnId).planId(transaction.getPlanId()).build();
-            paymentGatewayManager.reconcile(request);
-        }
+        ChargingTransactionReconciliationStatusRequest request = ChargingTransactionReconciliationStatusRequest.builder().transactionId(txnId).planId(transaction.getPlanId()).build();
+        paymentGatewayManager.reconcile(request);
+
     }
 
     private void upsertData (MerchantTransaction merchantTransaction) {

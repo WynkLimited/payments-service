@@ -1,6 +1,7 @@
 package in.wynk.payment.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.PaymentConstants;
@@ -10,6 +11,7 @@ import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
 import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
 import in.wynk.payment.dto.request.ChargingTransactionReconciliationStatusRequest;
+import in.wynk.payment.dto.request.RenewalChargingTransactionReconciliationStatusRequest;
 import in.wynk.payment.gateway.aps.service.ApsCommonGatewayService;
 import in.wynk.payment.gateway.payu.service.PayUCommonGateway;
 import in.wynk.payment.service.IDataRefreshService;
@@ -81,7 +83,13 @@ public class DataRefreshServiceImpl implements IDataRefreshService {
     @TransactionAware(txnId = "#txnId")
     public void handleCallback (String applicationAlias, HttpHeaders headers, String txnId) {
         Transaction transaction = TransactionContext.get();
-        ChargingTransactionReconciliationStatusRequest request = ChargingTransactionReconciliationStatusRequest.builder().transactionId(txnId).planId(transaction.getPlanId()).build();
+        ChargingTransactionReconciliationStatusRequest request;
+        if (transaction.getType() == PaymentEvent.RENEW) {
+            request = RenewalChargingTransactionReconciliationStatusRequest.builder().transactionId(txnId).planId(transaction.getPlanId()).build();
+        } else{
+            request = ChargingTransactionReconciliationStatusRequest.builder().transactionId(txnId).planId(transaction.getPlanId()).build();
+        }
+
         paymentGatewayManager.reconcile(request);
 
     }

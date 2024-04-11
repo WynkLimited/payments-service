@@ -796,7 +796,6 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 log.info(PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS, "invoiceId: " + response.getInvoiceId() + " invoiceStatus: " + response.getInvoiceStatus());
             } else {
                 handlePreDebitResponse(message, response);
-                throw new WynkRuntimeException(PAY111, response.getMessage());
             }
             return PayUPreDebitNotification.builder().tid(message.getTransactionId()).transactionStatus(TransactionStatus.SUCCESS).build();
         } catch (Exception e) {
@@ -822,6 +821,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                         AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(transaction.getStatus()).finalTransactionStatus(TransactionStatus.CANCELLED).build();
                 subscriptionServiceManager.unSubscribePlan(AbstractUnSubscribePlanRequest.from(request));
             }
+        } else {
+            throw new WynkRuntimeException(PAY111, response.getMessage());
         }
     }
 

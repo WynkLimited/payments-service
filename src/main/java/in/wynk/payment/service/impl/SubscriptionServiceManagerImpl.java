@@ -1,8 +1,10 @@
 package in.wynk.payment.service.impl;
 
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.context.WynkApplicationContext;
 import in.wynk.common.dto.WynkResponse;
+import in.wynk.common.dto.WynkResponse.WynkResponseWrapper;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.ChecksumUtils;
@@ -13,6 +15,8 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
+import in.wynk.payment.dto.BestValuePlanResponse;
+import in.wynk.payment.dto.PurchaseRequest;
 import in.wynk.payment.dto.SubscriptionStatus;
 import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.request.*;
@@ -30,6 +34,7 @@ import in.wynk.subscription.common.response.AllPlansResponse;
 import in.wynk.subscription.common.response.PlanProvisioningResponse;
 import in.wynk.subscription.common.response.SelectivePlansComputationResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -91,6 +96,9 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     @Value("${service.subscription.api.endpoint.status}")
     private String subscriptionStatusEndpoint;
+
+    @Value("${service.subscription.api.endpoint.bestValue}")
+    private String subscriptionBestValueEndpoint;
 
     @Autowired
     @Qualifier(SUBSCRIPTION_SERVICE_S2S_TEMPLATE)
@@ -283,5 +291,31 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     private boolean isExternallyProvisionablePlan(int planId){
         return BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(planId).isProvisionNotRequired();
     }
+    @Override
+    public BestValuePlanResponse getBestValuePlan(final PurchaseRequest request, final Map<String, String> additionalParam) {
+        String planId = null;
+        try {
+
+            final SessionRequest sessionRequestWithAdditionalParam = request.toSessionWithAdditionalParam(additionalParam);
+            AnalyticService.update(sessionRequestWithAdditionalParam);
+            final RequestEntity<SessionRequest> sessionRequest = ChecksumUtils.buildEntityWithAuthHeaders(subscriptionBestValueEndpoint,
+                                                                                                          myApplicationContext.getClientId(),
+                                                                                                          myApplicationContext.getClientSecret(),
+                                                                                                          sessionRequestWithAdditionalParam,
+                                                                                                          HttpMethod.GET);
+            final WynkResponseWrapper<in.wynk.common.dto.BestValuePlanResponse> body = restTemplate.exchange(sessionRequest,
+                                                                                                             new ParameterizedTypeReference<WynkResponseWrapper<in.wynk.common.dto.BestValuePlanResponse>>() {
+                                                                                                             }).getBody();
+            if (Objects.nonNull(body) && Objects.nonNull(body.getData()) && StringUtils.isNotEmpty(body.getData().getPlanId())) {
+                planId = body.getData().getPlanId();
+                AnalyticService.update( BaseConstants.BEST_VALUE_PLAN, planId);
+            }
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.BEST_VALUE_PLAN_API_ERROR ,e.getMessage());
+        }
+        return BestValuePlanResponse.builder().purchaseRequest(request).planId(planId).build();
+    }
+
+
 
 }

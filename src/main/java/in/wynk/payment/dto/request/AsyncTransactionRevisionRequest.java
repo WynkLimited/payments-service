@@ -14,6 +14,6 @@ public class AsyncTransactionRevisionRequest extends AbstractTransactionRevision
     private final int attemptSequence;
 
     @Analysed
-    private final String transactionId;
+    private final String originalTransactionId;
 
 }

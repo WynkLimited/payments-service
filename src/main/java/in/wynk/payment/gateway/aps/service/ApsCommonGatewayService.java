@@ -112,7 +112,7 @@ public class ApsCommonGatewayService {
     public <T> T exchange (String clientAlias, String url, HttpMethod method, String msisdn, Object body, Class<T> target) {
         if (StringUtils.isEmpty(clientAlias)) {
             log.error("client is not loaded for url {}", clientAlias);
-            throw new WynkRuntimeException(PAY044);
+            throw new WynkRuntimeException(APS002);
         }
         try {
             ResponseEntity<String> responseEntity = apsClientService.apsOperations(getLoginId(msisdn), generateToken(url, clientAlias), url, method, body);
@@ -125,14 +125,14 @@ public class ApsCommonGatewayService {
                 failureResponse.setStatusCode(apsVasResponse.getStatusCode());
                 throw new WynkRuntimeException(failureResponse.getErrorCode(), failureResponse.getErrorMessage(), failureResponse.getStatusCode());
             }
-            throw new WynkRuntimeException(PAY041, responseEntity.getStatusCode().name());
+            throw new WynkRuntimeException(APS001, responseEntity.getStatusCode().name());
         } catch (JsonProcessingException ex) {
             throw new WynkRuntimeException("Unknown Object from ApsGateway", ex);
         } catch (Exception e) {
             if (e instanceof WynkRuntimeException) {
                 throw e;
             }
-            throw new WynkRuntimeException(PAY041, e);
+            throw new WynkRuntimeException(APS001, e);
         }
     }
 

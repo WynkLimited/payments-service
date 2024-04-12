@@ -95,7 +95,7 @@ public class PaymentRenewalsScheduler {
 
     private boolean checkRenewalEligibility (String transactionId, String clientAlias) {
         Transaction transaction = transactionManager.get(transactionId);
-        if (transaction.getStatus() == TransactionStatus.FAILURE) {
+        if (transaction.getStatus() == TransactionStatus.FAILURE && transaction.getType() != RENEW) {
             try {
                 recurringPaymentManager.unScheduleRecurringPayment(clientAlias, transactionId, PaymentEvent.CANCELLED);
             } catch (Exception e) {

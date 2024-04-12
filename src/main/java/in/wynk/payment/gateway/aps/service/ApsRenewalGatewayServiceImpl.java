@@ -4,10 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
-import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
-import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
+import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.TransactionContext;
@@ -27,14 +26,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpMethod;
-import org.springframework.web.client.HttpStatusCodeException;
 
 import java.util.Objects;
 import java.util.Optional;
 
 import static in.wynk.common.constant.BaseConstants.ONE_DAY_IN_MILLI;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY009;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY035;
 import static in.wynk.payment.dto.aps.common.ApsConstant.*;
 
 /**
@@ -54,12 +50,12 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
     private final IRecurringPaymentManagerService recurringPaymentManagerService;
 
 
-    public ApsRenewalGatewayServiceImpl(String siPaymentApi,
-                                        ObjectMapper objectMapper,
-                                        ApsCommonGatewayService common,
-                                        PaymentCachingService cachingService,
-                                        IMerchantTransactionService merchantTransactionService,
-                                        ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager, IRecurringPaymentManagerService recurringPaymentManagerService) {
+    public ApsRenewalGatewayServiceImpl (String siPaymentApi,
+                                         ObjectMapper objectMapper,
+                                         ApsCommonGatewayService common,
+                                         PaymentCachingService cachingService,
+                                         IMerchantTransactionService merchantTransactionService,
+                                         ApplicationEventPublisher eventPublisher, ITransactionManagerService transactionManager, IRecurringPaymentManagerService recurringPaymentManagerService) {
         this.common = common;
         this.objectMapper = objectMapper;
         this.SI_PAYMENT_API = siPaymentApi;
@@ -71,41 +67,33 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
     }
 
     @Override
-    public void renew(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
+    public void renew (PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
         Transaction transaction = TransactionContext.get();
-        PlanPeriodDTO planPeriodDTO = cachingService.getPlan(transaction.getPlanId()).getPeriod();
-        if (planPeriodDTO.getMaxRetryCount() < paymentRenewalChargingRequest.getAttemptSequence()) {
-            transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            throw new WynkRuntimeException("Need to break the chain in Payment Renewal as maximum attempts are already exceeded");
+        String txnId = paymentRenewalChargingRequest.getId();
+        PaymentRenewal renewal = recurringPaymentManagerService.getRenewalById(txnId);
+        if (Objects.nonNull(renewal) && StringUtils.isNotBlank(renewal.getLastSuccessTransactionId())) {
+            txnId = renewal.getLastSuccessTransactionId();
         }
-        MerchantTransaction merchantTransaction = getMerchantData(paymentRenewalChargingRequest.getId());
-        try {
-            ApsChargeStatusResponse[] apsChargeStatusResponses = (merchantTransaction== null) ?  common.syncChargingTransactionFromSource(transactionManager.get(paymentRenewalChargingRequest.getId()), Optional.empty()) : objectMapper.convertValue(merchantTransaction.getResponse(), ApsChargeStatusResponse[].class);
-            ApsChargeStatusResponse merchantData = apsChargeStatusResponses[0];
+        MerchantTransaction merchantTransaction = getMerchantData(txnId);
+        ApsChargeStatusResponse[] apsChargeStatusResponses =
+                (merchantTransaction == null) ? common.syncChargingTransactionFromSource(transactionManager.get(txnId), Optional.empty()) :
+                        objectMapper.convertValue(merchantTransaction.getResponse(), ApsChargeStatusResponse[].class);
+        ApsChargeStatusResponse merchantData = apsChargeStatusResponses[0];
 
-            if (merchantData.getLob().equals(LOB.WYNK.toString())) {
-                transaction.setStatus(TransactionStatus.FAILURE.getValue());
-                recurringPaymentManagerService.unScheduleRecurringPayment(transaction.getClientAlias(), paymentRenewalChargingRequest.getId(), PaymentEvent.CANCELLED);
-                return;
-            }
+        if (merchantData.getLob().equals(LOB.WYNK.toString())) {
+            log.error("This lob is not eligible for renewal for txnId {}", txnId);
+            transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            recurringPaymentManagerService.unScheduleRecurringPayment(transaction.getClientAlias(), txnId, PaymentEvent.CANCELLED);
+            return;
+        }
 
-            if(Objects.isNull(merchantData.getMandateId())) {
-                apsChargeStatusResponses = common.syncChargingTransactionFromSource(transactionManager.get(paymentRenewalChargingRequest.getId()), Optional.empty());
-                merchantData = apsChargeStatusResponses[0];
-            }
-            AnalyticService.update(PaymentConstants.PAYMENT_MODE, merchantData.getPaymentMode());
-            if (Objects.nonNull(merchantData.getMandateId())) {
-                SiPaymentRecurringResponse apsRenewalResponse = doChargingForRenewal(merchantData);
-                updateTransactionStatus(planPeriodDTO, apsRenewalResponse, transaction);
-            } else {
-                log.error("Mandate Id is missing for the transaction Id {}", merchantData.getOrderId());
-                transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            }
-        } catch (WynkRuntimeException e) {
-            if (e.getErrorCode().equals(PAY009.getErrorCode()) || e.getErrorCode().equals(PAY035.getErrorCode())) {
-                transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            }
-            throw e;
+        AnalyticService.update(PaymentConstants.PAYMENT_MODE, merchantData.getPaymentMode());
+        if (Objects.nonNull(merchantData.getMandateId())) {
+            SiPaymentRecurringResponse apsRenewalResponse = doChargingForRenewal(merchantData);
+            updateTransactionStatus(apsRenewalResponse, transaction);
+        } else {
+            log.error("Mandate Id is missing for the transaction Id {}", merchantData.getOrderId());
+            transaction.setStatus(TransactionStatus.FAILURE.getValue());
         }
     }
 
@@ -118,28 +106,17 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
         }
     }
 
-    private SiPaymentRecurringResponse doChargingForRenewal(ApsChargeStatusResponse response) {
+    private SiPaymentRecurringResponse doChargingForRenewal (ApsChargeStatusResponse response) {
         Transaction transaction = TransactionContext.get();
         double amount = cachingService.getPlan(transaction.getPlanId()).getFinalPrice();
         SiPaymentRecurringRequest apsSiPaymentRecurringRequest = SiPaymentRecurringRequest.builder().orderId(transaction.getIdStr()).siPaymentInfo(
                 SiPaymentInfo.builder().mandateTransactionId(response.getMandateId()).paymentMode(response.getPaymentMode()).paymentAmount(amount).paymentGateway(response.getPaymentRoutedThrough())
                         .lob(LOB.SI_WYNK.toString()).build()).build();
-        try {
-            SiPaymentRecurringResponse siResponse =
-                    common.exchange(transaction.getClientAlias(), SI_PAYMENT_API, HttpMethod.POST, transaction.getMsisdn(), apsSiPaymentRecurringRequest, SiPaymentRecurringResponse.class);
-            if (siResponse == null) {
-                siResponse = new SiPaymentRecurringResponse();
-            }
-            return siResponse;
-        } catch (HttpStatusCodeException e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
-        } catch (Exception e) {
-            transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            throw e;
-        }
+        return common.exchange(transaction.getClientAlias(), SI_PAYMENT_API, HttpMethod.POST, transaction.getMsisdn(), apsSiPaymentRecurringRequest, SiPaymentRecurringResponse.class);
     }
 
-    private void updateTransactionStatus(PlanPeriodDTO planPeriodDTO, SiPaymentRecurringResponse apsRenewalResponse, Transaction transaction) {
+    private void updateTransactionStatus (SiPaymentRecurringResponse apsRenewalResponse, Transaction transaction) {
+        PlanPeriodDTO planPeriodDTO = cachingService.getPlan(transaction.getPlanId()).getPeriod();
         int retryInterval = planPeriodDTO.getRetryInterval();
         if (PG_STATUS_SUCCESS.equalsIgnoreCase(apsRenewalResponse.getPgStatus())) {
             transaction.setStatus(TransactionStatus.SUCCESS.getValue());

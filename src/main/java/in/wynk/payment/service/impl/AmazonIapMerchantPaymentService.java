@@ -436,7 +436,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
                     }
                 }
                 if (Objects.nonNull(response.getCancelDate())) {
-                    eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PaymentErrorType.PAY040.name()).description(CANCELLATION_REASON.get(response.getCancelReason())).build());
+                    eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PaymentErrorType.APS012.name()).description(CANCELLATION_REASON.get(response.getCancelReason())).build());
                 }
             }
             eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PaymentErrorType.PAY045.name()).description(PaymentErrorType.PAY045.getErrorMessage()).build());

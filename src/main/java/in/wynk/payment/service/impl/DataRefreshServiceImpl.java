@@ -1,18 +1,23 @@
 package in.wynk.payment.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
 import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
+import in.wynk.payment.dto.request.ChargingTransactionReconciliationStatusRequest;
+import in.wynk.payment.dto.request.RenewalChargingTransactionReconciliationStatusRequest;
 import in.wynk.payment.gateway.aps.service.ApsCommonGatewayService;
 import in.wynk.payment.gateway.payu.service.PayUCommonGateway;
 import in.wynk.payment.service.IDataRefreshService;
 import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.ITransactionManagerService;
+import in.wynk.payment.service.PaymentGatewayManager;
 import io.github.resilience4j.retry.RetryRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +45,8 @@ public class DataRefreshServiceImpl implements IDataRefreshService {
     private IMerchantTransactionService merchantTransactionService;
     @Autowired
     private RetryRegistry retryRegistry;
+    @Autowired
+    private PaymentGatewayManager paymentGatewayManager;
 
     @Override
     @TransactionAware(txnId = "#transactionId")
@@ -70,6 +77,21 @@ public class DataRefreshServiceImpl implements IDataRefreshService {
         } catch (Exception ex) {
             throw new WynkRuntimeException("exception occured while updating merchant table for paymentCode " + paymentCode);
         }
+    }
+
+    @Override
+    @TransactionAware(txnId = "#txnId")
+    public void handleCallback (String applicationAlias, HttpHeaders headers, String txnId) {
+        Transaction transaction = TransactionContext.get();
+        ChargingTransactionReconciliationStatusRequest request;
+        if (transaction.getType() == PaymentEvent.RENEW) {
+            request = RenewalChargingTransactionReconciliationStatusRequest.builder().transactionId(txnId).planId(transaction.getPlanId()).build();
+        } else{
+            request = ChargingTransactionReconciliationStatusRequest.builder().transactionId(txnId).planId(transaction.getPlanId()).build();
+        }
+
+        paymentGatewayManager.reconcile(request);
+
     }
 
     private void upsertData (MerchantTransaction merchantTransaction) {

@@ -209,13 +209,15 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         return transaction;
     }
 
-    /**
-     * initiate transaction and upsert payer info for plan based charging, skip in case point charging
-     **/
     @Override
     public Transaction init(AbstractTransactionInitRequest transactionInitRequest, IPurchaseDetails purchaseDetails) {
         if (PlanTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass())) {
             final Transaction transaction = initPlanTransaction((PlanTransactionInitRequest) transactionInitRequest);
+            purchaseDetailsManger.save(transaction, purchaseDetails);
+            TransactionContext.set(TransactionDetails.builder().transaction(transaction).purchaseDetails(purchaseDetails).build());
+            return transaction;
+        } else if (PointTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass())) {
+            final Transaction transaction = initPointTransaction((PointTransactionInitRequest) transactionInitRequest);
             purchaseDetailsManger.save(transaction, purchaseDetails);
             TransactionContext.set(TransactionDetails.builder().transaction(transaction).purchaseDetails(purchaseDetails).build());
             return transaction;
@@ -230,7 +232,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             purchaseDetailsManger.save(transaction, request);
             TransactionContext.set(TransactionDetails.builder().transaction(transaction).request(request).build());
             return transaction;
-        }else if (PointTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass())) {
+        } else if (PointTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass())) {
             final Transaction transaction = initPointTransaction((PointTransactionInitRequest) transactionInitRequest);
             purchaseDetailsManger.save(transaction, request);
             TransactionContext.set(TransactionDetails.builder().transaction(transaction).request(request).build());

@@ -62,6 +62,7 @@ import in.wynk.vas.client.dto.MsisdnOperatorDetails;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -422,11 +423,19 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
 
     private LatestReceiptResponse mapGoogleResponseToReceiptResponse (GooglePlayReceiptResponse googlePlayReceiptResponse, GooglePlayVerificationRequest request) {
         boolean isFreeTrial = Objects.equals(googlePlayReceiptResponse.getPaymentState(), FREE_TRIAL_PAYMENT_STATE) || FREE_TRIAL_AMOUNT.equals(googlePlayReceiptResponse.getPriceAmountMicros());
-        return GooglePlayLatestReceiptResponse.builder().freeTrial(isFreeTrial).autoRenewal(googlePlayReceiptResponse.isAutoRenewing()).googlePlayResponse(googlePlayReceiptResponse)
-                .planId(cachingService.getPlanFromSku(request.getProductDetails().getSkuId()).getId()).purchaseToken(request.getPaymentDetails().getPurchaseToken())
-                .extTxnId(request.getPaymentDetails().getPurchaseToken()).couponCode(googlePlayReceiptResponse.getPromotionCode()).notificationType(request.getPaymentDetails().getNotificationType())
-                .subscriptionId(googlePlayReceiptResponse.getOrderId()).packageName(request.getAppDetails().getPackageName()).service(request.getAppDetails().getService())
-                .skuId(request.getProductDetails().getSkuId()).build();
+        GooglePlayLatestReceiptResponse.GooglePlayLatestReceiptResponseBuilder<?, ?> builder =
+                GooglePlayLatestReceiptResponse.builder().freeTrial(isFreeTrial).autoRenewal(googlePlayReceiptResponse.isAutoRenewing()).googlePlayResponse(googlePlayReceiptResponse)
+                        .purchaseToken(request.getPaymentDetails().getPurchaseToken())
+                        .extTxnId(request.getPaymentDetails().getPurchaseToken()).couponCode(googlePlayReceiptResponse.getPromotionCode())
+                        .notificationType(request.getPaymentDetails().getNotificationType())
+                        .subscriptionId(googlePlayReceiptResponse.getOrderId()).packageName(request.getAppDetails().getPackageName()).service(request.getAppDetails().getService())
+                        .skuId(request.getProductDetails().getSkuId());
+        if (StringUtils.isNotEmpty(request.getProductDetails().getPlanId())) {
+            builder.planId(cachingService.getPlanFromSku(request.getProductDetails().getSkuId()).getId());
+        } else if (StringUtils.isNotEmpty(request.getProductDetails().getItemId())) {
+            builder.itemId(Integer.parseInt(request.getProductDetails().getItemId()));
+        }
+        return builder.build();
     }
 
     @Override

@@ -14,9 +14,15 @@ public class ProductDetailsDto implements IProductDetails {
     private String planId;
     private String itemId;
     private String type;
+    private double price;
 
     @Override
-    public String getId() {
-        return getPlanId();
+    public String getId () {
+        if (type.equals("PLAN")) {
+            return getPlanId();
+        } else if (type.equals("POINT")) {
+            return getItemId();
+        }
+        return null;
     }
 }

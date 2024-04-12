@@ -76,18 +76,28 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
         GooglePlayVerificationRequest gRequest = (GooglePlayVerificationRequest) request;
         final LatestReceiptResponse receiptResponse = wrapper.getReceiptResponse();
         GooglePlayLatestReceiptResponse googleResponse = (GooglePlayLatestReceiptResponse) receiptResponse;
-        int planId = cachingService.getPlanFromSku(gRequest.getProductDetails().getSkuId()).getId();
-        final PlanDTO selectedPlan = BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(planId);
-        if(!selectedPlan.getService().equalsIgnoreCase(gRequest.getAppDetails().getService())){
-            throw new WynkRuntimeException(GooglePlayStatusCodes.GOOGLE_31020.getErrorTitle());
-        }
         final ClientDetails clientDetails = (ClientDetails) BeanLocatorFactory.getBean(ClientDetailsCachingService.class).getClientById(wrapper.getClientId());
-        final AbstractTransactionInitRequest initRequest = PlanTransactionInitRequest.builder().planId(receiptResponse.getPlanId())
-                .uid(gRequest.getUserDetails().getUid()).msisdn(gRequest.getUserDetails().getMsisdn()).paymentGateway(request.getPaymentCode())
-                .event(MerchantServiceUtil.getGooglePlayEvent(gRequest,googleResponse))
-                .autoRenewOpted(MerchantServiceUtil.getAutoRenewalOpted(gRequest,receiptResponse))
-                .clientAlias(clientDetails.getAlias()).couponId(receiptResponse.getCouponCode()).trialOpted(receiptResponse.isFreeTrial()).userDetails(UserDetails.builder().msisdn(gRequest.getUserDetails().getMsisdn()).build())
-                .appDetails(AppDetails.builder().os(gRequest.getAppDetails().getOs()).deviceId(gRequest.getAppDetails().getDeviceId()).service(selectedPlan.getService()).buildNo(gRequest.getAppDetails().getBuildNo()).build()).build();
+        PlanDTO planDTO = cachingService.getPlanFromSku(gRequest.getProductDetails().getSkuId());
+        AbstractTransactionInitRequest initRequest= null;
+        if(planDTO != null) {
+            final PlanDTO selectedPlan = BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(planDTO.getId());
+            if (!selectedPlan.getService().equalsIgnoreCase(gRequest.getAppDetails().getService())) {
+                throw new WynkRuntimeException(GooglePlayStatusCodes.GOOGLE_31020.getErrorTitle());
+            }
+            initRequest = PlanTransactionInitRequest.builder().planId(receiptResponse.getPlanId())
+                    .uid(gRequest.getUserDetails().getUid()).msisdn(gRequest.getUserDetails().getMsisdn()).paymentGateway(request.getPaymentCode())
+                    .event(MerchantServiceUtil.getGooglePlayEvent(gRequest, googleResponse))
+                    .autoRenewOpted(MerchantServiceUtil.getAutoRenewalOpted(gRequest, receiptResponse))
+                    .clientAlias(clientDetails.getAlias()).couponId(receiptResponse.getCouponCode()).trialOpted(receiptResponse.isFreeTrial())
+                    .userDetails(UserDetails.builder().msisdn(gRequest.getUserDetails().getMsisdn()).build())
+                    .appDetails(AppDetails.builder().os(gRequest.getAppDetails().getOs()).deviceId(gRequest.getAppDetails().getDeviceId()).service(selectedPlan.getService())
+                            .buildNo(gRequest.getAppDetails().getBuildNo()).build()).build();
+        } else if(request.getProductDetails().getItemId() != null) {
+            initRequest = PointTransactionInitRequest.builder().itemId(request.getProductDetails().getItemId()).uid(gRequest.getUserDetails().getUid()).msisdn(gRequest.getUserDetails().getMsisdn()).paymentGateway(request.getPaymentCode())
+                    .event(MerchantServiceUtil.getGooglePlayEvent(gRequest, googleResponse))
+                    .clientAlias(clientDetails.getAlias()).couponId(receiptResponse.getCouponCode()).amount(request.getProductDetails().getPrice())
+                    .build();
+        }
         BeanLocatorFactory.getBean(IPricingManager.class).computePriceAndApplyDiscount(initRequest);
         return initRequest;
     }

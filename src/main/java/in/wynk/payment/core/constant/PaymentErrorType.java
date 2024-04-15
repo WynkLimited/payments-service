@@ -25,6 +25,7 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY006("Payment Charging Callback Failure", "Something went wrong", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYU_CHARGING_CALLBACK_FAILURE),
     PAY007("Payment Charging Failure", "Exception occurred in charging API ", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.CHARGING_API_FAILURE),
     PAY008("Payment Charging Status Failure", "Invalid Fetching strategy is supplied", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION_FAILURE),
+    PAY025("Payment Charging Status Failure", "Exception occurred in data validation", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.APPLICATION_INVALID_USECASE),
     PAY010("Invalid txnId", "Invalid txnId", HttpStatus.NOT_FOUND, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
     PAY013("Subscription Provision Failure", "Unable to subscribe plan after successful payment", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.SUBSCRIPTION_ERROR),
     PAY020("Payment Refund init failure", "Failure to refund amount", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYMENT_ERROR),

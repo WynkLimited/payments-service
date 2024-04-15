@@ -35,7 +35,7 @@ public class FailurePaymentStatusResponse extends PaymentStatusResponse {
             builder.planId(planId);
             builder.packDetails(packDetails);
         } else if (Objects.nonNull(itemId)) {
-            builder.itemId(Integer.parseInt(itemId));
+            builder.itemId(itemId);
         }
         return builder.build();
     }

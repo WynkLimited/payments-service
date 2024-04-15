@@ -24,6 +24,10 @@ public abstract class AbstractTransactionStatusRequest {
     private int planId;
 
     @Analysed
+    @Setter
+    private String itemId;
+
+    @Analysed
     public abstract StatusMode getMode();
 
 }

@@ -221,6 +221,12 @@ public class PaymentManager
     @TransactionAware(txnId = "#transactionId", lock = false)
     public WynkResponseEntity<AbstractChargingStatusResponse> status(String transactionId) {
         final Transaction transaction = TransactionContext.get();
+        if(Objects.isNull(transaction.getPlanId())) {
+            if(Objects.isNull(transaction.getItemId())) {
+                throw new WynkRuntimeException(PaymentErrorType.PAY025);
+            }
+            return internalStatus(ChargingTransactionStatusRequest.builder().transactionId(transactionId).itemId(transaction.getItemId()).build());
+        }
         return internalStatus(ChargingTransactionStatusRequest.builder().transactionId(transactionId).planId(transaction.getPlanId()).build());
     }
 
@@ -424,8 +430,13 @@ public class PaymentManager
         final IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest> statusService =
                 BeanLocatorFactory.getBean(paymentGateway.getCode(), new ParameterizedTypeReference<IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest>>() {
                 });
-        request.setPlanId(
-                transaction.getType() == in.wynk.common.enums.PaymentEvent.TRIAL_SUBSCRIPTION ? cachingService.getPlan(transaction.getPlanId()).getLinkedFreePlanId() : transaction.getPlanId());
+        if (request.getPlanId() == 0) {
+            request.setItemId(transaction.getItemId());
+        } else {
+            request.setPlanId(
+                    transaction.getType() == in.wynk.common.enums.PaymentEvent.TRIAL_SUBSCRIPTION ? cachingService.getPlan(transaction.getPlanId()).getLinkedFreePlanId() : transaction.getPlanId());
+        }
+
         return statusService.status(request);
     }
 

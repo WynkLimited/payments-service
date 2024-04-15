@@ -140,7 +140,7 @@ public class PaymentStatusPresentationV2 implements IWynkPresentation<PaymentSta
                         .tid(payload.getTid()).transactionType(payload.getTransactionType())
                         .paymentGroup(paymentMethodCachingService.get(purchaseDetails.getPaymentDetails().getPaymentId()).getGroup());
                 if (transaction.getType() == PaymentEvent.POINT_PURCHASE) {
-                    builder.itemId(Integer.parseInt(transaction.getItemId()));
+                    builder.itemId(transaction.getItemId());
                 } else {
                     builder.validity(cachingService.validTillDate(transaction.getPlanId(), transaction.getMsisdn()));
                     builder.planId(transaction.getPlanId());

@@ -73,7 +73,7 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
                     // NOTE: Added backward support to avoid failure for transaction created pre payment refactoring build, once the build is live it has no significance
                     final String clientAlias = ClientContext.getClient().map(Client::getAlias).orElse(transaction.getClientAlias());
                     final String service;
-                    if (transaction.getPlanId() == 0) {
+                    if (Objects.isNull(transaction.getPlanId())) {
                         service = transaction.getClientAlias();
                     } else {
                         service = cachingService.getPlan(transaction.getPlanId()).getService();
@@ -118,6 +118,9 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
     }
 
     private AbstractPack getPackDetails(Transaction transaction,ChargingTransactionStatusRequest request) {
+        if (Objects.isNull(transaction.getPlanId())) {
+            return null;
+        }
         final PlanDTO plan = TransactionContext.getPurchaseDetails().map(details -> BeanLocatorFactory.getBean(ISubscriptionServiceManager.class).getUserPersonalisedPlanOrDefault(UserPersonalisedPlanRequest.builder().appDetails(((AppDetails) details.getAppDetails()).toAppDetails()).userDetails(((UserDetails) details.getUserDetails()).toUserDetails(transaction.getUid())).geoDetails((GeoLocation) details.getGeoLocation()).planId(request.getPlanId()).build(), cachingService.getPlan(request.getPlanId()))).orElse(cachingService.getPlan(request.getPlanId()));
         final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
         final PartnerDTO partner = cachingService.getPartner(Optional.ofNullable(offer.getPackGroup()).orElse(BaseConstants.DEFAULT_PACK_GROUP + offer.getService()));

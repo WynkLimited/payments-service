@@ -47,7 +47,7 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY012("Verification Failure ", "Failure in validating transaction from amazon iap", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.AMAZON_IAP_VERIFICATION_FAILURE),
     PAY027("Verification Failure ", "Failure in validating transaction from google play", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.GOOGLE_PLAY_VERIFICATION_FAILURE),
     PAY028("Payment Renewal Failure", "Unable tot renewal google Play subscription", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.GOOGLE_PLAY_RENEWAL_ERROR),
-    PAY029("Acknowledgement Failure ", "Failure in acknowledging subscription purchase to google play", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.GOOGLE_PLAY_ACKNOWLEDGEMENT_FAILURE),
+    PAY029("Acknowledgement Failure ", "Failure in acknowledging purchase to google play", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.GOOGLE_PLAY_ACKNOWLEDGEMENT_FAILURE),
     PAY030("Google Play Notification Failure", "Something happened while decoding real time developer notification from Google Play", HttpStatus.INTERNAL_SERVER_ERROR,
             PaymentLoggingMarker.GOOGLE_PLAY_NOTIFICATION_DECODE_ERROR),
     PAY031("Google Play Notification Validation Failure", "No receipt mapping found for the Google Play notification", HttpStatus.BAD_REQUEST,

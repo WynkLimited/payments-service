@@ -10,9 +10,9 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @SuperBuilder
 @AnalysedEntity
-public class GooglePlaySubscriptionAcknowledgementRequest extends AbstractAcknowledgement {
+public class GooglePlayProductAcknowledgementRequest extends AbstractAcknowledgement {
     @Override
     public String getType () {
-        return "PLAN";
+        return "POINT";
     }
 }

@@ -8,6 +8,7 @@ import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.dto.gpbs.acknowledge.queue.SubscriptionAcknowledgeMessageManager;
 import in.wynk.payment.dto.gpbs.acknowledge.request.AbstractPaymentAcknowledgementRequest;
+import in.wynk.payment.dto.gpbs.acknowledge.request.GooglePlayProductAcknowledgementRequest;
 import in.wynk.payment.dto.gpbs.acknowledge.request.GooglePlaySubscriptionAcknowledgementRequest;
 import in.wynk.payment.dto.gpbs.request.GooglePlayAppDetails;
 import in.wynk.payment.dto.gpbs.request.GooglePlayPaymentDetails;
@@ -56,7 +57,7 @@ public class SubscriptionAcknowledgementConsumerPollingQueue extends AbstractSQS
 
     @Override
     @ClientAware(clientAlias = "#message.clientAlias")
-    @AnalyseTransaction(name = "subscriptionAcknowledgement")
+    @AnalyseTransaction(name = "subscriptionAcknowledgementMessage")
     public void consume (SubscriptionAcknowledgeMessageManager message) {
         AnalyticService.update(message);
         AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest = null;
@@ -66,14 +67,23 @@ public class SubscriptionAcknowledgementConsumerPollingQueue extends AbstractSQS
             appDetails.setService(message.getService());
             GooglePlayProductDetails productDetails = new GooglePlayProductDetails();
             productDetails.setSkuId(message.getSkuId());
-            abstractPaymentAcknowledgementRequest = GooglePlaySubscriptionAcknowledgementRequest.builder()
-                    .paymentDetails(GooglePlayPaymentDetails.builder().purchaseToken(message.getPurchaseToken()).build())
-                    .paymentCode(message.getPaymentCode())
-                    .appDetails(appDetails)
-                    .productDetails(productDetails)
-                    .developerPayload(message.getDeveloperPayload())
-                    .build();
-
+            if(message.getType().equals("PLAN")) {
+                abstractPaymentAcknowledgementRequest = GooglePlaySubscriptionAcknowledgementRequest.builder()
+                        .paymentDetails(GooglePlayPaymentDetails.builder().purchaseToken(message.getPurchaseToken()).build())
+                        .paymentCode(message.getPaymentCode())
+                        .appDetails(appDetails)
+                        .productDetails(productDetails)
+                        .developerPayload(message.getDeveloperPayload())
+                        .build();
+            } else if(message.getType().equals("POINT")) {
+                abstractPaymentAcknowledgementRequest = GooglePlayProductAcknowledgementRequest.builder()
+                        .paymentDetails(GooglePlayPaymentDetails.builder().purchaseToken(message.getPurchaseToken()).build())
+                        .paymentCode(message.getPaymentCode())
+                        .appDetails(appDetails)
+                        .productDetails(productDetails)
+                        .developerPayload(message.getDeveloperPayload())
+                        .build();
+            }
         }
         assert abstractPaymentAcknowledgementRequest != null;
         paymentManager.acknowledgeSubscription(abstractPaymentAcknowledgementRequest);

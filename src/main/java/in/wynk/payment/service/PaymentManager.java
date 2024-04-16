@@ -23,6 +23,8 @@ import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.dto.*;
+import in.wynk.payment.dto.gpbs.acknowledge.request.AbstractAcknowledgement;
+import in.wynk.payment.dto.gpbs.acknowledge.request.GooglePlayProductAcknowledgementRequest;
 import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayLatestReceiptResponse;
 import in.wynk.payment.dto.gpbs.acknowledge.request.AbstractPaymentAcknowledgementRequest;
 import in.wynk.payment.dto.gpbs.acknowledge.request.GooglePlaySubscriptionAcknowledgementRequest;
@@ -350,16 +352,16 @@ public class PaymentManager
             String lastSuccessTransactionId = getLastSuccessTransactionId(transaction);
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(initialStatus, finalStatus, transaction);
-            if (transaction.getStatus() == TransactionStatus.SUCCESS) {
+            if ((transaction.getStatus() == TransactionStatus.SUCCESS) && (request.getPaymentCode().getCode().equals(BeanConstant.GOOGLE_PLAY))) {
                 publishAsync(Objects.requireNonNull(getRequest(request, latestReceiptResponse)));
             }
         }
     }
 
-    private AbstractPaymentAcknowledgementRequest getRequest(IapVerificationRequestV2 request, LatestReceiptResponse latestReceiptResponse) {
-        if (request.getPaymentCode().getCode().equals(BeanConstant.GOOGLE_PLAY)) {
-            GooglePlayLatestReceiptResponse googleResponse = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
-            GooglePlayVerificationRequest googleRequest = (GooglePlayVerificationRequest) request;
+    private AbstractAcknowledgement getRequest(IapVerificationRequestV2 request, LatestReceiptResponse latestReceiptResponse) {
+        GooglePlayLatestReceiptResponse googleResponse = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
+        GooglePlayVerificationRequest googleRequest = (GooglePlayVerificationRequest) request;
+        if (request.getProductDetails().getType().equals("PLAN")) {
             return GooglePlaySubscriptionAcknowledgementRequest.builder()
                     .developerPayload(googleResponse.getGooglePlayResponse().getDeveloperPayload())
                     .productDetails(googleRequest.getProductDetails())
@@ -367,8 +369,15 @@ public class PaymentManager
                     .paymentDetails(googleRequest.getPaymentDetails())
                     .paymentCode(request.getPaymentCode().getCode())
                     .build();
+        } else if (request.getProductDetails().getType().equals("POINT")) {
+            return GooglePlayProductAcknowledgementRequest.builder()
+                    .developerPayload(googleResponse.getGooglePlayResponse().getDeveloperPayload())
+                    .productDetails(googleRequest.getProductDetails())
+                    .appDetails(googleRequest.getAppDetails())
+                    .paymentDetails(googleRequest.getPaymentDetails())
+                    .paymentCode(request.getPaymentCode().getCode())
+                    .build();
         }
-        return null;
     }
 
     @Override

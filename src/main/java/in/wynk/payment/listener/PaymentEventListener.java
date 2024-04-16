@@ -282,7 +282,7 @@ public class PaymentEventListener {
                 AnalyticService.update(PLAN_ID, transaction.getPlanId());
             }
             if (Objects.nonNull(transaction.getItemId())) {
-                AnalyticService.update(PLAN_ID, transaction.getItemId());
+                AnalyticService.update(ITEM_ID, transaction.getItemId());
             }
             AnalyticService.update(PAYMENT_CODE, transaction.getPaymentChannel().getId());
         }

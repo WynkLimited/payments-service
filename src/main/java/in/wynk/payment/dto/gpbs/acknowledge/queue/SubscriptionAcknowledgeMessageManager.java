@@ -38,6 +38,7 @@ public class SubscriptionAcknowledgeMessageManager extends AbstractAcknowledgeme
                 .purchaseToken(getPurchaseToken())
                 .skuId(getSkuId())
                 .paymentCode(this.getPaymentCode())
+                .type(this.getType())
                 .build();
     }
 }

@@ -508,7 +508,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         if (EnumSet.of(SUBSCRIBE, TRIAL_SUBSCRIPTION, MANDATE, FREE).contains(paymentEvent)) {
             body = builder.recurringTransaction(RecurringExternalTransaction.builder().externalTransactionToken(request.getExternalTransactionToken())
                     .externalSubscription(ExternalSubscription.builder().subscriptionType(SubscriptionType.RECURRING).build()).build()).build();
-        } else if (paymentEvent == PURCHASE) {
+        } else if (EnumSet.of(PURCHASE, POINT_PURCHASE).contains(paymentEvent)) {
             body = builder.oneTimeTransaction(OneTimeExternalTransaction.builder().externalTransactionToken(request.getExternalTransactionToken()).build()).build();
         } else if (paymentEvent == RENEW) {
             Optional<PaymentRenewal> renewalOptional =
@@ -522,7 +522,6 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
             } else {
                 throw new WynkRuntimeException("Unable to report renewal transactions to google");
             }
-
         }
         HttpHeaders headers = getHeaders(service);
         String url = baseUrl.concat(packageName).concat(externalPurchase).concat(request.getTransaction().getIdStr()).concat(ETERNAL_TRANSACTION_API_KEY_PARAM).concat(getApiKey(service));

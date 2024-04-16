@@ -2,6 +2,7 @@ package in.wynk.payment.dto.gpbs.acknowledge.request;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import lombok.Getter;
@@ -36,6 +37,6 @@ public class GooglePlayReportExternalTransactionRequest extends AbstractPaymentA
 
     @Override
     public String getType () {
-        return "PLAN";
+        return BaseConstants.PLAN;
     }
 }

@@ -6,6 +6,7 @@ import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.data.utils.RepositoryUtils;
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
@@ -123,12 +124,15 @@ public class PaymentGatewayManager
             throw new PaymentRuntimeException(PaymentErrorType.PAY007, ex.getMessage());
         } finally {
             sqsManagerService.publishSQSMessage(
-                    PaymentReconciliationMessage.builder().paymentMethodId(request.getPaymentDetails().getPaymentId()).paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
+                    PaymentReconciliationMessage.builder().paymentMethodId(request.getPaymentDetails().getPaymentId()).paymentCode(transaction.getPaymentChannel().getId())
+                            .paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
                             .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
-            eventPublisher.publishEvent(PurchaseInitEvent.builder().clientAlias(transaction.getClientAlias()).transactionId(transaction.getIdStr()).uid(transaction.getUid()).msisdn(transaction
-                    .getMsisdn()).productDetails(request.getProductDetails()).appDetails(request.getAppDetails()).sid(Optional.ofNullable(SessionContextHolder
-                    .getId())).build());
-            if(Objects.nonNull(request.getAppStoreDetails()) && Objects.nonNull(request.getAppStoreDetails().getExternalTransactionToken())) {
+            if (BaseConstants.PLAN.equals(request.getProductDetails().getType())) {
+                eventPublisher.publishEvent(PurchaseInitEvent.builder().clientAlias(transaction.getClientAlias()).transactionId(transaction.getIdStr()).uid(transaction.getUid()).msisdn(transaction
+                        .getMsisdn()).productDetails(request.getProductDetails()).appDetails(request.getAppDetails()).sid(Optional.ofNullable(SessionContextHolder
+                        .getId())).build());
+            }
+            if (Objects.nonNull(request.getAppStoreDetails()) && Objects.nonNull(request.getAppStoreDetails().getExternalTransactionToken())) {
                 final MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
                 merchantTransactionEventBuilder.externalTokenReferenceId(request.getAppStoreDetails().getExternalTransactionToken());
                 eventPublisher.publishEvent(merchantTransactionEventBuilder.build());

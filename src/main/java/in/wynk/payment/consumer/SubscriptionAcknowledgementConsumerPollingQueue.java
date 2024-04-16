@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.dto.gpbs.acknowledge.queue.SubscriptionAcknowledgeMessageManager;
 import in.wynk.payment.dto.gpbs.acknowledge.request.AbstractPaymentAcknowledgementRequest;
@@ -67,7 +68,7 @@ public class SubscriptionAcknowledgementConsumerPollingQueue extends AbstractSQS
             appDetails.setService(message.getService());
             GooglePlayProductDetails productDetails = new GooglePlayProductDetails();
             productDetails.setSkuId(message.getSkuId());
-            if(message.getType().equals("PLAN")) {
+            if (BaseConstants.PLAN.equals(message.getType())) {
                 abstractPaymentAcknowledgementRequest = GooglePlaySubscriptionAcknowledgementRequest.builder()
                         .paymentDetails(GooglePlayPaymentDetails.builder().purchaseToken(message.getPurchaseToken()).build())
                         .paymentCode(message.getPaymentCode())
@@ -75,7 +76,7 @@ public class SubscriptionAcknowledgementConsumerPollingQueue extends AbstractSQS
                         .productDetails(productDetails)
                         .developerPayload(message.getDeveloperPayload())
                         .build();
-            } else if(message.getType().equals("POINT")) {
+            } else if (BaseConstants.POINT.equals(message.getType())) {
                 abstractPaymentAcknowledgementRequest = GooglePlayProductAcknowledgementRequest.builder()
                         .paymentDetails(GooglePlayPaymentDetails.builder().purchaseToken(message.getPurchaseToken()).build())
                         .paymentCode(message.getPaymentCode())

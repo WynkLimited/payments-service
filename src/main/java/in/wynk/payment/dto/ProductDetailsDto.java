@@ -1,5 +1,6 @@
 package in.wynk.payment.dto;
 
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.payment.core.dao.entity.IProductDetails;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,9 +19,9 @@ public class ProductDetailsDto implements IProductDetails {
 
     @Override
     public String getId () {
-        if (type.equals("PLAN")) {
+        if (BaseConstants.PLAN.equals(type)) {
             return getPlanId();
-        } else if (type.equals("POINT")) {
+        } else if (BaseConstants.POINT.equals(type)) {
             return getItemId();
         }
         return null;

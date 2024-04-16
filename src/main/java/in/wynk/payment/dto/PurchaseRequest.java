@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.client.validations.IClientValidatorRequest;
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.GeoLocation;
 import in.wynk.common.dto.MiscellaneousDetails;
 import in.wynk.identity.client.utils.IdentityUtils;
@@ -81,7 +82,7 @@ public class PurchaseRequest implements IClientValidatorRequest, IWynkServiceVal
                 .successUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getSuccessPageUrl).orElse(null))
                 .pendingUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getPendingPageUrl).orElse(null))
                 .unknownUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getUnknownPageUrl).orElse(null));
-        if (productDetails.getType().equalsIgnoreCase("POINT")) {
+        if (BaseConstants.POINT.equals(productDetails.getType())) {
             PointDetails pointDetails = (PointDetails) productDetails;
             sessionRequestBuilder.itemId(pointDetails.getItemId());
             sessionRequestBuilder.itemPrice(pointDetails.getPrice());

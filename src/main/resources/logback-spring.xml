@@ -92,10 +92,10 @@
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
 
-    <logger name="productAcknowledgementMessage" additivity="false" level="INFO">
+    <logger name="productAcknowledgement" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
-    <logger name="externalTransactionAcknowledgementMessage" additivity="false" level="INFO">
+    <logger name="externalTransactionAcknowledgement" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
 

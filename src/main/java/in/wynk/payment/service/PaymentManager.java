@@ -378,6 +378,7 @@ public class PaymentManager
                     .paymentCode(request.getPaymentCode().getCode())
                     .build();
         }
+        return null;
     }
 
     @Override

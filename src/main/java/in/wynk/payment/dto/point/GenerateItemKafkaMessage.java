@@ -23,6 +23,7 @@ import java.util.Calendar;
 public class GenerateItemKafkaMessage {
     private String transactionId;
     private String itemId;
+    private Double price;
     private String uid;
     @Temporal(TemporalType.TIMESTAMP)
     private Calendar createdDate;
@@ -35,6 +36,7 @@ public class GenerateItemKafkaMessage {
         return GenerateItemKafkaMessage.builder()
                 .transactionId(event.getTransactionId())
                 .itemId(event.getItemId())
+                .price(event.getPrice())
                 .uid(event.getUid())
                 .createdDate(event.getCreatedDate())
                 .updatedDate(event.getUpdatedDate())

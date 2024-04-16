@@ -18,6 +18,7 @@ public class GenerateItemEvent {
     private String transactionId;
     private String itemId;
     private String uid;
+    private Double price;
     @Temporal(TemporalType.TIMESTAMP)
     private Calendar createdDate;
     @Temporal(TemporalType.TIMESTAMP)

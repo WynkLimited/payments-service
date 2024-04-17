@@ -14,6 +14,7 @@ import in.wynk.payment.dto.PageResponseDetails;
 import in.wynk.payment.dto.gpbs.request.GooglePlayPaymentDetails;
 import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
 import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayLatestReceiptResponse;
+import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayProductReceiptResponse;
 import in.wynk.payment.dto.gpbs.response.receipt.GooglePlaySubscriptionReceiptResponse;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
 import in.wynk.payment.dto.response.gpbs.GooglePlayBillingResponse;
@@ -66,10 +67,11 @@ public class MerchantServiceUtil {
         //if call is for linkedPurchaseToken, payment event should be cancelled for this old purchaseToken
         Integer notificationType = gRequest.getPaymentDetails().getNotificationType();
         if (BaseConstants.POINT.equals(productType)) {
-            if (notificationType == 0) {
+            GooglePlayProductReceiptResponse productReceiptResponse = (GooglePlayProductReceiptResponse) gResponse.getGooglePlayResponse();
+            if (productReceiptResponse.getPurchaseState() == 0) {
                 return PaymentEvent.POINT_PURCHASE;
 
-            } else if (notificationType == 1) {
+            } else if (productReceiptResponse.getPurchaseState() == 1) {
                 return PaymentEvent.CANCELLED;
             }
         } else {

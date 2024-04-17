@@ -187,23 +187,26 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                 log.info("Notification is already processed for the purchase token {}", latestReceipt.getPurchaseToken());
                 return null;
             }
-            PlanDTO planDTO = cachingService.getPlanFromSku(googlePlayReceiptDetails.getSkuId());
-            boolean isFreeTrial = Objects.equals(googlePlayReceiptResponse.getPaymentState(), FREE_TRIAL_PAYMENT_STATE) || FREE_TRIAL_AMOUNT.equals(googlePlayReceiptResponse.getPriceAmountMicros());
-            //if free trial plan applied, perform events on that plan
-            if (isFreeTrial) {
-                if (planDTO.getLinkedFreePlanId() != -1) {
-                    return UserPlanMapping.<Pair<GooglePlayLatestReceiptResponse, ReceiptDetails>>builder().planId(planDTO.getLinkedFreePlanId()).msisdn(receiptDetails.getMsisdn())
-                            .uid(receiptDetails.getUid())
+            UserPlanMapping.UserPlanMappingBuilder<Pair<GooglePlayLatestReceiptResponse, ReceiptDetails>> builder =
+                    UserPlanMapping.<Pair<GooglePlayLatestReceiptResponse, ReceiptDetails>>builder().msisdn(receiptDetails.getMsisdn()).uid(receiptDetails.getUid())
                             .linkedTransactionId(receiptDetails.getPaymentTransactionId())
-                            .message(Pair.of(latestReceipt, receiptDetails)).build();
-                } else {
-                    log.error("No Free Trial mapping present for planId {}", planDTO.getId());
-                    throw new WynkRuntimeException(PaymentErrorType.PAY033);
+                            .message(Pair.of(latestReceipt, receiptDetails));
+            if (receiptDetails.getPlanId() != 0) {
+                PlanDTO planDTO = cachingService.getPlanFromSku(googlePlayReceiptDetails.getSkuId());
+                boolean isFreeTrial =
+                        Objects.equals(googlePlayReceiptResponse.getPaymentState(), FREE_TRIAL_PAYMENT_STATE) || FREE_TRIAL_AMOUNT.equals(googlePlayReceiptResponse.getPriceAmountMicros());
+                //if free trial plan applied, perform events on that plan
+                if (isFreeTrial) {
+                    if (planDTO.getLinkedFreePlanId() != -1) {
+                        return builder.planId(planDTO.getLinkedFreePlanId()).build();
+                    } else {
+                        log.error("No Free Trial mapping present for planId {}", planDTO.getId());
+                        throw new WynkRuntimeException(PaymentErrorType.PAY033);
+                    }
                 }
+                return builder.planId(planDTO.getId()).build();
             }
-            return UserPlanMapping.<Pair<GooglePlayLatestReceiptResponse, ReceiptDetails>>builder().planId(planDTO.getId()).msisdn(receiptDetails.getMsisdn()).uid(receiptDetails.getUid())
-                    .linkedTransactionId(receiptDetails.getPaymentTransactionId())
-                    .message(Pair.of(latestReceipt, receiptDetails)).build();
+            return builder.itemId(receiptDetails.getItemId()).build();
         }
         return null;
     }
@@ -262,11 +265,11 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     }
 
     @Override
-    public PaymentEvent getPaymentEvent (DecodedNotificationWrapper<GooglePlayCallbackRequest> wrapper) {
+    public PaymentEvent getPaymentEvent (DecodedNotificationWrapper<GooglePlayCallbackRequest> wrapper, String productType) {
         String notificationType = wrapper.getDecodedNotification().getNotificationType();
         GooglePlayVerificationRequest request = new GooglePlayVerificationRequest();
         request.setPaymentDetails(GooglePlayPaymentDetails.builder().notificationType(Integer.valueOf(notificationType)).build());
-        return MerchantServiceUtil.getGooglePlayEvent(request, wrapper.getDecodedNotification().getGooglePlayLatestReceiptResponse());
+        return MerchantServiceUtil.getGooglePlayEvent(request, wrapper.getDecodedNotification().getGooglePlayLatestReceiptResponse(), productType);
     }
 
     @Override

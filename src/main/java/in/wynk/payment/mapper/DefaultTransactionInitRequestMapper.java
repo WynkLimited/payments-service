@@ -3,6 +3,7 @@ package in.wynk.payment.mapper;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.client.service.ClientDetailsCachingService;
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.IGeoLocation;
 import in.wynk.common.dto.IObjectMapper;
 import in.wynk.common.dto.SessionDTO;
@@ -86,7 +87,7 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
             }
             initRequest = PlanTransactionInitRequest.builder().planId(receiptResponse.getPlanId())
                     .uid(gRequest.getUserDetails().getUid()).msisdn(gRequest.getUserDetails().getMsisdn()).paymentGateway(request.getPaymentCode())
-                    .event(MerchantServiceUtil.getGooglePlayEvent(gRequest, googleResponse))
+                    .event(MerchantServiceUtil.getGooglePlayEvent(gRequest, googleResponse, BaseConstants.PLAN))
                     .autoRenewOpted(MerchantServiceUtil.getAutoRenewalOpted(gRequest, receiptResponse))
                     .clientAlias(clientDetails.getAlias()).couponId(receiptResponse.getCouponCode()).trialOpted(receiptResponse.isFreeTrial())
                     .userDetails(UserDetails.builder().msisdn(gRequest.getUserDetails().getMsisdn()).build())
@@ -94,7 +95,7 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
                             .buildNo(gRequest.getAppDetails().getBuildNo()).build()).build();
         } else if(request.getProductDetails().getItemId() != null) {
             initRequest = PointTransactionInitRequest.builder().itemId(request.getProductDetails().getItemId()).uid(gRequest.getUserDetails().getUid()).msisdn(gRequest.getUserDetails().getMsisdn()).paymentGateway(request.getPaymentCode())
-                    .event(MerchantServiceUtil.getGooglePlayEvent(gRequest, googleResponse))
+                    .event(MerchantServiceUtil.getGooglePlayEvent(gRequest, googleResponse, BaseConstants.POINT))
                     .clientAlias(clientDetails.getAlias()).couponId(receiptResponse.getCouponCode()).amount(request.getProductDetails().getPrice())
                     .build();
         }

@@ -233,7 +233,7 @@ public class PaymentGatewayManager
         if (wrapper.isEligible()) {
             final UserPlanMapping<?> mapping = receiptDetailService.getUserPlanMapping(wrapper);
             if (mapping != null) {
-                final in.wynk.common.enums.PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper);
+                final in.wynk.common.enums.PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper, (Objects.nonNull(mapping.getItemId()) ? BaseConstants.POINT : BaseConstants.PLAN));
                 final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
                         PlanRenewalRequest.builder().txnId(mapping.getLinkedTransactionId()).planId(mapping.getPlanId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentGateway(request.getPaymentGateway())
                                 .clientAlias(request.getClientAlias()).build());

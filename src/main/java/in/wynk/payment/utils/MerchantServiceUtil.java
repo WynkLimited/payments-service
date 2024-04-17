@@ -61,7 +61,7 @@ public class MerchantServiceUtil {
         return builder.build();
     }
 
-    public static PaymentEvent getGooglePlayEvent (GooglePlayVerificationRequest gRequest, GooglePlayLatestReceiptResponse gResponse) {
+    public static PaymentEvent getGooglePlayEvent (GooglePlayVerificationRequest gRequest, GooglePlayLatestReceiptResponse gResponse, String productType) {
         //if call is for linkedPurchaseToken, payment event should be cancelled for this old purchaseToken
        if(Objects.nonNull(gResponse.getGooglePlayResponse().getLinkedPurchaseToken()) && gResponse.getPurchaseToken().equalsIgnoreCase(gResponse.getGooglePlayResponse().getLinkedPurchaseToken())){
             return PaymentEvent.CANCELLED;
@@ -80,7 +80,11 @@ public class MerchantServiceUtil {
                     return PaymentEvent.UNSUBSCRIBE;
                 }
             case 4:
-                return PaymentEvent.PURCHASE;
+                if (POINT.equals(productType)) {
+                    return PaymentEvent.POINT_PURCHASE;
+                } else {
+                    return PaymentEvent.PURCHASE;
+                }
             case 5:
             case 10:
                 return PaymentEvent.CANCELLED;

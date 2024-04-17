@@ -717,24 +717,35 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         LatestReceiptResponse receipt = iapVerificationRequestV2Wrapper.getLatestReceiptResponse();
         GooglePlayLatestReceiptResponse googlePlayLatestReceipt = (GooglePlayLatestReceiptResponse) receipt;
         GooglePlaySubscriptionReceiptResponse response = null;
+        GooglePlayVerificationRequest googlePlayRequest = (GooglePlayVerificationRequest) iapVerificationRequestV2Wrapper.getIapVerificationV2();
         if (googlePlayLatestReceipt.getPlanId() != 0) {
             response = (GooglePlaySubscriptionReceiptResponse) (googlePlayLatestReceipt.getGooglePlayResponse());
-        }
-        GooglePlayVerificationRequest googlePlayRequest = (GooglePlayVerificationRequest) iapVerificationRequestV2Wrapper.getIapVerificationV2();
-        if (Objects.nonNull(response)) {
-            if (response.getLinkedPurchaseToken() != null) {
-                LatestReceiptResponse newLatestReceiptResponse = createResponseForLatestToken(response, googlePlayLatestReceipt);
-                PaymentManager paymentManager = BeanLocatorFactory.getBean(PaymentManager.class);
-                paymentManager.doVerifyIap(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString(),
-                        IapVerificationRequestV2Wrapper.builder().iapVerificationV2(iapVerificationRequestV2Wrapper.getIapVerificationV2()).latestReceiptResponse(newLatestReceiptResponse).build());
-            } else if (response.getCancelReason() != null) {
-                log.error("The receipt is for cancelled Subscription.");
+            if (Objects.nonNull(response)) {
+                if (response.getLinkedPurchaseToken() != null) {
+                    LatestReceiptResponse newLatestReceiptResponse = createResponseForLatestToken(response, googlePlayLatestReceipt);
+                    PaymentManager paymentManager = BeanLocatorFactory.getBean(PaymentManager.class);
+                    paymentManager.doVerifyIap(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString(),
+                            IapVerificationRequestV2Wrapper.builder().iapVerificationV2(iapVerificationRequestV2Wrapper.getIapVerificationV2()).latestReceiptResponse(newLatestReceiptResponse)
+                                    .build());
+                } else if (response.getCancelReason() != null) {
+                    log.error("The receipt is for cancelled Subscription.");
+                    googlePlayLatestReceipt.setNotificationType(3);
+                    GooglePlayPaymentDetails paymentDetails = googlePlayRequest.getPaymentDetails();
+                    paymentDetails.setNotificationType(3);
+                    googlePlayRequest.setPaymentDetails(paymentDetails);
+                }
+            }
+        } else {
+            GooglePlayProductReceiptResponse productReceiptResponse = (GooglePlayProductReceiptResponse) googlePlayLatestReceipt.getGooglePlayResponse();
+            if (productReceiptResponse.getPurchaseState() == 1) {
+                log.error("The receipt is for cancelled Product purchase.");
                 googlePlayLatestReceipt.setNotificationType(3);
                 GooglePlayPaymentDetails paymentDetails = googlePlayRequest.getPaymentDetails();
                 paymentDetails.setNotificationType(3);
                 googlePlayRequest.setPaymentDetails(paymentDetails);
             }
         }
+
     }
 
     private LatestReceiptResponse createResponseForLatestToken (GooglePlaySubscriptionReceiptResponse googlePlayReceiptResponse, GooglePlayLatestReceiptResponse googlePlayLatestReceiptResponse) {

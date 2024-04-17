@@ -6,6 +6,7 @@ import in.wynk.client.data.utils.RepositoryUtils;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.validations.BaseHandler;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.dao.entity.ReceiptDetails;
@@ -14,10 +15,12 @@ import in.wynk.payment.core.dao.repository.ITransactionDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.dto.amazonIap.AmazonLatestReceiptResponse;
 import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayLatestReceiptResponse;
+import in.wynk.payment.dto.gpbs.response.receipt.GooglePlaySubscriptionReceiptResponse;
 import in.wynk.payment.dto.itune.ItunesLatestReceiptResponse;
 import in.wynk.payment.dto.itune.LatestReceiptInfo;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -79,10 +82,20 @@ public class ReceiptValidator extends BaseHandler<IReceiptValidatorRequest<Lates
         public void handle (IReceiptValidatorRequest<GooglePlayLatestReceiptResponse> response) {
             GooglePlayLatestReceiptResponse latestReceiptInfo = response.getLatestReceiptInfo();
             Optional<ReceiptDetails> receiptDetailsOptional =
-                    RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(latestReceiptInfo.getPurchaseToken());
-            if (receiptDetailsOptional.isPresent() && verifyIfPreviousTransactionSuccess(receiptDetailsOptional.get()) && Objects.equals(receiptDetailsOptional.get().getNotificationType(), latestReceiptInfo.getNotificationType()) &&
-                    !Objects.equals(latestReceiptInfo.getGooglePlayResponse().getLinkedPurchaseToken(), latestReceiptInfo.getPurchaseToken())) {
-                throw new WynkRuntimeException(PaymentErrorType.PAY701);
+                    RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
+                            .findById(latestReceiptInfo.getPurchaseToken());
+            if (receiptDetailsOptional.isPresent()) {
+                if (latestReceiptInfo.getPlanId() != 0) {
+                    GooglePlaySubscriptionReceiptResponse subscriptionReceiptResponse = (GooglePlaySubscriptionReceiptResponse) latestReceiptInfo.getGooglePlayResponse();
+                    if (verifyIfPreviousTransactionSuccess(receiptDetailsOptional.get()) &&
+                            Objects.equals(receiptDetailsOptional.get().getNotificationType(), latestReceiptInfo.getNotificationType()) &&
+                            !Objects.equals(subscriptionReceiptResponse.getLinkedPurchaseToken(), latestReceiptInfo.getPurchaseToken())) {
+                        throw new WynkRuntimeException(PaymentErrorType.PAY701);
+                    }
+                } else if (verifyIfPreviousTransactionSuccess(receiptDetailsOptional.get()) &&
+                        Objects.equals(receiptDetailsOptional.get().getNotificationType(), latestReceiptInfo.getNotificationType())) {
+                    throw new WynkRuntimeException(PaymentErrorType.PAY701);
+                }
             }
         }
     }

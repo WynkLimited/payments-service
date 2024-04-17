@@ -41,8 +41,10 @@ import in.wynk.payment.dto.gpbs.request.externalTransaction.ExternalTransactionA
 import in.wynk.payment.dto.gpbs.request.externalTransaction.OneTimeExternalTransaction;
 import in.wynk.payment.dto.gpbs.request.externalTransaction.RecurringExternalTransaction;
 import in.wynk.payment.dto.gpbs.response.externalTransaction.GooglePlayReportResponse;
+import in.wynk.payment.dto.gpbs.response.receipt.AbstractGooglePlayReceiptVerificationResponse;
 import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayLatestReceiptResponse;
-import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayReceiptResponse;
+import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayProductReceiptResponse;
+import in.wynk.payment.dto.gpbs.response.receipt.GooglePlaySubscriptionReceiptResponse;
 import in.wynk.payment.dto.invoice.TaxableRequest;
 import in.wynk.payment.dto.invoice.TaxableResponse;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
@@ -152,15 +154,20 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
 
     @Override
     public void handleNotification (Transaction transaction, UserPlanMapping<Pair<GooglePlayLatestReceiptResponse, ReceiptDetails>> mapping) {
-
-        TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
         GooglePlayLatestReceiptResponse receiptInfo = mapping.getMessage().getFirst();
-        final long expireTimestamp = NumberUtils.toLong(receiptInfo.getGooglePlayResponse().getExpiryTimeMillis());
-        if (expireTimestamp > System.currentTimeMillis() || (transaction.getType() == CANCELLED && expireTimestamp <= System.currentTimeMillis())) {
+        long expireTimestamp = 0;
+        String productType = (mapping.getPlanId() != -1 && StringUtils.isEmpty(mapping.getItemId()) ? BaseConstants.PLAN : BaseConstants.POINT);
+        if (BaseConstants.PLAN.equals(productType)) {
+            GooglePlaySubscriptionReceiptResponse googlePlayResponse = (GooglePlaySubscriptionReceiptResponse) receiptInfo.getGooglePlayResponse();
+            expireTimestamp = NumberUtils.toLong(googlePlayResponse.getExpiryTimeMillis());
+        }
+        TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
+        if ((expireTimestamp != 0 && (expireTimestamp > System.currentTimeMillis() || (transaction.getType() == CANCELLED && expireTimestamp <= System.currentTimeMillis()))) ||
+                (expireTimestamp == 0 && StringUtils.isNotEmpty(mapping.getItemId()))) {
             finalTransactionStatus = TransactionStatus.SUCCESS;
         }
         transaction.setStatus(finalTransactionStatus.name());
-        saveReceipt(transaction, receiptInfo);
+        saveReceipt(transaction, receiptInfo, productType);
     }
 
     @Override
@@ -172,19 +179,23 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                         .findById(callbackRequest.getPurchaseToken());
         if (optionalReceiptDetails.isPresent()) {
             ReceiptDetails receiptDetails = optionalReceiptDetails.get();
-        GooglePlayReceiptResponse googlePlayReceiptResponse =
-                googlePlayResponse(callbackRequest.getPurchaseToken(), callbackRequest.getSubscriptionId(), callbackRequest.getPackageName(),
-                        MerchantServiceUtil.getService(callbackRequest.getPackageName()), (receiptDetails.getPlanId()==0 ? BaseConstants.POINT : BaseConstants.PLAN));
-        LatestReceiptResponse latestReceiptResponse = mapGoogleResponseToReceiptResponse(googlePlayReceiptResponse, createRequest(callbackRequest));
-        final GooglePlayLatestReceiptResponse latestReceipt = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
-        //set the latest response to be used while deciding payment event
-        wrapper.getDecodedNotification().setGooglePlayLatestReceiptResponse(latestReceipt);
+            String productType = receiptDetails.getPlanId() == 0 ? BaseConstants.POINT : BaseConstants.PLAN;
+            AbstractGooglePlayReceiptVerificationResponse abstractGooglePlayReceiptVerificationResponse =
+                    googlePlayResponse(callbackRequest.getPurchaseToken(), callbackRequest.getSubscriptionId(), callbackRequest.getPackageName(),
+                            MerchantServiceUtil.getService(callbackRequest.getPackageName()), productType);
+            assert abstractGooglePlayReceiptVerificationResponse != null;
+            LatestReceiptResponse latestReceiptResponse = mapGoogleResponseToReceiptResponse(abstractGooglePlayReceiptVerificationResponse, createRequest(callbackRequest), productType);
+            final GooglePlayLatestReceiptResponse latestReceipt = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
+            //set the latest response to be used while deciding payment event
+            wrapper.getDecodedNotification().setGooglePlayLatestReceiptResponse(latestReceipt);
 
-        AnalyticService.update(GOOGLE_PLAY_RECEIPT, gson.toJson(latestReceipt));
+            AnalyticService.update(GOOGLE_PLAY_RECEIPT, gson.toJson(latestReceipt));
 
             GooglePlayReceiptDetails googlePlayReceiptDetails = (GooglePlayReceiptDetails) receiptDetails;
-            if ((googlePlayReceiptDetails.getSubscriptionId().equals(googlePlayReceiptResponse.getOrderId())) ||
-                    (Objects.equals(String.valueOf(receiptDetails.getExpiry()), latestReceipt.getGooglePlayResponse().getExpiryTimeMillis()) &&
+
+            if ((googlePlayReceiptDetails.getSubscriptionId().equals(abstractGooglePlayReceiptVerificationResponse.getOrderId())) ||
+                    (BaseConstants.PLAN.equals(productType) &&
+                            Objects.equals(String.valueOf(receiptDetails.getExpiry()), ((GooglePlaySubscriptionReceiptResponse) latestReceipt.getGooglePlayResponse()).getExpiryTimeMillis()) &&
                             Objects.equals(receiptDetails.getNotificationType(), latestReceipt.getNotificationType()))) {
                 log.info("Notification is already processed for the purchase token {}", latestReceipt.getPurchaseToken());
                 return null;
@@ -193,8 +204,9 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                     UserPlanMapping.<Pair<GooglePlayLatestReceiptResponse, ReceiptDetails>>builder().msisdn(receiptDetails.getMsisdn()).uid(receiptDetails.getUid())
                             .linkedTransactionId(receiptDetails.getPaymentTransactionId())
                             .message(Pair.of(latestReceipt, receiptDetails));
-            if (receiptDetails.getPlanId() != 0) {
+            if (BaseConstants.PLAN.equals(productType)) {
                 PlanDTO planDTO = cachingService.getPlanFromSku(googlePlayReceiptDetails.getSkuId());
+                GooglePlaySubscriptionReceiptResponse googlePlayReceiptResponse = ((GooglePlaySubscriptionReceiptResponse) latestReceipt.getGooglePlayResponse());
                 boolean isFreeTrial =
                         Objects.equals(googlePlayReceiptResponse.getPaymentState(), FREE_TRIAL_PAYMENT_STATE) || FREE_TRIAL_AMOUNT.equals(googlePlayReceiptResponse.getPriceAmountMicros());
                 //if free trial plan applied, perform events on that plan
@@ -276,7 +288,6 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
 
     @Override
     public BaseResponse<?> verifyReceipt (LatestReceiptResponse latestReceiptResponse) {
-
         final Transaction transaction = TransactionContext.get();
         final GooglePlayBillingResponse.GooglePlayBillingData.GooglePlayBillingDataBuilder builder = GooglePlayBillingResponse.GooglePlayBillingData.builder();
         try {
@@ -295,75 +306,91 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     private void fetchAndUpdateFromReceipt (Transaction transaction, GooglePlayLatestReceiptResponse latestReceipt,
                                             GooglePlayReceiptDetails receiptDetails) {
         GooglePlayStatusCodes code = null;
-        GooglePlayReceiptResponse latestResponse = latestReceipt.getGooglePlayResponse();
+        String productType = BaseConstants.PLAN;
+        AbstractGooglePlayReceiptVerificationResponse abstractGooglePlayReceiptVerificationResponse = latestReceipt.getGooglePlayResponse();
         Integer notificationType = latestReceipt.getNotificationType();
         try {
-            if (Objects.isNull(latestResponse)) {
-                log.info("Latest receipt not found for uid: {} and transactionId {}", transaction.getUid(), transaction.getIdStr());
-                code = GooglePlayStatusCodes.GOOGLE_31018;
-                transaction.setStatus(TransactionStatus.FAILURE.name());
+            if (transaction.getType() == POINT_PURCHASE) {
+                productType = BaseConstants.POINT;
+                GooglePlayProductReceiptResponse productReceiptResponse = (GooglePlayProductReceiptResponse) abstractGooglePlayReceiptVerificationResponse;
+                if (productReceiptResponse.getPurchaseState() == 0) {
+                    transaction.setStatus(TransactionStatus.SUCCESS.name());
+                    saveReceipt(transaction, latestReceipt, productType);
+                } else if (productReceiptResponse.getPurchaseState() == 1) {
+                    transaction.setStatus(TransactionStatus.CANCELLED.name());
+                } else if (productReceiptResponse.getPurchaseState() == 2) {
+                    transaction.setStatus(TransactionStatus.INPROGRESS.name());
+                }
             } else {
-                AnalyticService.update(GOOGLE_PLAY_RECEIPT, gson.toJson(latestResponse));
-                Lock lock = wynkRedisLockService.getWynkRedisLock(latestReceipt.getPurchaseToken());
+                GooglePlaySubscriptionReceiptResponse latestResponse = (GooglePlaySubscriptionReceiptResponse) abstractGooglePlayReceiptVerificationResponse;
+                if (Objects.isNull(latestResponse)) {
+                    log.info("Latest receipt not found for uid: {} and transactionId {}", transaction.getUid(), transaction.getIdStr());
+                    code = GooglePlayStatusCodes.GOOGLE_31018;
+                    transaction.setStatus(TransactionStatus.FAILURE.name());
+                } else {
+                    AnalyticService.update(GOOGLE_PLAY_RECEIPT, gson.toJson(latestResponse));
+                    Lock lock = wynkRedisLockService.getWynkRedisLock(latestReceipt.getPurchaseToken());
 
-                if (lock.tryLock(300, TimeUnit.MILLISECONDS)) {
-                    if (Objects.isNull(receiptDetails) && !PURCHASE_NOTIFICATION_TYPE.equals(notificationType)) {
-                        Optional<ReceiptDetails> receiptDetailsOptional =
-                                RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
-                                        .findById(latestReceipt.getPurchaseToken());
-                        receiptDetails = receiptDetailsOptional.map(details -> (GooglePlayReceiptDetails) details).orElse(receiptDetails);
-                    }
-                    if (receiptDetails != null && (Objects.equals(latestReceipt.getNotificationType(), receiptDetails.getNotificationType())) &&
-                            (Objects.equals(receiptDetails.getExpiry(), Long.parseLong(latestResponse.getExpiryTimeMillis())) ||
-                                    Objects.equals(latestReceipt.getGooglePlayResponse().getOrderId(), receiptDetails.getSubscriptionId()))) {
-                        log.info("Receipt is already processed for the UID {} and transactionId {}", transaction.getUid(), transaction.getIdStr());
-                        code = GooglePlayStatusCodes.GOOGLE_31021;
-                        transaction.setStatus(TransactionStatus.FAILUREALREADYSUBSCRIBED.name());
-                    } else if (receiptDetails == null && !PURCHASE_NOTIFICATION_TYPE.equals(notificationType)) {
-                        log.info("This type of notification is never processed and the notification is not of purchase type for UID {} and transaction Id {}", transaction.getUid(),
-                                transaction.getIdStr());
-                        code = GooglePlayStatusCodes.GOOGLE_31006;
-                        transaction.setStatus(TransactionStatus.FAILURE.name());
-                    } else if ((receiptDetails == null && PURCHASE_NOTIFICATION_TYPE.equals(notificationType) && EnumSet.of(TransactionStatus.INPROGRESS).contains(transaction.getStatus()))) {
-                        saveReceipt(transaction, latestReceipt);
-                        transaction.setStatus(TransactionStatus.SUCCESS.name());
-                    } else {
-                        final String purchaseToken = latestReceipt.getPurchaseToken();
-                        if (Objects.equals(notificationType, GooglePlayNotificationType.SUBSCRIPTION_CANCELED.getNotificationTpe())) {
-                            if (Long.parseLong(latestResponse.getExpiryTimeMillis()) >= receiptDetails.getExpiry()) {
-                                receiptDetails.setNotificationType(notificationType);
-                                receiptDetails.setRenew(transaction.getType().equals(RENEW));
-                                log.info("User has cancelled the plan from app store for uid: {}, purchaseToken :{} , transactionId: {}", transaction.getUid(), purchaseToken, transaction.getIdStr());
-                                code = GooglePlayStatusCodes.GOOGLE_31019;
-                                transaction.setStatus(TransactionStatus.CANCELLED.name());
-                            } else {
+                    if (lock.tryLock(300, TimeUnit.MILLISECONDS)) {
+                        if (Objects.isNull(receiptDetails) && !PURCHASE_NOTIFICATION_TYPE.equals(notificationType)) {
+                            Optional<ReceiptDetails> receiptDetailsOptional =
+                                    RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
+                                            .findById(latestReceipt.getPurchaseToken());
+                            receiptDetails = receiptDetailsOptional.map(details -> (GooglePlayReceiptDetails) details).orElse(receiptDetails);
+                        }
+                        if (receiptDetails != null && (Objects.equals(latestReceipt.getNotificationType(), receiptDetails.getNotificationType())) &&
+                                (Objects.equals(receiptDetails.getExpiry(), Long.parseLong(latestResponse.getExpiryTimeMillis())) ||
+                                        Objects.equals(latestReceipt.getGooglePlayResponse().getOrderId(), receiptDetails.getSubscriptionId()))) {
+                            log.info("Receipt is already processed for the UID {} and transactionId {}", transaction.getUid(), transaction.getIdStr());
+                            code = GooglePlayStatusCodes.GOOGLE_31021;
+                            transaction.setStatus(TransactionStatus.FAILUREALREADYSUBSCRIBED.name());
+                        } else if (receiptDetails == null && !PURCHASE_NOTIFICATION_TYPE.equals(notificationType)) {
+                            log.info("This type of notification is never processed and the notification is not of purchase type for UID {} and transaction Id {}", transaction.getUid(),
+                                    transaction.getIdStr());
+                            code = GooglePlayStatusCodes.GOOGLE_31006;
+                            transaction.setStatus(TransactionStatus.FAILURE.name());
+                        } else if ((receiptDetails == null && PURCHASE_NOTIFICATION_TYPE.equals(notificationType) && EnumSet.of(TransactionStatus.INPROGRESS).contains(transaction.getStatus()))) {
+                            saveReceipt(transaction, latestReceipt, productType);
+                            transaction.setStatus(TransactionStatus.SUCCESS.name());
+                        } else {
+                            final String purchaseToken = latestReceipt.getPurchaseToken();
+                            if (Objects.equals(notificationType, GooglePlayNotificationType.SUBSCRIPTION_CANCELED.getNotificationTpe())) {
+                                if (Long.parseLong(latestResponse.getExpiryTimeMillis()) >= receiptDetails.getExpiry()) {
+                                    receiptDetails.setNotificationType(notificationType);
+                                    receiptDetails.setRenew(transaction.getType().equals(RENEW));
+                                    log.info("User has cancelled the plan from app store for uid: {}, purchaseToken :{} , transactionId: {}", transaction.getUid(), purchaseToken,
+                                            transaction.getIdStr());
+                                    code = GooglePlayStatusCodes.GOOGLE_31019;
+                                    transaction.setStatus(TransactionStatus.CANCELLED.name());
+                                } else {
+                                    receiptDetails.setNotificationType(notificationType);
+                                    receiptDetails.setRenew(transaction.getType().equals(RENEW));
+                                    receiptDetails.setExpiry(Long.parseLong(latestResponse.getExpiryTimeMillis()));
+                                    log.info("User has Unsubscribed the plan from app store for uid: {}, purchaseToken :{} , transactionId: {}", transaction.getUid(), purchaseToken,
+                                            transaction.getIdStr());
+                                    code = GooglePlayStatusCodes.GOOGLE_31019;
+                                    transaction.setStatus(TransactionStatus.CANCELLED.name());
+                                }
+                            } else if (Objects.equals(notificationType, GooglePlayNotificationType.SUBSCRIPTION_RENEWED.getNotificationTpe())) {
+                                if (receiptDetails.getExpiry() == Long.parseLong(latestResponse.getExpiryTimeMillis())) {
+                                    code = GooglePlayStatusCodes.GOOGLE_31023;
+                                    transaction.setStatus(TransactionStatus.FAILURE.name());
+                                }
                                 receiptDetails.setNotificationType(notificationType);
                                 receiptDetails.setRenew(transaction.getType().equals(RENEW));
                                 receiptDetails.setExpiry(Long.parseLong(latestResponse.getExpiryTimeMillis()));
-                                log.info("User has Unsubscribed the plan from app store for uid: {}, purchaseToken :{} , transactionId: {}", transaction.getUid(), purchaseToken,
-                                        transaction.getIdStr());
-                                code = GooglePlayStatusCodes.GOOGLE_31019;
-                                transaction.setStatus(TransactionStatus.CANCELLED.name());
+                                transaction.setStatus(TransactionStatus.SUCCESS.name());
                             }
-                        } else if (Objects.equals(notificationType, GooglePlayNotificationType.SUBSCRIPTION_RENEWED.getNotificationTpe())) {
-                            if (receiptDetails.getExpiry() == Long.parseLong(latestResponse.getExpiryTimeMillis())) {
-                                code = GooglePlayStatusCodes.GOOGLE_31023;
-                                transaction.setStatus(TransactionStatus.FAILURE.name());
+                            receiptDetails.setSubscriptionId(latestReceipt.getGooglePlayResponse().getOrderId());
+                            receiptDetails.setPaymentTransactionId(transaction.getIdStr());
+                            if (transaction.getStatus() == TransactionStatus.SUCCESS) {
+                                auditingListener.onBeforeSave(receiptDetails);
+                                RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
+                                        .save(receiptDetails);
                             }
-                            receiptDetails.setNotificationType(notificationType);
-                            receiptDetails.setRenew(transaction.getType().equals(RENEW));
-                            receiptDetails.setExpiry(Long.parseLong(latestResponse.getExpiryTimeMillis()));
-                            transaction.setStatus(TransactionStatus.SUCCESS.name());
                         }
-                        receiptDetails.setSubscriptionId(latestReceipt.getGooglePlayResponse().getOrderId());
-                        receiptDetails.setPaymentTransactionId(transaction.getIdStr());
-                        if (transaction.getStatus() == TransactionStatus.SUCCESS) {
-                            auditingListener.onBeforeSave(receiptDetails);
-                            RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
-                                    .save(receiptDetails);
-                        }
+                        lock.unlock();
                     }
-                    lock.unlock();
                 }
             }
         } catch (Exception e) {
@@ -376,14 +403,21 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         }
     }
 
-    private void saveReceipt (Transaction transaction, GooglePlayLatestReceiptResponse latestReceiptResponse) {
+    private void saveReceipt (Transaction transaction, GooglePlayLatestReceiptResponse latestReceiptResponse, String productType) {
         GooglePlayReceiptDetails.GooglePlayReceiptDetailsBuilder<?, ?> builder =
                 GooglePlayReceiptDetails.builder().id(latestReceiptResponse.getPurchaseToken()).paymentTransactionId(transaction.getIdStr()).msisdn(transaction.getMsisdn()).uid(transaction.getUid())
-                        .expiry(Long.parseLong(latestReceiptResponse.getGooglePlayResponse().getExpiryTimeMillis())).notificationType(latestReceiptResponse.getNotificationType())
+                        .notificationType(latestReceiptResponse.getNotificationType())
                         .subscriptionId(latestReceiptResponse.getSubscriptionId()).packageName(latestReceiptResponse.getPackageName()).service(latestReceiptResponse.getService())
-                        .skuId(latestReceiptResponse.getSkuId()).renew(latestReceiptResponse.getGooglePlayResponse().isAutoRenewing());
-        if (Objects.nonNull(transaction.getPlanId())) {
+                        .skuId(latestReceiptResponse.getSkuId());
+
+        if (BaseConstants.PLAN.equals(productType)) {
+            GooglePlaySubscriptionReceiptResponse response = (GooglePlaySubscriptionReceiptResponse) latestReceiptResponse.getGooglePlayResponse();
             builder.planId(transaction.getPlanId());
+            builder.expiry(Long.parseLong(response.getExpiryTimeMillis()));
+            builder.renew(response.isAutoRenewing());
+        }
+        if (Objects.nonNull(transaction.getPlanId())) {
+
         } else if (Objects.nonNull(transaction.getItemId())) {
             builder.itemId(transaction.getItemId());
         }
@@ -398,22 +432,29 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         if (Objects.isNull(request.getPaymentDetails()) || Objects.isNull(request.getProductDetails()) || Objects.isNull(request.getAppDetails())) {
             throw new WynkRuntimeException(PaymentErrorType.PAY501);
         }
-        GooglePlayReceiptResponse googlePlayReceiptResponse =
+        String productType = Objects.isNull(request.getProductDetails().getPlanId()) ? BaseConstants.POINT : BaseConstants.PLAN;
+        AbstractGooglePlayReceiptVerificationResponse abstractGooglePlayReceiptVerificationResponse =
                 googlePlayResponse(request.getPaymentDetails().getPurchaseToken(), request.getProductDetails().getSkuId(), request.getAppDetails().getPackageName(),
                         request.getAppDetails().getService(), Objects.isNull(request.getProductDetails().getPlanId()) ? BaseConstants.POINT : BaseConstants.PLAN);
-        return mapGoogleResponseToReceiptResponse(googlePlayReceiptResponse, request);
+        return mapGoogleResponseToReceiptResponse(abstractGooglePlayReceiptVerificationResponse, request, productType);
     }
 
-    private GooglePlayReceiptResponse googlePlayResponse (String purchaseToken, String productId, String packageName, String service, String productType) {
+    private AbstractGooglePlayReceiptVerificationResponse googlePlayResponse (String purchaseToken, String productId, String packageName, String service, String productType) {
         HttpHeaders headers = getHeaders(service);
         String key = getApiKey(service);
         try {
-            String url = baseUrl.concat(packageName).concat(BaseConstants.POINT.equals(productType) ? productPurchase : subscriptionPurchase).concat(productId).concat(TOKEN).concat(purchaseToken).concat(API_KEY_PARAM).concat(key);
-            return getPlayStoreResponse(url, headers).getBody();
+            if (BaseConstants.POINT.equals(productType)) {
+                String url = baseUrl.concat(packageName).concat(productPurchase).concat(productId).concat(TOKEN).concat(purchaseToken).concat(API_KEY_PARAM).concat(key);
+                return restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(headers), GooglePlayProductReceiptResponse.class).getBody();
+            } else if (BaseConstants.PLAN.equals(productType)) {
+                String url = baseUrl.concat(packageName).concat(subscriptionPurchase).concat(productId).concat(TOKEN).concat(purchaseToken).concat(API_KEY_PARAM).concat(key);
+                return restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(headers), GooglePlaySubscriptionReceiptResponse.class).getBody();
+            }
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.GOOGLE_PLAY_VERIFICATION_FAILURE, "Exception while getting data from google Play API: {}", e.getMessage());
             throw new WynkRuntimeException(PaymentErrorType.PAY027);
         }
+        return null;
     }
 
     private String getApiKey (String service) {
@@ -425,10 +466,6 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         throw new WynkRuntimeException("This service is not configured for API Key");
     }
 
-    private ResponseEntity<GooglePlayReceiptResponse> getPlayStoreResponse (String url, HttpHeaders headers) {
-        return restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(headers), GooglePlayReceiptResponse.class);
-    }
-
     private HttpHeaders getHeaders (String service) {
         HttpHeaders headers = new HttpHeaders();
         headers.set(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
@@ -438,18 +475,30 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         return headers;
     }
 
-    private LatestReceiptResponse mapGoogleResponseToReceiptResponse (GooglePlayReceiptResponse googlePlayReceiptResponse, GooglePlayVerificationRequest request) {
-        boolean isFreeTrial = Objects.equals(googlePlayReceiptResponse.getPaymentState(), FREE_TRIAL_PAYMENT_STATE) || FREE_TRIAL_AMOUNT.equals(googlePlayReceiptResponse.getPriceAmountMicros());
+    private LatestReceiptResponse mapGoogleResponseToReceiptResponse (AbstractGooglePlayReceiptVerificationResponse abstractGooglePlayReceiptVerificationResponse,
+
+                                                                      GooglePlayVerificationRequest request, String productType) {
+
         GooglePlayLatestReceiptResponse.GooglePlayLatestReceiptResponseBuilder<?, ?> builder =
-                GooglePlayLatestReceiptResponse.builder().freeTrial(isFreeTrial).autoRenewal(googlePlayReceiptResponse.isAutoRenewing()).googlePlayResponse(googlePlayReceiptResponse)
+                GooglePlayLatestReceiptResponse.builder()
                         .purchaseToken(request.getPaymentDetails().getPurchaseToken())
-                        .extTxnId(request.getPaymentDetails().getPurchaseToken()).couponCode(googlePlayReceiptResponse.getPromotionCode())
+                        .extTxnId(request.getPaymentDetails().getPurchaseToken())
                         .notificationType(request.getPaymentDetails().getNotificationType())
-                        .subscriptionId(googlePlayReceiptResponse.getOrderId()).packageName(request.getAppDetails().getPackageName()).service(request.getAppDetails().getService())
+                        .packageName(request.getAppDetails().getPackageName()).service(request.getAppDetails().getService())
                         .skuId(request.getProductDetails().getSkuId());
-        if (StringUtils.isNotEmpty(request.getProductDetails().getPlanId())) {
+        if (BaseConstants.PLAN.equals(productType)) {
+            GooglePlaySubscriptionReceiptResponse googlePlayReceiptResponse = (GooglePlaySubscriptionReceiptResponse) abstractGooglePlayReceiptVerificationResponse;
+            boolean isFreeTrial = Objects.equals(googlePlayReceiptResponse.getPaymentState(), FREE_TRIAL_PAYMENT_STATE) || FREE_TRIAL_AMOUNT.equals(googlePlayReceiptResponse.getPriceAmountMicros());
+            builder.freeTrial(isFreeTrial);
+            builder.autoRenewal(googlePlayReceiptResponse.isAutoRenewing());
+            builder.googlePlayResponse(googlePlayReceiptResponse);
+            builder.couponCode(googlePlayReceiptResponse.getPromotionCode());
+            builder.subscriptionId(googlePlayReceiptResponse.getOrderId());
             builder.planId(cachingService.getPlanFromSku(request.getProductDetails().getSkuId()).getId());
-        } else if (StringUtils.isNotEmpty(request.getProductDetails().getItemId())) {
+        } else {
+            GooglePlayProductReceiptResponse googlePlayReceiptResponse = (GooglePlayProductReceiptResponse) abstractGooglePlayReceiptVerificationResponse;
+            builder.googlePlayResponse(googlePlayReceiptResponse);
+            builder.subscriptionId(googlePlayReceiptResponse.getOrderId());
             builder.itemId(request.getProductDetails().getItemId());
         }
         return builder.build();
@@ -470,8 +519,8 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     private void reportSubscriptionPurchaseToGoogle (AbstractAcknowledgement request) {
         AnalyticService.update(request);
         String url = baseUrl.concat(request.getAppDetails().getPackageName()).concat(subscriptionPurchase).concat(request.getProductDetails().getSkuId())
-                        .concat(TOKEN).concat(request.getPaymentDetails().getPurchaseToken()).concat(ACKNOWLEDGE).concat(API_KEY_PARAM)
-                        .concat(getApiKey(request.getAppDetails().getService()));
+                .concat(TOKEN).concat(request.getPaymentDetails().getPurchaseToken()).concat(ACKNOWLEDGE).concat(API_KEY_PARAM)
+                .concat(getApiKey(request.getAppDetails().getService()));
         acknowledge(url, request);
     }
 
@@ -647,7 +696,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     }
 
     private GooglePlayLatestReceiptResponse getGooglePlayLatestReceiptResponse (Transaction transaction, GooglePlayReceiptDetails receiptDetails) {
-        GooglePlayReceiptResponse googlePlayResponses = new GooglePlayReceiptResponse();
+        GooglePlaySubscriptionReceiptResponse googlePlayResponses = new GooglePlaySubscriptionReceiptResponse();
         googlePlayResponses.setAutoRenewing(receiptDetails.isRenew());
         googlePlayResponses.setOrderId(receiptDetails.getSubscriptionId());
         googlePlayResponses.setExpiryTimeMillis(String.valueOf(receiptDetails.getExpiry()));
@@ -667,15 +716,18 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     public void verifyRequest (IapVerificationRequestV2Wrapper iapVerificationRequestV2Wrapper) {
         LatestReceiptResponse receipt = iapVerificationRequestV2Wrapper.getLatestReceiptResponse();
         GooglePlayLatestReceiptResponse googlePlayLatestReceipt = (GooglePlayLatestReceiptResponse) receipt;
+        GooglePlaySubscriptionReceiptResponse response = null;
+        if (googlePlayLatestReceipt.getPlanId() != 0) {
+            response = (GooglePlaySubscriptionReceiptResponse) (googlePlayLatestReceipt.getGooglePlayResponse());
+        }
         GooglePlayVerificationRequest googlePlayRequest = (GooglePlayVerificationRequest) iapVerificationRequestV2Wrapper.getIapVerificationV2();
-        if (Objects.nonNull(receipt)) {
-            if (googlePlayLatestReceipt.getGooglePlayResponse().getLinkedPurchaseToken() != null) {
-                GooglePlayReceiptResponse googlePlayReceiptResponse = googlePlayLatestReceipt.getGooglePlayResponse();
-                LatestReceiptResponse newLatestReceiptResponse = createResponseForLatestToken(googlePlayReceiptResponse, googlePlayLatestReceipt);
+        if (Objects.nonNull(response)) {
+            if (response.getLinkedPurchaseToken() != null) {
+                LatestReceiptResponse newLatestReceiptResponse = createResponseForLatestToken(response, googlePlayLatestReceipt);
                 PaymentManager paymentManager = BeanLocatorFactory.getBean(PaymentManager.class);
                 paymentManager.doVerifyIap(SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString(),
                         IapVerificationRequestV2Wrapper.builder().iapVerificationV2(iapVerificationRequestV2Wrapper.getIapVerificationV2()).latestReceiptResponse(newLatestReceiptResponse).build());
-            } else if (Objects.nonNull(receipt) && googlePlayLatestReceipt.getGooglePlayResponse().getCancelReason() != null) {
+            } else if (response.getCancelReason() != null) {
                 log.error("The receipt is for cancelled Subscription.");
                 googlePlayLatestReceipt.setNotificationType(3);
                 GooglePlayPaymentDetails paymentDetails = googlePlayRequest.getPaymentDetails();
@@ -685,12 +737,12 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         }
     }
 
-    private LatestReceiptResponse createResponseForLatestToken (GooglePlayReceiptResponse googlePlayReceiptResponse, GooglePlayLatestReceiptResponse googlePlayLatestReceiptResponse) {
+    private LatestReceiptResponse createResponseForLatestToken (GooglePlaySubscriptionReceiptResponse googlePlayReceiptResponse, GooglePlayLatestReceiptResponse googlePlayLatestReceiptResponse) {
         googlePlayReceiptResponse.setExpiryTimeMillis(String.valueOf(System.currentTimeMillis()));
         boolean isFreeTrial = Objects.equals(googlePlayReceiptResponse.getPaymentState(), FREE_TRIAL_PAYMENT_STATE) || FREE_TRIAL_AMOUNT.equals(googlePlayReceiptResponse.getPriceAmountMicros());
         return GooglePlayLatestReceiptResponse.builder().freeTrial(isFreeTrial).googlePlayResponse(googlePlayReceiptResponse).planId(googlePlayLatestReceiptResponse.getPlanId())
-                .purchaseToken(googlePlayLatestReceiptResponse.getGooglePlayResponse().getLinkedPurchaseToken()) //purchase token should be linked purchase token
-                .extTxnId(googlePlayLatestReceiptResponse.getGooglePlayResponse().getLinkedPurchaseToken()).couponCode(googlePlayLatestReceiptResponse.getCouponCode())
+                .purchaseToken(googlePlayReceiptResponse.getLinkedPurchaseToken()) //purchase token should be linked purchase token
+                .extTxnId(googlePlayReceiptResponse.getLinkedPurchaseToken()).couponCode(googlePlayLatestReceiptResponse.getCouponCode())
                 .notificationType(GooglePlayNotificationType.SUBSCRIPTION_CANCELED.getNotificationTpe()) //add notification type to Cancelled
                 .subscriptionId(googlePlayLatestReceiptResponse.getSubscriptionId()).packageName(googlePlayLatestReceiptResponse.getPackageName()).service(googlePlayLatestReceiptResponse.getService())
                 .autoRenewal(false) //if cancelled means autoRenewal should be false
@@ -706,9 +758,12 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                     RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
                             .findByPaymentTransactionId(paymentRenewalChargingRequest.getId());
             if (Objects.nonNull(receiptDetails)) {
-                final GooglePlayReceiptResponse googlePlayReceipt = googlePlayResponse(receiptDetails.getId(), receiptDetails.getSkuId(), receiptDetails.getPackageName(), receiptDetails.getService(), (receiptDetails.getPlanId()==0 ? BaseConstants.POINT : BaseConstants.PLAN));
-                if (googlePlayReceipt.getOrderId().equals(receiptDetails.getSubscriptionId())) {
-                    AnalyticService.update(GOOGLE_PLAY_ORDER_ID, googlePlayReceipt.getOrderId());
+                String productType = receiptDetails.getPlanId() == 0 ? BaseConstants.POINT : BaseConstants.PLAN;
+                final AbstractGooglePlayReceiptVerificationResponse
+                        abstractGooglePlayReceiptVerificationResponse =
+                        googlePlayResponse(receiptDetails.getId(), receiptDetails.getSkuId(), receiptDetails.getPackageName(), receiptDetails.getService(), productType);
+                if (abstractGooglePlayReceiptVerificationResponse.getOrderId().equals(receiptDetails.getSubscriptionId())) {
+                    AnalyticService.update(GOOGLE_PLAY_ORDER_ID, abstractGooglePlayReceiptVerificationResponse.getOrderId());
                     throw new WynkRuntimeException(PaymentErrorType.PLAY005);
                 }
                 GooglePlayAppDetails appDetails = new GooglePlayAppDetails();
@@ -722,7 +777,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                 request.setPaymentDetails(GooglePlayPaymentDetails.builder().purchaseToken(receiptDetails.getId()).notificationType(2).build());
                 request.setAppDetails(appDetails);
 
-                final LatestReceiptResponse latestReceiptResponse = mapGoogleResponseToReceiptResponse(googlePlayReceipt, request);
+                final LatestReceiptResponse latestReceiptResponse = mapGoogleResponseToReceiptResponse(abstractGooglePlayReceiptVerificationResponse, request, productType);
                 fetchAndUpdateFromReceipt(transaction, (GooglePlayLatestReceiptResponse) latestReceiptResponse, receiptDetails);
                 return WynkResponseEntity.<Void>builder().success(true).build();
             }

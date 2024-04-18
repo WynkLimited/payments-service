@@ -10,7 +10,6 @@ import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.eligibility.enums.PaymentsEligibilityReason;
 import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsItemEligibilityRequest;
-import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
 import in.wynk.payment.service.IExternalPaymentEligibilityService;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;

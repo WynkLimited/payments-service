@@ -3,13 +3,12 @@ package in.wynk.payment.validations;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.validations.BaseHandler;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.core.dao.entity.IProductDetails;
-import in.wynk.payment.dto.PointDetails;
 import in.wynk.payment.dto.request.SelectivePlanEligibilityRequest;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.response.SelectivePlansComputationResponse;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Objects;
 
@@ -47,6 +46,10 @@ public class ProductValidator<T extends IProductValidatorRequest> extends BaseHa
         } else if (request.getProductDetails().getType().equalsIgnoreCase(POINT)) {
             if (Objects.nonNull(request.getPaymentDetails()) && (request.getPaymentDetails().isMandate() || request.getPaymentDetails().isTrialOpted() || request.getPaymentDetails().isAutoRenew())) {
                 throw new WynkRuntimeException(PAY996);
+            }
+
+            if (Objects.nonNull(request.getPaymentDetails()) && StringUtils.isNotBlank(request.getPaymentDetails().getCouponId())) {
+                throw new WynkRuntimeException(PAY995);
             }
         }
         super.handle(request);

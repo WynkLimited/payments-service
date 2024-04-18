@@ -4,7 +4,6 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.dto.GenerateItemEvent;
-import in.wynk.stream.advice.KafkaEvent;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.SuperBuilder;

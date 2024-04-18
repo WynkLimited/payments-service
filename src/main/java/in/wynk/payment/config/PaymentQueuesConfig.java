@@ -34,7 +34,7 @@ public class PaymentQueuesConfig {
     }
 
     @Bean
-    public PurchaseAcknowledgementConsumerPollingQueue subscriptionAcknowledgementConsumerPollingQueue(@Value("${payment.pooling.queue.acknowledgement.name}") String queueName,
+    public PurchaseAcknowledgementConsumerPollingQueue purchaseAcknowledgementConsumerPollingQueue(@Value("${payment.pooling.queue.acknowledgement.name}") String queueName,
                                                                                                        @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
                                                                                                        ObjectMapper objectMapper,
                                                                                                        PurchaseAcknowledgementSQSMessageExtractor purchaseAcknowledgementSQSMessageExtractor) {

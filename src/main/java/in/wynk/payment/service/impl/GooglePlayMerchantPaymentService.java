@@ -507,39 +507,49 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     @Override
     public void acknowledgeSubscription (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
         if (GooglePlaySubscriptionAcknowledgementRequest.class.isAssignableFrom(abstractPaymentAcknowledgementRequest.getClass())) {
-            reportSubscriptionPurchaseToGoogle((AbstractAcknowledgement) abstractPaymentAcknowledgementRequest, abstractPaymentAcknowledgementRequest.getTxnId());
+            reportSubscriptionPurchaseToGoogle((AbstractAcknowledgement) abstractPaymentAcknowledgementRequest);
         } else if (GooglePlayProductAcknowledgementRequest.class.isAssignableFrom(abstractPaymentAcknowledgementRequest.getClass())) {
-            reportProductPurchaseToGoogle((AbstractAcknowledgement) abstractPaymentAcknowledgementRequest, abstractPaymentAcknowledgementRequest.getTxnId());
+            reportProductPurchaseToGoogle((AbstractAcknowledgement) abstractPaymentAcknowledgementRequest);
+            consumeProduct((AbstractAcknowledgement) abstractPaymentAcknowledgementRequest);
         } else {
             reportExternalTransactionSubscription((GooglePlayReportExternalTransactionRequest) abstractPaymentAcknowledgementRequest, abstractPaymentAcknowledgementRequest.getTxnId());
         }
     }
 
     @AnalyseTransaction(name = "subscriptionAcknowledgement")
-    private void reportSubscriptionPurchaseToGoogle (AbstractAcknowledgement request, String txnId) {
+    private void reportSubscriptionPurchaseToGoogle (AbstractAcknowledgement request) {
         AnalyticService.update(request);
-        AnalyticService.update("transactionId", txnId);
         String url = baseUrl.concat(request.getAppDetails().getPackageName()).concat(subscriptionPurchase).concat(request.getProductDetails().getSkuId())
                 .concat(TOKEN).concat(request.getPaymentDetails().getPurchaseToken()).concat(ACKNOWLEDGE).concat(API_KEY_PARAM)
                 .concat(getApiKey(request.getAppDetails().getService()));
-        acknowledge(url, request);
+        GooglePlayAcknowledgeRequest body = GooglePlayAcknowledgeRequest.builder().developerPayload(request.getDeveloperPayload()).build();
+        callGoogleApi(url, request, body);
     }
 
     @AnalyseTransaction(name = "productAcknowledgement")
-    private void reportProductPurchaseToGoogle (AbstractAcknowledgement request, String txnId) {
+    private void reportProductPurchaseToGoogle (AbstractAcknowledgement request) {
         AnalyticService.update(request);
-        AnalyticService.update("transactionId", txnId);
         String url = baseUrl.concat(request.getAppDetails().getPackageName()).concat(productPurchase).concat(request.getProductDetails().getSkuId()).concat(TOKEN)
                 .concat(request.getPaymentDetails().getPurchaseToken())
                 .concat(ACKNOWLEDGE).concat(API_KEY_PARAM)
                 .concat(getApiKey(request.getAppDetails().getService()));
-        acknowledge(url, request);
+        GooglePlayAcknowledgeRequest body = GooglePlayAcknowledgeRequest.builder().developerPayload(request.getDeveloperPayload()).build();
+        callGoogleApi(url, request, body);
+    }
+
+    @AnalyseTransaction(name = "productConsumption")
+    private void consumeProduct (AbstractAcknowledgement request) {
+        String url = baseUrl.concat(request.getAppDetails().getPackageName()).concat(productPurchase).concat(request.getProductDetails().getSkuId()).concat(TOKEN)
+                .concat(request.getPaymentDetails().getPurchaseToken())
+                .concat(CONSUME).concat(API_KEY_PARAM)
+                .concat(getApiKey(request.getAppDetails().getService()));
+        callGoogleApi(url, request, null);
+        AnalyticService.update("consumptionStatus", true );
     }
 
     @AnalyseTransaction(name = "externalTransactionAcknowledgement")
     public void reportExternalTransactionSubscription (GooglePlayReportExternalTransactionRequest request, String txnId) {
         AnalyticService.update(request);
-        AnalyticService.update("transactionId", txnId);
         final MsisdnOperatorDetails operatorDetails = userDetailsService.getOperatorDetails(request.getTransaction().getMsisdn());
         final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(request.getClientAlias());
         final String accessStateCode = userDetailsService.getAccessStateCode(operatorDetails, invoiceDetails.getDefaultGSTStateCode(), request.getPurchaseDetails());
@@ -608,12 +618,11 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         }
     }
 
-    private void acknowledge (String url, AbstractAcknowledgement request) {
+    private void callGoogleApi (String url, AbstractAcknowledgement request, GooglePlayAcknowledgeRequest body) {
         HttpHeaders headers = getHeaders(request.getAppDetails().getService());
-        GooglePlayAcknowledgeRequest body = GooglePlayAcknowledgeRequest.builder().developerPayload(request.getDeveloperPayload()).build();
         try {
             restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(body, headers), String.class);
-            log.info("Google acknowledged successfully for the purchase with Purchase Token {}", request.getPaymentDetails().getPurchaseToken());
+            log.info("Google api called successfully for the purchase with Purchase Token {}", request.getPaymentDetails().getPurchaseToken());
         } catch (HttpClientErrorException ex) {
             if (ex.getStatusCode() == HttpStatus.CONFLICT) {
                 log.info("The operation could not be performed since the object was already in the process of being updated.");
@@ -624,7 +633,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
             if (e instanceof WynkRuntimeException) {
                 throw e;
             }
-            log.error(PaymentLoggingMarker.GOOGLE_PLAY_ACKNOWLEDGEMENT_FAILURE, "Exception occurred while acknowledging google for the purchase with purchase token {}: ",
+            log.error(PaymentLoggingMarker.GOOGLE_PLAY_ACKNOWLEDGEMENT_FAILURE, "Exception occurred while calling google api for the purchase with purchase token {}: ",
                     request.getPaymentDetails().getPurchaseToken());
             throw new WynkRuntimeException(PaymentErrorType.PAY029, e);
         }

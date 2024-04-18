@@ -4,34 +4,27 @@ import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.country.core.dao.entity.CountryCurrencyDetails;
 import in.wynk.country.core.service.CountryCurrencyDetailsCachingService;
-import in.wynk.coupon.core.service.IUserProfileService;
 import in.wynk.data.entity.MongoBaseEntity;
 import in.wynk.data.enums.State;
 import in.wynk.eligibility.dto.AbstractEligibilityEvaluation;
 import in.wynk.eligibility.dto.EligibilityResult;
 import in.wynk.eligibility.enums.CommonEligibilityStatusReason;
 import in.wynk.eligibility.enums.EligibilityStatus;
-import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.eligibility.enums.PaymentsEligibilityReason;
 import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsItemEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
-import in.wynk.payment.gateway.aps.service.ApsCommonGatewayService;
-import in.wynk.payment.service.IExternalPaymentEligibilityService;
-import in.wynk.vas.client.dto.MsisdnOperatorDetails;
-import in.wynk.vas.client.service.VasClientService;
 import in.wynk.wynkservice.api.utils.WynkServiceUtils;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.springframework.core.ParameterizedTypeReference;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
-
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.VAS_ERROR;
 
 @Slf4j
 @Getter

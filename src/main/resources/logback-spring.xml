@@ -82,19 +82,19 @@
     </logger>
 
     <logger name="externalTransactionReportEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="mandateStatusEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="GooglePlayReportEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="externalTransactionReport" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="paymentStatus" additivity="false" level="INFO">
@@ -114,7 +114,7 @@
     </logger>
 
     <logger name="userSubscriptionStatus" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="paymentServerSyncCallback" additivity="false" level="INFO">
@@ -253,7 +253,7 @@
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="paymentRefundInitMessage" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="seRenewal" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>

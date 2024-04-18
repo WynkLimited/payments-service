@@ -33,4 +33,7 @@ public class SubscriptionAcknowledgementMessageThresholdEvent extends MessageThr
     @NotNull
     @Analysed
     private String paymentCode;
+
+    @Analysed
+    private String txnId;
 }

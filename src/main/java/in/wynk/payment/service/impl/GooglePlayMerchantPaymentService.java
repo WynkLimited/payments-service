@@ -544,6 +544,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                 .concat(CONSUME).concat(API_KEY_PARAM)
                 .concat(getApiKey(request.getAppDetails().getService()));
         callGoogleApi(url, request, null);
+        AnalyticService.update("txnId", request.getTxnId());
         AnalyticService.update("consumptionStatus", true );
     }
 

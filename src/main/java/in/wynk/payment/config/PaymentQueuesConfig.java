@@ -37,11 +37,11 @@ public class PaymentQueuesConfig {
     public PurchaseAcknowledgementConsumerPollingQueue subscriptionAcknowledgementConsumerPollingQueue(@Value("${payment.pooling.queue.acknowledgement.name}") String queueName,
                                                                                                        @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
                                                                                                        ObjectMapper objectMapper,
-                                                                                                       SubscriptionAcknowledgementSQSMessageExtractor subscriptionAcknowledgementSQSMessageExtractor) {
+                                                                                                       PurchaseAcknowledgementSQSMessageExtractor purchaseAcknowledgementSQSMessageExtractor) {
         return new PurchaseAcknowledgementConsumerPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
-                subscriptionAcknowledgementSQSMessageExtractor,
+                purchaseAcknowledgementSQSMessageExtractor,
                 threadPoolExecutor(2),
                 scheduledThreadPoolExecutor());
     }
@@ -209,9 +209,9 @@ public class PaymentQueuesConfig {
     }
 
     @Bean
-    public SubscriptionAcknowledgementSQSMessageExtractor googlePlaySubscriptionAcknowledgementSQSMessageExtractor (@Value("${payment.pooling.queue.acknowledgement.name}") String queueName,
-                                                                                                                    @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClients) {
-        return new SubscriptionAcknowledgementSQSMessageExtractor(queueName, sqsClients);
+    public PurchaseAcknowledgementSQSMessageExtractor googlePlaySubscriptionAcknowledgementSQSMessageExtractor (@Value("${payment.pooling.queue.acknowledgement.name}") String queueName,
+                                                                                                                @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClients) {
+        return new PurchaseAcknowledgementSQSMessageExtractor(queueName, sqsClients);
     }
 
     @Bean

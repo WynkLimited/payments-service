@@ -14,7 +14,7 @@ import static in.wynk.queue.constant.BeanConstant.ALL;
  * @author Nishesh Pandey
  */
 @Slf4j
-public class SubscriptionAcknowledgementSQSMessageExtractor extends AbstractSQSMessageExtractor {
+public class PurchaseAcknowledgementSQSMessageExtractor extends AbstractSQSMessageExtractor {
 
     @Getter
     @Value("${payment.pooling.queue.acknowledgement.sqs.messages.extractor.batchSize}")
@@ -25,8 +25,8 @@ public class SubscriptionAcknowledgementSQSMessageExtractor extends AbstractSQSM
 
     private final String queueName;
 
-    public SubscriptionAcknowledgementSQSMessageExtractor (String queueName,
-                                                           @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqs) {
+    public PurchaseAcknowledgementSQSMessageExtractor (String queueName,
+                                                       @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqs) {
         super(sqs);
         this.queueName = queueName;
     }

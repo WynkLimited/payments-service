@@ -141,6 +141,7 @@ public enum PaymentErrorType implements IWynkErrorType {
 
     /*Point/item specific to bill errorCodes start*/
     PAY996("Validation Failure", "Point purchase does not support autoRenew, mandate or trial_subscription  ", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
+    PAY995("Validation Failure", "Point purchase does not support couponId", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
     PAY997("Point Purchase Failure", "Unable to generate session, something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.POINT_PURCHASE_SESSION_INIT_FAILURE),
     /*Point/item specific to bill errorCodes end*/
     PAY998("External Partner failure", "External Partner failure", HttpStatus.SERVICE_UNAVAILABLE, BaseLoggingMarkers.SERVICE_PARTNER_ERROR),

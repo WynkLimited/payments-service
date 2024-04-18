@@ -365,12 +365,12 @@ public class PaymentManager
                     .finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(initialStatus, finalStatus, transaction);
             if ((transaction.getStatus() == TransactionStatus.SUCCESS) && (request.getPaymentCode().getCode().equals(BeanConstant.GOOGLE_PLAY))) {
-                publishAsync(Objects.requireNonNull(getRequest(request, latestReceiptResponse)));
+                publishAsync(Objects.requireNonNull(getRequest(request, latestReceiptResponse, transaction.getIdStr())));
             }
         }
     }
 
-    private AbstractAcknowledgement getRequest (IapVerificationRequestV2 request, LatestReceiptResponse latestReceiptResponse) {
+    private AbstractAcknowledgement getRequest (IapVerificationRequestV2 request, LatestReceiptResponse latestReceiptResponse, String txnId) {
         GooglePlayLatestReceiptResponse googleResponse = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
         GooglePlayVerificationRequest googleRequest = (GooglePlayVerificationRequest) request;
         if (BaseConstants.PLAN.equals(request.getProductDetails().getType())) {
@@ -380,6 +380,7 @@ public class PaymentManager
                     .appDetails(googleRequest.getAppDetails())
                     .paymentDetails(googleRequest.getPaymentDetails())
                     .paymentCode(request.getPaymentCode().getCode())
+                    .txnId(txnId)
                     .build();
         } else if (BaseConstants.POINT.equals(request.getProductDetails().getType())) {
             return GooglePlayProductAcknowledgementRequest.builder()
@@ -388,6 +389,7 @@ public class PaymentManager
                     .appDetails(googleRequest.getAppDetails())
                     .paymentDetails(googleRequest.getPaymentDetails())
                     .paymentCode(request.getPaymentCode().getCode())
+                    .txnId(txnId)
                     .build();
         }
         return null;

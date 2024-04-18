@@ -36,4 +36,7 @@ public abstract class AbstractAcknowledgementMessage {
 
     @Analysed
     private String type;
+
+    @Analysed
+    private String txnId;
 }

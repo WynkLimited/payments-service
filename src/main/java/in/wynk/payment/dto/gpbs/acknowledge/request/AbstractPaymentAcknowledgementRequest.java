@@ -15,4 +15,5 @@ import lombok.experimental.SuperBuilder;
 public abstract class AbstractPaymentAcknowledgementRequest {
     public abstract String getPaymentCode ();
     public abstract String getType ();
+    public abstract String getTxnId ();
 }

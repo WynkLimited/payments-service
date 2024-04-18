@@ -507,17 +507,18 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     @Override
     public void acknowledgeSubscription (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
         if (GooglePlaySubscriptionAcknowledgementRequest.class.isAssignableFrom(abstractPaymentAcknowledgementRequest.getClass())) {
-            reportSubscriptionPurchaseToGoogle((AbstractAcknowledgement) abstractPaymentAcknowledgementRequest);
+            reportSubscriptionPurchaseToGoogle((AbstractAcknowledgement) abstractPaymentAcknowledgementRequest, abstractPaymentAcknowledgementRequest.getTxnId());
         } else if (GooglePlayProductAcknowledgementRequest.class.isAssignableFrom(abstractPaymentAcknowledgementRequest.getClass())) {
-            reportProductPurchaseToGoogle((AbstractAcknowledgement) abstractPaymentAcknowledgementRequest);
+            reportProductPurchaseToGoogle((AbstractAcknowledgement) abstractPaymentAcknowledgementRequest, abstractPaymentAcknowledgementRequest.getTxnId());
         } else {
-            reportExternalTransactionSubscription((GooglePlayReportExternalTransactionRequest) abstractPaymentAcknowledgementRequest);
+            reportExternalTransactionSubscription((GooglePlayReportExternalTransactionRequest) abstractPaymentAcknowledgementRequest, abstractPaymentAcknowledgementRequest.getTxnId());
         }
     }
 
     @AnalyseTransaction(name = "subscriptionAcknowledgement")
-    private void reportSubscriptionPurchaseToGoogle (AbstractAcknowledgement request) {
+    private void reportSubscriptionPurchaseToGoogle (AbstractAcknowledgement request, String txnId) {
         AnalyticService.update(request);
+        AnalyticService.update("transactionId", txnId);
         String url = baseUrl.concat(request.getAppDetails().getPackageName()).concat(subscriptionPurchase).concat(request.getProductDetails().getSkuId())
                 .concat(TOKEN).concat(request.getPaymentDetails().getPurchaseToken()).concat(ACKNOWLEDGE).concat(API_KEY_PARAM)
                 .concat(getApiKey(request.getAppDetails().getService()));
@@ -525,8 +526,9 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     }
 
     @AnalyseTransaction(name = "productAcknowledgement")
-    private void reportProductPurchaseToGoogle (AbstractAcknowledgement request) {
+    private void reportProductPurchaseToGoogle (AbstractAcknowledgement request, String txnId) {
         AnalyticService.update(request);
+        AnalyticService.update("transactionId", txnId);
         String url = baseUrl.concat(request.getAppDetails().getPackageName()).concat(productPurchase).concat(request.getProductDetails().getSkuId()).concat(TOKEN)
                 .concat(request.getPaymentDetails().getPurchaseToken())
                 .concat(ACKNOWLEDGE).concat(API_KEY_PARAM)
@@ -535,8 +537,9 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     }
 
     @AnalyseTransaction(name = "externalTransactionAcknowledgement")
-    public void reportExternalTransactionSubscription (GooglePlayReportExternalTransactionRequest request) {
+    public void reportExternalTransactionSubscription (GooglePlayReportExternalTransactionRequest request, String txnId) {
         AnalyticService.update(request);
+        AnalyticService.update("transactionId", txnId);
         final MsisdnOperatorDetails operatorDetails = userDetailsService.getOperatorDetails(request.getTransaction().getMsisdn());
         final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(request.getClientAlias());
         final String accessStateCode = userDetailsService.getAccessStateCode(operatorDetails, invoiceDetails.getDefaultGSTStateCode(), request.getPurchaseDetails());
@@ -654,7 +657,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
             SubscriptionAcknowledgeMessageManager message = SubscriptionAcknowledgeMessageManager.builder().paymentCode(request.getPaymentCode()).packageName(request.getAppDetails().getPackageName())
                     .service(request.getAppDetails().getService()).purchaseToken(request.getPaymentDetails()
                             .getPurchaseToken()).skuId(request.getProductDetails().getSkuId())
-                    .developerPayload(request.getDeveloperPayload()).type(request.getType()).build();
+                    .developerPayload(request.getDeveloperPayload()).type(request.getType()).txnId(abstractPaymentAcknowledgementRequest.getTxnId()).build();
             try {
                 sqsMessagePublisher.publishSQSMessage(message);
             } catch (Exception e) {

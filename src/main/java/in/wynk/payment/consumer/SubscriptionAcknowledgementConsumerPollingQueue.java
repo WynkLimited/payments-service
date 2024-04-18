@@ -75,6 +75,7 @@ public class SubscriptionAcknowledgementConsumerPollingQueue extends AbstractSQS
                         .appDetails(appDetails)
                         .productDetails(productDetails)
                         .developerPayload(message.getDeveloperPayload())
+                        .txnId(message.getTxnId())
                         .build();
             } else if (BaseConstants.POINT.equals(message.getType())) {
                 abstractPaymentAcknowledgementRequest = GooglePlayProductAcknowledgementRequest.builder()
@@ -83,6 +84,7 @@ public class SubscriptionAcknowledgementConsumerPollingQueue extends AbstractSQS
                         .appDetails(appDetails)
                         .productDetails(productDetails)
                         .developerPayload(message.getDeveloperPayload())
+                        .txnId(message.getTxnId())
                         .build();
             }
         }

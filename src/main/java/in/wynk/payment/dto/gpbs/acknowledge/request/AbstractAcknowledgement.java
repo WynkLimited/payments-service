@@ -30,5 +30,13 @@ public abstract class AbstractAcknowledgement extends AbstractPaymentAcknowledge
     @Analysed
     private final String paymentCode;
 
+    @Analysed
+    private final String txnId;
+
     public abstract String getType ();
+
+    @Override
+    public String getTxnId () {
+        return this.txnId;
+    }
 }

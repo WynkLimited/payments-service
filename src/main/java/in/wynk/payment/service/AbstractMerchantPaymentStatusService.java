@@ -94,16 +94,16 @@ public abstract class AbstractMerchantPaymentStatusService implements IMerchantP
             return failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL002), transaction, request, pageUrlDetails.getPendingPageUrl());
         } else {
             ChargingStatusResponse.ChargingStatusResponseBuilder<?, ?> builder =
-                    ChargingStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus())
-                            .validity(cachingService.validTillDate(request.getPlanId(), transaction.getMsisdn()));
-            if (Objects.isNull(transaction.getPlanId())) {
-                builder.itemId(transaction.getItemId());
-            } else {
+                    ChargingStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus());
+            if (Objects.nonNull(transaction.getPlanId())) {
                 builder.planId(request.getPlanId());
-                if (txnStatus == TransactionStatus.SUCCESS) {
-                    builder.packDetails(getPackDetails(transaction, request));
-                    builder.redirectUrl(pageUrlDetails.getSuccessPageUrl());
-                }
+                builder.validity(cachingService.validTillDate(request.getPlanId(), transaction.getMsisdn()));
+            } else {
+                builder.itemId(transaction.getItemId());
+            }
+            if (txnStatus == TransactionStatus.SUCCESS) {
+                builder.packDetails(getPackDetails(transaction, request));
+                builder.redirectUrl(pageUrlDetails.getSuccessPageUrl());
             }
             return WynkResponseEntity.<AbstractChargingStatusResponse>builder().data(builder.build()).build();
         }

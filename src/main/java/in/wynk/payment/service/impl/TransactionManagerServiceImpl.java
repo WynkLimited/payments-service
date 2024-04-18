@@ -310,7 +310,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     private void publishDataToWynkKafka (Transaction transaction) {
         GenerateItemEvent event =
                 GenerateItemEvent.builder().transactionId(transaction.getIdStr()).itemId(transaction.getItemId()).uid(transaction.getUid()).createdDate(transaction.getInitTime())
-                        .updatedDate(transaction.getExitTime()).transactionStatus(transaction.getStatus()).event(transaction.getType()).price(transaction.getAmount()).build();
+                        .updatedDate(Calendar.getInstance()).transactionStatus(transaction.getStatus()).event(transaction.getType()).price(transaction.getAmount()).build();
         eventPublisher.publishEvent(event);
     }
 

@@ -39,4 +39,9 @@ public class GooglePlayReportExternalTransactionRequest extends AbstractPaymentA
     public String getType () {
         return BaseConstants.PLAN;
     }
+
+    @Override
+    public String getTxnId () {
+        return this.transaction.getIdStr();
+    }
 }

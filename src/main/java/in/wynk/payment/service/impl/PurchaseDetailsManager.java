@@ -1,5 +1,7 @@
 package in.wynk.payment.service.impl;
 
+import in.wynk.audit.IAuditableListener;
+import in.wynk.audit.constant.AuditConstants;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.cache.aspect.advice.CacheEvict;
 import in.wynk.cache.aspect.advice.Cacheable;
@@ -17,6 +19,8 @@ import in.wynk.payment.dto.request.charge.card.CardPaymentDetails;
 import in.wynk.payment.service.IPurchaseDetailsManger;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -28,20 +32,25 @@ import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
 @Service
 @RequiredArgsConstructor
 public class PurchaseDetailsManager implements IPurchaseDetailsManger {
-
+    @Autowired
+    @Qualifier(AuditConstants.MONGO_AUDIT_LISTENER)
+    private IAuditableListener auditingListener;
     @Override
     @CacheEvict(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
     public void save(Transaction transaction, IPurchaseDetails details) {
-        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), IPurchasingDetailsDao.class).save(PurchaseDetails.builder()
+        PurchaseDetails purchaseDetails = PurchaseDetails.builder()
                 .id(transaction.getIdStr())
                 .appDetails(details.getAppDetails())
                 .userDetails(details.getUserDetails())
                 .productDetails(details.getProductDetails())
                 .geoLocation(details.getGeoLocation())
                 .paymentDetails(details.getPaymentDetails())
+                .sessionDetails(details.getSessionDetails())
                 .pageUrlDetails(((IChargingDetails) details).getPageUrlDetails())
                 .callbackUrl(((IChargingDetails) details).getCallbackDetails().getCallbackUrl())
-                .build());
+                .build();
+        auditingListener.onBeforeSave(purchaseDetails);
+        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), IPurchasingDetailsDao.class).save(purchaseDetails);
     }
 
     @Override
@@ -56,7 +65,7 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
                 }
             }
         }
-        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), IPurchasingDetailsDao.class).save(PurchaseDetails.builder()
+        PurchaseDetails purchaseDetails = PurchaseDetails.builder()
                 .id(transaction.getIdStr())
                 .appDetails(details.getAppDetails())
                 .userDetails(details.getUserDetails())
@@ -66,7 +75,9 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
                 .pageUrlDetails(details.getPageUrlDetails())
                 .callbackUrl(details.getCallbackDetails().getCallbackUrl())
                 .sessionDetails(details.getSessionDetails())
-                .build());
+                .build();
+        auditingListener.onBeforeSave(purchaseDetails);
+        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), IPurchasingDetailsDao.class).save(purchaseDetails);
     }
 
     @Override

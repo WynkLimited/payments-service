@@ -2,9 +2,10 @@ package in.wynk.payment.service;
 
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
+import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.aspect.advice.ClientAware;
-import in.wynk.common.dto.IMiscellaneousDetails;
-import in.wynk.common.dto.SessionDTO;
+import in.wynk.client.context.ClientContext;
+import in.wynk.client.data.utils.RepositoryUtils;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
@@ -17,8 +18,8 @@ import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.dao.entity.PaymentGateway;
-import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.*;
@@ -51,9 +52,8 @@ import javax.annotation.PostConstruct;
 import java.net.SocketTimeoutException;
 import java.util.*;
 
-import static in.wynk.common.constant.BaseConstants.AUTO_RENEW;
-import static in.wynk.common.constant.BaseConstants.MISCELLANEOUS_DETAILS;
 import static in.wynk.payment.core.constant.BeanConstant.CHARGING_FRAUD_DETECTION_CHAIN;
+import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
 import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.CHARGING_API_FAILURE;
@@ -72,7 +72,7 @@ public class PaymentGatewayManager
         IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>,
         IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest>,
         IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapperV2<?>>,
-        ICancellingRecurringService {
+        ICancellingRecurringService, IMerchantTDRService {
 
     private final ICouponManager couponManager;
     private final ApplicationEventPublisher eventPublisher;
@@ -128,6 +128,11 @@ public class PaymentGatewayManager
             eventPublisher.publishEvent(PurchaseInitEvent.builder().clientAlias(transaction.getClientAlias()).transactionId(transaction.getIdStr()).uid(transaction.getUid()).msisdn(transaction
                     .getMsisdn()).productDetails(request.getProductDetails()).appDetails(request.getAppDetails()).sid(Optional.ofNullable(SessionContextHolder
                     .getId())).build());
+            if(Objects.nonNull(request.getAppStoreDetails()) && Objects.nonNull(request.getAppStoreDetails().getExternalTransactionToken())) {
+                final MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
+                merchantTransactionEventBuilder.externalTokenReferenceId(request.getAppStoreDetails().getExternalTransactionToken());
+                eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
+            }
         }
     }
 
@@ -197,10 +202,21 @@ public class PaymentGatewayManager
             eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(e.getErrorCode())).description(e.getErrorTitle()).build());
             throw new PaymentRuntimeException(e.getErrorCode(), e.getMessage(), e.getErrorTitle());
         } finally {
-            final TransactionStatus finalStatus = TransactionContext.get().getStatus();
-            transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
+            final TransactionStatus finalStatus = transaction.getStatus();
+            String lastSuccessTransactionId = getLastSuccessTransactionId(transaction);
+            transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
         }
+    }
+
+    private String getLastSuccessTransactionId (Transaction transaction) {
+        if (transaction.getType() == PaymentEvent.RENEW) {
+            PaymentRenewal renewal =
+                    RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).findById(transaction.getIdStr())
+                            .orElse(null);
+            return Objects.nonNull(renewal) ? renewal.getLastSuccessTransactionId() : null;
+        }
+        return null;
     }
 
     @ClientAware(clientAlias = "#request.clientAlias")
@@ -215,7 +231,7 @@ public class PaymentGatewayManager
             if (mapping != null) {
                 final in.wynk.common.enums.PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper);
                 final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
-                        PlanRenewalRequest.builder().planId(mapping.getPlanId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentGateway(request.getPaymentGateway())
+                        PlanRenewalRequest.builder().txnId(mapping.getLinkedTransactionId()).planId(mapping.getPlanId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentGateway(request.getPaymentGateway())
                                 .clientAlias(request.getClientAlias()).build());
                 transactionInitRequest.setEvent(event);
                 final Transaction transaction = transactionManager.init(transactionInitRequest);
@@ -238,7 +254,8 @@ public class PaymentGatewayManager
             throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
         } finally {
             TransactionStatus finalStatus = TransactionContext.get().getStatus();
-            transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
+            String lastSuccessTransactionId = getLastSuccessTransactionId(transaction);
+            transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
             // removing old transaction from renewal table, if we keep it then its renewal will bound to fail due to receipt is linked with new transaction id
             if (transaction.getStatus() == TransactionStatus.SUCCESS && !StringUtils.isEmpty(mapping.getLinkedTransactionId()))
                 eventPublisher.publishEvent(UnScheduleRecurringPaymentEvent.builder().transactionId(mapping.getLinkedTransactionId()).clientAlias(transaction.getClientAlias()).reason("Transaction id " + transaction.getIdStr() + " is scheduled in renewal via payment callback therefore old transaction " + mapping.getLinkedTransactionId() + " is not required").build());
@@ -249,7 +266,7 @@ public class PaymentGatewayManager
     public void renew(PaymentRenewalChargingRequest request) {
         PaymentGateway paymentGateway = request.getPaymentGateway();
         final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
-                PlanRenewalRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(paymentGateway)
+                PlanRenewalRequest.builder().planId(request.getPlanId()).txnId(request.getId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(paymentGateway)
                         .clientAlias(request.getClientAlias()).build());
         final Transaction transaction = transactionManager.init(transactionInitRequest);
         final TransactionStatus initialStatus = transaction.getStatus();
@@ -265,33 +282,50 @@ public class PaymentGatewayManager
             if (e.getRootCause() != null) {
                 if (e.getRootCause() instanceof SocketTimeoutException || e.getRootCause() instanceof ConnectTimeoutException) {
                     log.error(RENEWAL_STATUS_ERROR, "Socket timeout but valid for reconciliation for request : due to {}", e.getMessage(), e);
-                    errorEventBuilder.code(PAY036.getErrorCode());
-                    errorEventBuilder.description(PAY036.getErrorMessage() + "for " + paymentGateway);
+                    errorEventBuilder.code(APS007.getErrorCode());
+                    errorEventBuilder.description(APS007.getErrorMessage() + "for " + paymentGateway);
                     eventPublisher.publishEvent(errorEventBuilder.build());
-                    throw new WynkRuntimeException(PAY036);
+                    throw new WynkRuntimeException(APS007);
                 } else {
-                    handleException(errorEventBuilder, paymentGateway, e);
+                    handleException(errorEventBuilder, paymentGateway, e, transaction);
                 }
             } else {
-                handleException(errorEventBuilder, paymentGateway, e);
+                handleException(errorEventBuilder, paymentGateway, e, transaction);
+            }
+        } catch (Exception ex) {
+            transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            PaymentErrorEvent.Builder errorEventBuilder = PaymentErrorEvent.builder(transaction.getIdStr());
+            if (ex instanceof WynkRuntimeException) {
+                final WynkRuntimeException original = (WynkRuntimeException) ex;
+                final IWynkErrorType errorType = original.getErrorType();
+                errorEventBuilder.code(Objects.nonNull(errorType) ? errorType.getErrorCode() : original.getErrorCode());
+                errorEventBuilder.description(Objects.nonNull(errorType) ? errorType.getErrorMessage() : original.getMessage());
+                eventPublisher.publishEvent(errorEventBuilder.build());
+                throw ex;
+            } else {
+                errorEventBuilder.code(PaymentErrorType.PAY024.getErrorCode()).description(ex.getMessage());
+                eventPublisher.publishEvent(errorEventBuilder.build());
+                throw new WynkRuntimeException(PAY024, ex);
             }
         } finally {
             eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
             if (renewalService.canRenewalReconciliation()) {
                 sqsManagerService.publishSQSMessage(
-                        PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transactionManager.get(request.getId()))).paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
+                        PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transactionManager.get(request.getId()))).paymentCode(transaction.getPaymentChannel().getId())
+                                .paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
                                 .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid())
                                 .originalAttemptSequence(request.getAttemptSequence() + 1).originalTransactionId(request.getId()).build());
             }
             final TransactionStatus finalStatus = transaction.getStatus();
             transactionManager.revision(AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus)
-                    .attemptSequence(request.getAttemptSequence() + 1).transactionId(request.getId()).build());
+                    .attemptSequence(request.getAttemptSequence()).originalTransactionId(request.getId()).lastSuccessTransactionId(transaction.getIdStr()).build());
         }
     }
 
-    private void handleException(PaymentErrorEvent.Builder errorEventBuilder, PaymentGateway paymentGateway, RestClientException e) {
+    private void handleException(PaymentErrorEvent.Builder errorEventBuilder, PaymentGateway paymentGateway, RestClientException e, Transaction transaction) {
+        transaction.setStatus(TransactionStatus.FAILURE.getValue());
         errorEventBuilder.code(PAY024.getErrorCode());
-        errorEventBuilder.description(PAY024.getErrorMessage() + "for " + paymentGateway);
+        errorEventBuilder.description(PAY024.getErrorMessage() + "for " + paymentGateway.getCode());
         eventPublisher.publishEvent(errorEventBuilder.build());
         throw new WynkRuntimeException(PAY024, e);
     }
@@ -306,10 +340,17 @@ public class PaymentGatewayManager
     }
 
     @Override
-    public void cancelRecurring (String transactionId) {
+    public void cancelRecurring(String transactionId) {
         BeanLocatorFactory.getBean(transactionManager.get(transactionId).getPaymentChannel().getCode(), ICancellingRecurringService.class)
                 .cancelRecurring(transactionId);
 
+    }
+
+    @Override
+    @TransactionAware(txnId = "#transactionId", lock = false)
+    public BaseTDRResponse getTDR(String transactionId) {
+        final Transaction transaction = TransactionContext.get();
+        return BeanLocatorFactory.getBeanOrDefault(transaction.getPaymentChannel().getCode(), IMerchantTDRService.class, nope -> BaseTDRResponse.from(-1)).getTDR(transactionId);
     }
 
     private static class ChargingTransactionStatusService implements IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
@@ -345,7 +386,7 @@ public class PaymentGatewayManager
                 if (transaction.getType() == PaymentEvent.RENEW) {
                     RenewalChargingTransactionReconciliationStatusRequest renewalChargingTransactionReconciliationStatusRequest = (RenewalChargingTransactionReconciliationStatusRequest) request;
                     builder.attemptSequence(renewalChargingTransactionReconciliationStatusRequest.getOriginalAttemptSequence())
-                            .transactionId(renewalChargingTransactionReconciliationStatusRequest.getOriginalTransactionId());
+                            .originalTransactionId(renewalChargingTransactionReconciliationStatusRequest.getOriginalTransactionId());
                 }
                 reviseTransactionAndExhaustCoupon(transaction, existingStatus, builder.build());
                 publishEventsOnReconcileCompletion(existingStatus, finalStatus, transaction);
@@ -360,7 +401,7 @@ public class PaymentGatewayManager
         try {
             final String externalReferenceId = merchantTransactionService.getPartnerReferenceId(request.getOriginalTransactionId());
             final Transaction refundTransaction =
-                    transactionManager.init(DefaultTransactionInitRequestMapper.from(RefundTransactionRequestWrapper.builder().request(request).originalTransaction(originalTransaction).build()));
+                    transactionManager.init(DefaultTransactionInitRequestMapper.from(RefundTransactionRequestWrapper.builder().request(request).txnId(originalTransaction.getIdStr()).originalTransaction(originalTransaction).build()));
             final AbstractPaymentRefundRequest refundRequest = AbstractPaymentRefundRequest.from(originalTransaction, externalReferenceId, request.getReason());
             final AbstractPaymentRefundResponse refundInitResponse = BeanLocatorFactory.getBean(refundTransaction.getPaymentChannel().getCode(),
                     new ParameterizedTypeReference<IPaymentRefund<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest>>() {
@@ -390,6 +431,10 @@ public class PaymentGatewayManager
 
     private void reviseTransactionAndExhaustCoupon(Transaction transaction, TransactionStatus existingStatus,
                                                    AbstractTransactionRevisionRequest abstractTransactionRevisionRequest) {
+        if (transaction.getType() == PaymentEvent.RENEW) {
+            String lastSuccessTransactionId = getLastSuccessTransactionId(transaction);
+            abstractTransactionRevisionRequest.setLastSuccessTransactionId(lastSuccessTransactionId);
+        }
         transactionManager.revision(abstractTransactionRevisionRequest);
         exhaustCouponIfApplicable(existingStatus, transaction.getStatus(), transaction);
     }

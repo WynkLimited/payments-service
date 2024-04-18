@@ -10,13 +10,14 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PageResponseDetails;
-import in.wynk.payment.dto.gpbs.GooglePlayLatestReceiptResponse;
+import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayLatestReceiptResponse;
 import in.wynk.payment.dto.gpbs.request.GooglePlayPaymentDetails;
 import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
 import in.wynk.payment.dto.response.gpbs.GooglePlayBillingResponse;
 import in.wynk.session.context.SessionContextHolder;
 
+import java.util.Map;
 import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.*;
@@ -29,19 +30,30 @@ public class MerchantServiceUtil {
 
     public static GooglePlayBillingResponse.GooglePlayBillingData getUrl (Transaction transaction, LatestReceiptResponse latestReceiptResponse,
                                                                           GooglePlayBillingResponse.GooglePlayBillingData.GooglePlayBillingDataBuilder builder){
+        SessionDTO sessionDTO = SessionContextHolder.getBody();
+        Map<String, Object> payload = null;
+        if(Objects.nonNull(sessionDTO)) {
+             payload = sessionDTO.getSessionPayload();
+        }
         if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
             GooglePlayLatestReceiptResponse googlePlayVerificationResponse = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
 
-            GooglePlayPaymentDetails paymentDetails = GooglePlayPaymentDetails.builder().valid(true).orderId(googlePlayVerificationResponse.getSubscriptionId()).purchaseToken(googlePlayVerificationResponse.getPurchaseToken()).build();
+            GooglePlayPaymentDetails paymentDetails =
+                    GooglePlayPaymentDetails.builder().valid(true).orderId(googlePlayVerificationResponse.getSubscriptionId()).purchaseToken(googlePlayVerificationResponse.getPurchaseToken()).build();
             builder.paymentDetails(paymentDetails);
-            if (latestReceiptResponse != null && latestReceiptResponse.getSuccessUrl() != null) {
-                builder.pageDetails(PageResponseDetails.builder().pageUrl(latestReceiptResponse.getSuccessUrl()).build());
+
+            if (latestReceiptResponse.getSuccessUrl() != null || Objects.nonNull(payload.get("successWebUrl"))) {
+                builder.pageDetails(
+                        PageResponseDetails.builder().pageUrl(Objects.nonNull(latestReceiptResponse.getSuccessUrl()) ? latestReceiptResponse.getSuccessUrl() : (String) payload.get("successWebUrl"))
+                                .build());
             } else {
                 addSuccessUrl(builder);
             }
         } else {
-            if (latestReceiptResponse.getFailureUrl() != null) {
-                builder.pageDetails(PageResponseDetails.builder().pageUrl(latestReceiptResponse.getFailureUrl()).build());
+            if (latestReceiptResponse.getFailureUrl() != null || Objects.nonNull(payload.get("failureWebUrl"))) {
+                builder.pageDetails(
+                        PageResponseDetails.builder().pageUrl(Objects.nonNull(latestReceiptResponse.getFailureUrl()) ? latestReceiptResponse.getFailureUrl() : (String) payload.get("failureWebUrl"))
+                                .build());
             } else {
                 addFailureUrl(builder);
             }
@@ -144,11 +156,18 @@ public class MerchantServiceUtil {
             return SERVICE_MUSIC;
         } else if (AIRTEL_TV_PACKAGE_NAME.equals(packageName)) {
             return SERVICE_AIRTEL_TV;
-        } else if (RAJ_TV_PACKAGE_NAME.equals(packageName)) {
-            return SERVICE_RAJ_TV;
-        } /*else if (ENTERR10_PACKAGE_NAME.equals(packageName)) {
-            return SERVICE_ENTERR10;
-        }*/
+        }
         return null;
+    }
+
+    public static String getPackageFromService(String service) {
+        switch (service) {
+            case SERVICE_MUSIC:
+                return MUSIC_PACKAGE_NAME;
+            case SERVICE_AIRTEL_TV:
+                return AIRTEL_TV_PACKAGE_NAME;
+            default:
+                throw new RuntimeException("Service mapping is not present for the package name");
+        }
     }
 }

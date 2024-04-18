@@ -84,6 +84,7 @@ service:
         renewalPlanEligibility: ${service.subscription.api.root}/wynk/s2s/v1/renewal/plan/eligibility
         selectivePlanComputation: ${service.subscription.api.root}/wynk/s2s/v1/plans/selective/eligible
         selectivePlanComputationV2: ${service.subscription.api.root}/wynk/s2s/v2/plans/selective/eligible
+        status: ${service.subscription.api.root}/wynk/s2s/v1/subscription/status/{uid}/{service}
 
 
   ####### payment props #######
@@ -327,6 +328,8 @@ aps:
       api: ${payment.merchant.aps.paydigi.api.base}/order-service/v2/order
       status:
         api: ${payment.merchant.aps.paydigi.api.base}/order-service/v2/status/{orderId}
+    tdr:
+      api:  ${payment.merchant.aps.api.base}/pg-service/v1/txn-discount-rates/{pgId}
 
 branch:
   onelink:

@@ -13,6 +13,7 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.AppDetails;
 import in.wynk.payment.dto.UserDetails;
+import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.request.AbstractTransactionInitRequest;
 import in.wynk.payment.dto.request.PlanTransactionInitRequest;
 import in.wynk.payment.dto.request.PointTransactionInitRequest;
@@ -51,14 +52,19 @@ public class BasicPricingManager implements IPricingManager {
             PlanDTO selectedPlan = cachingService.getPlan(nativeRequest.getPlanId());
             if (Objects.nonNull(nativeRequest.getUserDetails()) && Objects.nonNull(nativeRequest.getAppDetails()) && Objects.nonNull(nativeRequest.getGeoDetails()))
                 selectedPlan = subscriptionManager.getUserPersonalisedPlanOrDefault(UserPersonalisedPlanRequest.builder().userDetails(((UserDetails) nativeRequest.getUserDetails()).toUserDetails(request.getUid())).appDetails(((AppDetails) nativeRequest.getAppDetails()).toAppDetails()).geoDetails((GeoLocation) nativeRequest.getGeoDetails()).planId(nativeRequest.getPlanId()).build(), selectedPlan);
-            if (nativeRequest.isAutoRenewOpted()) nativeRequest.setMandateAmount(selectedPlan.getMandateAmount());
+            if (nativeRequest.isAutoRenewOpted() || nativeRequest.isMandate()) nativeRequest.setMandateAmount(selectedPlan.getMandateAmount());
             if (nativeRequest.getEvent() != PaymentEvent.RENEW) {
-                if (nativeRequest.isAutoRenewOpted()) {
+                if (nativeRequest.isMandate()) {
+                    nativeRequest.setMandateAmount(selectedPlan.getMandateAmount());
+                    nativeRequest.setEvent(PaymentEvent.MANDATE);
+                    nativeRequest.setAmount(PaymentConstants.MANDATE_FLOW_AMOUNT);
+                    return;
+                } else if (nativeRequest.isAutoRenewOpted()) {
                     nativeRequest.setEvent(PaymentEvent.SUBSCRIBE);
                 }
                 if (nativeRequest.isTrialOpted()) {
                     nativeRequest.setMandateAmount(selectedPlan.getMandateAmount());
-                    nativeRequest.setAmount(cachingService.getPlan(selectedPlan.getLinkedFreePlanId()).getFinalPrice());
+                    nativeRequest.setAmount(PaymentConstants.MANDATE_FLOW_AMOUNT);
                     nativeRequest.setEvent(PaymentEvent.TRIAL_SUBSCRIPTION);
                     return;
                 }

@@ -7,7 +7,7 @@ import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.dto.gpbs.GooglePlayConstant;
 import in.wynk.payment.dto.gpbs.request.GoogleApiRequest;
-import in.wynk.payment.dto.gpbs.GoogleApiResponse;
+import in.wynk.payment.dto.gpbs.response.receipt.GoogleApiResponse;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.extern.slf4j.Slf4j;
@@ -51,26 +51,12 @@ public class GooglePlayCacheService implements ICacheService<String, String> {
     @Value("${payment.googlePlay.tokenUrl}")
     private String tokenUrl;
 
-    @Value("${payment.googlePlay.rajTv.privateKey}")
-    private String rajTvPrivateKey;
-    @Value("${payment.googlePlay.rajTv.privateKeyId}")
-    private String rajTvPrivateKeyId;
-    @Value("${payment.googlePlay.rajTv.clientEmail}")
-    private String rajTvClientEmail;
-
     @Value("${payment.googlePlay.music.privateKey}")
     private String musicPrivateKey;
     @Value("${payment.googlePlay.music.privateKeyId}")
     private String musicPrivateKeyId;
     @Value("${payment.googlePlay.music.clientEmail}")
     private String musicClientEmail;
-
-   /* @Value("${payment.googlePlay.enterr10.privateKey}")
-    private String enterr10PrivateKey;
-    @Value("${payment.googlePlay.enterr10.privateKeyId}")
-    private String enterr10PrivateKeyId;
-    @Value("${payment.googlePlay.enterr10.clientEmail}")
-    private String enterr10ClientEmail;*/
 
     private final Map<String, String> tokens = new ConcurrentHashMap<>();
     private static final String GRANT_TYPE = "urn:ietf:params:oauth:grant-type:jwt-bearer";
@@ -81,9 +67,7 @@ public class GooglePlayCacheService implements ICacheService<String, String> {
     @PostConstruct
     @Scheduled(fixedDelay = ACCESS_TOKEN_IN_MEMORY_CACHE_CRON, initialDelay = ACCESS_TOKEN_IN_MEMORY_CACHE_CRON)
     private void init () {
-        generateJwtTokenAndGetAccessToken(GooglePlayConstant.SERVICE_RAJ_TV, rajTvClientEmail, rajTvPrivateKeyId, rajTvPrivateKey);//for rajtv
-        generateJwtTokenAndGetAccessToken(GooglePlayConstant.SERVICE_MUSIC, musicClientEmail, musicPrivateKeyId, musicPrivateKey); //for music
-        //generateJwtTokenAndGetAccessToken(GooglePlayConstant.SERVICE_ENTERR10, enterr10ClientEmail, enterr10PrivateKeyId, enterr10PrivateKey); //for enterr10
+        generateJwtTokenAndGetAccessToken(GooglePlayConstant.SERVICE_MUSIC, musicClientEmail, musicPrivateKeyId, musicPrivateKey); //for music and airteltv as tokens will be same as same account
     }
 
     public void generateJwtTokenAndGetAccessToken (String client, String clientEmail, String privateKeyId, String privateKey) {
@@ -123,7 +107,7 @@ public class GooglePlayCacheService implements ICacheService<String, String> {
             try {
                 GoogleApiResponse googleApiResponse = responseEntity.getBody();
                 tokens.put(client, googleApiResponse.getAccessToken());
-                if(GooglePlayConstant.SERVICE_MUSIC.equals(client)) { //credentials are same for music and xstream. So, access token will also be same.
+                if(GooglePlayConstant.SERVICE_MUSIC.equals(client)) { //credentials are same for music and xStream. So, access token will also be same.
                    tokens.put(GooglePlayConstant.SERVICE_AIRTEL_TV,googleApiResponse.getAccessToken());
                 }
             } catch (Throwable th) {

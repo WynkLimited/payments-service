@@ -5,18 +5,27 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
+import in.wynk.common.dto.WynkResponse;
+import in.wynk.common.enums.PaymentEvent;
+import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.dto.PaymentRenewalMessage;
+import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.ITransactionManagerService;
+import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
 import in.wynk.queue.service.ISqsManagerService;
+import in.wynk.subscription.common.dto.PlanPeriodDTO;
+import in.wynk.subscription.common.dto.RenewalPlanEligibilityResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -30,6 +39,8 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
     private final ScheduledExecutorService pollingThreadPool;
     private final ITransactionManagerService transactionManager;
     private final ISubscriptionServiceManager subscriptionServiceManager;
+    private final IRecurringPaymentManagerService recurringPaymentManagerService;
+    private PaymentCachingService cachingService;
     @Value("${payment.pooling.queue.renewal.enabled}")
     private boolean renewalPollingEnabled;
     @Value("${payment.pooling.queue.renewal.sqs.consumer.delay}")
@@ -37,14 +48,15 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
     @Value("${payment.pooling.queue.renewal.sqs.consumer.delayTimeUnit}")
     private TimeUnit renewalPoolingDelayTimeUnit;
 
-    public PaymentRenewalConsumerPollingQueue(String queueName,
-                                              AmazonSQS sqs,
-                                              ObjectMapper objectMapper,
-                                              ISQSMessageExtractor messagesExtractor,
-                                              ExecutorService messageHandlerThreadPool,
-                                              ScheduledExecutorService pollingThreadPool,
-                                              ISqsManagerService sqsManagerService,
-                                              ITransactionManagerService transactionManager, ISubscriptionServiceManager subscriptionServiceManager) {
+    public PaymentRenewalConsumerPollingQueue (String queueName,
+                                               AmazonSQS sqs,
+                                               ObjectMapper objectMapper,
+                                               ISQSMessageExtractor messagesExtractor,
+                                               ExecutorService messageHandlerThreadPool,
+                                               ScheduledExecutorService pollingThreadPool,
+                                               ISqsManagerService sqsManagerService,
+                                               ITransactionManagerService transactionManager, ISubscriptionServiceManager subscriptionServiceManager,
+                                               IRecurringPaymentManagerService recurringPaymentManagerService, PaymentCachingService cachingService) {
         super(queueName, sqs, objectMapper, messagesExtractor, messageHandlerThreadPool);
         this.objectMapper = objectMapper;
         this.pollingThreadPool = pollingThreadPool;
@@ -52,6 +64,8 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
         this.sqsManagerService = sqsManagerService;
         this.transactionManager = transactionManager;
         this.subscriptionServiceManager = subscriptionServiceManager;
+        this.recurringPaymentManagerService = recurringPaymentManagerService;
+        this.cachingService = cachingService;
     }
 
     @Override
@@ -83,7 +97,7 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
         AnalyticService.update(message);
         log.info(PaymentLoggingMarker.PAYMENT_RENEWAL_QUEUE, "processing PaymentRenewalMessage for transactionId {}", message.getTransactionId());
         Transaction transaction = transactionManager.get(message.getTransactionId());
-        if (subscriptionServiceManager.renewalPlanEligibility(transaction.getPlanId(), transaction.getIdStr(), transaction.getUid(), transaction.getPaymentChannel().getCode())) {
+        if (isEligibleForRenewal(transaction, message.getAttemptSequence())) {
             sqsManagerService.publishSQSMessage(PaymentRenewalChargingMessage.builder()
                     .uid(transaction.getUid())
                     .id(transaction.getIdStr())
@@ -94,6 +108,27 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
                     .paymentCode(transaction.getPaymentChannel().getId())
                     .build());
         }
+    }
+
+    private boolean isEligibleForRenewal (Transaction transaction, int attemptSequence) {
+        PlanPeriodDTO planPeriodDTO = cachingService.getPlan(transaction.getPlanId()).getPeriod();
+        if (planPeriodDTO.getMaxRetryCount() <= attemptSequence) {
+            log.error(PaymentLoggingMarker.MAX_RENEWAL_ATTEMPT_ERROR, "Need to break the chain in Payment Renewal as maximum attempts are already exceeded for transactionId {}", transaction.getIdStr());
+            throw new WynkRuntimeException("Need to break the chain in Payment Renewal as maximum attempts are already exceeded");
+        }
+
+        ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> response =
+                subscriptionServiceManager.renewalPlanEligibilityResponse(transaction.getPlanId(), transaction.getUid());
+        if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {
+            RenewalPlanEligibilityResponse renewalPlanEligibilityResponse = response.getBody().getData();
+            long today = System.currentTimeMillis();
+            long furtherDefer = renewalPlanEligibilityResponse.getDeferredUntil() - today;
+            if (subscriptionServiceManager.isDeferred(transaction.getPaymentChannel().getCode(), furtherDefer)) {
+                recurringPaymentManagerService.unScheduleRecurringPayment(transaction.getIdStr(), PaymentEvent.DEFERRED, today, furtherDefer);
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override

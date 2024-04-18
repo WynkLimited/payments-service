@@ -1,9 +1,10 @@
-package in.wynk.payment.dto;
+package in.wynk.payment.dto.request;
 
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import in.wynk.payment.core.dao.entity.PaymentGateway;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 /**
@@ -12,7 +13,10 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @SuperBuilder
 @AnalysedEntity
-public abstract class AbstractPaymentAcknowledgementRequest {
+@NoArgsConstructor
+@AllArgsConstructor
+public class PennyDropS2sChargingRequest extends S2SChargingRequestV2 {
+
     @Analysed
-    private final PaymentGateway paymentGateway;
+    private boolean pennyDrop;
 }

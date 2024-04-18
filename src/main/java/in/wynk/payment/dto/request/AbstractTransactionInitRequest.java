@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.request;
 
+import com.github.annotation.analytic.core.annotations.Analysed;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
@@ -19,6 +20,8 @@ public abstract class AbstractTransactionInitRequest {
     private double mandateAmount = -1;
     @Setter
     private double discount;
+    @Analysed(name = "old_transaction_id")
+    private String txnId;
 
     private String uid;
     private String msisdn;

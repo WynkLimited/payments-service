@@ -1,5 +1,6 @@
-package in.wynk.payment.dto.gpbs.receipt;
+package in.wynk.payment.dto.gpbs.response.receipt;
 
+import in.wynk.payment.dto.gpbs.Price;
 import lombok.Getter;
 import lombok.Setter;
 

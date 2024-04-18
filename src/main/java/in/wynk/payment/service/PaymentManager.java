@@ -1,9 +1,11 @@
 package in.wynk.payment.service;
 
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.aspect.advice.ClientAware;
+import in.wynk.client.context.ClientContext;
+import in.wynk.client.data.utils.RepositoryUtils;
 import in.wynk.common.dto.AbstractErrorDetails;
-import in.wynk.common.dto.IMiscellaneousDetails;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
@@ -18,9 +20,12 @@ import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.dto.*;
-import in.wynk.payment.dto.gpbs.GooglePlayLatestReceiptResponse;
+import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayLatestReceiptResponse;
+import in.wynk.payment.dto.gpbs.acknowledge.request.AbstractPaymentAcknowledgementRequest;
+import in.wynk.payment.dto.gpbs.acknowledge.request.GooglePlaySubscriptionAcknowledgementRequest;
 import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.*;
@@ -38,12 +43,9 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 
 import static in.wynk.common.constant.BaseConstants.MIGRATED;
-import static in.wynk.common.constant.BaseConstants.MISCELLANEOUS_DETAILS;
 import static in.wynk.payment.core.constant.BeanConstant.CHARGING_FRAUD_DETECTION_CHAIN;
 import static in.wynk.payment.core.constant.BeanConstant.VERIFY_IAP_FRAUD_DETECTION_CHAIN;
-import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
-import static in.wynk.payment.core.constant.PaymentConstants.TXN_ID;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY999;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
 
 @Slf4j
 @Service(BeanConstant.PAYMENT_MANAGER)
@@ -71,9 +73,9 @@ public class PaymentManager
     public WynkResponseEntity<AbstractPaymentRefundResponse> refund(PaymentRefundInitRequest request) {
         final Transaction originalTransaction = TransactionContext.get();
         try {
-            final String externalReferenceId = merchantTransactionService.getPartnerReferenceId(request.getOriginalTransactionId());
+            final String externalReferenceId = getExternalReferenceId(request.getOriginalTransactionId());
             final Transaction refundTransaction =
-                    transactionManager.init(DefaultTransactionInitRequestMapper.from(RefundTransactionRequestWrapper.builder().request(request).originalTransaction(originalTransaction).build()));
+                    transactionManager.init(DefaultTransactionInitRequestMapper.from(RefundTransactionRequestWrapper.builder().request(request).txnId(originalTransaction.getIdStr()).originalTransaction(originalTransaction).build()));
             final IMerchantPaymentRefundService<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest> refundService = BeanLocatorFactory.getBean(refundTransaction.getPaymentChannel().getCode(),
                     new ParameterizedTypeReference<IMerchantPaymentRefundService<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest>>() {
                     });
@@ -93,6 +95,15 @@ public class PaymentManager
             throw e;
         } catch (Exception e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY020, e);
+        }
+    }
+
+    private String getExternalReferenceId(String originalTransactionId) {
+        try {
+            return merchantTransactionService.getPartnerReferenceId(originalTransactionId);
+        } catch (Exception e) {
+            log.error("Exception Occurred while getting merchant transaction reference id while refunding the amount");
+            return null;
         }
     }
 
@@ -132,7 +143,7 @@ public class PaymentManager
 
     @Override
     @TransactionAware(txnId = "#request.transactionId")
-    public WynkResponseEntity<AbstractCallbackResponse> handleCallback (CallbackRequestWrapper<?> request) {
+    public WynkResponseEntity<AbstractCallbackResponse> handleCallback(CallbackRequestWrapper<?> request) {
         final PaymentGateway paymentGateway = request.getPaymentGateway();
         final Transaction transaction = TransactionContext.get();
         final TransactionStatus existingStatus = transaction.getStatus();
@@ -154,7 +165,8 @@ public class PaymentManager
             throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
         } finally {
             final TransactionStatus finalStatus = TransactionContext.get().getStatus();
-            transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
+            String lastSuccessTransactionId = getLastSuccessTransactionId(transaction);
+            transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
             //publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_CALLBACK_EVENT).data(getEventsWrapperBuilder(transaction, TransactionContext.getPurchaseDetails())
             // .callbackRequest(request.getBody()).build()).build());
@@ -173,7 +185,7 @@ public class PaymentManager
             if (mapping != null) {
                 final in.wynk.common.enums.PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper);
                 final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
-                        PlanRenewalRequest.builder().planId(mapping.getPlanId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentGateway(request.getPaymentGateway())
+                        PlanRenewalRequest.builder().planId(mapping.getPlanId()).txnId(mapping.getLinkedTransactionId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentGateway(request.getPaymentGateway())
                                 .clientAlias(request.getClientAlias()).build());
                 transactionInitRequest.setEvent(event);
                 final Transaction transaction = transactionManager.init(transactionInitRequest);
@@ -196,8 +208,9 @@ public class PaymentManager
             throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
         } finally {
             TransactionStatus finalStatus = TransactionContext.get().getStatus();
-            transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
-            if(finalStatus == TransactionStatus.SUCCESS) {
+            String lastSuccessTransactionId = getLastSuccessTransactionId(transaction);
+            transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
+            if (finalStatus == TransactionStatus.SUCCESS) {
                 //unsubscribe existing transaction plan id/transaction id
                 ItunesReceiptDetails receiptDetails = (ItunesReceiptDetails) mapping.getMessage();
                 eventPublisher.publishEvent(RecurringPaymentEvent.builder().transactionId(receiptDetails.getPaymentTransactionId()).paymentEvent(PaymentEvent.UNSUBSCRIBE).build());
@@ -233,8 +246,10 @@ public class PaymentManager
             if (transaction.getType() == PaymentEvent.RENEW) {
                 RenewalChargingTransactionReconciliationStatusRequest renewalChargingTransactionReconciliationStatusRequest = (RenewalChargingTransactionReconciliationStatusRequest) request;
                 builder.attemptSequence(renewalChargingTransactionReconciliationStatusRequest.getOriginalAttemptSequence())
-                        .transactionId(renewalChargingTransactionReconciliationStatusRequest.getOriginalTransactionId());
+                        .originalTransactionId(renewalChargingTransactionReconciliationStatusRequest.getOriginalTransactionId());
             }
+            String lastSuccessTransactionId = getLastSuccessTransactionId(transaction);
+            builder.lastSuccessTransactionId(lastSuccessTransactionId);
             transactionManager.revision(builder.build());
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
             publishEventsOnReconcileCompletion(existingStatus, finalStatus, transaction);
@@ -271,7 +286,7 @@ public class PaymentManager
     }
 
     @ClientAware(clientId = "#clientId")
-    public BaseResponse<?> doVerifyIap (String clientId, IapVerificationRequest request) {
+    public BaseResponse<?> doVerifyIap(String clientId, IapVerificationRequest request) {
         final PaymentGateway paymentGateway = request.getPaymentGateway();
         final IMerchantIapPaymentVerificationService verificationService = BeanLocatorFactory.getBean(paymentGateway.getCode(), IMerchantIapPaymentVerificationService.class);
         final LatestReceiptResponse latestReceiptResponse = verificationService.getLatestReceiptResponse(request);
@@ -291,7 +306,8 @@ public class PaymentManager
             throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
         } finally {
             final TransactionStatus finalStatus = transaction.getStatus();
-            transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus).build());
+            String lastSuccessTransactionId = getLastSuccessTransactionId(transaction);
+            transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(initialStatus, finalStatus, transaction);
         }
     }
@@ -325,7 +341,8 @@ public class PaymentManager
             throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
         } finally {
             final TransactionStatus finalStatus = transaction.getStatus();
-            transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus).build());
+            String lastSuccessTransactionId = getLastSuccessTransactionId(transaction);
+            transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(initialStatus, finalStatus, transaction);
             if (transaction.getStatus() == TransactionStatus.SUCCESS) {
                 publishAsync(Objects.requireNonNull(getRequest(request, latestReceiptResponse)));
@@ -342,7 +359,7 @@ public class PaymentManager
                     .productDetails(googleRequest.getProductDetails())
                     .appDetails(googleRequest.getAppDetails())
                     .paymentDetails(googleRequest.getPaymentDetails())
-                    .paymentGateway(request.getPaymentCode())
+                    .paymentCode(request.getPaymentCode().getCode())
                     .build();
         }
         return null;
@@ -351,7 +368,7 @@ public class PaymentManager
     @Override
     public WynkResponseEntity<Void> doRenewal(PaymentRenewalChargingRequest request) {
         final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
-                PlanRenewalRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(request.getPaymentGateway()).clientAlias(request.getClientAlias())
+                PlanRenewalRequest.builder().txnId(request.getId()).planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(request.getPaymentGateway()).clientAlias(request.getClientAlias())
                         .build());
         final Transaction transaction = transactionManager.init(transactionInitRequest);
         final TransactionStatus initialStatus = transaction.getStatus();
@@ -369,8 +386,8 @@ public class PaymentManager
             }
             final TransactionStatus finalStatus = transaction.getStatus();
             transactionManager.revision(AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus)
-                    .attemptSequence(request.getAttemptSequence() + 1).transactionId(request.getId()).build());
-            if(PaymentConstants.IAP_PAYMENT_METHODS.contains(transaction.getPaymentChannel().getId())) {
+                    .attemptSequence(request.getAttemptSequence()).originalTransactionId(request.getId()).lastSuccessTransactionId(transaction.getIdStr()).build());
+            if (PaymentConstants.IAP_PAYMENT_METHODS.contains(transaction.getPaymentChannel().getId())) {
                 eventPublisher.publishEvent(RecurringPaymentEvent.builder().transactionId(request.getId()).paymentEvent(PaymentEvent.UNSUBSCRIBE).build());
             }
         }
@@ -456,14 +473,24 @@ public class PaymentManager
     @Override
     public void acknowledgeSubscription(AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
         final IMerchantIapSubscriptionAcknowledgementService acknowledgementService =
-                BeanLocatorFactory.getBean(abstractPaymentAcknowledgementRequest.getPaymentGateway().getCode(), IMerchantIapSubscriptionAcknowledgementService.class);
+                BeanLocatorFactory.getBean(abstractPaymentAcknowledgementRequest.getPaymentCode(), IMerchantIapSubscriptionAcknowledgementService.class);
         acknowledgementService.acknowledgeSubscription(abstractPaymentAcknowledgementRequest);
     }
 
     @Override
     public void publishAsync(AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
         final IMerchantIapSubscriptionAcknowledgementService acknowledgementService =
-                BeanLocatorFactory.getBean(abstractPaymentAcknowledgementRequest.getPaymentGateway().getCode(), IMerchantIapSubscriptionAcknowledgementService.class);
+                BeanLocatorFactory.getBean(abstractPaymentAcknowledgementRequest.getPaymentCode(), IMerchantIapSubscriptionAcknowledgementService.class);
         acknowledgementService.publishAsync(abstractPaymentAcknowledgementRequest);
+    }
+
+    private String getLastSuccessTransactionId (Transaction transaction) {
+        if (transaction.getType() == PaymentEvent.RENEW) {
+            PaymentRenewal renewal =
+                    RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).findById(transaction.getIdStr())
+                            .orElse(null);
+            return Objects.nonNull(renewal) ? renewal.getLastSuccessTransactionId() : null;
+        }
+        return null;
     }
 }

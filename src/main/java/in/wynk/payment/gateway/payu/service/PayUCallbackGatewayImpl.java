@@ -19,6 +19,7 @@ import in.wynk.payment.gateway.IPaymentCallback;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -36,11 +37,13 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
     private final PayUCommonGateway common;
     private final ObjectMapper objectMapper;
     private final IPaymentCallback<AbstractPaymentCallbackResponse, PayUCallbackRequestPayload> callbackHandler;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public PayUCallbackGatewayImpl(PayUCommonGateway common, ObjectMapper objectMapper) {
+    public PayUCallbackGatewayImpl (PayUCommonGateway common, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher) {
         this.common = common;
         this.objectMapper = objectMapper;
         this.callbackHandler = new DelegatePayUCallbackHandler();
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -97,7 +100,7 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
             @Override
             public AbstractPaymentCallbackResponse handle(PayUCallbackRequestPayload request) {
                 final Transaction transaction = TransactionContext.get();
-                common.syncTransactionWithSourceResponse(PayUVerificationResponse.<PayUChargingTransactionDetails>builder().status(1).transactionDetails(Collections.singletonMap(transaction.getIdStr(), AbstractPayUTransactionDetails.from(request))).build());
+                common.syncTransactionWithSourceResponse(transaction, PayUVerificationResponse.<PayUChargingTransactionDetails>builder().status(1).transactionDetails(Collections.singletonMap(transaction.getIdStr(), AbstractPayUTransactionDetails.from(request))).build());
                 if (!EnumSet.of(PaymentEvent.RENEW, PaymentEvent.REFUND).contains(transaction.getType())) {
                     Optional<IPurchaseDetails> optionalDetails = TransactionContext.getPurchaseDetails();
                     if (optionalDetails.isPresent()) {
@@ -126,7 +129,7 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
             @Override
             public AbstractPaymentCallbackResponse handle(PayUAutoRefundCallbackRequestPayload request) {
                 final Transaction transaction = TransactionContext.get();
-                common.syncTransactionWithSourceResponse(PayUVerificationResponse.<PayUChargingTransactionDetails>builder().status(1).transactionDetails(Collections.singletonMap(transaction.getIdStr(), AbstractPayUTransactionDetails.from(request))).build());
+                common.syncTransactionWithSourceResponse(transaction, PayUVerificationResponse.<PayUChargingTransactionDetails>builder().status(1).transactionDetails(Collections.singletonMap(transaction.getIdStr(), AbstractPayUTransactionDetails.from(request))).build());
                 if (transaction.getStatus() == TransactionStatus.SUCCESS)
                     transaction.setStatus(TransactionStatus.AUTO_REFUND.getValue());
                 return DefaultPaymentCallbackResponse.builder().transactionStatus(transaction.getStatus()).build();

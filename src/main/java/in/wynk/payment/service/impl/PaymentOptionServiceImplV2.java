@@ -1,6 +1,7 @@
 package in.wynk.payment.service.impl;
 
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.aspect.advice.FraudAware;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
@@ -30,6 +31,7 @@ import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.PLAN;
 import static in.wynk.common.constant.BaseConstants.POINT;
+import static in.wynk.payment.core.constant.BeanConstant.OPTION_FRAUD_DETECTION_CHAIN;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY023;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYMENT_OPTIONS_FAILURE;
 
@@ -46,6 +48,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
     private final SubscriptionServiceManagerImpl subscriptionServiceManager;
 
     @Override
+    @FraudAware(name = OPTION_FRAUD_DETECTION_CHAIN)
     public FilteredPaymentOptionsResult getPaymentOptions(AbstractPaymentOptionsRequest<?> request) {
         if (request.getPaymentOptionRequest().getProductDetails().getType().equalsIgnoreCase(PLAN)) {
             return getPaymentOptionsDetailsForPlan(request.getPaymentOptionRequest());
@@ -80,6 +83,8 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
             return builder.methods(getFilteredPaymentGroups((PaymentMethod::isTrialSupported), (paidPlan::supportAutoRenew), eligibilityRequest)).build();
         if((Objects.nonNull(request.getMiscellaneousDetails()) && request.getMiscellaneousDetails().isAutoRenew()) || (Objects.nonNull(request.getPaymentDetails()) && request.getPaymentDetails().isAutoRenew()))
             return builder.methods(getFilteredPaymentGroups((PaymentMethod::isAutoRenewSupported), (paidPlan::supportAutoRenew), eligibilityRequest)).build();
+        if(Objects.nonNull(request.getPaymentDetails()) && request.getPaymentDetails().isMandate())
+            return builder.methods(getFilteredPaymentGroups((PaymentMethod::isMandateSupported), (paidPlan::supportAutoRenew), eligibilityRequest)).build();
         return builder.methods(getFilteredPaymentGroups((paymentMethod -> true), (paidPlan::supportAutoRenew), eligibilityRequest)).build();
     }
 

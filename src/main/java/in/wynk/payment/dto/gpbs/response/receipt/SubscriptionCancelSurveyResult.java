@@ -1,7 +1,5 @@
-package in.wynk.payment.dto.gpbs.receipt;
+package in.wynk.payment.dto.gpbs.response.receipt;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.Getter;
 import lombok.Setter;
 

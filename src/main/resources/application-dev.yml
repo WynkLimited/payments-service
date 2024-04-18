@@ -99,6 +99,9 @@ payment:
     offset:
       day: 0
       hour: 1
+    retry:
+      day: 0
+      hour: 1
   preDebitNotification:
     preOffsetDays: 2
     offset:
@@ -131,6 +134,20 @@ payment:
           producer:
             delayInSecond: 180
           consumer:
+              delay: 20
+              delayTimeUnit: SECONDS
+      externalTransaction:
+        report:
+          enabled: true
+          name: wcf-payment-transaction-ack-staging-sqs
+          sqs:
+            messages:
+              extractor:
+                batchSize: 5
+                waitTimeInSeconds: 10
+            producer:
+              delayInSecond: 180
+            consumer:
               delay: 20
               delayTimeUnit: SECONDS
       reconciliation:
@@ -201,6 +218,19 @@ payment:
       userDeactivation:
         enabled: true
         name: wcf-staging-payment-user-deactivation
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+      refund:
+        enabled: true
+        name: wcf-staging-payment-refund
         sqs:
           messages:
             extractor:

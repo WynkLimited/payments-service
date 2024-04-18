@@ -6,6 +6,7 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.dao.entity.Transaction;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 import static in.wynk.exception.WynkErrorType.UT025;
@@ -24,11 +25,15 @@ public abstract class AbstractTransactionRevisionRequest {
     @Analysed
     private final TransactionStatus existingTransactionStatus;
 
+    @Analysed
+    @Setter
+    private String lastSuccessTransactionId;
+
     public int getAttemptSequence() {
         return 0;
     };
 
-    public String getTransactionId() {
+    public String getOriginalTransactionId () {
         throw new WynkRuntimeException(UT025);
     }
 

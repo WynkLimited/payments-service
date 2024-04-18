@@ -123,11 +123,18 @@ public class PaymentStatusPresentationV2 implements IWynkPresentation<PaymentSta
             final TransactionStatus txnStatus = transaction.getStatus();
             final IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().get();
             if (EnumSet.of(TransactionStatus.FAILURE, TransactionStatus.FAILUREALREADYSUBSCRIBED).contains(txnStatus)) {
-                return failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL003), transaction, pageUrlDetails.getFailurePageUrl(), paymentMethodCachingService.get(purchaseDetails.getPaymentDetails().getPaymentId()).getGroup());
+                return PaymentEvent.MANDATE == transaction.getType() ? failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL005), transaction, pageUrlDetails.getFailurePageUrl(),
+                        paymentMethodCachingService.get(purchaseDetails.getPaymentDetails().getPaymentId()).getGroup()) :
+                        failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL003), transaction, pageUrlDetails.getFailurePageUrl(),
+                                paymentMethodCachingService.get(purchaseDetails.getPaymentDetails().getPaymentId()).getGroup());
             } else if (txnStatus == TransactionStatus.INPROGRESS) {
-                return failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL004), transaction, pageUrlDetails.getPendingPageUrl(), paymentMethodCachingService.get(purchaseDetails.getPaymentDetails().getPaymentId()).getGroup());
+                return PaymentEvent.MANDATE == transaction.getType() ?
+                        failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(PENDING001), transaction, pageUrlDetails.getPendingPageUrl(),
+                                paymentMethodCachingService.get(purchaseDetails.getPaymentDetails().getPaymentId()).getGroup()) :
+                        failure(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(FAIL004), transaction, pageUrlDetails.getPendingPageUrl(),
+                                paymentMethodCachingService.get(purchaseDetails.getPaymentDetails().getPaymentId()).getGroup());
             } else {
-                SuccessPaymentStatusResponse.SuccessPaymentStatusResponseBuilder<?,?> builder = SuccessPaymentStatusResponse.builder()
+                SuccessPaymentStatusResponse.SuccessPaymentStatusResponseBuilder<?, ?> builder = SuccessPaymentStatusResponse.builder()
                         .transactionStatus(payload.getTransactionStatus()).planId(transaction.getPlanId())
                         .tid(payload.getTid()).transactionType(payload.getTransactionType())
                         .validity(cachingService.validTillDate(transaction.getPlanId(),transaction.getMsisdn()))
@@ -135,7 +142,8 @@ public class PaymentStatusPresentationV2 implements IWynkPresentation<PaymentSta
                 if (txnStatus == TransactionStatus.SUCCESS) {
                     builder.packDetails(getPackDetails(transaction));
                     builder.redirectUrl(pageUrlDetails.getSuccessPageUrl());
-                    return success(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(SUCCESS001), builder);
+                    return PaymentEvent.MANDATE == transaction.getType() ? success(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(SUCCESS002), builder) :
+                            success(errorCodesCacheServiceImpl.getErrorCodeByInternalCode(SUCCESS001), builder);
                 }
                 return builder.build();
             }

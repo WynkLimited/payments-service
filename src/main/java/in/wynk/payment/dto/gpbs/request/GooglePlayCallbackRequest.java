@@ -3,12 +3,10 @@ package in.wynk.payment.dto.gpbs.request;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.dto.IAPNotification;
-import in.wynk.payment.dto.gpbs.GooglePlayLatestReceiptResponse;
-import in.wynk.payment.dto.gpbs.receipt.GooglePlayReceiptResponse;
+import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayLatestReceiptResponse;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.experimental.SuperBuilder;
 
 /**
  * @author Nishesh Pandey

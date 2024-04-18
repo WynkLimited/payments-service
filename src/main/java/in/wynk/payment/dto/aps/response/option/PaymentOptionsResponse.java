@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.aps.response.option;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import in.wynk.payment.dto.aps.response.option.paymentOptions.AbstractPaymentOptions;
 import in.wynk.payment.dto.aps.response.option.paymentOptions.PaymentOptionsConfig;
 import in.wynk.payment.dto.aps.response.option.savedOptions.SavedUserOptions;
@@ -17,6 +18,7 @@ import java.util.List;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class PaymentOptionsResponse implements Serializable {
     private PaymentOptionsConfig config;
     private SavedUserOptions savedUserOptions;

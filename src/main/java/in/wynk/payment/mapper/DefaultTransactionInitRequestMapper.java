@@ -11,9 +11,10 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.dto.*;
-import in.wynk.payment.dto.gpbs.GooglePlayLatestReceiptResponse;
+import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayLatestReceiptResponse;
 import in.wynk.payment.dto.gpbs.GooglePlayStatusCodes;
 import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
 import in.wynk.payment.dto.request.*;
@@ -65,7 +66,7 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
         final LatestReceiptResponse receiptResponse = wrapper.getReceiptResponse();
         final PlanDTO selectedPlan = BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(receiptResponse.getPlanId());
         final ClientDetails clientDetails = (ClientDetails) BeanLocatorFactory.getBean(ClientDetailsCachingService.class).getClientById(wrapper.getClientId());
-        final AbstractTransactionInitRequest initRequest = PlanTransactionInitRequest.builder().planId(receiptResponse.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(request.getPaymentGateway()).event(request.isOriginalSid() ? PaymentEvent.PURCHASE : PaymentEvent.RENEW).clientAlias(clientDetails.getAlias()).couponId(receiptResponse.getCouponCode()).autoRenewOpted(receiptResponse.isAutoRenewal()).trialOpted(receiptResponse.isFreeTrial()).userDetails(UserDetails.builder().msisdn(request.getMsisdn()).build()).appDetails(AppDetails.builder().os(request.getOs()).deviceId(request.getDeviceId()).service(selectedPlan.getService()).buildNo(request.getBuildNo()).build()).build();
+        final AbstractTransactionInitRequest initRequest = PlanTransactionInitRequest.builder().planId(receiptResponse.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(request.getPaymentGateway()).event((request.getPaymentGateway().getId().equals(PaymentConstants.AMAZON_IAP) || request.isOriginalSid()) ? PaymentEvent.PURCHASE : PaymentEvent.RENEW).clientAlias(clientDetails.getAlias()).couponId(receiptResponse.getCouponCode()).autoRenewOpted(receiptResponse.isAutoRenewal()).trialOpted(receiptResponse.isFreeTrial()).userDetails(UserDetails.builder().msisdn(request.getMsisdn()).build()).appDetails(AppDetails.builder().os(request.getOs()).deviceId(request.getDeviceId()).service(selectedPlan.getService()).buildNo(request.getBuildNo()).build()).build();
         BeanLocatorFactory.getBean(IPricingManager.class).computePriceAndApplyDiscount(initRequest);
         return initRequest;
     }
@@ -92,7 +93,7 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
     }
 
     public static AbstractTransactionInitRequest from(PlanRenewalRequest request) {
-        final AbstractTransactionInitRequest initRequest = PlanTransactionInitRequest.builder().planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(request.getPaymentGateway()).event(PaymentEvent.RENEW).clientAlias(request.getClientAlias()).autoRenewOpted(true).build();
+        final AbstractTransactionInitRequest initRequest = PlanTransactionInitRequest.builder().planId(request.getPlanId()).txnId(request.getTxnId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(request.getPaymentGateway()).event(PaymentEvent.RENEW).clientAlias(request.getClientAlias()).autoRenewOpted(true).build();
         BeanLocatorFactory.getBean(IPricingManager.class).computePriceAndApplyDiscount(initRequest);
         return initRequest;
     }
@@ -104,7 +105,7 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
     }
 
     private static AbstractTransactionInitRequest planInit(Client clientDetails, PaymentGateway paymentGateway, IUserDetails payerDetails, IAppDetails appDetails, IPaymentDetails paymentDetails, PlanDetails planDetails, IGeoLocation geoLocation) {
-        return PlanTransactionInitRequest.builder().autoRenewOpted(paymentDetails.isAutoRenew()).paymentGateway(paymentGateway).userDetails(payerDetails).appDetails(appDetails).trialOpted(paymentDetails.isTrialOpted()).couponId(paymentDetails.getCouponId()).planId(planDetails.getPlanId()).clientAlias(clientDetails.getAlias()).event(PaymentEvent.PURCHASE).msisdn(payerDetails.getMsisdn()).uid(IdentityUtils.getUidFromUserName(payerDetails.getMsisdn(), appDetails.getService())).geoDetails(geoLocation).build();
+        return PlanTransactionInitRequest.builder().mandate(paymentDetails.isMandate()).autoRenewOpted(paymentDetails.isAutoRenew()).paymentGateway(paymentGateway).userDetails(payerDetails).appDetails(appDetails).trialOpted(paymentDetails.isTrialOpted()).couponId(paymentDetails.getCouponId()).planId(planDetails.getPlanId()).clientAlias(clientDetails.getAlias()).event(paymentDetails.isMandate() ? PaymentEvent.MANDATE : PaymentEvent.PURCHASE).msisdn(payerDetails.getMsisdn()).uid(IdentityUtils.getUidFromUserName(payerDetails.getMsisdn(), appDetails.getService())).geoDetails(geoLocation).build();
     }
 
     private static AbstractTransactionInitRequest pointInit(Client clientDetails, PaymentGateway paymentGateway, IUserDetails payerDetails, IAppDetails appDetails, IPaymentDetails paymentDetails, PointDetails pointDetails) {
@@ -112,7 +113,6 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
     }
 
     public static AbstractTransactionInitRequest from (AbstractPaymentChargingRequest request) {
-
         final PaymentGateway paymentGateway = paymentMethodCaching.get(request.getPaymentDetails().getPaymentId()).getPaymentCode();
         final Client client = request.getClientDetails();
         final AbstractTransactionInitRequest transactionInitRequest;

@@ -11,8 +11,8 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.http.constant.HttpConstant;
-import static in.wynk.payment.constant.OrderStatus.*;
 import in.wynk.payment.core.constant.PaymentConstants;
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
@@ -45,21 +45,23 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.EnumSet;
+import java.util.Optional;
 
 import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
+import static in.wynk.payment.constant.OrderStatus.*;
 import static in.wynk.payment.core.constant.PaymentConstants.BANK_CODE;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_MODE;
 import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
-import static in.wynk.payment.dto.aps.common.ApsConstant.AIRTEL_PAY_STACK;
-import static in.wynk.payment.dto.aps.common.ApsConstant.PAY_DIGI;
-import static in.wynk.payment.dto.aps.common.ApsConstant.INT_PAY;
+import static in.wynk.payment.dto.aps.common.ApsConstant.*;
 
 /**
  * @author Nishesh Pandey
@@ -110,7 +112,7 @@ public class ApsCommonGatewayService {
     public <T> T exchange (String clientAlias, String url, HttpMethod method, String msisdn, Object body, Class<T> target) {
         if (StringUtils.isEmpty(clientAlias)) {
             log.error("client is not loaded for url {}", clientAlias);
-            throw new WynkRuntimeException(PAY044);
+            throw new WynkRuntimeException(APS002);
         }
         try {
             ResponseEntity<String> responseEntity = apsClientService.apsOperations(getLoginId(msisdn), generateToken(url, clientAlias), url, method, body);
@@ -123,14 +125,14 @@ public class ApsCommonGatewayService {
                 failureResponse.setStatusCode(apsVasResponse.getStatusCode());
                 throw new WynkRuntimeException(failureResponse.getErrorCode(), failureResponse.getErrorMessage(), failureResponse.getStatusCode());
             }
-            throw new WynkRuntimeException(PAY041, responseEntity.getStatusCode().name());
+            throw new WynkRuntimeException(APS001, responseEntity.getStatusCode().name());
         } catch (JsonProcessingException ex) {
             throw new WynkRuntimeException("Unknown Object from ApsGateway", ex);
         } catch (Exception e) {
             if (e instanceof WynkRuntimeException) {
                 throw e;
             }
-            throw new WynkRuntimeException(PAY041, e);
+            throw new WynkRuntimeException(APS001, e);
         }
     }
 
@@ -163,28 +165,35 @@ public class ApsCommonGatewayService {
                 throw new WynkRuntimeException(((WynkRuntimeException) e).getErrorCode(), ((WynkRuntimeException) e).getErrorTitle(), e.getMessage());
             }
             log.error(APS_REFUND_STATUS, "unable to execute fetchAndUpdateTransactionFromSource due to ", e);
+            finalTransactionStatus = TransactionStatus.FAILURE;
             throw new WynkRuntimeException(PAY998, e);
         } finally {
             transaction.setStatus(finalTransactionStatus.name());
-            eventPublisher.publishEvent(mBuilder.build());
+            if (EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION, PaymentEvent.MANDATE).contains(transaction.getType())) {
+                syncChargingTransactionFromSource(transaction, Optional.empty());
+            } else {
+                eventPublisher.publishEvent(mBuilder.build());
+            }
         }
     }
 
-    public void syncChargingTransactionFromSource (Transaction transaction) {
+    public ApsChargeStatusResponse[] syncChargingTransactionFromSource (Transaction transaction, Optional<ApsChargeStatusResponse[]> verifyOption) {
         final String txnId = transaction.getIdStr();
         final boolean fetchHistoryTransaction = false;
         final MerchantTransactionEvent.Builder builder = MerchantTransactionEvent.builder(transaction.getIdStr());
+        ApsChargeStatusResponse[] apsChargeStatusResponses;
         try {
             final URI uri = httpTemplate.getUriTemplateHandler().expand(CHARGING_STATUS_ENDPOINT, txnId, fetchHistoryTransaction);
             builder.request(uri);
-            ApsChargeStatusResponse[] apsChargeStatusResponses = exchange(transaction.getClientAlias(), uri.toString(), HttpMethod.GET, getLoginId(transaction.getMsisdn()), null, ApsChargeStatusResponse[].class);
+            apsChargeStatusResponses =
+                    verifyOption.orElseGet(() -> exchange(transaction.getClientAlias(), uri.toString(), HttpMethod.GET, getLoginId(transaction.getMsisdn()), null, ApsChargeStatusResponse[].class));
             builder.response(apsChargeStatusResponses);
             if (StringUtils.isNotEmpty(apsChargeStatusResponses[0].getPaymentMode())) {
-                String mode = apsChargeStatusResponses[0].getPaymentMode();
+                String paymentMode = apsChargeStatusResponses[0].getPaymentMode();
                 if ("CREDIT_CARD".equals(apsChargeStatusResponses[0].getPaymentMode()) || "DEBIT_CARD".equals(apsChargeStatusResponses[0].getPaymentMode())) {
-                    mode = "CREDIT_CARD".equals(apsChargeStatusResponses[0].getPaymentMode()) ? "CC" : "DC";
+                    paymentMode = "CREDIT_CARD".equals(apsChargeStatusResponses[0].getPaymentMode()) ? "CC" : "DC";
                 }
-                AnalyticService.update(PAYMENT_MODE, mode);
+                AnalyticService.update(PAYMENT_MODE, paymentMode);
             }
             if (StringUtils.isNotEmpty(apsChargeStatusResponses[0].getBankCode())) {
                 AnalyticService.update(BANK_CODE, apsChargeStatusResponses[0].getBankCode());
@@ -197,18 +206,19 @@ public class ApsCommonGatewayService {
             syncTransactionWithSourceResponse(apsChargeStatusResponses[0]);
             if (transaction.getStatus() == TransactionStatus.FAILURE) {
                 if (!StringUtils.isEmpty(apsChargeStatusResponses[0].getErrorCode()) || !StringUtils.isEmpty(apsChargeStatusResponses[0].getErrorDescription())) {
-                    eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(apsChargeStatusResponses[0].getErrorCode()).description(apsChargeStatusResponses[0].getErrorDescription()).build());
+                    eventPublisher.publishEvent(
+                            PaymentErrorEvent.builder(transaction.getIdStr()).code(apsChargeStatusResponses[0].getErrorCode()).description(apsChargeStatusResponses[0].getErrorDescription()).build());
                 }
             }
+        } catch (HttpStatusCodeException e) {
+            builder.response(e.getResponseBodyAsString());
+            throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
         } catch (Exception e) {
-            log.error(APS_CHARGING_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to "+ e.getMessage());
-            builder.response(e.getMessage());
+            log.error(APS_CHARGING_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to " + e.getMessage());
             throw new WynkRuntimeException(PAY998, e);
-        } finally {
-            if (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE) {
-                eventPublisher.publishEvent(builder.build());
-            }
         }
+        eventPublisher.publishEvent(builder.build());
+        return apsChargeStatusResponses;
     }
 
     private void syncTransactionWithSourceResponse (ApsChargeStatusResponse apsChargeStatusResponse) {
@@ -244,7 +254,7 @@ public class ApsCommonGatewayService {
         final MerchantTransactionEvent.Builder builder = MerchantTransactionEvent.builder(transaction.getIdStr());
         MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(txnId);
         String orderId = merchantTransaction.getOrderId();
-        if(StringUtils.isEmpty(orderId)) {
+        if (StringUtils.isEmpty(orderId)) {
             throw new WynkRuntimeException("Order Id is missing in merchant table which is mandatory for aps_v2");
         }
         final URI uri = httpTemplate.getUriTemplateHandler().expand(ORDER_STATUS_ENDPOINT, orderId);
@@ -279,15 +289,17 @@ public class ApsCommonGatewayService {
                                     .description(paymentDetails.getErrorDescription()).build());
                 }
             }
+        } catch (HttpStatusCodeException e) {
+            builder.response(e.getResponseBodyAsString());
+            throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
         } catch (Exception e) {
             log.error(APS_ORDER_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to " + e.getMessage());
-            builder.response(e.getMessage());
             throw new WynkRuntimeException(PAY998, e);
-        } finally {
-            if (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE) {
-                eventPublisher.publishEvent(builder.build());
-            }
         }
+        if (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE) {
+            eventPublisher.publishEvent(builder.build());
+        }
+
     }
 
     @CacheEvict(cacheName = "APS_ELIGIBILITY_API", cacheKey = "#msisdn", cacheManager = L2CACHE_MANAGER)

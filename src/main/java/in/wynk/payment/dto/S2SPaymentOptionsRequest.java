@@ -26,6 +26,8 @@ public class S2SPaymentOptionsRequest implements IPaymentOptionsRequest {
     @Analysed
     private String couponId;
     @Analysed
+    private boolean mandate;
+    @Analysed
     private AppDetails appDetails;
     @Analysed
     private UserDetails userDetails;

@@ -6,9 +6,9 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.dto.AbstractPaymentAcknowledgementRequest;
-import in.wynk.payment.dto.GooglePlaySubscriptionAcknowledgementRequest;
-import in.wynk.payment.dto.SubscriptionAcknowledgeMessageManager;
+import in.wynk.payment.dto.gpbs.acknowledge.queue.SubscriptionAcknowledgeMessageManager;
+import in.wynk.payment.dto.gpbs.acknowledge.request.AbstractPaymentAcknowledgementRequest;
+import in.wynk.payment.dto.gpbs.acknowledge.request.GooglePlaySubscriptionAcknowledgementRequest;
 import in.wynk.payment.dto.gpbs.request.GooglePlayAppDetails;
 import in.wynk.payment.dto.gpbs.request.GooglePlayPaymentDetails;
 import in.wynk.payment.dto.gpbs.request.GooglePlayProductDetails;
@@ -60,7 +60,7 @@ public class SubscriptionAcknowledgementConsumerPollingQueue extends AbstractSQS
     public void consume (SubscriptionAcknowledgeMessageManager message) {
         AnalyticService.update(message);
         AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest = null;
-        if (BeanConstant.GOOGLE_PLAY.equals(message.getPaymentGateway().getCode())) {
+        if (BeanConstant.GOOGLE_PLAY.equals(message.getPaymentCode())) {
             GooglePlayAppDetails appDetails = new GooglePlayAppDetails();
             appDetails.setPackageName(message.getPackageName());
             appDetails.setService(message.getService());
@@ -68,7 +68,7 @@ public class SubscriptionAcknowledgementConsumerPollingQueue extends AbstractSQS
             productDetails.setSkuId(message.getSkuId());
             abstractPaymentAcknowledgementRequest = GooglePlaySubscriptionAcknowledgementRequest.builder()
                     .paymentDetails(GooglePlayPaymentDetails.builder().purchaseToken(message.getPurchaseToken()).build())
-                    .paymentGateway(message.getPaymentGateway())
+                    .paymentCode(message.getPaymentCode())
                     .appDetails(appDetails)
                     .productDetails(productDetails)
                     .developerPayload(message.getDeveloperPayload())

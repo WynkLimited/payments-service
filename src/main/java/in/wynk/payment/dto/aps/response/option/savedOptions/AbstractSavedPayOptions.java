@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.aps.response.option.savedOptions;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -28,6 +29,7 @@ import static in.wynk.payment.dto.aps.common.ApsConstant.FIELD_TYPE;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = FIELD_TYPE, defaultImpl = NetBankingSavedPayOptions.class, visible = true)
 @JsonSubTypes({
         @JsonSubTypes.Type(value = WalletSavedOptions.class, name = WALLETS),

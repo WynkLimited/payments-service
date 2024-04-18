@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import com.google.common.base.Strings;
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.payment.core.constant.PaymentConstants;
+import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.InvoiceDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.subscription.common.dto.OfferDTO;
@@ -91,8 +93,8 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
         @AnalysedEntity
         public static class CustomerInvoiceDetails {
             @Analysed
-            @JsonProperty("PaymentTransactionID")
-            private String paymentTransactionId;
+            @JsonProperty("paymentTransactionID")
+            private String paymentTransactionID;
             @Analysed
             private double invoiceAmount;
             @Analysed
@@ -101,8 +103,8 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
             private String invoiceNumber;
             @Analysed
             private String paymentDate;
-            /*@Analysed
-            private String paymentMode;*/
+            @Analysed
+            private String paymentMode;
             @Analysed
             private String typeOfService;
             /*@Analysed
@@ -157,7 +159,7 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
         final InformInvoiceKafkaMessage.LobInvoice.CustomerDetails customerDetails = generateCustomerDetails(request.getOperatorDetails(), request.getTaxableRequest(), transaction.getMsisdn(),
                 request.getUid());
         final InformInvoiceKafkaMessage.LobInvoice.CustomerInvoiceDetails customerInvoiceDetails = generateCustomerInvoiceDetails(request.getTaxableResponse(), transaction, request.getInvoiceId(), offer, plan,
-                request.getInvoiceDetails());
+                request.getInvoiceDetails(), request.getPurchaseDetails());
         final List<InformInvoiceKafkaMessage.LobInvoice.CustomerRechargeRate> customerRechargeRates = generateCustomerRechargeRate(request.getTaxableResponse(), request.getInvoiceDetails(), plan);
         final InformInvoiceKafkaMessage.LobInvoice.TaxDetails taxDetails = generateTaxDetails(request.getTaxableResponse());
         final boolean sendEmail = Objects.nonNull(request.getOperatorDetails()) &&
@@ -176,7 +178,7 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
                 .build();
     }
 
-    private static InformInvoiceKafkaMessage.LobInvoice.CustomerInvoiceDetails generateCustomerInvoiceDetails(TaxableResponse taxableResponse, Transaction transaction, String invoiceNumber, OfferDTO offer, PlanDTO plan, InvoiceDetails invoiceDetails) {
+    private static InformInvoiceKafkaMessage.LobInvoice.CustomerInvoiceDetails generateCustomerInvoiceDetails(TaxableResponse taxableResponse, Transaction transaction, String invoiceNumber, OfferDTO offer, PlanDTO plan, InvoiceDetails invoiceDetails, IPurchaseDetails purchaseDetails) {
         /*double CGST = 0.0;
         double SGST = 0.0;
         double IGST = 0.0;
@@ -190,14 +192,18 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
                     IGST = dto.getAmount();
             }
         }*/
+        String paymentMode = null;
+        if(Objects.nonNull(purchaseDetails) && Objects.nonNull(purchaseDetails.getPaymentDetails()) && Objects.nonNull(purchaseDetails.getPaymentDetails().getPaymentMode())){
+            paymentMode = purchaseDetails.getPaymentDetails().getPaymentMode();
+        }
         final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
         return LobInvoice.CustomerInvoiceDetails.builder()
                 .invoiceDate(LocalDateTime.now().format(formatter))
-                .paymentTransactionId(transaction.getIdStr())
+                .paymentTransactionID(transaction.getIdStr())
                 .invoiceNumber(invoiceNumber)
                 .invoiceAmount(plan.getPrice().getAmount())
                 .paymentDate(transaction.getInitTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().format(formatter))
-                /*.paymentMode(transaction.getPaymentChannel().getCode())*/
+                .paymentMode(invoiceDetails.getPaymentModes().getOrDefault(paymentMode, invoiceDetails.getPaymentModes().get(BaseConstants.DEFAULT)))
                 .typeOfService(offer.getTitle())
                 .discount(plan.getPrice().getAmount() - transaction.getAmount())
                 .discountedPrice(transaction.getAmount())

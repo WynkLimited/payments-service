@@ -2,6 +2,7 @@ package in.wynk.payment.presentation;
 
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.service.ClientDetailsCachingService;
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.IPresentation;
 import in.wynk.common.dto.SessionResponse;
 import in.wynk.common.dto.WynkResponseEntity;
@@ -14,6 +15,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.PurchaseRequest;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.subscription.common.dto.ItemDTO;
+import in.wynk.subscription.common.dto.PlanDTO;
 import org.apache.http.client.utils.URIBuilder;
 import org.springframework.data.util.Pair;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,7 +24,7 @@ import org.springframework.stereotype.Component;
 import java.net.URISyntaxException;
 import java.util.Objects;
 
-import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
 
 @Component
 public class PurchaseSessionPresentation implements IPresentation<WynkResponseEntity<SessionResponse.SessionData>, Pair<String, PurchaseRequest>> {
@@ -53,10 +55,18 @@ public class PurchaseSessionPresentation implements IPresentation<WynkResponseEn
             queryBuilder.addParameter(BUILD_NO, String.valueOf(request.getAppDetails().getBuildNo()));
             if(Objects.nonNull(request.getMiscellaneousDetails())) {
                 queryBuilder.addParameter(INGRESS_INTENT, String.valueOf(request.getMiscellaneousDetails().getIngressIntent()));
-                if(request.getMiscellaneousDetails().isAutoRenew()){
-                    queryBuilder.addParameter(PAYMENT_FLOW, "AUTORENEW");
+                if (request.getMiscellaneousDetails().isMandate()) {
+                    queryBuilder.addParameter(PAYMENT_FLOW, PAYMENT_FLOW_MANDATE);
+                } else if (request.getMiscellaneousDetails().isTrialOpted()) {
+                    queryBuilder.addParameter(PAYMENT_FLOW, PAYMENT_FLOW_TRIAL_OPTED);
+                } else if (request.getMiscellaneousDetails().isAutoRenew() && !request.getMiscellaneousDetails().isTrialOpted()) {
+                    queryBuilder.addParameter(PAYMENT_FLOW, PAYMENT_FLOW_AUTO_RENEW);
                 }
             }
+                PlanDTO planDto = cache.getPlan(request.getProductDetails().getId());
+                if (Objects.nonNull(planDto.getSku()) && Objects.nonNull(planDto.getSku().get("google_iap"))) {
+                    queryBuilder.addParameter(PaymentConstants.SKU_ID, planDto.getSku().get("google_iap"));
+                }
             String builder = PAYMENT_OPTION_URL + id + SLASH + request.getOs() + QUESTION_MARK + queryBuilder.build().getQuery();
             SessionResponse.SessionData response = SessionResponse.SessionData.builder().redirectUrl(builder).sid(id).build();
             return WynkResponseEntity.<SessionResponse.SessionData>builder().data(response).build();

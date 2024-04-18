@@ -27,8 +27,33 @@ public class UrlShortenRequest {
     @Getter
     @Builder
     public static class UrlShortenData {
+
+        @JsonProperty("desktop_url")
+        private String desktopPath;
+        @JsonProperty("$android_deeplink_path")
+        private String androidDeeplink;
+        @JsonProperty("$fallback_url")
+        private String fallbackUrl;
         @JsonProperty("$deeplink_path")
-        private final String path;
+        private String path;
+
+        public UrlShortenData(String androidDeeplink, String desktopPath, String fallbackUrl) {
+            this.androidDeeplink = androidDeeplink;
+            this.desktopPath = desktopPath;
+            this.fallbackUrl = fallbackUrl;
+        }
+
+        public UrlShortenData(String androidDeeplink, String desktopPath, String fallbackUrl, String path) {
+            this.androidDeeplink = androidDeeplink;
+            this.desktopPath = desktopPath;
+            this.fallbackUrl = fallbackUrl;
+            this.path = path;
+        }
+
+        public UrlShortenData(String path) {
+            this.path = path;
+        }
+
     }
 
     public static class UrlShortenRequestBuilder {
@@ -48,6 +73,11 @@ public class UrlShortenRequest {
 
         public UrlShortenRequestBuilder channel(String channel) {
             this.channel = channel;
+            return this;
+        }
+
+        public UrlShortenRequestBuilder data(UrlShortenData data) {
+            this.data = data;
             return this;
         }
 

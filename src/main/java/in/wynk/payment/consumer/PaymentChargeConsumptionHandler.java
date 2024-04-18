@@ -66,7 +66,6 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
     private final IKafkaEventPublisher<String, WaPayChargeRespEvent> kafkaPublisher;
     private final WynkServiceDetailsCachingService wynkServiceDetailsCachingService;
 
-
     public static Map<String, String> map = Collections.singletonMap("airteltv", "airtelxstream");
 
     PaymentChargeConsumptionHandler(@Value("${wynk.kafka.producers.payment.charge.topic}") String topic,

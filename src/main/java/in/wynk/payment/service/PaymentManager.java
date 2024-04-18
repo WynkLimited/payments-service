@@ -365,15 +365,19 @@ public class PaymentManager
                     .finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(initialStatus, finalStatus, transaction);
             if ((transaction.getStatus() == TransactionStatus.SUCCESS) && (request.getPaymentCode().getCode().equals(BeanConstant.GOOGLE_PLAY))) {
-                publishAsync(Objects.requireNonNull(getRequest(request, latestReceiptResponse, transaction.getIdStr())));
+                AbstractAcknowledgement acknowledgementRequest = getRequest(request, latestReceiptResponse, transaction);
+                if(Objects.nonNull(acknowledgementRequest)) {
+                    publishAsync(acknowledgementRequest);
+                }
             }
         }
     }
 
-    private AbstractAcknowledgement getRequest (IapVerificationRequestV2 request, LatestReceiptResponse latestReceiptResponse, String txnId) {
+    private AbstractAcknowledgement getRequest (IapVerificationRequestV2 request, LatestReceiptResponse latestReceiptResponse, Transaction transaction) {
+        String txnId = transaction.getIdStr();
         GooglePlayLatestReceiptResponse googleResponse = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
         GooglePlayVerificationRequest googleRequest = (GooglePlayVerificationRequest) request;
-        if (BaseConstants.PLAN.equals(request.getProductDetails().getType())) {
+        if (transaction.getType() != PaymentEvent.POINT_PURCHASE) {
             return GooglePlaySubscriptionAcknowledgementRequest.builder()
                     .developerPayload(googleResponse.getGooglePlayResponse().getDeveloperPayload())
                     .productDetails(googleRequest.getProductDetails())
@@ -382,7 +386,7 @@ public class PaymentManager
                     .paymentCode(request.getPaymentCode().getCode())
                     .txnId(txnId)
                     .build();
-        } else if (BaseConstants.POINT.equals(request.getProductDetails().getType())) {
+        } else if (transaction.getType() == PaymentEvent.POINT_PURCHASE) {
             return GooglePlayProductAcknowledgementRequest.builder()
                     .developerPayload(googleResponse.getGooglePlayResponse().getDeveloperPayload())
                     .productDetails(googleRequest.getProductDetails())
@@ -392,7 +396,7 @@ public class PaymentManager
                     .txnId(txnId)
                     .build();
         }
-        return null;
+       throw new WynkRuntimeException("Exception occurred as type is missing");
     }
 
     @Override

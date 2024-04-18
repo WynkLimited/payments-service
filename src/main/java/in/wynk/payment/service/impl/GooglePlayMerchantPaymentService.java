@@ -545,7 +545,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                 .concat(getApiKey(request.getAppDetails().getService()));
         callGoogleApi(url, request, null);
         AnalyticService.update("txnId", request.getTxnId());
-        AnalyticService.update("consumptionStatus", true );
+        AnalyticService.update("consumptionStatus", true);
     }
 
     @AnalyseTransaction(name = "externalTransactionAcknowledgement")
@@ -603,19 +603,14 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                         .service(MerchantServiceUtil.getService(response.getPackageName())).isTestPurchase(Objects.nonNull(response.getTestPurchase())).build());
             }
             log.info("Google acknowledged successfully for the external transaction Token {}", request.getExternalTransactionToken());
-        } catch (HttpClientErrorException ex) {
-            if (ex.getStatusCode() == HttpStatus.CONFLICT) {
+        } catch (Exception ex) {
+            if (HttpClientErrorException.class.isAssignableFrom(ex.getClass()) && ((HttpClientErrorException) ex).getStatusCode() == HttpStatus.CONFLICT) {
                 log.info("An external transaction with the provided id already exists.");
             } else {
+                log.error(PaymentLoggingMarker.GOOGLE_PLAY_ACKNOWLEDGEMENT_FAILURE, "Exception occurred while acknowledging external transaction to google for the external transaction token {}: ",
+                        request.getExternalTransactionToken());
                 throw new WynkRuntimeException(PaymentErrorType.PAY050, ex);
             }
-        } catch (Exception e) {
-            if (e instanceof WynkRuntimeException) {
-                throw e;
-            }
-            log.error(PaymentLoggingMarker.GOOGLE_PLAY_ACKNOWLEDGEMENT_FAILURE, "Exception occurred while acknowledging external transaction to google for the external transaction token {}: ",
-                    request.getExternalTransactionToken());
-            throw new WynkRuntimeException(PaymentErrorType.PAY050, e);
         }
     }
 
@@ -624,19 +619,14 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         try {
             restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(body, headers), String.class);
             log.info("Google api called successfully for the purchase with Purchase Token {}", request.getPaymentDetails().getPurchaseToken());
-        } catch (HttpClientErrorException ex) {
-            if (ex.getStatusCode() == HttpStatus.CONFLICT) {
+        } catch (Exception ex) {
+            if (HttpClientErrorException.class.isAssignableFrom(ex.getClass()) && ((HttpClientErrorException) ex).getStatusCode() == HttpStatus.CONFLICT) {
                 log.info("The operation could not be performed since the object was already in the process of being updated.");
             } else {
-                throw new WynkRuntimeException(PaymentErrorType.PAY029, ex);
+                log.error(PaymentLoggingMarker.GOOGLE_PLAY_ACKNOWLEDGEMENT_FAILURE, "Exception occurred while calling google api for the purchase with purchase token {}: ",
+                        request.getPaymentDetails().getPurchaseToken());
+                throw new WynkRuntimeException(PaymentErrorType.PAY029, ex.getMessage());
             }
-        } catch (Exception e) {
-            if (e instanceof WynkRuntimeException) {
-                throw e;
-            }
-            log.error(PaymentLoggingMarker.GOOGLE_PLAY_ACKNOWLEDGEMENT_FAILURE, "Exception occurred while calling google api for the purchase with purchase token {}: ",
-                    request.getPaymentDetails().getPurchaseToken());
-            throw new WynkRuntimeException(PaymentErrorType.PAY029, e);
         }
     }
 

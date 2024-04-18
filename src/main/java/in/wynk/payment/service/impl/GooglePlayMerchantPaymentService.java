@@ -509,7 +509,6 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         if (GooglePlaySubscriptionAcknowledgementRequest.class.isAssignableFrom(abstractPaymentAcknowledgementRequest.getClass())) {
             reportSubscriptionPurchaseToGoogle((AbstractAcknowledgement) abstractPaymentAcknowledgementRequest);
         } else if (GooglePlayProductAcknowledgementRequest.class.isAssignableFrom(abstractPaymentAcknowledgementRequest.getClass())) {
-            reportProductPurchaseToGoogle((AbstractAcknowledgement) abstractPaymentAcknowledgementRequest);
             consumeProduct((AbstractAcknowledgement) abstractPaymentAcknowledgementRequest);
         } else {
             reportExternalTransactionSubscription((GooglePlayReportExternalTransactionRequest) abstractPaymentAcknowledgementRequest, abstractPaymentAcknowledgementRequest.getTxnId());
@@ -526,6 +525,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         callGoogleApi(url, request, body);
     }
 
+    // this acknowledgement is used for non-consumable products
     @AnalyseTransaction(name = "productAcknowledgement")
     private void reportProductPurchaseToGoogle (AbstractAcknowledgement request) {
         AnalyticService.update(request);

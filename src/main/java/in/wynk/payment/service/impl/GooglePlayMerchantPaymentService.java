@@ -30,7 +30,7 @@ import in.wynk.payment.core.service.GSTStateCodesCachingService;
 import in.wynk.payment.core.service.InvoiceDetailsCachingService;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.gpbs.*;
-import in.wynk.payment.dto.gpbs.acknowledge.queue.SubscriptionAcknowledgeMessageManager;
+import in.wynk.payment.dto.gpbs.acknowledge.queue.PurchaseAcknowledgeMessageManager;
 import in.wynk.payment.dto.gpbs.acknowledge.request.*;
 import in.wynk.payment.dto.gpbs.notification.request.DeveloperNotification;
 import in.wynk.payment.dto.gpbs.notification.request.GooglePlayNotificationMessage;
@@ -654,7 +654,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         log.info("Trying to publish message on queue for google acknowledgement. ");
         if (abstractPaymentAcknowledgementRequest instanceof AbstractAcknowledgement) {
             AbstractAcknowledgement request = (AbstractAcknowledgement) abstractPaymentAcknowledgementRequest;
-            SubscriptionAcknowledgeMessageManager message = SubscriptionAcknowledgeMessageManager.builder().paymentCode(request.getPaymentCode()).packageName(request.getAppDetails().getPackageName())
+            PurchaseAcknowledgeMessageManager message = PurchaseAcknowledgeMessageManager.builder().paymentCode(request.getPaymentCode()).packageName(request.getAppDetails().getPackageName())
                     .service(request.getAppDetails().getService()).purchaseToken(request.getPaymentDetails()
                             .getPurchaseToken()).skuId(request.getProductDetails().getSkuId())
                     .developerPayload(request.getDeveloperPayload()).type(request.getType()).txnId(abstractPaymentAcknowledgementRequest.getTxnId()).build();

@@ -7,7 +7,7 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.dto.gpbs.acknowledge.queue.SubscriptionAcknowledgeMessageManager;
+import in.wynk.payment.dto.gpbs.acknowledge.queue.PurchaseAcknowledgeMessageManager;
 import in.wynk.payment.dto.gpbs.acknowledge.request.AbstractPaymentAcknowledgementRequest;
 import in.wynk.payment.dto.gpbs.acknowledge.request.GooglePlayProductAcknowledgementRequest;
 import in.wynk.payment.dto.gpbs.acknowledge.request.GooglePlaySubscriptionAcknowledgementRequest;
@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
  */
 
 @Slf4j
-public class SubscriptionAcknowledgementConsumerPollingQueue extends AbstractSQSMessageConsumerPollingQueue<SubscriptionAcknowledgeMessageManager> {
+public class PurchaseAcknowledgementConsumerPollingQueue extends AbstractSQSMessageConsumerPollingQueue<PurchaseAcknowledgeMessageManager> {
 
 
     private final ExecutorService messageHandlerThreadPool;
@@ -45,12 +45,12 @@ public class SubscriptionAcknowledgementConsumerPollingQueue extends AbstractSQS
     @Autowired
     private PaymentManager paymentManager;
 
-    public SubscriptionAcknowledgementConsumerPollingQueue (String queueName,
-                                                            AmazonSQS sqs,
-                                                            ObjectMapper objectMapper,
-                                                            ISQSMessageExtractor messagesExtractor,
-                                                            ExecutorService messageHandlerThreadPool,
-                                                            ScheduledExecutorService pollingThreadPool) {
+    public PurchaseAcknowledgementConsumerPollingQueue (String queueName,
+                                                        AmazonSQS sqs,
+                                                        ObjectMapper objectMapper,
+                                                        ISQSMessageExtractor messagesExtractor,
+                                                        ExecutorService messageHandlerThreadPool,
+                                                        ScheduledExecutorService pollingThreadPool) {
         super(queueName, sqs, objectMapper, messagesExtractor, messageHandlerThreadPool);
         this.pollingThreadPool = pollingThreadPool;
         this.messageHandlerThreadPool = messageHandlerThreadPool;
@@ -58,8 +58,8 @@ public class SubscriptionAcknowledgementConsumerPollingQueue extends AbstractSQS
 
     @Override
     @ClientAware(clientAlias = "#message.clientAlias")
-    @AnalyseTransaction(name = "subscriptionAcknowledgementMessage")
-    public void consume (SubscriptionAcknowledgeMessageManager message) {
+    @AnalyseTransaction(name = "purchaseAcknowledgeMessage")
+    public void consume (PurchaseAcknowledgeMessageManager message) {
         AnalyticService.update(message);
         AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest = null;
         if (BeanConstant.GOOGLE_PLAY.equals(message.getPaymentCode())) {
@@ -93,8 +93,8 @@ public class SubscriptionAcknowledgementConsumerPollingQueue extends AbstractSQS
     }
 
     @Override
-    public Class<SubscriptionAcknowledgeMessageManager> messageType () {
-        return SubscriptionAcknowledgeMessageManager.class;
+    public Class<PurchaseAcknowledgeMessageManager> messageType () {
+        return PurchaseAcknowledgeMessageManager.class;
     }
 
     @Override

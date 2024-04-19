@@ -28,7 +28,6 @@ import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.core.service.InvoiceDetailsCachingService;
 import in.wynk.payment.dto.*;
-import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.gpbs.GooglePlayReportEvent;
 import in.wynk.payment.dto.gpbs.acknowledge.queue.ExternalTransactionReportMessageManager;
 import in.wynk.payment.dto.invoice.GenerateInvoiceKafkaMessage;
@@ -716,9 +715,6 @@ public class PaymentEventListener {
                             .clientAlias(event.getTransaction().getClientAlias())
                             .build());
                 }
-            }
-            if (ApsConstant.APS.equals(request.getTransaction().getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(request.getTransaction().getPaymentChannel().getId())) {
-                initiateReportTransactionToMerchant(request.getTransaction());
             }
         }
         if (Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getAppDetails())) {

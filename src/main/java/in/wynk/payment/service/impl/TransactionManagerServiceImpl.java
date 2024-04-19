@@ -10,6 +10,8 @@ import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.coupon.core.dao.entity.Coupon;
+import in.wynk.coupon.core.dao.entity.UserCouponAvailedRecord;
+import in.wynk.coupon.core.dao.repository.AvailedCouponsDao;
 import in.wynk.coupon.core.dao.entity.CouponCodeLink;
 import in.wynk.coupon.core.dao.entity.UserCouponAvailedRecord;
 import in.wynk.coupon.core.dao.repository.AvailedCouponsDao;
@@ -278,6 +280,11 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                     }
                 }
             } else if (PaymentEvent.POINT_PURCHASE == request.getTransaction().getType()) {
+                if (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS && (request.getFinalTransactionStatus() == TransactionStatus.SUCCESS)) {
+                    if (ApsConstant.APS.equals(request.getTransaction().getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(request.getTransaction().getPaymentChannel().getId())) {
+                        initiateReportTransactionToMerchant(request.getTransaction());
+                    }
+                }
                 if (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS &&
                         (request.getFinalTransactionStatus() == TransactionStatus.SUCCESS || request.getFinalTransactionStatus() == TransactionStatus.FAILURE)) {
                     publishDataToWynkKafka(request.getTransaction());

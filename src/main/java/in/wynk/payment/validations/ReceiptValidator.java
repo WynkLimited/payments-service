@@ -87,7 +87,7 @@ public class ReceiptValidator extends BaseHandler<IReceiptValidatorRequest<Lates
             GooglePlayLatestReceiptResponse latestReceiptInfo = response.getLatestReceiptInfo();
             if (latestReceiptInfo.getGooglePlayResponse() instanceof GooglePlayProductReceiptResponse) {
                 GooglePlayProductReceiptResponse googlePlayResponse = (GooglePlayProductReceiptResponse) latestReceiptInfo.getGooglePlayResponse();
-                if (googlePlayResponse.getConsumptionState() == 1 || googlePlayResponse.getAcknowledgementState() == 1) {
+                if (googlePlayResponse.getConsumptionState() == 1) {
                     AnalyticService.update("AcknowledgementState", googlePlayResponse.getAcknowledgementState());
                     AnalyticService.update("ConsumptionState", googlePlayResponse.getConsumptionState());
                     throw new WynkRuntimeException(PaymentErrorType.PAY994);

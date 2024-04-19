@@ -19,6 +19,7 @@ import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.gpbs.GooglePlayStatusCodes;
 import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
 import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayLatestReceiptResponse;
+import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayProductReceiptResponse;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
 import in.wynk.payment.service.IPricingManager;
@@ -26,8 +27,11 @@ import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.MerchantServiceUtil;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.security.core.context.SecurityContextHolder;
+
+import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.CLIENT;
 
@@ -79,8 +83,8 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
         GooglePlayLatestReceiptResponse googleResponse = (GooglePlayLatestReceiptResponse) receiptResponse;
         final ClientDetails clientDetails = (ClientDetails) BeanLocatorFactory.getBean(ClientDetailsCachingService.class).getClientById(wrapper.getClientId());
         PlanDTO planDTO = cachingService.getPlanFromSku(gRequest.getProductDetails().getSkuId());
-        AbstractTransactionInitRequest initRequest= null;
-        if(planDTO != null) {
+        AbstractTransactionInitRequest initRequest = null;
+        if (planDTO != null) {
             final PlanDTO selectedPlan = BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(planDTO.getId());
             if (!selectedPlan.getService().equalsIgnoreCase(gRequest.getAppDetails().getService())) {
                 throw new WynkRuntimeException(GooglePlayStatusCodes.GOOGLE_31020.getErrorTitle());
@@ -93,11 +97,17 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
                     .userDetails(UserDetails.builder().msisdn(gRequest.getUserDetails().getMsisdn()).build())
                     .appDetails(AppDetails.builder().os(gRequest.getAppDetails().getOs()).deviceId(gRequest.getAppDetails().getDeviceId()).service(selectedPlan.getService())
                             .buildNo(gRequest.getAppDetails().getBuildNo()).build()).build();
-        } else if(request.getProductDetails().getItemId() != null) {
-            initRequest = PointTransactionInitRequest.builder().itemId(request.getProductDetails().getItemId()).uid(gRequest.getUserDetails().getUid()).msisdn(gRequest.getUserDetails().getMsisdn()).paymentGateway(request.getPaymentCode())
-                    .event(MerchantServiceUtil.getGooglePlayEvent(gRequest, googleResponse, BaseConstants.POINT))
-                    .clientAlias(clientDetails.getAlias()).couponId(receiptResponse.getCouponCode()).amount(request.getProductDetails().getPrice())
-                    .build();
+        } else {
+            String itemId = request.getProductDetails().getItemId();
+            if (Objects.isNull(itemId)) {
+                GooglePlayProductReceiptResponse googlePlayProductResponse = (GooglePlayProductReceiptResponse) googleResponse.getGooglePlayResponse();
+                itemId = StringUtils.isNotEmpty(googlePlayProductResponse.getDeveloperPayload()) ? googlePlayProductResponse.getDeveloperPayload() : itemId;
+            }
+            initRequest =
+                    PointTransactionInitRequest.builder().itemId(itemId).uid(gRequest.getUserDetails().getUid()).msisdn(gRequest.getUserDetails().getMsisdn()).paymentGateway(request.getPaymentCode())
+                            .event(MerchantServiceUtil.getGooglePlayEvent(gRequest, googleResponse, BaseConstants.POINT))
+                            .clientAlias(clientDetails.getAlias()).amount(request.getProductDetails().getPrice())
+                            .build();
         }
         BeanLocatorFactory.getBean(IPricingManager.class).computePriceAndApplyDiscount(initRequest);
         return initRequest;

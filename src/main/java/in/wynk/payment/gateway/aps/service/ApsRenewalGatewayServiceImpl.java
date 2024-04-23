@@ -4,10 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.logging.BaseLoggingMarkers;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.event.MandateStatusEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.common.LOB;
@@ -31,6 +33,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import static in.wynk.common.constant.BaseConstants.ONE_DAY_IN_MILLI;
+import static in.wynk.payment.core.constant.PaymentConstants.ERROR_REASONS;
 import static in.wynk.payment.dto.aps.common.ApsConstant.*;
 
 /**
@@ -84,9 +87,10 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
             log.error("This lob is not eligible for renewal for txnId {}", txnId);
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
             recurringPaymentManagerService.unScheduleRecurringPayment(transaction.getClientAlias(), txnId, PaymentEvent.CANCELLED);
+            recurringPaymentManagerService.unScheduleRecurringPayment(transaction.getClientAlias(), transaction.getIdStr(), PaymentEvent.CANCELLED);
+            eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).description("This lob is not supported for renewal.").code(BaseLoggingMarkers.APPLICATION_INVALID_USECASE.getName()).clientAlias(transaction.getClientAlias()).build());
             return;
         }
-
         AnalyticService.update(PaymentConstants.PAYMENT_MODE, merchantData.getPaymentMode());
         if (Objects.nonNull(merchantData.getMandateId())) {
             SiPaymentRecurringResponse apsRenewalResponse = doChargingForRenewal(merchantData);
@@ -94,6 +98,7 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
         } else {
             log.error("Mandate Id is missing for the transaction Id {}", merchantData.getOrderId());
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).description("Mandate id is missing in renewal table").code(BaseLoggingMarkers.APPLICATION_INVALID_USECASE.getName()).clientAlias(transaction.getClientAlias()).build());
         }
     }
 
@@ -122,6 +127,7 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
             transaction.setStatus(TransactionStatus.SUCCESS.getValue());
         } else if (PG_STATUS_FAILED.equalsIgnoreCase(apsRenewalResponse.getPgStatus())) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            cancelRenewalBasedOnErrorReason(apsRenewalResponse.);
             eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(apsRenewalResponse.getPgStatus()).build());
         } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
                 StringUtils.equalsIgnoreCase(PG_STATUS_PENDING, apsRenewalResponse.getPgStatus())) {
@@ -129,6 +135,18 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
         } else if (transaction.getInitTime().getTimeInMillis() < System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
                 StringUtils.equalsIgnoreCase(PG_STATUS_PENDING, apsRenewalResponse.getPgStatus())) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
+        }
+    }
+
+    private void cancelRenewalBasedOnErrorReason (String description, PaymentErrorEvent event, Integer planId, String uid, String referenceTransactionId) {
+        if (ERROR_REASONS.contains(description)) {
+            try {
+                recurringPaymentManagerService.unScheduleRecurringPayment(event.getClientAlias(), event.getId(), PaymentEvent.CANCELLED);
+                eventPublisher.publishEvent(
+                        MandateStatusEvent.builder().errorReason(description).clientAlias(event.getClientAlias()).txnId(event.getId()).referenceTransactionId(referenceTransactionId).uid(uid).planId(planId).build());
+            } catch (Exception e) {
+                log.error("Unable to cancel the subscription", e);
+            }
         }
     }
 }

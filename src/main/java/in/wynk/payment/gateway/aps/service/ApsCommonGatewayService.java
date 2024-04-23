@@ -121,9 +121,9 @@ public class ApsCommonGatewayService {
                 if (HttpStatus.OK.name().equals(apsVasResponse.getStatusCode())) {
                     return objectMapper.convertValue(apsVasResponse.getBody(), target);
                 }
-                ApsFailureResponse failureResponse = objectMapper.readValue((String) apsVasResponse.getBody(), ApsFailureResponse.class);
+                ApsFailureResponse failureResponse = objectMapper.readValue((String) responseEntity.getBody(), ApsFailureResponse.class);
                 failureResponse.setStatusCode(apsVasResponse.getStatusCode());
-                throw new WynkRuntimeException(failureResponse.getErrorCode(), failureResponse.getErrorMessage(), failureResponse.getStatusCode());
+                throw new WynkRuntimeException(failureResponse.getErrorCode(), failureResponse.getMessage(), failureResponse.getStatusCode());
             }
             throw new WynkRuntimeException(APS001, responseEntity.getStatusCode().name());
         } catch (JsonProcessingException ex) {

@@ -69,10 +69,10 @@ public class PurchaseS2SController {
     @ApiOperation("Provides session Id and the webview URL for directToPayment page purchase purchase")
     @PreAuthorize(PaymentConstants.PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"PURCHASE_INIT\")")
     public WynkResponseEntity<SessionResponse.SessionData> directToPaymentPage(@Valid @RequestBody PurchaseRequest request,
-                                                                               @RequestParam Map<String, String> param) {
+                                                                               @RequestParam Map<String, String> additionalParam) {
         LoadClientUtils.loadClient(true);
         final String sid = sessionService.init(request);
-        final BestValuePlanResponse bestValuePlan = iSubscriptionServiceManager.getBestValuePlan(request, param);
+        final BestValuePlanResponse bestValuePlan = iSubscriptionServiceManager.getBestValuePlan(request, additionalParam);
         final WynkResponseEntity<SessionResponse.SessionData> response = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPresentation<WynkResponseEntity<SessionResponse.SessionData>,  Pair<String, BestValuePlanResponse>>>() {
         }).transform( Pair.of(sid, bestValuePlan));
         AnalyticService.update(response.getBody());

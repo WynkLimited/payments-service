@@ -15,4 +15,5 @@ public class PageUrlDetails implements IChargingDetails.IPageUrlDetails {
     private String failurePageUrl;
     private String pendingPageUrl;
     private String unknownPageUrl;
+    private String fallBackPageUrl;
 }

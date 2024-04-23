@@ -1175,3 +1175,10 @@ event:
     dp: wcf-data-science-prod-subscription-funnel
 
 api.get.endPoint: https://subscription.wynk.in
+
+subscription.webview.root : https://pay.wynk.in
+subscription.webview.purchaseOrManage.url.first : ${subscription.webview.root}/#/
+subscription.webview.purchase.url.second : /subscriptions/
+subscription.webview.manage.url.second: /manage-subscription/
+
+

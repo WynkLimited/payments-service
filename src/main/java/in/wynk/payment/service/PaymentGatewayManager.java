@@ -19,7 +19,9 @@ import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
+import in.wynk.payment.core.dao.entity.PaymentRenewal;
+import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
@@ -38,6 +40,7 @@ import in.wynk.payment.dto.response.AbstractPaymentRefundResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.gateway.*;
 import in.wynk.payment.mapper.DefaultTransactionInitRequestMapper;
+import in.wynk.payment.utils.RecurringTransactionUtils;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.session.context.SessionContextHolder;
 import io.netty.channel.ConnectTimeoutException;
@@ -56,7 +59,8 @@ import java.util.*;
 import static in.wynk.payment.core.constant.BeanConstant.CHARGING_FRAUD_DETECTION_CHAIN;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
-import static in.wynk.payment.core.constant.PaymentErrorType.*;
+import static in.wynk.payment.core.constant.PaymentErrorType.APS007;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY024;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.CHARGING_API_FAILURE;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.RENEWAL_STATUS_ERROR;
 
@@ -84,6 +88,7 @@ public class PaymentGatewayManager
     private final Map<Class<? extends AbstractTransactionStatusRequest>, IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>> statusDelegator = new HashMap<>();
     private final Gson gson;
     private final PaymentGatewayCommon common;
+    private final RecurringTransactionUtils recurringTransactionUtils;
 
     @PostConstruct
     public void init() {
@@ -305,7 +310,9 @@ public class PaymentGatewayManager
                 final IWynkErrorType errorType = original.getErrorType();
                 errorEventBuilder.code(Objects.nonNull(errorType) ? errorType.getErrorCode() : original.getErrorCode());
                 errorEventBuilder.description(Objects.nonNull(errorType) ? errorType.getErrorMessage() : original.getMessage());
-                eventPublisher.publishEvent(errorEventBuilder.build());
+                PaymentErrorEvent errorEvent = errorEventBuilder.build();
+                recurringTransactionUtils.cancelRenewalBasedOnErrorReason(errorEvent.getDescription(), transaction);
+                eventPublisher.publishEvent(errorEvent);
                 throw ex;
             } else {
                 errorEventBuilder.code(PaymentErrorType.PAY024.getErrorCode()).description(ex.getMessage());

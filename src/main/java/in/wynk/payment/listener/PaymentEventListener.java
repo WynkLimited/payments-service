@@ -261,10 +261,7 @@ public class PaymentEventListener {
     @ClientAware(clientAlias = "#event.clientAlias")
     public void onPaymentErrorEvent (PaymentErrorEvent event) {
         AnalyticService.update(event);
-        if (StringUtils.equals(event.getCode(), E6002) && Objects.isNull(event.getDescription())) {
-            AnalyticService.update("description", ERROR_DESCRIPTION_FOR_E6002);
-        }
-        publishTransactionData(event);
+        publishAdditionalData(event);
         retryRegistry.retry(PaymentConstants.PAYMENT_ERROR_UPSERT_RETRY_KEY).executeRunnable(() -> paymentErrorService.upsert(PaymentError.builder()
                 .id(event.getId())
                 .code(Objects.nonNull(event.getCode()) ? event.getCode() : "UNKNOWN")
@@ -273,7 +270,10 @@ public class PaymentEventListener {
                 .build()));
     }
 
-    private void publishTransactionData (PaymentErrorEvent event) {
+    private void publishAdditionalData (PaymentErrorEvent event) {
+        if (StringUtils.equals(event.getCode(), E6002) && Objects.isNull(event.getDescription())) {
+            AnalyticService.update(DESCRIPTION, ERROR_DESCRIPTION_FOR_E6002);
+        }
         Transaction transaction = transactionManagerService.get(event.getId());
         if (Objects.nonNull(transaction)) {
             AnalyticService.update(UID, transaction.getUid());
@@ -286,27 +286,9 @@ public class PaymentEventListener {
             AnalyticService.update(PAYMENT_CODE, transaction.getPaymentChannel().getId());
         }
         if (transaction.getType() == PaymentEvent.RENEW) {
-            String txnId = event.getId();
             PaymentRenewal renewal = recurringPaymentManagerService.getRenewalById(event.getId());
             if (Objects.nonNull(renewal)) {
-                if (StringUtils.isNotBlank(renewal.getLastSuccessTransactionId())) {
-                    txnId = renewal.getLastSuccessTransactionId();
-                }
                 AnalyticService.update(RENEWAL_ATTEMPT_SEQUENCE, renewal.getAttemptSequence());
-            }
-
-            cancelRenewalBasedOnErrorReason(event.getDescription(), event, transaction.getPlanId(), transaction.getUid(), txnId);
-        }
-    }
-
-    private void cancelRenewalBasedOnErrorReason (String description, PaymentErrorEvent event, Integer planId, String uid, String referenceTransactionId) {
-        if (ERROR_REASONS.contains(description)) {
-            try {
-                recurringPaymentManagerService.unScheduleRecurringPayment(event.getClientAlias(), event.getId(), PaymentEvent.CANCELLED);
-                eventPublisher.publishEvent(
-                        MandateStatusEvent.builder().errorReason(description).clientAlias(event.getClientAlias()).txnId(event.getId()).referenceTransactionId(referenceTransactionId).uid(uid).planId(planId).build());
-            } catch (Exception e) {
-                log.error("Unable to cancel the subscription", e);
             }
         }
     }

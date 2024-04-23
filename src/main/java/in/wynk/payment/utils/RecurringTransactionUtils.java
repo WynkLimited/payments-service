@@ -1,32 +1,51 @@
 package in.wynk.payment.utils;
 
-import in.wynk.payment.common.enums.BillingCycle;
-import in.wynk.payment.common.utils.BillingUtils;
-import in.wynk.payment.service.PaymentCachingService;
-import in.wynk.subscription.common.dto.PlanDTO;
-import org.springframework.beans.factory.annotation.Autowired;
+import in.wynk.common.enums.PaymentEvent;
+import in.wynk.payment.core.dao.entity.PaymentRenewal;
+import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.event.MandateStatusEvent;
+import in.wynk.payment.service.IRecurringPaymentManagerService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Component;
+
+import java.util.Objects;
+
+import static in.wynk.payment.core.constant.PaymentConstants.ERROR_REASONS;
 
 /**
  * @author Nishesh Pandey
  */
 
+@Component
+@RequiredArgsConstructor
+@Slf4j
 public class RecurringTransactionUtils {
 
-    private static PaymentCachingService cachingService;
+    private final IRecurringPaymentManagerService recurringPaymentManagerService;
+    private final ApplicationEventPublisher eventPublisher;
 
-    @Autowired
-    public void load (PaymentCachingService cachingService) {
-        this.cachingService = cachingService;
-    }
-
-    public static BillingUtils BillingInfo (PlanDTO selectedPlan, boolean isFreeTrial) {
-        int validTillDays = Math.toIntExact(selectedPlan.getPeriod().getTimeUnit().toDays(selectedPlan.getPeriod().getValidity()));
-        int freeTrialValidity = isFreeTrial ? cachingService.getPlan(selectedPlan.getLinkedFreePlanId()).getPeriod().getValidity() : validTillDays;
-        return freeTrialValidity == validTillDays ? new BillingUtils(validTillDays) : new BillingUtils(1, BillingCycle.ADHOC);
-    }
-
-    public static String generateInvoiceNumber () {
-        long invoiceNumber = (long) (Math.random() * 100000000000000000L);
-        return invoiceNumber + "";
+    public void cancelRenewalBasedOnErrorReason (String description, Transaction transaction) {
+        if (ERROR_REASONS.contains(description)) {
+            try {
+                String referenceTransactionId = transaction.getIdStr();
+                if (transaction.getType() == PaymentEvent.RENEW) {
+                    PaymentRenewal renewal = recurringPaymentManagerService.getRenewalById(transaction.getIdStr());
+                    if (Objects.nonNull(renewal)) {
+                        if (StringUtils.isNotBlank(renewal.getLastSuccessTransactionId())) {
+                            referenceTransactionId = renewal.getLastSuccessTransactionId();
+                        }
+                    }
+                }
+                recurringPaymentManagerService.unScheduleRecurringPayment(transaction.getClientAlias(), transaction.getIdStr(), PaymentEvent.CANCELLED);
+                eventPublisher.publishEvent(
+                        MandateStatusEvent.builder().errorReason(description).clientAlias(transaction.getClientAlias()).txnId(transaction.getIdStr()).referenceTransactionId(referenceTransactionId)
+                                .uid(transaction.getUid()).planId(transaction.getPlanId()).build());
+            } catch (Exception e) {
+                log.error("Unable to update renewal table for cancellation and mandate status event could not be generated", e);
+            }
+        }
     }
 }

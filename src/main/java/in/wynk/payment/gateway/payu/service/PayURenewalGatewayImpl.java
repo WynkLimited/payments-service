@@ -24,6 +24,7 @@ import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.payment.utils.RecurringTransactionUtils;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -38,9 +39,9 @@ import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.ONE_DAY_IN_MILLI;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY005;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY015;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_API_FAILURE;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_RENEWAL_STATUS_ERROR;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
@@ -55,10 +56,11 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
     private final IMerchantTransactionService merchantTransactionService;
     private final ITransactionManagerService transactionManager;
     private final IRecurringPaymentManagerService recurringPaymentManagerService;
+    private final RecurringTransactionUtils recurringTransactionUtils;
 
     public PayURenewalGatewayImpl (PayUCommonGateway common, Gson gson, ObjectMapper objectMapper, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher,
                                    IMerchantTransactionService merchantTransactionService, ITransactionManagerService transactionManager,
-                                   IRecurringPaymentManagerService recurringPaymentManagerService) {
+                                   IRecurringPaymentManagerService recurringPaymentManagerService, RecurringTransactionUtils recurringTransactionUtils) {
         this.gson = gson;
         this.common = common;
         this.objectMapper = objectMapper;
@@ -67,6 +69,7 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
         this.merchantTransactionService = merchantTransactionService;
         this.transactionManager = transactionManager;
         this.recurringPaymentManagerService = recurringPaymentManagerService;
+        this.recurringTransactionUtils = recurringTransactionUtils;
     }
 
     @Override
@@ -105,6 +108,7 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
                             PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(payUChargingTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.FAILURE.getValue());
                         if (!StringUtils.isEmpty(payUChargingTransactionDetails.getErrorCode()) || !StringUtils.isEmpty(payUChargingTransactionDetails.getErrorMessage())) {
+                            recurringTransactionUtils.cancelRenewalBasedOnErrorReason(payUChargingTransactionDetails.getErrorMessage(), transaction);
                             eventPublisher.publishEvent(
                                     PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description(payUChargingTransactionDetails.getErrorMessage())
                                             .build());
@@ -118,6 +122,7 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
                     }
                 } else {
                     transaction.setStatus(TransactionStatus.FAILURE.getValue());
+                    recurringTransactionUtils.cancelRenewalBasedOnErrorReason(payUChargingTransactionDetails.getErrorMessage(), transaction);
                     eventPublisher.publishEvent(
                             PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description(payUChargingTransactionDetails.getErrorMessage())
                                     .build());
@@ -166,7 +171,17 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
             log.error(PAYU_API_FAILURE, ex.getMessage(), ex);
             throw new WynkRuntimeException(PAY015, ex);
         }
-        return paymentResponse != null && paymentResponse.getStatus().equals("active");
+        boolean isMandateActive = false;
+        if (paymentResponse != null) {
+            isMandateActive = "active".equalsIgnoreCase(paymentResponse.getStatus());
+            if (!isMandateActive) {
+                transaction.setStatus(TransactionStatus.FAILURE.getValue());
+                log.error(PAYU_MANDATE_VALIDATION, "mandate status is: " + paymentResponse.getStatus());
+                recurringTransactionUtils.cancelRenewalBasedOnErrorReason(PAY005.getErrorMessage(), transaction);
+                eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PAY005.getErrorCode()).description(PAY005.getErrorMessage()).build());
+            }
+        }
+        return isMandateActive;
     }
 
     private PayURenewalResponse doChargingForRenewal (PaymentRenewalChargingRequest paymentRenewalChargingRequest, String mihpayid, String lastSuccessTxnId) {

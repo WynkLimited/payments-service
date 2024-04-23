@@ -13,8 +13,6 @@ import in.wynk.coupon.core.dao.entity.Coupon;
 import in.wynk.coupon.core.dao.entity.UserCouponAvailedRecord;
 import in.wynk.coupon.core.dao.repository.AvailedCouponsDao;
 import in.wynk.coupon.core.dao.entity.CouponCodeLink;
-import in.wynk.coupon.core.dao.entity.UserCouponAvailedRecord;
-import in.wynk.coupon.core.dao.repository.AvailedCouponsDao;
 import in.wynk.coupon.core.service.CouponCachingService;
 import in.wynk.coupon.core.service.ICouponCodeLinkService;
 import in.wynk.data.dto.IEntityCacheService;
@@ -275,20 +273,17 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                             applicationEventPublisher.publishEvent(PaymentSettlementEvent.builder().tid(request.getOriginalTransactionId()).build());
                         }
                         if (ApsConstant.APS.equals(request.getTransaction().getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(request.getTransaction().getPaymentChannel().getId())) {
-                            initiateReportTransactionToMerchant(request.getTransaction());
+                            initiateTransactionReportToMerchant(request.getTransaction());
                         }
                     }
                 }
-            } else if (PaymentEvent.POINT_PURCHASE == request.getTransaction().getType()) {
-                if (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS && (request.getFinalTransactionStatus() == TransactionStatus.SUCCESS)) {
-                    if (ApsConstant.APS.equals(request.getTransaction().getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(request.getTransaction().getPaymentChannel().getId())) {
-                        initiateReportTransactionToMerchant(request.getTransaction());
-                    }
+            } else if (PaymentEvent.POINT_PURCHASE == request.getTransaction().getType() && (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS &&
+                    (request.getFinalTransactionStatus() == TransactionStatus.SUCCESS || request.getFinalTransactionStatus() == TransactionStatus.FAILURE))) {
+                if (request.getFinalTransactionStatus() == TransactionStatus.SUCCESS &&
+                        (ApsConstant.APS.equals(request.getTransaction().getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(request.getTransaction().getPaymentChannel().getId()))) {
+                    initiateTransactionReportToMerchant(request.getTransaction());
                 }
-                if (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS &&
-                        (request.getFinalTransactionStatus() == TransactionStatus.SUCCESS || request.getFinalTransactionStatus() == TransactionStatus.FAILURE)) {
-                    publishDataToWynkKafka(request.getTransaction());
-                }
+                publishDataToWynkKafka(request.getTransaction());
             }
         } finally {
             if (request.getTransaction().getStatus() != TransactionStatus.INPROGRESS && request.getTransaction().getStatus() != TransactionStatus.UNKNOWN) {
@@ -300,18 +295,16 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         }
     }
 
-    private void initiateReportTransactionToMerchant (Transaction transaction) {
-            try {
-                MerchantTransaction merchantData = merchantTransactionService.getMerchantTransaction(transaction.getIdStr());
-                if (Objects.nonNull(merchantData.getExternalTokenReferenceId())) {
-                    AnalyticService.update(EXTERNAL_TRANSACTION_TOKEN, merchantData.getExternalTokenReferenceId());
-                    eventPublisher.publishEvent(
-                            ExternalTransactionReportEvent.builder().transactionId(transaction.getIdStr()).externalTokenReferenceId(merchantData.getExternalTokenReferenceId())
-                                    .clientAlias(transaction
-                                            .getClientAlias()).paymentEvent(transaction.getType()).build());
-                }
-            } catch (Exception ignored) {
+    private void initiateTransactionReportToMerchant (Transaction transaction) {
+        try {
+            MerchantTransaction merchantData = merchantTransactionService.getMerchantTransaction(transaction.getIdStr());
+            if (Objects.nonNull(merchantData.getExternalTokenReferenceId())) {
+                AnalyticService.update(EXTERNAL_TRANSACTION_TOKEN, merchantData.getExternalTokenReferenceId());
+                eventPublisher.publishEvent(ExternalTransactionReportEvent.builder().transactionId(transaction.getIdStr()).externalTokenReferenceId(merchantData.getExternalTokenReferenceId())
+                        .clientAlias(transaction.getClientAlias()).paymentEvent(transaction.getType()).build());
             }
+        } catch (Exception ignored) {
+        }
     }
 
     private void publishDataToWynkKafka (Transaction transaction) {

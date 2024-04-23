@@ -102,4 +102,5 @@ public interface PaymentConstants extends BaseConstants {
     String PAYMENT_FLOW_AUTO_RENEW = "AUTORENEW";
     String ADD_TO_BILL_USER_SUBSCRIPTION_STATUS_TASK= "AddToBillUserSubscriptionStatusTask";
     String EXTERNAL_TRANSACTION_TOKEN = "externalTransactionToken";
+    String SUBSCRIPTION_PURCHASE_OR_MANAGE_CLIENT_PLACE_HOLDER = "subscription.%c.webview.purchaseOrManage.url.first";
 }

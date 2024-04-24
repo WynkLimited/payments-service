@@ -315,7 +315,7 @@ public class PaymentGatewayManager
                 eventPublisher.publishEvent(errorEvent);
                 throw ex;
             } else {
-                errorEventBuilder.code(PaymentErrorType.PAY024.getErrorCode()).description(PaymentErrorType.PAY024.getErrorCode());
+                errorEventBuilder.code(PaymentErrorType.PAY024.getErrorCode()).description(PaymentErrorType.PAY024.getErrorMessage());
                 eventPublisher.publishEvent(errorEventBuilder.build());
                 throw new WynkRuntimeException(PAY024, ex);
             }

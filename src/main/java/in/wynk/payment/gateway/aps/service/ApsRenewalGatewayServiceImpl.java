@@ -77,7 +77,7 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
         }
         MerchantTransaction merchantTransaction = getMerchantData(txnId);
         ApsChargeStatusResponse[] apsChargeStatusResponses =
-                (merchantTransaction == null) ? common.syncChargingTransactionFromSource(transactionManager.get(txnId), Optional.empty()) :
+                (Objects.isNull(merchantTransaction) || Objects.isNull(merchantTransaction.getResponse())) ? common.syncChargingTransactionFromSource(transactionManager.get(txnId), Optional.empty()) :
                         objectMapper.convertValue(merchantTransaction.getResponse(), ApsChargeStatusResponse[].class);
         ApsChargeStatusResponse merchantData = apsChargeStatusResponses[0];
 

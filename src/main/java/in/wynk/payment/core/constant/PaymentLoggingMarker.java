@@ -25,6 +25,8 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker APS_MANDATE_REVOKE_ERROR = MarkerFactory.getMarker("APS_MANDATE_REVOKE_ERROR");
     Marker APS_CALLBACK_ORDER_ERROR = MarkerFactory.getMarker("APS_CALLBACK_ORDER_ERROR");
     Marker APS_TDR_ERROR= MarkerFactory.getMarker("APS_TDR_ERROR");
+    Marker MAX_RENEWAL_ATTEMPT_ERROR= MarkerFactory.getMarker("MAX_RENEWAL_ATTEMPT_ERROR");
+
 
     Marker HTTP_ERROR = MarkerFactory.getMarker("HTTP_ERROR");
     Marker PAYTM_ERROR = MarkerFactory.getMarker("PAYTM_ERROR");
@@ -64,7 +66,8 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker PAYU_UPI_MANDATE_REVOKE_ERROR = MarkerFactory.getMarker("PAYU_UPI_MANDATE_REVOKE_ERROR");
     Marker PAYU_REFUND_STATUS_VERIFICATION = MarkerFactory.getMarker("PAYU_REFUND_STATUS_VERIFICATION");
     Marker PAYU_CHARGING_STATUS_VERIFICATION_FAILURE = MarkerFactory.getMarker("PAYU_CHARGING_STATUS_VERIFICATION_FAILURE");
-    Marker PAYU_API_FAILURE = MarkerFactory.getMarker("PAYU_API_FAILURE");
+    Marker PAYU_API_FAILURE = MarkerFactory.getMarker("PAYU_MANDATE_VALIDATION");
+    Marker PAYU_MANDATE_VALIDATION = MarkerFactory.getMarker("PAYU_API_FAILURE");
     Marker ADDTOBILL_API_FAILURE = MarkerFactory.getMarker("ADDTOBILL_API_FAILURE");
     Marker PAYU_UPI_INIT_TXN_FAILURE = MarkerFactory.getMarker("PAYU_UPI_INIT_TXN_FAILURE");
 
@@ -88,6 +91,8 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker ITUNES_RENEWAL_ERROR = MarkerFactory.getMarker("ITUNES_RENEWAL_ERROR");
     Marker GOOGLE_PLAY_RENEWAL_ERROR = MarkerFactory.getMarker("GOOGLE_PLAY_RENEWAL_ERROR");
     Marker AMAZON_IAP_RENEWAL_ERROR= MarkerFactory.getMarker("AMAZON_IAP_RENEWAL_ERROR");
+
+    Marker GOOGLE_PLAY_RENEWAL_FAILURE = MarkerFactory.getMarker("GOOGLE_PLAY_RENEWAL_FAILURE");
 
     Marker AMAZON_IAP_VERIFICATION_FAILURE = MarkerFactory.getMarker("AMAZON_IAP_VERIFICATION_FAILURE");
 

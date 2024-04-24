@@ -27,6 +27,7 @@ public class PaymentMethod extends MongoBaseEntityMessage<String> {
     private boolean mandateSupported;
     private boolean inAppOtpSupport;
     private boolean otpLessSupport;
+    private boolean itemPurchaseSupported;
 
     private String alias;
     private String group;

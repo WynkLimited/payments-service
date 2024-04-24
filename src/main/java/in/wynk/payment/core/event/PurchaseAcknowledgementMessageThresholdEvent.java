@@ -14,7 +14,7 @@ import javax.validation.constraints.NotNull;
 @Getter
 @SuperBuilder
 @AnalysedEntity
-public class SubscriptionAcknowledgementMessageThresholdEvent extends MessageThresholdExceedEvent {
+public class PurchaseAcknowledgementMessageThresholdEvent extends MessageThresholdExceedEvent {
     @Analysed
     private String packageName;
 
@@ -33,4 +33,7 @@ public class SubscriptionAcknowledgementMessageThresholdEvent extends MessageThr
     @NotNull
     @Analysed
     private String paymentCode;
+
+    @Analysed
+    private String txnId;
 }

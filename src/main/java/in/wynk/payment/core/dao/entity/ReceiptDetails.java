@@ -22,6 +22,8 @@ public abstract class ReceiptDetails extends MongoBaseEntity<String> implements 
     private String uid;
     @Field("plan_id")
     private int planId;
+    @Field("item_id")
+    private String itemId;
     @Builder.Default
     private long expiry = -1;
     @Field("payment_transaction_id")

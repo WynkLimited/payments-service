@@ -7,6 +7,7 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.dto.WynkResponse;
 import in.wynk.common.enums.PaymentEvent;
+import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
@@ -14,9 +15,11 @@ import in.wynk.payment.dto.PaymentRenewalMessage;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.ITransactionManagerService;
+import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
 import in.wynk.queue.service.ISqsManagerService;
+import in.wynk.subscription.common.dto.PlanPeriodDTO;
 import in.wynk.subscription.common.dto.RenewalPlanEligibilityResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,6 +40,7 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
     private final ITransactionManagerService transactionManager;
     private final ISubscriptionServiceManager subscriptionServiceManager;
     private final IRecurringPaymentManagerService recurringPaymentManagerService;
+    private PaymentCachingService cachingService;
     @Value("${payment.pooling.queue.renewal.enabled}")
     private boolean renewalPollingEnabled;
     @Value("${payment.pooling.queue.renewal.sqs.consumer.delay}")
@@ -52,7 +56,7 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
                                                ScheduledExecutorService pollingThreadPool,
                                                ISqsManagerService sqsManagerService,
                                                ITransactionManagerService transactionManager, ISubscriptionServiceManager subscriptionServiceManager,
-                                               IRecurringPaymentManagerService recurringPaymentManagerService) {
+                                               IRecurringPaymentManagerService recurringPaymentManagerService, PaymentCachingService cachingService) {
         super(queueName, sqs, objectMapper, messagesExtractor, messageHandlerThreadPool);
         this.objectMapper = objectMapper;
         this.pollingThreadPool = pollingThreadPool;
@@ -61,6 +65,7 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
         this.transactionManager = transactionManager;
         this.subscriptionServiceManager = subscriptionServiceManager;
         this.recurringPaymentManagerService = recurringPaymentManagerService;
+        this.cachingService = cachingService;
     }
 
     @Override
@@ -92,7 +97,7 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
         AnalyticService.update(message);
         log.info(PaymentLoggingMarker.PAYMENT_RENEWAL_QUEUE, "processing PaymentRenewalMessage for transactionId {}", message.getTransactionId());
         Transaction transaction = transactionManager.get(message.getTransactionId());
-        if (isEligibleForRenewal(transaction)) {
+        if (isEligibleForRenewal(transaction, message.getAttemptSequence())) {
             sqsManagerService.publishSQSMessage(PaymentRenewalChargingMessage.builder()
                     .uid(transaction.getUid())
                     .id(transaction.getIdStr())
@@ -105,7 +110,13 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
         }
     }
 
-    private boolean isEligibleForRenewal (Transaction transaction) {
+    private boolean isEligibleForRenewal (Transaction transaction, int attemptSequence) {
+        PlanPeriodDTO planPeriodDTO = cachingService.getPlan(transaction.getPlanId()).getPeriod();
+        if (planPeriodDTO.getMaxRetryCount() <= attemptSequence) {
+            log.error(PaymentLoggingMarker.MAX_RENEWAL_ATTEMPT_ERROR, "Need to break the chain in Payment Renewal as maximum attempts are already exceeded for transactionId {}", transaction.getIdStr());
+            throw new WynkRuntimeException("Need to break the chain in Payment Renewal as maximum attempts are already exceeded");
+        }
+
         ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> response =
                 subscriptionServiceManager.renewalPlanEligibilityResponse(transaction.getPlanId(), transaction.getUid());
         if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {

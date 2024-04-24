@@ -1,7 +1,9 @@
 package in.wynk.payment.presentation;
 
 import in.wynk.common.constant.BaseConstants;
-import in.wynk.common.dto.*;
+import in.wynk.common.dto.GeoLocation;
+import in.wynk.common.dto.IPresentation;
+import in.wynk.common.dto.IWynkPresentation;
 import in.wynk.payment.constant.CardConstants;
 import in.wynk.payment.constant.NetBankingConstants;
 import in.wynk.payment.constant.UpiConstants;
@@ -12,6 +14,7 @@ import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.service.PaymentGroupCachingService;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
+import in.wynk.payment.dto.PointDetails;
 import in.wynk.payment.dto.UserDetails;
 import in.wynk.payment.dto.addtobill.AddToBillConstants;
 import in.wynk.payment.dto.aps.common.HealthStatus;
@@ -122,11 +125,23 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
 
             @Override
             public PaymentOptionsDTO.PointDetails transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
-                final ItemDTO item = payCache.getItem(payload.getFirst().getProductDetails().getId());
+                ItemDTO item = payCache.getItem(payload.getFirst().getProductDetails().getId());
+                if(Objects.nonNull(item)) {
+                    return PaymentOptionsDTO.PointDetails.builder()
+                            .id(item.getId())
+                            .title(item.getName())
+                            .price(item.getPrice())
+                            .discountedPrice(item.getPrice())
+                            .currency("INR")
+                            .build();
+                }
+                PointDetails pointDetails=(PointDetails)payload.getFirst().getProductDetails();
                 return PaymentOptionsDTO.PointDetails.builder()
-                        .id(item.getId())
-                        .title(item.getName())
-                        .price(item.getPrice())
+                        .id(pointDetails.getItemId())
+                        .title(pointDetails.getTitle())
+                        .price(Objects.nonNull(pointDetails.getPrice()) ? Double.parseDouble(pointDetails.getPrice()) :0.0)
+                        .discountedPrice(Objects.nonNull(pointDetails.getPrice()) ? Double.parseDouble(pointDetails.getPrice()) :0.0)
+                        .currency("INR")
                         .build();
             }
         }

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import in.wynk.payment.dto.ChecksumHeaderCallbackRequest;
 import in.wynk.payment.dto.aps.common.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -22,6 +23,7 @@ import java.math.BigDecimal;
 @Setter
 @SuperBuilder
 @NoArgsConstructor
+@AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ApsCallBackRequestPayload extends ChecksumHeaderCallbackRequest<ApsCallBackRequestPayload> implements Serializable {

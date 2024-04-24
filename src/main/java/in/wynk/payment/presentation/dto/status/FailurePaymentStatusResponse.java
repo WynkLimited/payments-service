@@ -6,6 +6,8 @@ import in.wynk.payment.dto.AbstractPack;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
+import java.util.Objects;
+
 @Getter
 @SuperBuilder
 public class FailurePaymentStatusResponse extends PaymentStatusResponse {
@@ -17,20 +19,24 @@ public class FailurePaymentStatusResponse extends PaymentStatusResponse {
     private String buttonText;
     private boolean buttonArrow;
 
-    public static FailurePaymentStatusResponse populate (ErrorCode errorCode, String subtitle, String buttonText, boolean buttonArrow, String tid, int planId,
-                                                                                       AbstractPack packDetails, TransactionStatus transactionStatus, String redirectUrl, String paymentGroup) {
-        return FailurePaymentStatusResponse.builder().buttonArrow(buttonArrow)
+    public static FailurePaymentStatusResponse populate (ErrorCode errorCode, String subtitle, String buttonText, boolean buttonArrow, String tid, Integer planId,
+                                                         AbstractPack packDetails, TransactionStatus transactionStatus, String redirectUrl, String paymentGroup, String itemId) {
+        FailurePaymentStatusResponseBuilder<?, ?> builder = FailurePaymentStatusResponse.builder().buttonArrow(buttonArrow)
                 .buttonText(buttonText)
                 .description(errorCode.getInternalMessage())
                 .failureType(errorCode.getExternalCode())
                 .subtitle(subtitle)
                 .title(errorCode.getExternalMessage())
-                .packDetails(packDetails)
                 .tid(tid)
                 .redirectUrl(redirectUrl)
-                .planId(planId)
                 .transactionStatus(transactionStatus)
-                .paymentGroup(paymentGroup)
-                .build();
+                .paymentGroup(paymentGroup);
+        if (Objects.nonNull(planId)) {
+            builder.planId(planId);
+            builder.packDetails(packDetails);
+        } else if (Objects.nonNull(itemId)) {
+            builder.itemId(itemId);
+        }
+        return builder.build();
     }
 }

@@ -12,8 +12,8 @@ import lombok.experimental.SuperBuilder;
 @AnalysedEntity
 @NoArgsConstructor
 public abstract class AbstractChargingStatusResponse{
-
     private int planId;
+    private String itemId;
     private String tid;
     private String redirectUrl;
     private AbstractPack packDetails;

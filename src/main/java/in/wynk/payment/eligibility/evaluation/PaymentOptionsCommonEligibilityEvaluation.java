@@ -4,34 +4,27 @@ import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.country.core.dao.entity.CountryCurrencyDetails;
 import in.wynk.country.core.service.CountryCurrencyDetailsCachingService;
-import in.wynk.coupon.core.service.IUserProfileService;
 import in.wynk.data.entity.MongoBaseEntity;
 import in.wynk.data.enums.State;
 import in.wynk.eligibility.dto.AbstractEligibilityEvaluation;
 import in.wynk.eligibility.dto.EligibilityResult;
 import in.wynk.eligibility.enums.CommonEligibilityStatusReason;
 import in.wynk.eligibility.enums.EligibilityStatus;
-import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.eligibility.enums.PaymentsEligibilityReason;
 import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsItemEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
-import in.wynk.payment.gateway.aps.service.ApsCommonGatewayService;
-import in.wynk.payment.service.IExternalPaymentEligibilityService;
-import in.wynk.vas.client.dto.MsisdnOperatorDetails;
-import in.wynk.vas.client.service.VasClientService;
 import in.wynk.wynkservice.api.utils.WynkServiceUtils;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.springframework.core.ParameterizedTypeReference;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
-
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.VAS_ERROR;
 
 @Slf4j
 @Getter
@@ -223,12 +216,16 @@ public abstract class PaymentOptionsCommonEligibilityEvaluation<T extends MongoB
     public boolean hasPlanId(Integer... planIds) {
         final EligibilityResult.EligibilityResultBuilder<T> resultBuilder = EligibilityResult.<T>builder().entity(getEntity()).status(EligibilityStatus.NOT_ELIGIBLE);
         try {
-            final PaymentOptionsPlanEligibilityRequest root = (PaymentOptionsPlanEligibilityRequest) getRoot();
-            final Integer activePlanId = Integer.valueOf(root.getPlanId());
-            final Optional<Integer> planIdOption = Arrays.stream(planIds).filter(activePlanId::equals).findAny();
-            if (!planIdOption.isPresent()) {
-                resultBuilder.reason(PaymentsEligibilityReason.NOT_IN_PLAN_LIST);
-            } else {
+            if(getRoot() instanceof PaymentOptionsPlanEligibilityRequest) {
+                final PaymentOptionsPlanEligibilityRequest root = (PaymentOptionsPlanEligibilityRequest) getRoot();
+                final Integer activePlanId = Integer.valueOf(root.getPlanId());
+                final Optional<Integer> planIdOption = Arrays.stream(planIds).filter(activePlanId::equals).findAny();
+                if (!planIdOption.isPresent()) {
+                    resultBuilder.reason(PaymentsEligibilityReason.NOT_IN_PLAN_LIST);
+                } else {
+                    resultBuilder.status(EligibilityStatus.ELIGIBLE);
+                }
+            } else if(getRoot() instanceof PaymentOptionsItemEligibilityRequest) {
                 resultBuilder.status(EligibilityStatus.ELIGIBLE);
             }
             return resultBuilder.build().isEligible();
@@ -240,12 +237,16 @@ public abstract class PaymentOptionsCommonEligibilityEvaluation<T extends MongoB
     public boolean hasItemId(Integer... itemIds) {
         final EligibilityResult.EligibilityResultBuilder<T> resultBuilder = EligibilityResult.<T>builder().entity(getEntity()).status(EligibilityStatus.NOT_ELIGIBLE);
         try {
-            final PaymentOptionsItemEligibilityRequest root = (PaymentOptionsItemEligibilityRequest) getRoot();
-            final Integer activeItemId = Integer.valueOf(root.getItemId());
-            final Optional<Integer> itemIdOption = Arrays.stream(itemIds).filter(activeItemId::equals).findAny();
-            if (!itemIdOption.isPresent()) {
-                resultBuilder.reason(PaymentsEligibilityReason.NOT_IN_ITEM_LIST);
-            } else {
+            if(getRoot() instanceof  PaymentOptionsItemEligibilityRequest) {
+                final PaymentOptionsItemEligibilityRequest root = (PaymentOptionsItemEligibilityRequest) getRoot();
+                final Integer activeItemId = Integer.valueOf(root.getItemId());
+                final Optional<Integer> itemIdOption = Arrays.stream(itemIds).filter(activeItemId::equals).findAny();
+                if (!itemIdOption.isPresent()) {
+                    resultBuilder.reason(PaymentsEligibilityReason.NOT_IN_ITEM_LIST);
+                } else {
+                    resultBuilder.status(EligibilityStatus.ELIGIBLE);
+                }
+            } else if(getRoot() instanceof  PaymentOptionsPlanEligibilityRequest) {
                 resultBuilder.status(EligibilityStatus.ELIGIBLE);
             }
             return resultBuilder.build().isEligible();

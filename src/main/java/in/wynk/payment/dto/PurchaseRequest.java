@@ -68,7 +68,7 @@ public class PurchaseRequest implements IClientValidatorRequest, IWynkServiceVal
 
     public SessionRequest toSession() {
         final Optional<IChargingDetails.IPageUrlDetails> pageUrlDetailsOption = Optional.ofNullable(getPageUrlDetails());
-        return SessionRequest.builder()
+        SessionRequest.SessionRequestBuilder sessionRequestBuilder = SessionRequest.builder()
                 .appId(getAppDetails().getAppId())
                 .appVersion(getAppDetails().getAppVersion())
                 .buildNo(getAppDetails().getBuildNo())
@@ -84,8 +84,15 @@ public class PurchaseRequest implements IClientValidatorRequest, IWynkServiceVal
                 .failureUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getFailurePageUrl).orElse(null))
                 .successUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getSuccessPageUrl).orElse(null))
                 .pendingUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getPendingPageUrl).orElse(null))
-                .unknownUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getUnknownPageUrl).orElse(null))
-                .build();
+                .unknownUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getUnknownPageUrl).orElse(null));
+        if (BaseConstants.POINT.equals(productDetails.getType())) {
+            PointDetails pointDetails = (PointDetails) productDetails;
+            sessionRequestBuilder.itemId(pointDetails.getItemId());
+            sessionRequestBuilder.itemPrice(pointDetails.getPrice());
+            sessionRequestBuilder.title(pointDetails.getTitle());
+            sessionRequestBuilder.skuId(pointDetails.getSkuId());
+        }
+        return sessionRequestBuilder.build();
     }
     public SessionRequest toSessionWithAdditionalParam(Map<String, String> additionalPram) {
         final Optional<IPageUrlDetails> pageUrlDetailsOption = Optional.ofNullable(getPageUrlDetails());

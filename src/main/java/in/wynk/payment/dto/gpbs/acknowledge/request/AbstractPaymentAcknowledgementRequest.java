@@ -1,6 +1,5 @@
 package in.wynk.payment.dto.gpbs.acknowledge.request;
 
-import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
@@ -12,6 +11,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @AnalysedEntity
 public abstract class AbstractPaymentAcknowledgementRequest {
-    @Analysed
-    private final String paymentCode;
+    public abstract String getPaymentCode ();
+    public abstract String getType ();
+    public abstract String getTxnId ();
 }

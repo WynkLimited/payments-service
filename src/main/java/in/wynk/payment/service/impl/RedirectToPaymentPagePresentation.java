@@ -1,23 +1,11 @@
 package in.wynk.payment.service.impl;
 
-import static in.wynk.common.constant.BaseConstants.*;
-import static in.wynk.common.constant.BaseConstants.BUILD_NO;
-import static in.wynk.common.constant.BaseConstants.DEVICE_ID_SHORT;
-import static in.wynk.common.constant.BaseConstants.INGRESS_INTENT;
-import static in.wynk.common.constant.BaseConstants.PAYMENT_FLOW;
-import static in.wynk.common.constant.BaseConstants.QUESTION_MARK;
-import static in.wynk.common.constant.BaseConstants.SLASH;
-import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_FLOW_AUTO_RENEW;
-import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_FLOW_MANDATE;
-import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_FLOW_TRIAL_OPTED;
-
 import com.datastax.driver.core.utils.UUIDs;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.auth.utils.EncryptUtils;
 import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.client.service.ClientDetailsCachingService;
-import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.IPresentation;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.SessionResponse;
@@ -31,22 +19,19 @@ import in.wynk.identity.client.utils.IdentityUtils;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.BestValuePlanResponse;
+import in.wynk.payment.dto.PointDetails;
 import in.wynk.payment.dto.PurchaseRequest;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.session.constant.SessionConstant;
 import in.wynk.session.service.ISessionManager;
 import in.wynk.subscription.common.adapter.SessionDTOAdapter;
-import in.wynk.subscription.common.dto.ItemDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.request.SessionRequest;
 import in.wynk.wynkservice.api.utils.WynkServiceUtils;
 import in.wynk.wynkservice.core.dao.entity.App;
 import in.wynk.wynkservice.core.dao.entity.Os;
 import in.wynk.wynkservice.core.dao.entity.WynkService;
-import java.net.URISyntaxException;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.springframework.beans.factory.annotation.Value;
@@ -54,28 +39,35 @@ import org.springframework.data.util.Pair;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import java.net.URISyntaxException;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+
+import static in.wynk.common.constant.BaseConstants.AIRTEL_TV;
+import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.payment.core.constant.PaymentConstants.SKU_ID;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
+
 @Component
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class RedirectToPaymentPagePresentation implements
-    IPresentation<WynkResponseEntity<SessionResponse.SessionData>, Pair<String, BestValuePlanResponse>> {
+        IPresentation<WynkResponseEntity<SessionResponse.SessionData>, Pair<String, BestValuePlanResponse>> {
 
     private final ISessionManager<String, SessionDTO> sessionManager;
     private final ClientDetailsCachingService clientDetailsCachingService;
     private final CountryCurrencyDetailsCachingService countryCurrencyDetailsCachingService;
 
+    @Value("${service.subscription.webView.root}")
+    private String webViewDomain;
 
-    @Value("${subscription.webview.manage.url.second}")
-    private String SUBSCRIPTION_MANAGE_URL;
+    @Value("${service.subscription.api.manage.url}")
+    private String manageUrl;
 
-    @Value("${subscription.webview.purchase.url.second}")
-    private String SUBSCRIPTION_PURCHASE_URL;
+    @Value("${service.subscription.api.purchase.url}")
+    private String purchaseUrl;
 
     @Value("${session.duration:15}")
     private Integer duration;
-
-    @Value("${subscription.webview.purchaseOrManage.url.first}")
-    private String SUBSCRIPTION_START_URL;
-
 
     @Override
     public WynkResponseEntity<SessionData> transform(final Pair<String, BestValuePlanResponse> pair) throws URISyntaxException {
@@ -106,11 +98,10 @@ public class RedirectToPaymentPagePresentation implements
             if (request.getProductDetails().getType().equalsIgnoreCase(PLAN)) {
                 queryBuilder.addParameter(PLAN_ID, bestValuePlanId);
             } else {
-                final ItemDTO item = cache.getItem(request.getProductDetails().getId());
-                queryBuilder.addParameter(TITLE, item.getName());
-                queryBuilder.addParameter(SUBTITLE, item.getName());
-                queryBuilder.addParameter(ITEM_ID, item.getId());
-                queryBuilder.addParameter(POINT_PURCHASE_ITEM_PRICE, String.valueOf(item.getPrice()));
+                PointDetails pointDetails = (PointDetails) request.getProductDetails();
+                queryBuilder.addParameter(ITEM_ID, pointDetails.getItemId());
+                queryBuilder.addParameter(TITLE, pointDetails.getTitle());
+                queryBuilder.addParameter(SKU_ID, pointDetails.getSkuId());
             }
             queryBuilder.addParameter(UID,
                                       IdentityUtils.getUidFromUserName(request.getUserDetails().getMsisdn(),
@@ -146,9 +137,9 @@ public class RedirectToPaymentPagePresentation implements
         if (request.getService().equalsIgnoreCase(MUSIC) && request.getAppId().equalsIgnoreCase(WEB) && (request.getOs().equalsIgnoreCase(WEBOS)
                                                                                                          || request.getOs()
                                                                                                                    .equalsIgnoreCase(M_WEBOS))) {
-            return getSession(request, SUBSCRIPTION_PURCHASE_URL);
+            return getSession(request, purchaseUrl);
         }
-        return getSession(request, SUBSCRIPTION_MANAGE_URL);
+        return getSession(request, manageUrl);
     }
 
     private SessionResponse getSession(SessionRequest sessionRequest, String url) {
@@ -183,7 +174,7 @@ public class RedirectToPaymentPagePresentation implements
             if (Objects.nonNull(clientSpecificDomainUrl)) {
                 domainUrl = clientSpecificDomainUrl;
             } else {
-                domainUrl = SUBSCRIPTION_START_URL;
+                domainUrl = webViewDomain;
             }
             final StringBuilder host = new StringBuilder(domainUrl)
                 .append(uri)

@@ -86,6 +86,8 @@ service:
         selectivePlanComputationV2: ${service.subscription.api.root}/wynk/s2s/v2/plans/selective/eligible
         status: ${service.subscription.api.root}/wynk/s2s/v1/subscription/status/{uid}/{service}
         bestValue: ${service.subscription.api.root}/wynk/s2s/v1/plans/bestValue
+    webView:
+      root: ${webview.host}/#/
 
   ####### payment props #######
   payment:

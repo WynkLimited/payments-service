@@ -530,6 +530,10 @@ service:
   subscription:
     api:
       root: http://subscription-staging.wcf.internal
+    purchase:
+      url: /subscriptions/
+    manage:
+      url: /manage-subscription/
   payment:
     api:
       root: https://payments-staging.wynk.in
@@ -1199,7 +1203,3 @@ event:
     dp: data-science-subscription-funnel-information
 
 api.get.endPoint: https://subscription-staging.wynk.in
-subscription.webview.root : https://pay-preprod.wynk.in
-subscription.webview.purchaseOrManage.url.first : ${subscription.webview.root}/#/
-subscription.webview.purchase.url.second : /subscriptions/
-subscription.webview.manage.url.second : /manage-subscription/

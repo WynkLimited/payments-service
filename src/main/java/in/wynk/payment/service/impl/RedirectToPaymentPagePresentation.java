@@ -168,12 +168,7 @@ public class RedirectToPaymentPagePresentation implements
             final Os supportedOs = WynkServiceUtils.getAppSupportedOs(sessionRequest.getOs(), supportedApp);
             final String uri = new StringBuilder(sessionRequest.getService()).append(url).append(id).append(SLASH)
                                                                              .append(supportedOs.getId().toLowerCase()).toString();
-            final String domainUrl;
-            if (Objects.nonNull(clientSpecificDomainUrl)) {
-                domainUrl = clientSpecificDomainUrl;
-            } else {
-                domainUrl = webViewDomain;
-            }
+            final String domainUrl = webViewDomain;
             final StringBuilder host = new StringBuilder(domainUrl)
                 .append(uri)
                 .append(QUESTION_MARK)

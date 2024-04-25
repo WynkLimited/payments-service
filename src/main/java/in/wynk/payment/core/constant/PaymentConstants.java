@@ -109,5 +109,5 @@ public interface PaymentConstants extends BaseConstants {
             "Mandate is in FAILURE state. Recurring cannot be executed", "Mandate is in CREATED state. Recurring cannot be executed", "Mandate is in REVOKED state. Recurring cannot be executed",
             "PDN Failed. Unable to process the request with PG. Please try again",
             "Mandate is already pause", "Mandate is already revoked", "PDN Failed. Consent is Not Enrolled Or Not IN Active State"));
-    String SUBSCRIPTION_PURCHASE_OR_MANAGE_CLIENT_PLACE_HOLDER = "subscription.webview.root";
+    String SUBSCRIPTION_PURCHASE_OR_MANAGE_CLIENT_PLACE_HOLDER = "service.subscription.webView.root";
 }

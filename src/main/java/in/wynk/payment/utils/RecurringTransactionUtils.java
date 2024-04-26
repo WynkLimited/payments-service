@@ -42,7 +42,7 @@ public class RecurringTransactionUtils {
                 recurringPaymentManagerService.unScheduleRecurringPayment(transaction.getClientAlias(), transaction.getIdStr(), PaymentEvent.CANCELLED);
                 eventPublisher.publishEvent(
                         MandateStatusEvent.builder().errorReason(description).clientAlias(transaction.getClientAlias()).txnId(transaction.getIdStr()).referenceTransactionId(referenceTransactionId)
-                                .uid(transaction.getUid()).planId(transaction.getPlanId()).build());
+                                .uid(transaction.getUid()).paymentMethod(transaction.getPaymentChannel().getCode()).planId(transaction.getPlanId()).build());
             } catch (Exception e) {
                 log.error("Unable to update renewal table for cancellation and mandate status event could not be generated", e);
             }

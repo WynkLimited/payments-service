@@ -854,7 +854,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 eventPublisher.publishEvent(UnScheduleRecurringPaymentEvent.builder().transactionId(message.getTransactionId()).clientAlias(message.getClientAlias())
                         .reason("Stopping Payment Renewal because " + response.getMessage()).build());
                 eventPublisher.publishEvent(MandateStatusEvent.builder().txnId(message.getTransactionId()).clientAlias(message.getClientAlias()).errorReason(response.getMessage())
-                        .referenceTransactionId(referenceTransactionId).planId(transaction.getPlanId()).uid(transaction.getUid()).build());
+                        .referenceTransactionId(referenceTransactionId).planId(transaction.getPlanId()).paymentMethod(transaction.getPaymentChannel().getCode()).uid(transaction.getUid()).build());
                 transaction.setType(PaymentEvent.UNSUBSCRIBE.getValue());
                 AsyncTransactionRevisionRequest request =
                         AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(transaction.getStatus()).finalTransactionStatus(TransactionStatus.CANCELLED)

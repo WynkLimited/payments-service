@@ -188,10 +188,6 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     public WynkResponseEntity<Void> doRenewal (PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
         Transaction transaction = TransactionContext.get();
         PlanPeriodDTO planPeriodDTO = cachingService.getPlan(transaction.getPlanId()).getPeriod();
-        if (planPeriodDTO.getMaxRetryCount() < paymentRenewalChargingRequest.getAttemptSequence()) {
-            transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            throw new WynkRuntimeException("Need to break the chain in Payment Renewal as maximum attempts are already exceeded");
-        }
         String txnId = paymentRenewalChargingRequest.getId();
         PaymentRenewal renewal = recurringPaymentManagerService.getRenewalById(txnId);
         if (Objects.nonNull(renewal) && StringUtils.isNotBlank(renewal.getLastSuccessTransactionId())) {

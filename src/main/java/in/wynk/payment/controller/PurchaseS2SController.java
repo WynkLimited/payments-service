@@ -64,11 +64,25 @@ public class PurchaseS2SController {
     }
 
     @SneakyThrows
-    @PostMapping(value = {"/v3/plan/purchase", "/v3/point/purchase"})
+    @PostMapping(value = {"/v3/point/purchase"})
     @AnalyseTransaction(name = "purchaseRequestV3")
-    @ApiOperation("Provides session Id and the webview URL for directToPayment page purchase purchase")
+    @ApiOperation("Provides session Id and the webview URL for directToPayment page point purchase ")
     @PreAuthorize(PaymentConstants.PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"PURCHASE_INIT\")")
-    public WynkResponseEntity<SessionResponse.SessionData> directToPaymentPage(@Valid @RequestBody PurchaseRequest request,
+    public WynkResponseEntity<SessionResponse.SessionData> pointPurchase(@Valid @RequestBody PurchaseRequest request) {
+        LoadClientUtils.loadClient(true);
+        AnalyticService.update(request);
+        final String sid = sessionService.init(request);
+        final WynkResponseEntity<SessionResponse.SessionData> response = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPresentation<WynkResponseEntity<SessionResponse.SessionData>, Pair<String, PurchaseRequest>>>() {
+        }).transform(Pair.of(sid, request));
+        AnalyticService.update(response.getBody());
+        return response;
+    }
+    @SneakyThrows
+    @PostMapping(value = {"/v3/plan/purchase"})
+    @AnalyseTransaction(name = "purchaseRequestV3")
+    @ApiOperation("Provides session Id and the webview URL for directToPayment page plan purchase")
+    @PreAuthorize(PaymentConstants.PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"PURCHASE_INIT\")")
+    public WynkResponseEntity<SessionResponse.SessionData> planPurchase(@Valid @RequestBody PurchaseRequest request,
                                                                                @RequestParam Map<String, String> additionalParam) {
         LoadClientUtils.loadClient(true);
         final String sid = sessionService.init(request);

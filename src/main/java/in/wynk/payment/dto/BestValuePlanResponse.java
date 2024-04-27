@@ -22,5 +22,5 @@ import lombok.Setter;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BestValuePlanResponse  implements Serializable {
     private String planId;
-    private PurchaseRequest purchaseRequest;
+    private BestValuePlanPurchaseRequest bestValuePlanPurchaseRequest;
 }

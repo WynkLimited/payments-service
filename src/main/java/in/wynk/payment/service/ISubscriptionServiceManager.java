@@ -2,6 +2,7 @@ package in.wynk.payment.service;
 
 import in.wynk.common.dto.WynkResponse;
 import in.wynk.common.enums.PaymentEvent;
+import in.wynk.payment.dto.BestValuePlanPurchaseRequest;
 import in.wynk.payment.dto.BestValuePlanResponse;
 import in.wynk.payment.dto.PurchaseRequest;
 import in.wynk.payment.dto.SubscriptionStatus;
@@ -63,5 +64,5 @@ public interface ISubscriptionServiceManager {
 
     Integer getUpdatedPlanId(Integer planId, PaymentEvent paymentEvent);
 
-    BestValuePlanResponse getBestValuePlan(PurchaseRequest request , Map<String,String> requestParam);
+    BestValuePlanResponse getBestValuePlan(BestValuePlanPurchaseRequest request , Map<String,String> requestParam);
 }

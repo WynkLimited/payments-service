@@ -15,6 +15,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
+import in.wynk.payment.dto.BestValuePlanPurchaseRequest;
 import in.wynk.payment.dto.BestValuePlanResponse;
 import in.wynk.payment.dto.PurchaseRequest;
 import in.wynk.payment.dto.SubscriptionStatus;
@@ -292,17 +293,22 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         return BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(planId).isProvisionNotRequired();
     }
     @Override
-    public BestValuePlanResponse getBestValuePlan(final PurchaseRequest request, final Map<String, String> additionalParam) {
+    public BestValuePlanResponse getBestValuePlan(final BestValuePlanPurchaseRequest request, final Map<String, String> additionalParam) {
         String planId = null;
         try {
 
+
+            if(request.getProductDetails()!=null && StringUtils.isNotEmpty(request.getProductDetails().getId())){
+                AnalyticService.update( BaseConstants.REQUEST_PLAN_ID, request.getProductDetails().getId());
+                return BestValuePlanResponse.builder().planId(request.getProductDetails().getId()).bestValuePlanPurchaseRequest(request).build();
+            }
             final SessionRequest sessionRequestWithAdditionalParam = request.toSessionWithAdditionalParam(additionalParam);
             AnalyticService.update(sessionRequestWithAdditionalParam);
             final RequestEntity<SessionRequest> sessionRequest = ChecksumUtils.buildEntityWithAuthHeaders(subscriptionBestValueEndpoint,
                                                                                                           myApplicationContext.getClientId(),
                                                                                                           myApplicationContext.getClientSecret(),
                                                                                                           sessionRequestWithAdditionalParam,
-                                                                                                          HttpMethod.GET);
+                                                                                                          HttpMethod.POST);
             final WynkResponseWrapper<in.wynk.common.dto.BestValuePlanResponse> body = restTemplate.exchange(sessionRequest,
                                                                                                              new ParameterizedTypeReference<WynkResponseWrapper<in.wynk.common.dto.BestValuePlanResponse>>() {
                                                                                                              }).getBody();
@@ -313,7 +319,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.BEST_VALUE_PLAN_API_ERROR ,e.getMessage());
         }
-        return BestValuePlanResponse.builder().purchaseRequest(request).planId(planId).build();
+        return BestValuePlanResponse.builder().bestValuePlanPurchaseRequest(request).planId(planId).build();
     }
 
 

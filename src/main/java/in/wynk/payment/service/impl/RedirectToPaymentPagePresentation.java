@@ -18,6 +18,7 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.identity.client.utils.IdentityUtils;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.dto.BestValuePlanPurchaseRequest;
 import in.wynk.payment.dto.BestValuePlanResponse;
 import in.wynk.payment.dto.PointDetails;
 import in.wynk.payment.dto.PurchaseRequest;
@@ -74,7 +75,7 @@ public class RedirectToPaymentPagePresentation implements
         final String id = pair.getFirst();
         final BestValuePlanResponse bestValuePlanResponse = pair.getSecond();
         final String bestValuePlanId = bestValuePlanResponse.getPlanId();
-        final PurchaseRequest request = bestValuePlanResponse.getPurchaseRequest();
+        final BestValuePlanPurchaseRequest request = bestValuePlanResponse.getBestValuePlanPurchaseRequest();
         final String clientId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
         final Client client = BeanLocatorFactory.getBean(ClientDetailsCachingService.class).getClientById(clientId);
         final String PAYMENT_OPTION_URL = EmbeddedPropertyResolver.resolveEmbeddedValue(PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER.replace("%c",
@@ -95,14 +96,7 @@ public class RedirectToPaymentPagePresentation implements
             }
             final URIBuilder queryBuilder = new URIBuilder(PAYMENT_OPTION_URL);
             final PaymentCachingService cache = BeanLocatorFactory.getBean(PaymentCachingService.class);
-            if (request.getProductDetails().getType().equalsIgnoreCase(PLAN)) {
-                queryBuilder.addParameter(PLAN_ID, bestValuePlanId);
-            } else {
-                PointDetails pointDetails = (PointDetails) request.getProductDetails();
-                queryBuilder.addParameter(ITEM_ID, pointDetails.getItemId());
-                queryBuilder.addParameter(TITLE, pointDetails.getTitle());
-                queryBuilder.addParameter(SKU_ID, pointDetails.getSkuId());
-            }
+            queryBuilder.addParameter(PLAN_ID, bestValuePlanId);
             queryBuilder.addParameter(UID,
                                       IdentityUtils.getUidFromUserName(request.getUserDetails().getMsisdn(),
                                                                        request.getAppDetails().getService()));
@@ -121,7 +115,7 @@ public class RedirectToPaymentPagePresentation implements
                     queryBuilder.addParameter(PAYMENT_FLOW, PAYMENT_FLOW_AUTO_RENEW);
                 }
             }
-            PlanDTO planDto = cache.getPlan(request.getProductDetails().getId());
+            PlanDTO planDto = cache.getPlan(bestValuePlanResponse.getPlanId());
             if (Objects.nonNull(planDto.getSku()) && Objects.nonNull(planDto.getSku().get("google_iap"))) {
                 queryBuilder.addParameter(PaymentConstants.SKU_ID, planDto.getSku().get("google_iap"));
             }

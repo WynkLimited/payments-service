@@ -21,6 +21,8 @@ public class MandateStatusEvent {
     @Analysed
     private Integer planId;
     @Analysed
+    private String paymentMethod;
+    @Analysed
     private String clientAlias;
     @Analysed
     private String errorReason;

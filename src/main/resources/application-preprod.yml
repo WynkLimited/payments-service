@@ -419,6 +419,7 @@ subscription:
           producer:
             delayInSecond: 1
 
+
 ####### sms props #######
 sms:
   notification:
@@ -525,6 +526,12 @@ service:
   subscription:
     api:
       root: http://subscription-preprod.wcf.internal
+      purchase:
+        url: /subscriptions/
+      manage:
+        url: /manage-subscription/
+
+
   payment:
     api:
       root: https://payments-preprod.wynk.in
@@ -1139,3 +1146,4 @@ event:
     dp: data-science-subscription-funnel-information
 
 api.get.endPoint: https://subscription-preprod.wynk.in
+

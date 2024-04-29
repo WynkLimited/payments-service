@@ -534,6 +534,10 @@ service:
   subscription:
     api:
       root: https://subscription-staging.wynk.in
+      purchase:
+        url: /subscriptions/
+      manage:
+        url: /manage-subscription/
   payment:
     api:
       root: http://localhost:${server.port}

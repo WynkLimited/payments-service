@@ -530,6 +530,10 @@ service:
   subscription:
     api:
       root: http://subscription-staging.wcf.internal
+      purchase:
+        url: /subscriptions/
+      manage:
+        url: /manage-subscription/
   payment:
     api:
       root: https://payments-staging.wynk.in

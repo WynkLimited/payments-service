@@ -51,7 +51,7 @@ pipeline {
                 pwd
                 cd /mnt/jenkins/workspace/${JOB_NAME}/payments/infra-gcp/docker
                 cp /mnt/jenkins/workspace/${JOB_NAME}/payments/build/${jar_name} /mnt/jenkins/workspace/${JOB_NAME}/payments/infra-gcp/docker
-                cp /opt/ConfigWCF/authkeystore.jks /mnt/jenkins/workspace/${JOB_NAME}/infra-gcp/docker
+                cp /opt/ConfigWCF/authkeystore.jks /mnt/jenkins/workspace/${JOB_NAME}/payments/infra-gcp/docker
                 gcloud auth configure-docker ${region}
                 docker build --build-arg profile=$env_e -t ${region}/${projet_name}/${repo_name}/${repo_name}:${BUILD_NUMBER} -f Dockerfile .
                 docker login ${region}/${projet_name}/${repo_name}

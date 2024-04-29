@@ -16,6 +16,8 @@ import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractPaymentChargingResponse;
 import in.wynk.payment.dto.response.AbstractRechargeOrderResponse;
 import in.wynk.payment.dto.response.RechargeOrderResponse;
+import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
+import in.wynk.payment.eligibility.request.PaymentOptionsItemEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
 import in.wynk.payment.gateway.*;
 import in.wynk.payment.gateway.aps.service.ApsCommonGatewayService;
@@ -40,13 +42,13 @@ import static in.wynk.payment.dto.aps.common.ApsConstant.AIRTEL_PAY_STACK_V2;
  */
 @Slf4j
 @Service(AIRTEL_PAY_STACK_V2)
-public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPaymentInstrumentsProxy<PaymentOptionsPlanEligibilityRequest>,
+public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPaymentInstrumentsProxy<PaymentOptionsEligibilityRequest>,
         IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload>, IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>,
         IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
 
     private final IRechargeOrder<AbstractRechargeOrderResponse, AbstractRechargeOrderRequest> orderGateway;
     private final IExternalPaymentEligibilityService eligibilityGateway;
-    private final IPaymentInstrumentsProxy<PaymentOptionsPlanEligibilityRequest> payOptionsGateway;
+    private final IPaymentInstrumentsProxy<PaymentOptionsEligibilityRequest> payOptionsGateway;
     private final IMerchantTransactionService merchantTransactionService;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -84,7 +86,12 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
     }
 
     @Override
-    public AbstractPaymentInstrumentsProxy<?, ?> load(PaymentOptionsPlanEligibilityRequest request) {
+    public boolean isEligible (PaymentMethod entity, PaymentOptionsItemEligibilityRequest request) {
+        return eligibilityGateway.isEligible(entity, request);
+    }
+
+    @Override
+    public AbstractPaymentInstrumentsProxy<?, ?> load (PaymentOptionsEligibilityRequest request) {
         return payOptionsGateway.load(request);
     }
 

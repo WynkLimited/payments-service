@@ -9,6 +9,4 @@ public interface IPurchaseSessionService {
     SessionResponse initSession(SessionRequest request);
 
     String init(PurchaseRequest request);
-
-
 }

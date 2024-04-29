@@ -572,6 +572,9 @@ wynk:
           topic: wcf_staging.pay_state_retry_resp
         dlt:
           topic: wcf_staging.pay_state_dlt_resp
+      item:
+        generate:
+          topic: wcf_local.generate_item
     consumers:
       enabled: true
       listenerFactory:
@@ -640,7 +643,12 @@ wynk:
               name: PAYMENT_CHARGE_RETRY_BEAN
   multi:
     kafka:
-      enabled: false
+      enabled: true
+      templates:
+        item:
+          enabled: true
+          nodes: 10.70.3.4:9092,10.70.3.128:9092,10.70.3.180:9092,10.70.3.245:9092,10.70.3.44:9092,10.70.3.80:9092,10.70.1.57:9092,10.70.3.152:9092
+          topic: wcf_ringtone_transactions
   ########### MONGO CONFIG ###########
   mongodb:
     enabled: true

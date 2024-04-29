@@ -28,12 +28,12 @@ import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.core.service.InvoiceDetailsCachingService;
 import in.wynk.payment.dto.*;
-import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.gpbs.GooglePlayReportEvent;
 import in.wynk.payment.dto.gpbs.acknowledge.queue.ExternalTransactionReportMessageManager;
 import in.wynk.payment.dto.invoice.GenerateInvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.InvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.InvoiceRetryTask;
+import in.wynk.payment.dto.point.GenerateItemKafkaMessage;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractPaymentSettlementResponse;
 import in.wynk.payment.event.WaPayStateRespEvent;
@@ -58,14 +58,15 @@ import in.wynk.wynkservice.api.service.WynkServiceDetailsCachingService;
 import in.wynk.wynkservice.api.utils.WynkServiceUtils;
 import in.wynk.wynkservice.core.dao.entity.WynkService;
 import io.github.resilience4j.retry.RetryRegistry;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.quartz.SimpleScheduleBuilder;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
@@ -85,7 +86,6 @@ import static in.wynk.tinylytics.constants.TinylyticsConstants.TRANSACTION_SNAPS
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class PaymentEventListener {
     private final TaxUtils taxUtils;
     private final ObjectMapper mapper;
@@ -109,14 +109,54 @@ public class PaymentEventListener {
     private final ClientDetailsCachingService clientDetailsCachingService;
     private final WynkServiceDetailsCachingService wynkServiceDetailsCachingService;
     private final ISubscriptionServiceManager subscriptionServiceManager;
+    private final IKafkaEventPublisher<String, GenerateItemKafkaMessage> itemKafkaPublisher;
 
     public static Map<String, String> map = Collections.singletonMap(AIRTEL_TV, AIRTEL_XSTREAM);
 
     @Value("${event.stream.dp}")
     private String dpStream;
-
     @Value("${wynk.kafka.producers.payment.status.topic}")
     private String waPayStateRespEventTopic;
+    @Value("${wynk.multi.kafka.templates.item.topic}")
+    private String itemTopic;
+
+    public PaymentEventListener (TaxUtils taxUtils, ObjectMapper mapper, RetryRegistry retryRegistry, PaymentManager paymentManager,
+                                 PaymentGatewayManager paymentGatewayManager, ITaskScheduler<TaskDefinition<?>> taskScheduler,
+                                 ISqsManagerService<Object> sqsManagerService, IPaymentErrorService paymentErrorService, ApplicationEventPublisher eventPublisher,
+                                 IClientCallbackService clientCallbackService, ITransactionManagerService transactionManagerService,
+                                 IMerchantTransactionService merchantTransactionService, IRecurringPaymentManagerService recurringPaymentManagerService,
+                                 PaymentCachingService cachingService, IQuickPayLinkGenerator quickPayLinkGenerator, InvoiceService invoiceService,
+                                 IKafkaEventPublisher<String, InvoiceKafkaMessage> invoiceKafkaPublisher,
+                                 IKafkaEventPublisher<String, WaPayStateRespEvent> paymentStatusKafkaPublisher, InvoiceDetailsCachingService invoiceDetailsCachingService,
+                                 ClientDetailsCachingService clientDetailsCachingService, WynkServiceDetailsCachingService wynkServiceDetailsCachingService,
+                                 ISubscriptionServiceManager subscriptionServiceManager,
+                                 @Qualifier("item")
+                                 @Lazy
+                                 IKafkaEventPublisher<String, GenerateItemKafkaMessage> itemKafkaPublisher) {
+        this.taxUtils = taxUtils;
+        this.mapper = mapper;
+        this.retryRegistry = retryRegistry;
+        this.paymentManager = paymentManager;
+        this.paymentGatewayManager = paymentGatewayManager;
+        this.taskScheduler = taskScheduler;
+        this.sqsManagerService = sqsManagerService;
+        this.paymentErrorService = paymentErrorService;
+        this.eventPublisher = eventPublisher;
+        this.clientCallbackService = clientCallbackService;
+        this.transactionManagerService = transactionManagerService;
+        this.merchantTransactionService = merchantTransactionService;
+        this.recurringPaymentManagerService = recurringPaymentManagerService;
+        this.cachingService = cachingService;
+        this.quickPayLinkGenerator = quickPayLinkGenerator;
+        this.invoiceService = invoiceService;
+        this.invoiceKafkaPublisher = invoiceKafkaPublisher;
+        this.paymentStatusKafkaPublisher = paymentStatusKafkaPublisher;
+        this.invoiceDetailsCachingService = invoiceDetailsCachingService;
+        this.clientDetailsCachingService = clientDetailsCachingService;
+        this.wynkServiceDetailsCachingService = wynkServiceDetailsCachingService;
+        this.subscriptionServiceManager = subscriptionServiceManager;
+        this.itemKafkaPublisher = itemKafkaPublisher;
+    }
 
     @EventListener
     @AnalyseTransaction(name = QueueConstant.DEFAULT_SQS_MESSAGE_THRESHOLD_EXCEED_EVENT)
@@ -221,10 +261,7 @@ public class PaymentEventListener {
     @ClientAware(clientAlias = "#event.clientAlias")
     public void onPaymentErrorEvent (PaymentErrorEvent event) {
         AnalyticService.update(event);
-        if (StringUtils.equals(event.getCode(), E6002) && Objects.isNull(event.getDescription())) {
-            AnalyticService.update("description", ERROR_DESCRIPTION_FOR_E6002);
-        }
-        publishTransactionData(event);
+        publishAdditionalData(event);
         retryRegistry.retry(PaymentConstants.PAYMENT_ERROR_UPSERT_RETRY_KEY).executeRunnable(() -> paymentErrorService.upsert(PaymentError.builder()
                 .id(event.getId())
                 .code(Objects.nonNull(event.getCode()) ? event.getCode() : "UNKNOWN")
@@ -233,7 +270,10 @@ public class PaymentEventListener {
                 .build()));
     }
 
-    private void publishTransactionData (PaymentErrorEvent event) {
+    private void publishAdditionalData (PaymentErrorEvent event) {
+        if (StringUtils.equals(event.getCode(), E6002) && Objects.isNull(event.getDescription())) {
+            AnalyticService.update(DESCRIPTION, ERROR_DESCRIPTION_FOR_E6002);
+        }
         Transaction transaction = transactionManagerService.get(event.getId());
         if (Objects.nonNull(transaction)) {
             AnalyticService.update(UID, transaction.getUid());
@@ -241,32 +281,14 @@ public class PaymentEventListener {
                 AnalyticService.update(PLAN_ID, transaction.getPlanId());
             }
             if (Objects.nonNull(transaction.getItemId())) {
-                AnalyticService.update(PLAN_ID, transaction.getItemId());
+                AnalyticService.update(ITEM_ID, transaction.getItemId());
             }
             AnalyticService.update(PAYMENT_CODE, transaction.getPaymentChannel().getId());
         }
         if (transaction.getType() == PaymentEvent.RENEW) {
-            String txnId = event.getId();
             PaymentRenewal renewal = recurringPaymentManagerService.getRenewalById(event.getId());
             if (Objects.nonNull(renewal)) {
-                if (StringUtils.isNotBlank(renewal.getLastSuccessTransactionId())) {
-                    txnId = renewal.getLastSuccessTransactionId();
-                }
                 AnalyticService.update(RENEWAL_ATTEMPT_SEQUENCE, renewal.getAttemptSequence());
-            }
-
-            cancelRenewalBasedOnErrorReason(event.getDescription(), event, transaction.getPlanId(), transaction.getUid(), txnId);
-        }
-    }
-
-    private void cancelRenewalBasedOnErrorReason (String description, PaymentErrorEvent event, Integer planId, String uid, String referenceTransactionId) {
-        if (ERROR_REASONS.contains(description)) {
-            try {
-                recurringPaymentManagerService.unScheduleRecurringPayment(event.getClientAlias(), event.getId(), PaymentEvent.CANCELLED);
-                eventPublisher.publishEvent(
-                        MandateStatusEvent.builder().errorReason(description).clientAlias(event.getClientAlias()).txnId(event.getId()).referenceTransactionId(referenceTransactionId).uid(uid).planId(planId).build());
-            } catch (Exception e) {
-                log.error("Unable to cancel the subscription", e);
             }
         }
     }
@@ -676,9 +698,6 @@ public class PaymentEventListener {
                             .build());
                 }
             }
-            if (ApsConstant.APS.equals(event.getTransaction().getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(event.getTransaction().getPaymentChannel().getId())) {
-                initiateReportTransactionToMerchant(event);
-            }
         }
         if (Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getAppDetails())) {
             AnalyticService.update(event.getPurchaseDetails().getAppDetails());
@@ -696,18 +715,11 @@ public class PaymentEventListener {
         }
     }
 
-    private void initiateReportTransactionToMerchant (TransactionSnapshotEvent event) {
-        try {
-            MerchantTransaction merchantData = merchantTransactionService.getMerchantTransaction(event.getTransaction().getIdStr());
-            if (Objects.nonNull(merchantData.getExternalTokenReferenceId())) {
-                AnalyticService.update(EXTERNAL_TRANSACTION_TOKEN, merchantData.getExternalTokenReferenceId());
-                eventPublisher.publishEvent(
-                        ExternalTransactionReportEvent.builder().transactionId(event.getTransaction().getIdStr()).externalTokenReferenceId(merchantData.getExternalTokenReferenceId())
-                                .clientAlias(event.getTransaction()
-                                        .getClientAlias()).paymentEvent(event.getTransaction().getType()).build());
-            }
-        } catch (Exception ignored) {
-        }
+    @EventListener
+    @AnalyseTransaction(name = "generateItemEvent")
+    public void onGenerateItemEvent(GenerateItemEvent event) {
+        itemKafkaPublisher.publish(itemTopic, null, System.currentTimeMillis(), null, GenerateItemKafkaMessage.from(event), null);
+        AnalyticService.update(event);
     }
 
     public void publishWaPaymentStatusEvent (TransactionSnapshotEvent event) {

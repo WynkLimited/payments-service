@@ -10,6 +10,7 @@ public class UserPlanMapping<T> {
     @Builder.Default
     @Setter
     private int planId = -1;
+    private String itemId;
     private final String uid;
     private final String msisdn;
     private final String linkedTransactionId;

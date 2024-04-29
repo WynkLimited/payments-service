@@ -14,6 +14,7 @@ import lombok.experimental.SuperBuilder;
 public abstract class PaymentStatusResponse {
 
     private final int planId;
+    private final String itemId;
     private final String tid;
     private final TransactionStatus transactionStatus;
     private final PaymentEvent transactionType;

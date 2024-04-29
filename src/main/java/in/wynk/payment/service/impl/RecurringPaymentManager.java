@@ -10,6 +10,7 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -97,14 +98,13 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
                     request.getTransaction().getType() == PaymentEvent.RENEW && request.getTransaction().getPaymentChannel().isInternalRecurring()) {
                 PaymentRenewal renewal = getRenewalById(request.getTransaction().getIdStr());
                 if (Objects.nonNull(renewal) && renewal.getTransactionEvent() == PaymentEvent.CANCELLED) {
-                    log.info("Renewal is already cancelled for the transaction id {} ", request.getTransaction().getIdStr());
                     return;
-                }
-                PlanPeriodDTO planPeriodDTO = planDTO.getPeriod();
-                if (planPeriodDTO.getMaxRetryCount() < request.getAttemptSequence()) {
+                } else if ((Objects.nonNull(renewal) && (renewal.getAttemptSequence() >= PaymentConstants.MAXIMUM_RENEWAL_RETRY_ALLOWED)) ||
+                        (request.getAttemptSequence() >= PaymentConstants.MAXIMUM_RENEWAL_RETRY_ALLOWED)) {
                     AnalyticService.update(MESSAGE, "Maximum Attempts Reached. No More Entry In Payment Renewal");
                     return;
                 }
+                PlanPeriodDTO planPeriodDTO = planDTO.getPeriod();
                 nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planPeriodDTO.getTimeUnit().toMillis(planPeriodDTO.getRetryInterval()));
                 scheduleRecurringPayment(request.getTransaction().getIdStr(), request.getLastSuccessTransactionId(), request.getTransaction().getType(),
                         request.getTransaction().getPaymentChannel().getCode(), nextRecurringDateTime, request.getAttemptSequence(), request.getTransaction(), request.getFinalTransactionStatus(),

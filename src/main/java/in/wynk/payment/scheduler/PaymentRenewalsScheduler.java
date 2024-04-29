@@ -6,6 +6,7 @@ import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.data.aspect.advice.Transactional;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PaymentRenewalMessage;
@@ -13,6 +14,7 @@ import in.wynk.payment.dto.PreDebitNotificationMessage;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.queue.service.ISqsManagerService;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +28,7 @@ import static in.wynk.common.enums.PaymentEvent.*;
 import static in.wynk.logging.constants.LoggingConstants.REQUEST_ID;
 
 @Service
+@Slf4j
 public class PaymentRenewalsScheduler {
 
     @Autowired
@@ -88,22 +91,27 @@ public class PaymentRenewalsScheduler {
     @AnalyseTransaction(name = "scheduleRenewalMessage")
     private void publishRenewalMessage(PaymentRenewalMessage message) {
         AnalyticService.update(message);
-        if(checkRenewalEligibility(message.getTransactionId(), message.getClientAlias())) {
+        if(checkRenewalEligibility(message.getTransactionId(), message.getClientAlias(), message.getAttemptSequence())) {
             sqsManagerService.publishSQSMessage(message);
         }
     }
 
-    private boolean checkRenewalEligibility (String transactionId, String clientAlias) {
-        Transaction transaction = transactionManager.get(transactionId);
-        if (transaction.getStatus() == TransactionStatus.FAILURE && transaction.getType() != RENEW) {
-            try {
-                recurringPaymentManager.unScheduleRecurringPayment(clientAlias, transactionId, PaymentEvent.CANCELLED);
-            } catch (Exception e) {
+    private boolean checkRenewalEligibility (String transactionId, String clientAlias, int attemptSequence) {
+        if(attemptSequence < PaymentConstants.MAXIMUM_RENEWAL_RETRY_ALLOWED) {
+            Transaction transaction = transactionManager.get(transactionId);
+            if (transaction.getStatus() == TransactionStatus.FAILURE && transaction.getType() != RENEW) {
+                try {
+                    recurringPaymentManager.unScheduleRecurringPayment(clientAlias, transactionId, PaymentEvent.CANCELLED);
+                } catch (Exception e) {
+                    return false;
+                }
                 return false;
             }
+            return !renewalUnSupportedPG.contains(transaction.getPaymentChannel().getId());
+        } else {
+            log.error("Need to break the chain in Payment Renewal as maximum attempts are already exceeded");
             return false;
         }
-        return !renewalUnSupportedPG.contains(transaction.getPaymentChannel().getId());
     }
 
     @AnalyseTransaction(name = "schedulePreDebitNotificationMessage")

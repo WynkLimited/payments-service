@@ -156,7 +156,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     }
 
     @Override
-    public Optional<PaymentRenewal> getRenewalByInitialTxnId (String txnId) {
+    public Optional<PaymentRenewal> getLatestRecurringPaymentByInitialTxnId (String txnId) {
         final IPaymentRenewalDao paymentRenewalDao = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class);
         return paymentRenewalDao.getLatestRecurringPaymentByInitialTxnId(txnId);
     }

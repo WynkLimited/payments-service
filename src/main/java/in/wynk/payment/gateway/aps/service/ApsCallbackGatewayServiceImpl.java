@@ -211,7 +211,8 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
         @Override
         public AbstractPaymentCallbackResponse handle (ApsMandateStatusCallbackRequestPayload callbackRequest) {
             final Transaction transaction = TransactionContext.get();
-            recurringTransactionUtils.cancelRenewalBasedOnRealtimeMandate(transaction);
+            String description = "Mandate is already " + callbackRequest.getMandateStatus().name().toLowerCase(Locale.ROOT);
+            recurringTransactionUtils.cancelRenewalBasedOnRealtimeMandate(description, transaction);
             transaction.setType(PaymentEvent.UNSUBSCRIBE.getValue());
             return DefaultPaymentCallbackResponse.builder().transactionStatus(transaction.getStatus()).build();
         }

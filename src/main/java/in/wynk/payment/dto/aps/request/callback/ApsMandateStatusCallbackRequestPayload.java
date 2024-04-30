@@ -11,6 +11,6 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @NoArgsConstructor
 public class ApsMandateStatusCallbackRequestPayload extends ApsCallBackRequestPayload {
-    private String mandateStartDate;
-    private String mandateEndDate;
+    private Long mandateStartDate;
+    private Long mandateEndDate;
 }

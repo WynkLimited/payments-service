@@ -157,12 +157,8 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
 
     @Override
     public PaymentRenewal getLatestRecurringPaymentByInitialTxnId (String txnId) {
-        final IPaymentRenewalDao paymentRenewalDao = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class);
-        List<PaymentRenewal> paymentRenewals = paymentRenewalDao.getLatestRecurringPaymentByInitialTxnId(txnId);
-        if (Objects.nonNull(paymentRenewals) && paymentRenewals.size() > 0) {
-            return paymentRenewals.get(0);
-        }
-        return null;
+        Optional<PaymentRenewal> paymentRenewalOptional = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).findTopByInitialTransactionIdOrderByCreatedTimestampDesc(txnId);
+        return paymentRenewalOptional.orElse(null);
     }
 
     private Stream<PaymentRenewal> getPaymentRenewalStream (int offsetDay, int offsetTime, int preOffsetDays) {

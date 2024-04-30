@@ -21,7 +21,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.EnumSet;
 import java.util.Objects;
-import java.util.Optional;
 
 import static in.wynk.payment.core.constant.PaymentConstants.ERROR_REASONS;
 
@@ -90,7 +89,7 @@ public class RecurringTransactionUtils {
     public void cancelRenewalBasedOnRealtimeMandate (String description, Transaction firstTransaction) {
         PaymentRenewal paymentRenewal = recurringPaymentManagerService.getLatestRecurringPaymentByInitialTxnId(firstTransaction.getIdStr());
         if (Objects.nonNull(paymentRenewal)) {
-            Transaction transaction = transactionManagerService.get(paymentRenewal.getTransactionId());
+            final Transaction transaction = (firstTransaction.getIdStr().equals(paymentRenewal.getTransactionId())) ? firstTransaction : transactionManagerService.get(paymentRenewal.getTransactionId());
             updateSubscriptionAndTransaction(description, transaction);
         } else {
             throw new WynkRuntimeException(PaymentErrorType.RTMANDATE001);

@@ -57,4 +57,8 @@ public class PaymentMethod extends MongoBaseEntityMessage<String> {
     public boolean isMandateSupported () {
         return mandateSupported && autoRenewSupported;
     }
+
+    public boolean isTrialSupported () {
+        return trialSupported && autoRenewSupported;
+    }
 }

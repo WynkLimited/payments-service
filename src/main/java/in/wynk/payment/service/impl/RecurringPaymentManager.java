@@ -155,6 +155,12 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
         return getPaymentRenewalStream(dueRecurringOffsetDay, dueRecurringOffsetTime, 0);
     }
 
+    @Override
+    public Optional<PaymentRenewal> getRenewalByInitialTxnId (String txnId) {
+        final IPaymentRenewalDao paymentRenewalDao = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class);
+        return paymentRenewalDao.getLatestRecurringPaymentByInitialTxnId(txnId);
+    }
+
     private Stream<PaymentRenewal> getPaymentRenewalStream (int offsetDay, int offsetTime, int preOffsetDays) {
         final Calendar currentDay = Calendar.getInstance();
         currentDay.add(Calendar.DAY_OF_MONTH, preOffsetDays);

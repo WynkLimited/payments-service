@@ -48,7 +48,7 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
     private final RecurringTransactionUtils recurringTransactionUtils;
     private final Map<String, IPaymentCallback<? extends AbstractPaymentCallbackResponse, ? extends ApsCallBackRequestPayload>> delegator = new HashMap<>();
 
-    public ApsCallbackGatewayServiceImpl(String salt, String secret, ApsCommonGatewayService common, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher, RecurringTransactionUtils recurringTransactionUtils;) {
+    public ApsCallbackGatewayServiceImpl(String salt, String secret, ApsCommonGatewayService common, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher, RecurringTransactionUtils recurringTransactionUtils) {
         this.salt = salt;
         this.secret = secret;
         this.common = common;

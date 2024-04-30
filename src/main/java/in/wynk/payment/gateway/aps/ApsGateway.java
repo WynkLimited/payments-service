@@ -24,6 +24,7 @@ import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
 import in.wynk.payment.gateway.*;
 import in.wynk.payment.gateway.aps.service.*;
 import in.wynk.payment.service.*;
+import in.wynk.payment.utils.RecurringTransactionUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -88,11 +89,12 @@ public class ApsGateway implements
                       ITransactionManagerService transactionManager,
                       IMerchantTransactionService merchantTransactionService,
                       IRecurringPaymentManagerService recurringPaymentManagerService,
+                      RecurringTransactionUtils recurringTransactionUtils,
                       @Qualifier("apsHttpTemplate") RestTemplate httpTemplate) {
         this.eligibilityGateway = new ApsEligibilityGatewayServiceImpl();
         this.statusGateway = new ApsStatusGatewayServiceImpl(commonGateway);
         this.payOptionsGateway = new ApsPaymentOptionsServiceImpl(payOptionEndpoint, commonGateway);
-        this.callbackGateway = new ApsCallbackGatewayServiceImpl(salt, secret, commonGateway, mapper, eventPublisher);
+        this.callbackGateway = new ApsCallbackGatewayServiceImpl(salt, secret, commonGateway, mapper, eventPublisher, recurringTransactionUtils);
         this.refundGateway = new ApsRefundGatewayServiceImpl(refundEndpoint, eventPublisher, commonGateway);
         this.settlementGateway = new ApsPaymentSettlementGateway(settlementEndpoint, httpTemplate, paymentCachingService);
         this.deleteGateway = new ApsDeleteGatewayServiceImpl(deleteCardEndpoint, deleteVpaEndpoint, commonGateway);

@@ -88,9 +88,8 @@ public class RecurringTransactionUtils {
 
     //find last renewal txn id and update the same
     public void cancelRenewalBasedOnRealtimeMandate (String description, Transaction firstTransaction) {
-        Optional<PaymentRenewal> paymentRenewalOptional = recurringPaymentManagerService.getLatestRecurringPaymentByInitialTxnId(firstTransaction.getIdStr());
-        if (paymentRenewalOptional.isPresent()) {
-            PaymentRenewal paymentRenewal = paymentRenewalOptional.get();
+        PaymentRenewal paymentRenewal = recurringPaymentManagerService.getLatestRecurringPaymentByInitialTxnId(firstTransaction.getIdStr());
+        if (Objects.nonNull(paymentRenewal)) {
             Transaction transaction = transactionManagerService.get(paymentRenewal.getTransactionId());
             updateSubscriptionAndTransaction(description, transaction);
         } else {

@@ -31,5 +31,5 @@ public interface IRecurringPaymentManagerService {
 
     void scheduleAtbTask (Transaction transaction, Calendar nextRecurringDateTime);
 
-    Optional<PaymentRenewal> getLatestRecurringPaymentByInitialTxnId (String txnId);
+    PaymentRenewal getLatestRecurringPaymentByInitialTxnId (String txnId);
 }

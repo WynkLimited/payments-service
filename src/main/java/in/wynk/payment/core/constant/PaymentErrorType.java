@@ -127,11 +127,12 @@ public enum PaymentErrorType implements IWynkErrorType {
     /*Validations errorCodes start*/
     PAY601("Validation Failure", "Given Payment Method Is Not Eligible", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
     PAY602("Validation Failure", "Trial Plan can not be purchased without auto renew option", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
-    PAY603("Validation Failure", "Both trial and mandate supported can't be true at the same time", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
+    PAY603("Request Validation Failure", "Given payment method does not support auto renewal", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
     PAY604("Validation Failure", "This plan is not eligible for mandate flow", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
     PAY605("Validation Failure", "Given plan id is not eligible", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
     PAY606("Validation Failure", "Given plan id is not eligible as selective eligibility is null", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
     PAY607("Validation Failure", "Trial plan cannot be purchased as no Free trial plan present in db", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
+    PAY608("Validation Failure", "Both trial and mandate supported can't be true at the same time", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
     PAY609("Validation Failure", "Saved Card does not support renewal or mandate or trial opted", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
     /*Validations errorCodes end*/
 

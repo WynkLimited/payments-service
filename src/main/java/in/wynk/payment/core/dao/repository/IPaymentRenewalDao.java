@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 @Repository(BeanConstant.PAYMENT_RENEWAL_DAO)
@@ -20,4 +21,6 @@ public interface IPaymentRenewalDao extends JpaRepository<PaymentRenewal, String
                                                @Param("currentTime") Date currentTime,
                                                @Param("currentTimeWithOffset") Date currentTimeWithOffset);
 
+    @Query("SELECT p FROM PaymentRenewal p WHERE p.initial_transaction_id = :initialTransactionId ORDER BY created_timestamp DESC LIMIT 1")
+    Optional<PaymentRenewal> getLatestRecurringPaymentByInitialTxnId(@Param("initialTransactionId") String initialTransactionId);
 }

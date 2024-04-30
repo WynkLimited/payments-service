@@ -26,6 +26,7 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker APS_CALLBACK_ORDER_ERROR = MarkerFactory.getMarker("APS_CALLBACK_ORDER_ERROR");
     Marker APS_TDR_ERROR= MarkerFactory.getMarker("APS_TDR_ERROR");
     Marker MAX_RENEWAL_ATTEMPT_ERROR= MarkerFactory.getMarker("MAX_RENEWAL_ATTEMPT_ERROR");
+    Marker STOP_RENEWAL_FAILURE = MarkerFactory.getMarker("STOP_RENEWAL_FAILURE");
 
 
     Marker HTTP_ERROR = MarkerFactory.getMarker("HTTP_ERROR");

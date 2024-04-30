@@ -149,7 +149,7 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY999("Charging Failure", "Fraud Charging Request for AutoRenew in Direct Payment API", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.CHARGING_API_FAILURE),
 
     /*Realtime Mandate start*/
-    RTMANDATE001("Realtime Mandate Processing Failure", "Could not stop renewal based on auto realtime mandate as we don't have record for initial transaction Id",HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.STOP_RENEWAL_FAILURE),
+    RTMANDATE001("Realtime Mandate Processing Failure", "Could not stop renewal based on realtime mandate as we don't have record for initial transaction id",HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.STOP_RENEWAL_FAILURE),
     /*Realtime Mandate start*/
 
     /*Add to bill errorCodes start*/

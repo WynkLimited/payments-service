@@ -7,7 +7,6 @@ public enum SiRegistrationStatus {
     ACTIVE,
     REVOKED,
     MODIFIED,
-
     FAILED,
     CREATED;
 }

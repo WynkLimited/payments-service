@@ -229,14 +229,11 @@ public class ApsCommonGatewayService {
     private void syncTransactionWithSourceResponse (ApsChargeStatusResponse apsChargeStatusResponse) {
         TransactionStatus finalTransactionStatus = TransactionStatus.UNKNOWN;
         final Transaction transaction = TransactionContext.get();
-        if (apsChargeStatusResponse.getMandateStatus().toString().equalsIgnoreCase("CREATED")) {
-            apsChargeStatusResponse.setMandateStatus(SiRegistrationStatus.NOT_ACTIVE);
-        }
-        if ("PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus()) && "ACTIVE".equalsIgnoreCase(apsChargeStatusResponse.getMandateStatus().toString())) {
+        if ("PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus()) && SiRegistrationStatus.ACTIVE == apsChargeStatusResponse.getMandateStatus()) {
             finalTransactionStatus = TransactionStatus.SUCCESS;
             evict(transaction.getMsisdn());
-        } else if ("NOT_ACTIVE".equalsIgnoreCase(apsChargeStatusResponse.getMandateStatus().toString()) || "PAYMENT_FAILED".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus()) || ("PG_FAILED".equalsIgnoreCase(apsChargeStatusResponse.getPgStatus()))) {
-            if ("NOT_ACTIVE".equalsIgnoreCase(apsChargeStatusResponse.getMandateStatus().toString())) {
+        } else if (SiRegistrationStatus.ACTIVE != apsChargeStatusResponse.getMandateStatus() && "PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus()) || "PAYMENT_FAILED".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus()) || ("PG_FAILED".equalsIgnoreCase(apsChargeStatusResponse.getPgStatus()))) {
+            if ("PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) {
                 eventPublisher.publishEvent(PaymentRefundInitEvent.builder()
                         .reason("mandate status was not active")
                         .originalTransactionId(transaction.getIdStr())

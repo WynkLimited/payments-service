@@ -5,7 +5,10 @@ import in.wynk.payment.constant.UpiConstants;
 import in.wynk.payment.dto.aps.common.RefundInfo;
 import in.wynk.payment.dto.aps.common.SiRegistrationStatus;
 import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
-import lombok.*;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
@@ -48,7 +51,6 @@ public class ApsChargeStatusResponse implements Serializable {
     private String mid;
     private long paymentStartDate;
     private long paymentEndDate;
-    @Setter
     private SiRegistrationStatus mandateStatus;
     private String mandateId;
     private String nextRetry;

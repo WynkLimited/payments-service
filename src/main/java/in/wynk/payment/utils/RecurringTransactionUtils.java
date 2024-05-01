@@ -44,7 +44,7 @@ public class RecurringTransactionUtils {
         }
     }
 
-    @TransactionAware(txnId = "#transaction.id")
+    @TransactionAware(txnId = "#txn.id")
     private void updateSubscriptionAndTransaction (String description, Transaction txn) {
         Transaction transactionCopy = Transaction.builder().id(txn.getIdStr()).planId(txn.getPlanId()).amount(txn.getAmount()).mandateAmount(txn.getMandateAmount()).discount(txn.getDiscount())
                 .initTime(txn.getInitTime()).uid(txn.getUid()).msisdn(txn.getMsisdn()).clientAlias(txn.getClientAlias()).itemId(txn.getItemId())

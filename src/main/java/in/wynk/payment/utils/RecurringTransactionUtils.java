@@ -5,6 +5,7 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MandateStatusEvent;
@@ -90,15 +91,19 @@ public class RecurringTransactionUtils {
 
     }
 
-    //find last renewal txn id and update the same
     public void cancelRenewalBasedOnRealtimeMandate (String description, Transaction firstTransaction) {
-        PaymentRenewal paymentRenewal = recurringPaymentManagerService.getLatestRecurringPaymentByInitialTxnId(firstTransaction.getIdStr());
-        if (Objects.nonNull(paymentRenewal)) {
-            final Transaction transaction =
-                    (firstTransaction.getIdStr().equals(paymentRenewal.getTransactionId())) ? firstTransaction : transactionManagerService.get(paymentRenewal.getTransactionId());
-            updateSubscriptionAndTransaction(description, transaction);
-        } else {
+        try {
+            PaymentRenewal paymentRenewal = recurringPaymentManagerService.getLatestRecurringPaymentByInitialTxnId(firstTransaction.getIdStr());
+            if (Objects.nonNull(paymentRenewal)) {
+                final Transaction transaction =
+                        (firstTransaction.getIdStr().equals(paymentRenewal.getTransactionId())) ? firstTransaction : transactionManagerService.get(paymentRenewal.getTransactionId());
+                updateSubscriptionAndTransaction(description, transaction);
+            } else {
+                log.error(PaymentLoggingMarker.STOP_RENEWAL_FAILURE, PaymentErrorType.RTMANDATE001.getErrorMessage());
+            }
+        } catch (Exception ex) {
             throw new WynkRuntimeException(PaymentErrorType.RTMANDATE001);
         }
+
     }
 }

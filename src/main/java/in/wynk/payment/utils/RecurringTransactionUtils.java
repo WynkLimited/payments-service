@@ -45,24 +45,29 @@ public class RecurringTransactionUtils {
     }
 
     @TransactionAware(txnId = "#transaction.id")
-    private void updateSubscriptionAndTransaction (String description, Transaction transaction) {
+    private void updateSubscriptionAndTransaction (String description, Transaction txn) {
+        Transaction transactionCopy = Transaction.builder().id(txn.getIdStr()).planId(txn.getPlanId()).amount(txn.getAmount()).mandateAmount(txn.getMandateAmount()).discount(txn.getDiscount())
+                .initTime(txn.getInitTime()).uid(txn.getUid()).msisdn(txn.getMsisdn()).clientAlias(txn.getClientAlias()).itemId(txn.getItemId())
+                .paymentChannel(txn.getPaymentChannel().getId()).type(txn.getType().getValue()).status(txn.getStatus().getValue()).coupon(txn.getCoupon()).exitTime(txn.getExitTime())
+                .consent(txn.getConsent()).build();
         try {
-            PaymentRenewal renewal = recurringPaymentManagerService.getRenewalById(transaction.getIdStr());
+            PaymentRenewal renewal = recurringPaymentManagerService.getRenewalById(transactionCopy.getIdStr());
             if (Objects.nonNull(renewal)) {
                 final String referenceTransactionId = renewal.getInitialTransactionId();
-                eventPublisher.publishEvent(UnScheduleRecurringPaymentEvent.builder().transactionId(transaction.getIdStr()).clientAlias(transaction.getClientAlias())
+                eventPublisher.publishEvent(UnScheduleRecurringPaymentEvent.builder().transactionId(transactionCopy.getIdStr()).clientAlias(transactionCopy.getClientAlias())
                         .reason("Stopping Payment Renewal because " + description).build());
-                eventPublisher.publishEvent(MandateStatusEvent.builder().txnId(transaction.getIdStr()).clientAlias(transaction.getClientAlias()).errorReason(description)
-                        .referenceTransactionId(referenceTransactionId).planId(transaction.getPlanId()).paymentMethod(transaction.getPaymentChannel().getCode()).uid(transaction.getUid()).build());
+                eventPublisher.publishEvent(MandateStatusEvent.builder().txnId(transactionCopy.getIdStr()).clientAlias(transactionCopy.getClientAlias()).errorReason(description)
+                        .referenceTransactionId(referenceTransactionId).planId(transactionCopy.getPlanId()).paymentMethod(transactionCopy.getPaymentChannel().getCode()).uid(transactionCopy.getUid())
+                        .build());
                 Integer planId;
                 AsyncTransactionRevisionRequest request;
-                if (EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION, PaymentEvent.MANDATE, PaymentEvent.FREE).contains(transaction.getType())) {
-                    planId = subscriptionServiceManager.getUpdatedPlanId(transaction.getPlanId(), transaction.getType());
-                    transaction.setPlanId(planId);
-                    transaction.setType(PaymentEvent.UNSUBSCRIBE.getValue());
-                    request = AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(transaction.getStatus())
+                if (EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION, PaymentEvent.MANDATE, PaymentEvent.FREE).contains(transactionCopy.getType())) {
+                    planId = subscriptionServiceManager.getUpdatedPlanId(transactionCopy.getPlanId(), transactionCopy.getType());
+                    transactionCopy.setPlanId(planId);
+                    transactionCopy.setType(PaymentEvent.UNSUBSCRIBE.getValue());
+                    request = AsyncTransactionRevisionRequest.builder().transaction(transactionCopy).existingTransactionStatus(transactionCopy.getStatus())
                             .finalTransactionStatus(TransactionStatus.CANCELLED).build();
-                } else if (transaction.getType() == PaymentEvent.RENEW && transaction.getStatus() == TransactionStatus.FAILURE) {
+                } else if (transactionCopy.getType() == PaymentEvent.RENEW && transactionCopy.getStatus() == TransactionStatus.FAILURE) {
                     String lastSuccessTxnId = renewal.getLastSuccessTransactionId();
                     Transaction lastSuccessTransaction = transactionManagerService.get(lastSuccessTxnId);
                     lastSuccessTransaction.setType(PaymentEvent.UNSUBSCRIBE.getValue());
@@ -73,8 +78,8 @@ public class RecurringTransactionUtils {
                     request = AsyncTransactionRevisionRequest.builder().transaction(lastSuccessTransaction).existingTransactionStatus(lastSuccessTransaction.getStatus())
                             .finalTransactionStatus(TransactionStatus.CANCELLED).build();
                 } else {
-                    transaction.setType(PaymentEvent.UNSUBSCRIBE.getValue());
-                    request = AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(transaction.getStatus())
+                    transactionCopy.setType(PaymentEvent.UNSUBSCRIBE.getValue());
+                    request = AsyncTransactionRevisionRequest.builder().transaction(transactionCopy).existingTransactionStatus(transactionCopy.getStatus())
                             .finalTransactionStatus(TransactionStatus.CANCELLED).build();
                 }
                 subscriptionServiceManager.unSubscribePlan(AbstractUnSubscribePlanRequest.from(request));
@@ -89,7 +94,8 @@ public class RecurringTransactionUtils {
     public void cancelRenewalBasedOnRealtimeMandate (String description, Transaction firstTransaction) {
         PaymentRenewal paymentRenewal = recurringPaymentManagerService.getLatestRecurringPaymentByInitialTxnId(firstTransaction.getIdStr());
         if (Objects.nonNull(paymentRenewal)) {
-            final Transaction transaction = (firstTransaction.getIdStr().equals(paymentRenewal.getTransactionId())) ? firstTransaction : transactionManagerService.get(paymentRenewal.getTransactionId());
+            final Transaction transaction =
+                    (firstTransaction.getIdStr().equals(paymentRenewal.getTransactionId())) ? firstTransaction : transactionManagerService.get(paymentRenewal.getTransactionId());
             updateSubscriptionAndTransaction(description, transaction);
         } else {
             throw new WynkRuntimeException(PaymentErrorType.RTMANDATE001);

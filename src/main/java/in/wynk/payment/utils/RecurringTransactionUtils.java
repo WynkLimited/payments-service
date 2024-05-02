@@ -99,6 +99,9 @@ public class RecurringTransactionUtils {
                         (firstTransaction.getIdStr().equals(paymentRenewal.getTransactionId())) ? firstTransaction : transactionManagerService.get(paymentRenewal.getTransactionId());
                 updateSubscriptionAndTransaction(description, transaction);
             } else {
+                eventPublisher.publishEvent(MandateStatusEvent.builder().txnId(firstTransaction.getIdStr()).clientAlias(firstTransaction.getClientAlias()).errorReason(description)
+                        .referenceTransactionId(null).planId(firstTransaction.getPlanId()).paymentMethod(firstTransaction.getPaymentChannel().getCode()).uid(firstTransaction.getUid())
+                        .build());
                 log.error(PaymentLoggingMarker.STOP_RENEWAL_FAILURE, PaymentErrorType.RTMANDATE001.getErrorMessage());
             }
         } catch (Exception ex) {

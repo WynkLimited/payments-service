@@ -71,11 +71,11 @@ public class RecurringTransactionUtils {
                 } else if (transactionCopy.getType() == PaymentEvent.RENEW && transactionCopy.getStatus() == TransactionStatus.FAILURE) {
                     String lastSuccessTxnId = renewal.getLastSuccessTransactionId();
                     Transaction lastSuccessTransaction = transactionManagerService.get(lastSuccessTxnId);
-                    lastSuccessTransaction.setType(PaymentEvent.UNSUBSCRIBE.getValue());
                     if (lastSuccessTransaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
                         planId = subscriptionServiceManager.getUpdatedPlanId(lastSuccessTransaction.getPlanId(), lastSuccessTransaction.getType());
                         lastSuccessTransaction.setPlanId(planId);
                     }
+                    lastSuccessTransaction.setType(PaymentEvent.UNSUBSCRIBE.getValue());
                     request = AsyncTransactionRevisionRequest.builder().transaction(lastSuccessTransaction).existingTransactionStatus(lastSuccessTransaction.getStatus())
                             .finalTransactionStatus(TransactionStatus.CANCELLED).build();
                 } else {

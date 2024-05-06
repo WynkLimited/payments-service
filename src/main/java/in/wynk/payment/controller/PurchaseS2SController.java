@@ -71,7 +71,7 @@ public class PurchaseS2SController {
     public WynkResponseEntity<SessionResponse.SessionData> planPurchase(@Valid @RequestBody BestValuePlanPurchaseRequest request,
                                                                                @RequestParam Map<String, String> additionalParam) {
         LoadClientUtils.loadClient(true);
-        final String sid = sessionService.init(request);
+        final String sid = sessionService.init(request , additionalParam);
         final BestValuePlanResponse bestValuePlan = iSubscriptionServiceManager.getBestValuePlan(request, additionalParam);
         final WynkResponseEntity<SessionResponse.SessionData> response = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPresentation<WynkResponseEntity<SessionResponse.SessionData>,  Pair<String, BestValuePlanResponse>>>() {
         }).transform( Pair.of(sid, bestValuePlan));

@@ -29,6 +29,7 @@ import in.wynk.payment.core.event.PaymentSettlementEvent;
 import in.wynk.payment.core.event.PaymentUserDeactivationMigrationEvent;
 import in.wynk.payment.core.event.TransactionSnapshotEvent;
 import in.wynk.payment.dto.GenerateItemEvent;
+import in.wynk.payment.dto.PointDetails;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.TransactionDetails;
 import in.wynk.payment.dto.aps.common.ApsConstant;
@@ -239,6 +240,8 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             return transaction;
         } else if (PointTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass())) {
             final Transaction transaction = initPointTransaction((PointTransactionInitRequest) transactionInitRequest);
+            PointDetails productDetails=((PointDetails)request.getProductDetails());
+            productDetails.setTitle(null);
             purchaseDetailsManger.save(transaction, request);
             TransactionContext.set(TransactionDetails.builder().transaction(transaction).request(request).build());
             return transaction;

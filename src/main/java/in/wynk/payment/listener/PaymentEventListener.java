@@ -512,8 +512,13 @@ public class PaymentEventListener {
             final Invoice invoice = invoiceService.getInvoiceByTransactionId(event.getTxnId());
             if (Objects.isNull(invoice)) {
                 final Transaction transaction = transactionManagerService.get(event.getTxnId());
-                final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
-                final String clientAlias = clientDetailsCachingService.getClientByService(plan.getService()).getAlias();
+                String clientAlias;
+                if (transaction.getType() == PaymentEvent.POINT_PURCHASE) {
+                    clientAlias = transaction.getClientAlias();
+                } else {
+                    final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
+                    clientAlias = clientDetailsCachingService.getClientByService(plan.getService()).getAlias();
+                }
                 invoiceKafkaPublisher.publish(GenerateInvoiceKafkaMessage.from(event, clientAlias));
             }
         } catch (Exception e) {

@@ -63,6 +63,13 @@ public class PointDetails extends AbstractProductDetails {
         return skuId;
     }
 
+    public void setTitle (String title) {
+        if (Objects.isNull(title)) {
+            SessionDTO sessionDto = SessionContextHolder.getBody();
+            this.title = sessionDto.get("title");
+        }
+    }
+
     @Override
     public String getType () {
         return BaseConstants.POINT;

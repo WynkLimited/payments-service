@@ -10,6 +10,7 @@ import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.ChecksumUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.identity.client.utils.IdentityUtils;
+import in.wynk.payment.constant.Validity;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
@@ -302,6 +303,10 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
                 AnalyticService.update( BaseConstants.REQUEST_PLAN_ID, request.getProductDetails().getId());
                 return BestValuePlanResponse.builder().planId(request.getProductDetails().getId()).bestValuePlanPurchaseRequest(request).build();
             }
+            if(!validateMandatoryParam(additionalParam)){
+                AnalyticService.update(BaseConstants.MISSING_MANDATORY_PARAM);
+                return  BestValuePlanResponse.builder().bestValuePlanPurchaseRequest(request).build();
+            }
             final SessionRequest sessionRequestWithAdditionalParam = request.toSessionWithAdditionalParam(additionalParam);
             AnalyticService.update(sessionRequestWithAdditionalParam);
             final RequestEntity<SessionRequest> sessionRequest = ChecksumUtils.buildEntityWithAuthHeaders(subscriptionBestValueEndpoint,
@@ -322,6 +327,9 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         return BestValuePlanResponse.builder().bestValuePlanPurchaseRequest(request).planId(planId).build();
     }
 
-
-
+    private boolean validateMandatoryParam(final Map<String, String> additionalParam) {
+        String pg = additionalParam.get(BaseConstants.PACK_GROUP);
+        int validity = Validity.getValidity(additionalParam.get(BaseConstants.VALIDITY));
+        return !StringUtils.isEmpty(pg) && validity != -1;
+    }
 }

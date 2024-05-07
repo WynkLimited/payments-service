@@ -204,7 +204,7 @@ public class PayUCommonGateway {
 
     public void syncTransactionWithSourceResponse (Transaction transaction, PayUVerificationResponse<? extends AbstractPayUTransactionDetails> transactionDetailsWrapper) {
         TransactionStatus finalTransactionStatus = TransactionStatus.UNKNOWN;
-        int retryInterval = cachingService.getPlan(transaction.getPlanId()).getPeriod().getRetryInterval();
+        int retryInterval = (transaction.getType() == PaymentEvent.POINT_PURCHASE) ? 1 : cachingService.getPlan(transaction.getPlanId()).getPeriod().getRetryInterval();
         if (transactionDetailsWrapper.getStatus() == 1) {
             final AbstractPayUTransactionDetails transactionDetails = transactionDetailsWrapper.getTransactionDetails(transaction.getIdStr());
             if (SUCCESS.equalsIgnoreCase(transactionDetails.getStatus())) {

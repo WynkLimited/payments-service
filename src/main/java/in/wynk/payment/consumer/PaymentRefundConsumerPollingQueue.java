@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.dto.WynkResponseEntity;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PaymentRefundInitMessage;
@@ -19,6 +20,7 @@ import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 
+import java.util.EnumSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -79,9 +81,11 @@ public class PaymentRefundConsumerPollingQueue extends AbstractSQSMessageConsume
         Transaction transaction = transactionManagerService.get(message.getOriginalTransactionId());
 
         if (ApsConstant.AIRTEL_PAY_STACK.equalsIgnoreCase(transaction.getPaymentChannel().getCode())) {
-            AbstractPaymentRefundResponse response =
-                    paymentGatewayManager.doRefund(PaymentRefundInitRequest.builder().originalTransactionId(message.getOriginalTransactionId()).reason(message.getReason()).build());
-            AnalyticService.update(response);
+            if (!EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION, PaymentEvent.MANDATE).contains(transaction.getType())) {
+                AbstractPaymentRefundResponse response =
+                        paymentGatewayManager.doRefund(PaymentRefundInitRequest.builder().originalTransactionId(message.getOriginalTransactionId()).reason(message.getReason()).build());
+                AnalyticService.update(response);
+            }
         } else {
             WynkResponseEntity<?> response = paymentManager.refund(PaymentRefundInitRequest.builder()
                     .originalTransactionId(message.getOriginalTransactionId())

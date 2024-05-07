@@ -157,13 +157,14 @@ public class PaymentQueuesConfig {
                                                                                     @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
                                                                                     ObjectMapper objectMapper,
                                                                                     PaymentRefundSQSMessageExtractor paymentRefundSQSMessageExtractor,
-                                                                                    PaymentManager paymentManager) {
+                                                                                    PaymentManager paymentManager, ITransactionManagerService transactionManagerService,
+                                                                               PaymentGatewayManager paymentGatewayManager) {
         return new PaymentRefundConsumerPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
                 paymentRefundSQSMessageExtractor,
                 threadPoolExecutor(2),
-                scheduledThreadPoolExecutor(), paymentManager);
+                scheduledThreadPoolExecutor(), paymentManager, transactionManagerService, paymentGatewayManager);
     }
 
     @Bean

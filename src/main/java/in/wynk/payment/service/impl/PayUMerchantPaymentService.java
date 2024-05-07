@@ -96,7 +96,6 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     private final IMerchantTransactionService merchantTransactionService;
     private final ITransactionManagerService transactionManagerService;
     private final IRecurringPaymentManagerService recurringPaymentManagerService;
-    private final ISubscriptionServiceManager subscriptionServiceManager;
     private final IMerchantPaymentCallbackService<AbstractCallbackResponse, PayUCallbackRequestPayload> callbackHandler;
     private final RecurringTransactionUtils recurringTransactionUtils;
 
@@ -116,7 +115,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     public PayUMerchantPaymentService (Gson gson, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher, PaymentCachingService cachingService,
                                        IMerchantTransactionService merchantTransactionService, IErrorCodesCacheService errorCodesCacheServiceImpl,
                                        @Qualifier(EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ITransactionManagerService transactionManagerService,
-                                       IRecurringPaymentManagerService recurringPaymentManagerService, ISubscriptionServiceManager subscriptionServiceManager,
+                                       IRecurringPaymentManagerService recurringPaymentManagerService,
                                        RecurringTransactionUtils recurringTransactionUtils) {
         super(cachingService, errorCodesCacheServiceImpl);
         this.gson = gson;
@@ -128,7 +127,6 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         this.merchantTransactionService = merchantTransactionService;
         this.transactionManagerService = transactionManagerService;
         this.recurringPaymentManagerService = recurringPaymentManagerService;
-        this.subscriptionServiceManager = subscriptionServiceManager;
         this.recurringTransactionUtils = recurringTransactionUtils;
     }
 
@@ -823,8 +821,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             if (response.getStatus().equalsIgnoreCase(INTEGER_VALUE)) {
                 log.info(PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS, "invoiceId: " + response.getInvoiceId() + " invoiceStatus: " + response.getInvoiceStatus());
             } else {
-                handlePreDebitResponse(transaction, response);
-                return PayUPreDebitNotification.builder().tid(message.getTransactionId()).transactionStatus(TransactionStatus.FAILURE).build();
+                throw new WynkRuntimeException(PAY111, response.getMessage());
             }
             return PayUPreDebitNotification.builder().tid(message.getTransactionId()).transactionStatus(TransactionStatus.SUCCESS).build();
         } catch (Exception e) {
@@ -833,14 +830,6 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 throw e;
             }
             throw new WynkRuntimeException(PAY111);
-        }
-    }
-
-    private void handlePreDebitResponse (Transaction transaction, PayUPreDebitNotificationResponse response) {
-        if (ERROR_REASONS.contains(response.getMessage())) {
-            recurringTransactionUtils.cancelRenewalBasedOnErrorReason(response.getMessage(), transaction);
-        } else {
-            throw new WynkRuntimeException(PAY111, response.getMessage());
         }
     }
 

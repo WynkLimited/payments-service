@@ -432,10 +432,10 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         if (Objects.isNull(request.getPaymentDetails()) || Objects.isNull(request.getProductDetails()) || Objects.isNull(request.getAppDetails())) {
             throw new WynkRuntimeException(PaymentErrorType.PAY501);
         }
-        String productType = Objects.isNull(request.getProductDetails().getPlanId()) ? BaseConstants.POINT : BaseConstants.PLAN;
+        String productType = (Objects.nonNull(request.getProductDetails().getType()) && (Objects.equals(request.getProductDetails().getType(), BaseConstants.POINT))) ? BaseConstants.POINT : BaseConstants.PLAN;
         AbstractGooglePlayReceiptVerificationResponse abstractGooglePlayReceiptVerificationResponse =
                 googlePlayResponse(request.getPaymentDetails().getPurchaseToken(), request.getProductDetails().getSkuId(), request.getAppDetails().getPackageName(),
-                        request.getAppDetails().getService(), Objects.isNull(request.getProductDetails().getPlanId()) ? BaseConstants.POINT : BaseConstants.PLAN);
+                        request.getAppDetails().getService(), productType);
         return mapGoogleResponseToReceiptResponse(abstractGooglePlayReceiptVerificationResponse, request, productType);
     }
 

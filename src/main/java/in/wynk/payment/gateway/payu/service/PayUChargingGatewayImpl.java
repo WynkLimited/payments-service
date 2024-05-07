@@ -1,6 +1,7 @@
 package in.wynk.payment.gateway.payu.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.EncryptionUtils;
@@ -361,7 +362,7 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
     @SneakyThrows
     private Map<String, String> buildPayUForm(AbstractPaymentChargingRequest chargingRequest) {
         final Transaction transaction = TransactionContext.get();
-        final int planId = transaction.getPlanId();
+        final String id = chargingRequest.getProductDetails().getType().equals(BaseConstants.POINT) ? transaction.getItemId() : String.valueOf(transaction.getPlanId());
         double finalPlanAmount = transaction.getAmount();
         String uid = transaction.getUid();
         String msisdn = transaction.getMsisdn();
@@ -379,7 +380,7 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
             boolean isFreeTrial = (transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION || transaction.getType() == PaymentEvent.MANDATE);
             BillingUtils billingUtils = new BillingUtils(1, BillingCycle.ADHOC);
             String siDetails = common.getMapper().writeValueAsString(new SiDetails(billingUtils.getBillingCycle(), billingUtils.getBillingInterval(), transaction.getMandateAmount(), today, next5Year));
-            String checksumHash = calculateChecksum(transaction.getClientAlias(), transaction.getId(), udf1, email, uid, String.valueOf(planId), finalPlanAmount, siDetails);
+            String checksumHash = calculateChecksum(transaction.getClientAlias(), transaction.getId(), udf1, email, uid, id, finalPlanAmount, siDetails);
             payload.put(PAYU_SI_KEY, "1");
             payload.put(PAYU_API_VERSION, "7");
             payload.put(PAYU_HASH, checksumHash);
@@ -390,7 +391,7 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
         } else {
             String udf1 = StringUtils.EMPTY;
             String reqType = PaymentRequestType.DEFAULT.name();
-            String checksumHash = calculateChecksum(transaction.getClientAlias(), transaction.getId(), udf1, email, uid, String.valueOf(planId), finalPlanAmount);
+            String checksumHash = calculateChecksum(transaction.getClientAlias(), transaction.getId(), udf1, email, uid, id, finalPlanAmount);
             payload.put(PAYU_HASH, checksumHash);
             payload.put(PAYU_REQUEST_TYPE, reqType);
             payload.put(PAYU_UDF1_PARAMETER, udf1);
@@ -399,7 +400,7 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
         payload.put(PAYU_MERCHANT_KEY, payUMerchantKey);
         payload.put(PAYU_REQUEST_TRANSACTION_ID, transaction.getId().toString());
         payload.put(PAYU_TRANSACTION_AMOUNT, String.valueOf(finalPlanAmount));
-        payload.put(PAYU_PRODUCT_INFO, String.valueOf(planId));
+        payload.put(PAYU_PRODUCT_INFO, id);
         payload.put(PAYU_CUSTOMER_FIRSTNAME, uid);
         payload.put(PAYU_CUSTOMER_EMAIL, email);
         payload.put(PAYU_CUSTOMER_MSISDN, msisdn);

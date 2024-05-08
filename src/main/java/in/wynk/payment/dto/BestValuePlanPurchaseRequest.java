@@ -107,7 +107,7 @@ public class BestValuePlanPurchaseRequest implements IClientValidatorRequest, IW
                 .successUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getSuccessPageUrl).orElse(null))
                 .pendingUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getPendingPageUrl).orElse(null))
                 .unknownUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getUnknownPageUrl).orElse(null))
-                .packGroup(additionalPram.get(BaseConstants.PACK_GROUP))
+                .packGroup(additionalPram.get(BaseConstants.DEEPLINK_PACK_GROUP))
                 .validity(Validity.getValidity(additionalPram.get(BaseConstants.VALIDITY)))
                 .validityUnit(additionalPram.get(BaseConstants.VALIDITY))
                 .build();

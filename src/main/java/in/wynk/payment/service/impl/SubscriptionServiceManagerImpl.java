@@ -384,7 +384,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     }
 
     private boolean validateMandatoryParam (final Map<String, String> additionalParam) {
-        String pg = additionalParam.get(BaseConstants.PACK_GROUP);
+        String pg = additionalParam.get(BaseConstants.DEEPLINK_PACK_GROUP);
         int validity = Validity.getValidity(additionalParam.get(BaseConstants.VALIDITY));
         return !StringUtils.isEmpty(pg) && validity != -1;
     }

@@ -126,8 +126,8 @@ public enum PaymentErrorType implements IWynkErrorType {
 
     /*Validations errorCodes start*/
     PAY601("Validation Failure", "Given Payment Method Is Not Eligible", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
-    PAY602("Validation Failure", "Given Plan Id Is Not Eligible", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
-    PAY603("Validation Failure", "Trial Plan can not be purchased without auto renew option", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
+    PAY602("Validation Failure", "Trial Plan can not be purchased without auto renew option", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
+    PAY603("Request Validation Failure", "Given payment method does not support auto renewal", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
     PAY604("Validation Failure", "This plan is not eligible for mandate flow", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
     PAY605("Validation Failure", "Given plan id is not eligible", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
     PAY606("Validation Failure", "Given plan id is not eligible as selective eligibility is null", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),
@@ -147,6 +147,10 @@ public enum PaymentErrorType implements IWynkErrorType {
     /*Point/item specific to bill errorCodes end*/
     PAY998("External Partner failure", "External Partner failure", HttpStatus.SERVICE_UNAVAILABLE, BaseLoggingMarkers.SERVICE_PARTNER_ERROR),
     PAY999("Charging Failure", "Fraud Charging Request for AutoRenew in Direct Payment API", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.CHARGING_API_FAILURE),
+
+    /*Realtime Mandate start*/
+    RTMANDATE001("Realtime Mandate Processing Failure", "Could not stop renewal based on realtime mandate as we don't have record for initial transaction id",HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.STOP_RENEWAL_FAILURE),
+    /*Realtime Mandate start*/
 
     /*Add to bill errorCodes start*/
     PAY800("Fetching Plan page Url failure", "Unable to get the plan page for DTP", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.BEST_VALUE_PLAN_API_ERROR),

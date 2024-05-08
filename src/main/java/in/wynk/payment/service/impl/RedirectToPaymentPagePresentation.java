@@ -20,8 +20,6 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.BestValuePlanPurchaseRequest;
 import in.wynk.payment.dto.BestValuePlanResponse;
-import in.wynk.payment.dto.PointDetails;
-import in.wynk.payment.dto.PurchaseRequest;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.session.constant.SessionConstant;
 import in.wynk.session.service.ISessionManager;
@@ -46,7 +44,6 @@ import java.util.concurrent.TimeUnit;
 
 import static in.wynk.common.constant.BaseConstants.AIRTEL_TV;
 import static in.wynk.common.constant.BaseConstants.*;
-import static in.wynk.payment.core.constant.PaymentConstants.SKU_ID;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 
 @Component
@@ -71,7 +68,7 @@ public class RedirectToPaymentPagePresentation implements
     private Integer duration;
 
     @Override
-    public WynkResponseEntity<SessionData> transform(final Pair<String, BestValuePlanResponse> pair) throws URISyntaxException {
+    public WynkResponseEntity<SessionData> transform (final Pair<String, BestValuePlanResponse> pair) throws URISyntaxException {
         final String id = pair.getFirst();
         final BestValuePlanResponse bestValuePlanResponse = pair.getSecond();
         final String bestValuePlanId = bestValuePlanResponse.getPlanId();
@@ -79,10 +76,10 @@ public class RedirectToPaymentPagePresentation implements
         final String clientId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
         final Client client = BeanLocatorFactory.getBean(ClientDetailsCachingService.class).getClientById(clientId);
         final String PAYMENT_OPTION_URL = EmbeddedPropertyResolver.resolveEmbeddedValue(PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER.replace("%c",
-                                                                                                                                           client.getAlias())
-                                                                                                                                  .replace("%p",
-                                                                                                                                           "payOption"),
-                                                                                        "${payment.payOption.page}");
+                                client.getAlias())
+                        .replace("%p",
+                                "payOption"),
+                "${payment.payOption.page}");
         ;
         try {
             if (StringUtils.isEmpty(bestValuePlanId)) {
@@ -98,8 +95,8 @@ public class RedirectToPaymentPagePresentation implements
             final PaymentCachingService cache = BeanLocatorFactory.getBean(PaymentCachingService.class);
             queryBuilder.addParameter(PLAN_ID, bestValuePlanId);
             queryBuilder.addParameter(UID,
-                                      IdentityUtils.getUidFromUserName(request.getUserDetails().getMsisdn(),
-                                                                       request.getAppDetails().getService()));
+                    IdentityUtils.getUidFromUserName(request.getUserDetails().getMsisdn(),
+                            request.getAppDetails().getService()));
             queryBuilder.addParameter(APP_ID, String.valueOf(request.getAppDetails().getAppId()));
             queryBuilder.addParameter(SERVICE, String.valueOf(request.getAppDetails().getService()));
             queryBuilder.addParameter(BUILD_NO, String.valueOf(request.getAppDetails().getBuildNo()));
@@ -127,16 +124,16 @@ public class RedirectToPaymentPagePresentation implements
         }
     }
 
-    public SessionResponse getPlanPageUrl(SessionRequest request) {
+    public SessionResponse getPlanPageUrl (SessionRequest request) {
         if (request.getService().equalsIgnoreCase(MUSIC) && request.getAppId().equalsIgnoreCase(WEB) && (request.getOs().equalsIgnoreCase(WEBOS)
-                                                                                                         || request.getOs()
-                                                                                                                   .equalsIgnoreCase(M_WEBOS))) {
+                || request.getOs()
+                .equalsIgnoreCase(M_WEBOS))) {
             return getSession(request, purchaseUrl);
         }
         return getSession(request, manageUrl);
     }
 
-    private SessionResponse getSession(SessionRequest sessionRequest, String url) {
+    private SessionResponse getSession (SessionRequest sessionRequest, String url) {
         String clientId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
         ClientDetails clientDetails = (ClientDetails) clientDetailsCachingService.getClientById(clientId);
         boolean isV2 = Boolean.FALSE;
@@ -159,22 +156,22 @@ public class RedirectToPaymentPagePresentation implements
             final App supportedApp = WynkServiceUtils.getServiceSupportedApp(sessionRequest.getAppId(), service);
             final Os supportedOs = WynkServiceUtils.getAppSupportedOs(sessionRequest.getOs(), supportedApp);
             final String uri = new StringBuilder(sessionRequest.getService()).append(url).append(id).append(SLASH)
-                                                                             .append(supportedOs.getId().toLowerCase()).toString();
+                    .append(supportedOs.getId().toLowerCase()).toString();
             final String domainUrl = webViewDomain;
             final StringBuilder host = new StringBuilder(domainUrl)
-                .append(uri)
-                .append(QUESTION_MARK)
-                .append(APP_ID)
-                .append(EQUAL)
-                .append(supportedApp.getId())
-                .append(AND)
-                .append(UID)
-                .append(EQUAL)
-                .append(sessionRequest.getUid())
-                .append(AND)
-                .append(DEVICE_ID_SHORT)
-                .append(EQUAL)
-                .append(sessionRequest.getDeviceId());
+                    .append(uri)
+                    .append(QUESTION_MARK)
+                    .append(APP_ID)
+                    .append(EQUAL)
+                    .append(supportedApp.getId())
+                    .append(AND)
+                    .append(UID)
+                    .append(EQUAL)
+                    .append(sessionRequest.getUid())
+                    .append(AND)
+                    .append(DEVICE_ID_SHORT)
+                    .append(EQUAL)
+                    .append(sessionRequest.getDeviceId());
             if (Objects.nonNull(supportedApp) && (supportedOs.getId().equalsIgnoreCase(IOS) || supportedOs.getId().equalsIgnoreCase(ANDROID))) {
                 host.append(AND).append(BUILD_NO).append(EQUAL).append(sessionRequest.getBuildNo());
                 if (sessionRequest.getService().equals(AIRTEL_TV) && sessionRequest.getBuildNo() <= 117) {
@@ -200,6 +197,4 @@ public class RedirectToPaymentPagePresentation implements
             throw new WynkRuntimeException(PaymentErrorType.PAY800, e);
         }
     }
-
-
 }

@@ -18,7 +18,7 @@ import lombok.experimental.SuperBuilder;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = DirectToPaymentPlanDetails.class, name = BaseConstants.PLAN),
+        @JsonSubTypes.Type(value = DirectToPaymentPlanDetails.class, name = BaseConstants.PLAN),
 })
 public abstract class AbstractBestValueProductDetails implements IProductDetails {
     private String type;

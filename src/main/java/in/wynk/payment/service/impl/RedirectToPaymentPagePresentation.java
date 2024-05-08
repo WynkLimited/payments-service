@@ -139,8 +139,6 @@ public class RedirectToPaymentPagePresentation implements
     private SessionResponse getSession(SessionRequest sessionRequest, String url) {
         String clientId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
         ClientDetails clientDetails = (ClientDetails) clientDetailsCachingService.getClientById(clientId);
-        final String clientSpecificDomainUrl = EmbeddedPropertyResolver.resolveEmbeddedValue(PaymentConstants.SUBSCRIPTION_PURCHASE_OR_MANAGE_CLIENT_PLACE_HOLDER);
-        ;
         boolean isV2 = Boolean.FALSE;
         try {
             AnalyticService.update(CLIENT, clientDetails.getAlias());

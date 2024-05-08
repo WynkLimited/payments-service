@@ -67,6 +67,8 @@ public class PointDetails extends AbstractProductDetails {
         if (Objects.isNull(title)) {
             SessionDTO sessionDto = SessionContextHolder.getBody();
             this.title = sessionDto.get("title");
+        } else {
+            this.title = title;
         }
     }
 

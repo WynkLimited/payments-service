@@ -65,10 +65,9 @@ public class PayUGateway extends PayUMerchantPaymentService implements
                        ITransactionManagerService transactionManagerService,
                        IMerchantTransactionService merchantTransactionService,
                        IRecurringPaymentManagerService recurringPaymentManagerService,
-                       ISubscriptionServiceManager subscriptionServiceManager,
                        RecurringTransactionUtils recurringTransactionUtils,
                        @Qualifier(EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate) {
-        super(gson, mapper, eventPublisher, payCache, merchantTransactionService, errorCodeCache, restTemplate, transactionManagerService, recurringPaymentManagerService, subscriptionServiceManager, recurringTransactionUtils);
+        super(gson, mapper, eventPublisher, payCache, merchantTransactionService, errorCodeCache, restTemplate, transactionManagerService, recurringPaymentManagerService, recurringTransactionUtils);
         this.statusGateway = new PayUStatusGatewayImpl(commonGateway);
         this.callbackGateway = new PayUCallbackGatewayImpl(commonGateway, mapper, eventPublisher);
         this.refundGateway = new PayURefundGatewayImpl(commonGateway, eventPublisher, transactionManagerService);

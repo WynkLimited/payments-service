@@ -118,6 +118,7 @@ public class RevenuePaymentControllerV2 {
         return responseEntity;
     }
 
+    /**This endpoint is used for redirection callback in case of card and netBanking**/
     @SneakyThrows
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentCallback")

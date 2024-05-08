@@ -32,7 +32,7 @@ public class ProductValidator<T extends IProductValidatorRequest> extends BaseHa
             final SelectivePlansComputationResponse selectivePlansComputationResponse = BeanLocatorFactory.getBean(ISubscriptionServiceManager.class).compute(SelectivePlanEligibilityRequest.builder().planId(planId).service(planDTO.getService()).appDetails(request.getAppDetails()).userDetails(request.getUserDetails()).build());
             if (Objects.nonNull(selectivePlansComputationResponse)) {
                 if (request.isTrialOpted() && !request.isAutoRenewOpted()) {
-                    throw new WynkRuntimeException(PAY603);
+                    throw new WynkRuntimeException(PAY602);
                 }
                 if (Objects.nonNull(request.getPaymentDetails()) && request.getPaymentDetails().isMandate() && !(selectivePlansComputationResponse.getEligiblePlans().contains(planId) || selectivePlansComputationResponse.getActivePlans().contains(planId))) {
                     throw new WynkRuntimeException(PAY604);

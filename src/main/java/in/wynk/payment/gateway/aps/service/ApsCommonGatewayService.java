@@ -17,11 +17,9 @@ import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
+import in.wynk.payment.core.event.PaymentRefundInitEvent;
 import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.aps.common.ApsConstant;
-import in.wynk.payment.dto.aps.common.ApsFailureResponse;
-import in.wynk.payment.dto.aps.common.ApsResponseWrapper;
-import in.wynk.payment.dto.aps.common.CardDetails;
+import in.wynk.payment.dto.aps.common.*;
 import in.wynk.payment.dto.aps.request.status.refund.RefundStatusRequest;
 import in.wynk.payment.dto.aps.response.order.ApsOrderStatusResponse;
 import in.wynk.payment.dto.aps.response.order.OrderInfo;
@@ -231,10 +229,16 @@ public class ApsCommonGatewayService {
     private void syncTransactionWithSourceResponse (ApsChargeStatusResponse apsChargeStatusResponse) {
         TransactionStatus finalTransactionStatus = TransactionStatus.UNKNOWN;
         final Transaction transaction = TransactionContext.get();
-        if ("PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) {
+        if ((!apsChargeStatusResponse.getLob().equals(LOB.AUTO_PAY_REGISTER_WYNK.toString()) && "PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) || (apsChargeStatusResponse.getLob().equals(LOB.AUTO_PAY_REGISTER_WYNK.toString()) && ("PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) && SiRegistrationStatus.ACTIVE == apsChargeStatusResponse.getMandateStatus())) {
             finalTransactionStatus = TransactionStatus.SUCCESS;
             evict(transaction.getMsisdn());
-        } else if ("PAYMENT_FAILED".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus()) || ("PG_FAILED".equalsIgnoreCase(apsChargeStatusResponse.getPgStatus()))) {
+        } else if ((apsChargeStatusResponse.getLob().equals(LOB.AUTO_PAY_REGISTER_WYNK.toString()) && SiRegistrationStatus.ACTIVE != apsChargeStatusResponse.getMandateStatus() && "PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) || ("PAYMENT_FAILED".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) || ("PG_FAILED".equalsIgnoreCase(apsChargeStatusResponse.getPgStatus()))) {
+            if ("PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) {
+                eventPublisher.publishEvent(PaymentRefundInitEvent.builder()
+                        .reason("mandate status was not active")
+                        .originalTransactionId(transaction.getIdStr())
+                        .build());
+            }
             finalTransactionStatus = TransactionStatus.FAILURE;
         } else if ("PAYMENT_PENDING".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus()) || ("PG_PENDING".equalsIgnoreCase(apsChargeStatusResponse.getPgStatus()))) {
             finalTransactionStatus = TransactionStatus.INPROGRESS;

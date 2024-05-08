@@ -5,5 +5,6 @@ package in.wynk.payment.dto.aps.common;
  */
 public enum WebhookConfigType {
     PAYMENT_STATUS,
-    REFUND_STATUS;
+    REFUND_STATUS,
+    MANDATE_STATUS;
 }

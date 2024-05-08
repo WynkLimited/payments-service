@@ -13,16 +13,14 @@ import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.aps.common.WebhookConfigType;
-import in.wynk.payment.dto.aps.request.callback.ApsAutoRefundCallbackRequestPayload;
-import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
-import in.wynk.payment.dto.aps.request.callback.ApsOrderStatusCallBackPayload;
-import in.wynk.payment.dto.aps.request.callback.ApsRedirectCallBackCheckSumPayload;
+import in.wynk.payment.dto.aps.request.callback.*;
 import in.wynk.payment.dto.aps.request.status.refund.RefundStatusRequest;
 import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.gateway.callback.DefaultPaymentCallbackResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.gateway.IPaymentCallback;
+import in.wynk.payment.utils.RecurringTransactionUtils;
 import in.wynk.payment.utils.aps.SignatureUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -42,23 +40,24 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_CHARGING_ST
 @Slf4j
 public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> {
 
-    private final String REFUND_CALLBACK_TYPE = "REFUND_STATUS";
-    private final String PAYMENT_STATUS_CALLBACK_TYPE = "PAYMENT_STATUS";
     private final String salt;
     private final String secret;
     private final ApsCommonGatewayService common;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final RecurringTransactionUtils recurringTransactionUtils;
     private final Map<String, IPaymentCallback<? extends AbstractPaymentCallbackResponse, ? extends ApsCallBackRequestPayload>> delegator = new HashMap<>();
 
-    public ApsCallbackGatewayServiceImpl(String salt, String secret, ApsCommonGatewayService common, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher) {
+    public ApsCallbackGatewayServiceImpl(String salt, String secret, ApsCommonGatewayService common, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher, RecurringTransactionUtils recurringTransactionUtils) {
         this.salt = salt;
         this.secret = secret;
         this.common = common;
         this.objectMapper = objectMapper;
         this.eventPublisher = eventPublisher;
-        this.delegator.put(PAYMENT_STATUS_CALLBACK_TYPE, new GenericApsCallbackHandler());
-        this.delegator.put(REFUND_CALLBACK_TYPE, new RefundApsCallBackHandler());
+        this.recurringTransactionUtils = recurringTransactionUtils;
+        this.delegator.put(WebhookConfigType.PAYMENT_STATUS.name(), new GenericApsCallbackHandler());
+        this.delegator.put(WebhookConfigType.REFUND_STATUS.name(), new RefundApsCallBackHandler());
+        this.delegator.put(WebhookConfigType.MANDATE_STATUS.name(), new MandateStatusApsCallBackHandler());
     }
 
     @Override
@@ -68,7 +67,7 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
         if (webhookConfigType.isPresent()) {
             callbackType = request.getType().toString();
         } else {
-            callbackType = PAYMENT_STATUS_CALLBACK_TYPE;
+            callbackType = WebhookConfigType.PAYMENT_STATUS.name();
         }
         final IPaymentCallback callbackService = delegator.get(callbackType);
         if (isValid(request)) {
@@ -82,7 +81,7 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
     @Override
     public ApsCallBackRequestPayload parse(Map<String, Object> payload) {
         try {
-            final String type = ((String) payload.getOrDefault("type", PAYMENT_STATUS_CALLBACK_TYPE));
+            final String type = ((String) payload.getOrDefault("type", WebhookConfigType.PAYMENT_STATUS.name()));
             return delegator.get(type).parse(payload);
         } catch (Exception e) {
             throw new WynkRuntimeException(APS011, e);
@@ -202,6 +201,27 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
             try {
                 final String json = objectMapper.writeValueAsString(payload);
                 return objectMapper.readValue(json, ApsAutoRefundCallbackRequestPayload.class);
+            } catch (Exception e) {
+                throw new WynkRuntimeException(APS011, e);
+            }
+        }
+    }
+
+    private class MandateStatusApsCallBackHandler implements IPaymentCallback<AbstractPaymentCallbackResponse, ApsMandateStatusCallbackRequestPayload> {
+        @Override
+        public AbstractPaymentCallbackResponse handle (ApsMandateStatusCallbackRequestPayload callbackRequest) {
+            final Transaction transaction = TransactionContext.get();
+            String description = "Mandate is already " + callbackRequest.getMandateStatus().name().toLowerCase(Locale.ROOT);
+            recurringTransactionUtils.cancelRenewalBasedOnRealtimeMandate(description, transaction);
+            transaction.setStatus(TransactionStatus.CANCELLED.getValue());
+            return DefaultPaymentCallbackResponse.builder().transactionStatus(transaction.getStatus()).build();
+        }
+
+        @Override
+        public ApsMandateStatusCallbackRequestPayload parse (Map<String, Object> payload) {
+            try {
+                final String json = objectMapper.writeValueAsString(payload);
+                return objectMapper.readValue(json, ApsMandateStatusCallbackRequestPayload.class);
             } catch (Exception e) {
                 throw new WynkRuntimeException(APS011, e);
             }

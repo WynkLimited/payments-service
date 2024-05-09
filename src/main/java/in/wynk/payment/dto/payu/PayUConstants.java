@@ -1,9 +1,6 @@
 package in.wynk.payment.dto.payu;
 
 
-import java.util.ArrayList;
-import java.util.Arrays;
-
 public interface PayUConstants {
 
     String GENERIC_CALLBACK_ACTION = "generic";

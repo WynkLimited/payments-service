@@ -3,6 +3,8 @@ package in.wynk.payment.gateway.payu.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
+import com.google.common.util.concurrent.RateLimiter;
+import com.google.gson.Gson;
 import in.wynk.common.dto.ICacheService;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
@@ -18,6 +20,7 @@ import in.wynk.payment.dto.payu.AbstractPayUTransactionDetails;
 import in.wynk.payment.dto.payu.PayUChargingTransactionDetails;
 import in.wynk.payment.dto.payu.PayUCommand;
 import in.wynk.payment.dto.payu.PayURefundTransactionDetails;
+import in.wynk.payment.dto.response.payu.PayUMandateUpiStatusResponse;
 import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.PropertyResolverUtils;
@@ -26,6 +29,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.conn.ConnectTimeoutException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -36,18 +40,21 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY005;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY015;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_API_FAILURE;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_CHARGING_STATUS_VERIFICATION;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
@@ -67,11 +74,16 @@ public class PayUCommonGateway {
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
     private final RecurringTransactionUtils recurringTransactionUtils;
+    private final Gson gson;
     @Getter
     private final ICacheService<PaymentMethod, String> cache;
 
-    public PayUCommonGateway (@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ObjectMapper objectMapper, ICacheService<PaymentMethod, String> cache,
+    private final RateLimiter rateLimiter = RateLimiter.create(6.0);
+
+    public PayUCommonGateway (Gson gson, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ObjectMapper objectMapper,
+                              ICacheService<PaymentMethod, String> cache,
                               PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, RecurringTransactionUtils recurringTransactionUtils) {
+        this.gson = gson;
         this.cache = cache;
         this.restTemplate = restTemplate;
         this.mapper = objectMapper;
@@ -91,6 +103,9 @@ public class PayUCommonGateway {
                 throw new WynkRuntimeException("Record not found");
             }
             return mapper.readValue(response, target);
+        } catch (HttpStatusCodeException ex) {
+            log.error(PAYU_API_FAILURE, ex.getResponseBodyAsString(), ex);
+            throw new WynkRuntimeException(PAY015, ex);
         } catch (Exception ex) {
             log.error(PAYU_API_FAILURE, ex.getMessage(), ex);
             throw new WynkRuntimeException(PAY015, ex);
@@ -224,6 +239,45 @@ public class PayUCommonGateway {
             finalTransactionStatus = TransactionStatus.FAILURE;
         }
         transaction.setStatus(finalTransactionStatus.getValue());
+    }
+
+    public boolean validateStatusForRenewal (String mihpayid, Transaction transaction) {
+        LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
+        orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, mihpayid);
+        orderedMap.put(PAYU_REQUEST_ID, transaction.getIdStr());
+        String variable = gson.toJson(orderedMap);
+        PayUMandateUpiStatusResponse paymentResponse;
+        rateLimiter.acquire();
+        final MultiValueMap<String, String> requestMap = buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.UPI_MANDATE_STATUS.getCode(), variable);
+        try {
+            paymentResponse = exchange(INFO_API, requestMap, new TypeReference<PayUMandateUpiStatusResponse>() {
+            });
+        } catch (RestClientException e) {
+            if (e.getRootCause() != null) {
+                if (e.getRootCause() instanceof SocketTimeoutException || e.getRootCause() instanceof ConnectTimeoutException) {
+                    log.error(PAYU_RENEWAL_STATUS_ERROR, "Socket timeout but valid for reconciliation for request : {} due to {}", requestMap, e.getMessage(), e);
+                    throw new WynkRuntimeException(PaymentErrorType.PAY014);
+                } else {
+                    throw new WynkRuntimeException(PaymentErrorType.PAY009, e);
+                }
+            } else {
+                throw new WynkRuntimeException(PaymentErrorType.PAY009, e);
+            }
+        } catch (Exception ex) {
+            log.error(PAYU_API_FAILURE, ex.getMessage(), ex);
+            throw new WynkRuntimeException(PAY015, ex);
+        }
+        boolean isMandateActive = false;
+        if (paymentResponse != null) {
+            isMandateActive = "active".equalsIgnoreCase(paymentResponse.getStatus());
+            if (!isMandateActive) {
+                transaction.setStatus(TransactionStatus.FAILURE.getValue());
+                log.error(PAYU_MANDATE_VALIDATION, "mandate status is: " + paymentResponse.getStatus());
+                recurringTransactionUtils.cancelRenewalBasedOnErrorReason(PAY005.getErrorMessage(), transaction);
+                eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PAY005.getErrorCode()).description(PAY005.getErrorMessage()).build());
+            }
+        }
+        return isMandateActive;
     }
 
 }

@@ -93,7 +93,7 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
             boolean isUpi = StringUtils.isNotEmpty(mode) && mode.equals("UPI");
             String externalTransactionId =
                     (merchantTransaction != null) ? merchantTransaction.getExternalTransactionId() : currentStatus.getTransactionDetails(txnId).getPayUExternalTxnId();
-            if (!isUpi || validateStatusForRenewal(externalTransactionId, transaction)) {
+            if (!isUpi || common.validateStatusForRenewal(externalTransactionId, transaction)) {
                 payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest, externalTransactionId, txnId);
                 payUChargingTransactionDetails = payURenewalResponse.getTransactionDetails().get(transaction.getIdStr());
                 int retryInterval = planPeriodDTO.getRetryInterval();
@@ -103,25 +103,22 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
                     } else if (FAILURE.equalsIgnoreCase(payUChargingTransactionDetails.getStatus()) || (FAILED.equalsIgnoreCase(payUChargingTransactionDetails.getStatus())) ||
                             PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(payUChargingTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.FAILURE.getValue());
-                        if (!StringUtils.isEmpty(payUChargingTransactionDetails.getErrorCode()) || !StringUtils.isEmpty(payUChargingTransactionDetails.getErrorMessage())) {
-                            recurringTransactionUtils.cancelRenewalBasedOnErrorReason(payUChargingTransactionDetails.getErrorMessage(), transaction);
-                            eventPublisher.publishEvent(
-                                    PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description(payUChargingTransactionDetails.getErrorMessage())
-                                            .build());
-                        }
+                        String errorReason = findPayuErrorMessage(payUChargingTransactionDetails);
+                        recurringTransactionUtils.cancelRenewalBasedOnErrorReason(errorReason, transaction);
+                        eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description(errorReason).build());
                     } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
                             StringUtils.equalsIgnoreCase(PENDING, payUChargingTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.INPROGRESS.getValue());
                     } else if (transaction.getInitTime().getTimeInMillis() < System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
                             StringUtils.equalsIgnoreCase(PENDING, payUChargingTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.FAILURE.getValue());
+                        eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description("Transaction init time is less than current - 1").build());
                     }
                 } else {
                     transaction.setStatus(TransactionStatus.FAILURE.getValue());
-                    recurringTransactionUtils.cancelRenewalBasedOnErrorReason(payUChargingTransactionDetails.getErrorMessage(), transaction);
-                    eventPublisher.publishEvent(
-                            PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description(payUChargingTransactionDetails.getErrorMessage())
-                                    .build());
+                    String errorReason = findPayuErrorMessage(payUChargingTransactionDetails);
+                    recurringTransactionUtils.cancelRenewalBasedOnErrorReason(errorReason, transaction);
+                    eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description(errorReason).build());
                 }
             }
         } catch (WynkRuntimeException e) {
@@ -132,6 +129,20 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
         }
     }
 
+    private String findPayuErrorMessage (PayUChargingTransactionDetails payUChargingTransactionDetails) {
+        String errorReason = null;
+        if (StringUtils.isNotBlank(payUChargingTransactionDetails.getMostSpecificFailureReason())) {
+            errorReason = payUChargingTransactionDetails.getMostSpecificFailureReason();
+        } else if (StringUtils.isNotBlank(payUChargingTransactionDetails.getSpecificFailureReason())) {
+            errorReason = payUChargingTransactionDetails.getSpecificFailureReason();
+        } else if (StringUtils.isNotBlank(payUChargingTransactionDetails.getPayUResponseFailureMessage())) {
+            errorReason = payUChargingTransactionDetails.getPayUResponseFailureMessage();
+        } else if (StringUtils.isNotBlank(payUChargingTransactionDetails.getErrorMessage())) {
+            errorReason = payUChargingTransactionDetails.getErrorMessage();
+        }
+        return errorReason;
+    }
+
     private MerchantTransaction getMerchantData (String id) {
         try {
             return merchantTransactionService.getMerchantTransaction(id);
@@ -139,45 +150,6 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
             log.error("Exception occurred while getting data for tid {} from merchant table: {}", id, e.getMessage());
             return null;
         }
-    }
-
-    private boolean validateStatusForRenewal (String mihpayid, Transaction transaction) {
-        LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
-        orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, mihpayid);
-        orderedMap.put(PAYU_REQUEST_ID, transaction.getIdStr());
-        String variable = gson.toJson(orderedMap);
-        PayUMandateUpiStatusResponse paymentResponse;
-        rateLimiter.acquire();
-        final MultiValueMap<String, String> requestMap = common.buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.UPI_MANDATE_STATUS.getCode(), variable);
-        try {
-            paymentResponse = common.exchange(common.PAYMENT_API, requestMap, new TypeReference<PayUMandateUpiStatusResponse>() {
-            });
-        } catch (RestClientException e) {
-            if (e.getRootCause() != null) {
-                if (e.getRootCause() instanceof SocketTimeoutException || e.getRootCause() instanceof ConnectTimeoutException) {
-                    log.error(PAYU_RENEWAL_STATUS_ERROR, "Socket timeout but valid for reconciliation for request : {} due to {}", requestMap, e.getMessage(), e);
-                    throw new WynkRuntimeException(PaymentErrorType.PAY014);
-                } else {
-                    throw new WynkRuntimeException(PaymentErrorType.PAY009, e);
-                }
-            } else {
-                throw new WynkRuntimeException(PaymentErrorType.PAY009, e);
-            }
-        } catch (Exception ex) {
-            log.error(PAYU_API_FAILURE, ex.getMessage(), ex);
-            throw new WynkRuntimeException(PAY015, ex);
-        }
-        boolean isMandateActive = false;
-        if (paymentResponse != null) {
-            isMandateActive = "active".equalsIgnoreCase(paymentResponse.getStatus());
-            if (!isMandateActive) {
-                transaction.setStatus(TransactionStatus.FAILURE.getValue());
-                log.error(PAYU_MANDATE_VALIDATION, "mandate status is: " + paymentResponse.getStatus());
-                recurringTransactionUtils.cancelRenewalBasedOnErrorReason(PAY005.getErrorMessage(), transaction);
-                eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PAY005.getErrorCode()).description(PAY005.getErrorMessage()).build());
-            }
-        }
-        return isMandateActive;
     }
 
     private PayURenewalResponse doChargingForRenewal (PaymentRenewalChargingRequest paymentRenewalChargingRequest, String mihpayid, String lastSuccessTxnId) {

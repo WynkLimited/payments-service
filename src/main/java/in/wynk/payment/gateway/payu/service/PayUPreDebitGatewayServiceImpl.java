@@ -68,6 +68,7 @@ public class PayUPreDebitGatewayServiceImpl implements IPreDebitNotificationServ
                 PayUChargingTransactionDetails transactionDetails = payURenewalResponse.getTransactionDetails().get(id);
                 if (UpiConstants.UPI.equals(transactionDetails.getMode()) || UpiConstants.UPISI.equals(transactionDetails.getMode())) {
                     //check mandate status for UPI
+                    payUCommonGateway.validateStatusForRenewal(transactionDetails.getPayUExternalTxnId(), );
                 }
             }
             Transaction transaction = transactionManagerService.get(message.getTransactionId());

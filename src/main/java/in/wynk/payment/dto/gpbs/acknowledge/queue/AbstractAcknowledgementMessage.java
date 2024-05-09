@@ -33,4 +33,10 @@ public abstract class AbstractAcknowledgementMessage {
 
     @Analysed
     private String paymentCode;
+
+    @Analysed
+    private String type;
+
+    @Analysed
+    private String txnId;
 }

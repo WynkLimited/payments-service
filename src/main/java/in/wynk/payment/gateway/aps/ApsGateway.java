@@ -18,6 +18,8 @@ import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractPaymentChargingResponse;
 import in.wynk.payment.dto.response.DefaultPaymentSettlementResponse;
+import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
+import in.wynk.payment.eligibility.request.PaymentOptionsItemEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
 import in.wynk.payment.gateway.*;
 import in.wynk.payment.gateway.aps.service.*;
@@ -38,7 +40,7 @@ import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
 public class ApsGateway implements
         IExternalPaymentEligibilityService,
         IPaymentRenewal<PaymentRenewalChargingRequest>,
-        IPaymentInstrumentsProxy<PaymentOptionsPlanEligibilityRequest>,
+        IPaymentInstrumentsProxy<PaymentOptionsEligibilityRequest>,
         IPaymentRefund<ApsPaymentRefundResponse, ApsPaymentRefundRequest>,
         IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload>,
         IPaymentAccountVerification<AbstractVerificationResponse, AbstractVerificationRequest>,
@@ -52,7 +54,7 @@ public class ApsGateway implements
     private final IPaymentRenewal<PaymentRenewalChargingRequest> renewalGateway;
     private final ICancellingRecurringService mandateCancellationGateway;
     private final IPaymentRefund<ApsPaymentRefundResponse, ApsPaymentRefundRequest> refundGateway;
-    private final IPaymentInstrumentsProxy<PaymentOptionsPlanEligibilityRequest> payOptionsGateway;
+    private final IPaymentInstrumentsProxy<PaymentOptionsEligibilityRequest> payOptionsGateway;
     private final IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> callbackGateway;
     private final IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> statusGateway;
     private final IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest> chargeGateway;
@@ -85,6 +87,7 @@ public class ApsGateway implements
                       ApplicationEventPublisher eventPublisher,
                       ITransactionManagerService transactionManager,
                       IMerchantTransactionService merchantTransactionService,
+                      IRecurringPaymentManagerService recurringPaymentManagerService,
                       @Qualifier("apsHttpTemplate") RestTemplate httpTemplate) {
         this.eligibilityGateway = new ApsEligibilityGatewayServiceImpl();
         this.statusGateway = new ApsStatusGatewayServiceImpl(commonGateway);
@@ -95,7 +98,7 @@ public class ApsGateway implements
         this.deleteGateway = new ApsDeleteGatewayServiceImpl(deleteCardEndpoint, deleteVpaEndpoint, commonGateway);
         this.chargeGateway = new ApsChargeGatewayServiceImpl(upiChargeEndpoint, chargeEndpoint, upiPayDigiChargeEndpoint, payDigiChargeEndpoint, paymentMethodCachingService, commonGateway);
         this.verificationGateway = new ApsVerificationGatewayImpl(vpaVerifyEndpoint, binVerifyEndpoint, httpTemplate, commonGateway);
-        this.renewalGateway = new ApsRenewalGatewayServiceImpl(siPaymentApi, mapper, commonGateway, paymentCachingService, merchantTransactionService, eventPublisher, transactionManager);
+        this.renewalGateway = new ApsRenewalGatewayServiceImpl(siPaymentApi, mapper, commonGateway, paymentCachingService, merchantTransactionService, eventPublisher, transactionManager, recurringPaymentManagerService);
         this.mandateCancellationGateway = new ApsCancelMandateGatewayServiceImpl(mapper, transactionManager, merchantTransactionService, cancelMandateEndpoint, commonGateway, gson);
         this.iMerchantTDRService = new ApsTdrGatewayServiceImpl(tdrEndPoint, httpTemplate, commonGateway, merchantTransactionService);
     }
@@ -147,13 +150,19 @@ public class ApsGateway implements
     }
 
     @Override
-    public AbstractPaymentInstrumentsProxy<?, ?> load(PaymentOptionsPlanEligibilityRequest request) {
+    public AbstractPaymentInstrumentsProxy<?, ?> load (PaymentOptionsEligibilityRequest request) {
+
         return payOptionsGateway.load(request);
     }
 
     @Override
     public boolean isEligible(PaymentMethod entity, PaymentOptionsPlanEligibilityRequest request) {
         return eligibilityGateway.isEligible(entity, request);
+    }
+
+    @Override
+    public boolean isEligible (PaymentMethod entity, PaymentOptionsItemEligibilityRequest request) {
+        return  eligibilityGateway.isEligible(entity, request);
     }
 
     @Override

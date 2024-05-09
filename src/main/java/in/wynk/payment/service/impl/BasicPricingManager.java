@@ -74,7 +74,11 @@ public class BasicPricingManager implements IPricingManager {
             if (selectedPlan.getPlanType() == PlanType.FREE_TRIAL) return;
         } else {
             final PointTransactionInitRequest pointRequest = (PointTransactionInitRequest) request;
-            pointRequest.setAmount(Optional.ofNullable(cachingService.getItem(pointRequest.getItemId())).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY106)).getPrice());
+            if (request.getAmount() != 0.0) {
+                pointRequest.setAmount(request.getAmount());
+            } else {
+                pointRequest.setAmount(Optional.ofNullable(cachingService.getItem(pointRequest.getItemId())).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY106)).getPrice());
+            }
         }
         if (StringUtils.isNotEmpty(request.getCouponId())) {
             final CouponCodeLink codeLink = couponCodeLinkService.fetchCouponCodeLink(request.getCouponId().toUpperCase(Locale.ROOT));

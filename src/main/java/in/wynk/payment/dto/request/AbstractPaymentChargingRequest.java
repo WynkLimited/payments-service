@@ -17,7 +17,7 @@ import in.wynk.payment.dto.AppStoreDetails;
 import in.wynk.payment.dto.request.charge.AbstractPaymentDetails;
 import in.wynk.payment.validations.ICouponValidatorRequest;
 import in.wynk.payment.validations.IPaymentMethodValidatorRequest;
-import in.wynk.payment.validations.IPlanValidatorRequest;
+import in.wynk.payment.validations.IProductValidatorRequest;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -34,7 +34,7 @@ import javax.validation.Valid;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-public abstract class AbstractPaymentChargingRequest implements IChargingDetails, IPaymentMethodValidatorRequest, IPlanValidatorRequest, IClientValidatorRequest, ICouponValidatorRequest {
+public abstract class AbstractPaymentChargingRequest implements IChargingDetails, IPaymentMethodValidatorRequest, IProductValidatorRequest, IClientValidatorRequest, ICouponValidatorRequest {
 
     @Valid
     @Analysed

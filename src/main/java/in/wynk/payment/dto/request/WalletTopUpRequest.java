@@ -15,7 +15,7 @@ import in.wynk.payment.dto.WebPurchaseDetails;
 import in.wynk.payment.dto.phonepe.autodebit.PhonePeAutoDebitTopUpRequest;
 import in.wynk.payment.validations.ICouponValidatorRequest;
 import in.wynk.payment.validations.IPaymentMethodValidatorRequest;
-import in.wynk.payment.validations.IPlanValidatorRequest;
+import in.wynk.payment.validations.IProductValidatorRequest;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -35,7 +35,7 @@ import static in.wynk.common.constant.BaseConstants.CLIENT;
 @AllArgsConstructor
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentCode", visible = true, defaultImpl = WalletTopUpRequest.class)
 @JsonSubTypes({@JsonSubTypes.Type(value = PhonePeAutoDebitTopUpRequest.class, name = "PHONEPE_AUTO_DEBIT")})
-public class WalletTopUpRequest<T extends IPurchaseDetails> implements IPaymentMethodValidatorRequest, IPlanValidatorRequest, IClientValidatorRequest, ICouponValidatorRequest {
+public class WalletTopUpRequest<T extends IPurchaseDetails> implements IPaymentMethodValidatorRequest, IProductValidatorRequest, IClientValidatorRequest, ICouponValidatorRequest {
 
     @Valid
     @Analysed

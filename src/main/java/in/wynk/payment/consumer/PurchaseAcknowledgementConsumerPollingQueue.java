@@ -5,9 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.dto.gpbs.acknowledge.queue.SubscriptionAcknowledgeMessageManager;
+import in.wynk.payment.dto.gpbs.acknowledge.queue.PurchaseAcknowledgeMessageManager;
 import in.wynk.payment.dto.gpbs.acknowledge.request.AbstractPaymentAcknowledgementRequest;
+import in.wynk.payment.dto.gpbs.acknowledge.request.GooglePlayProductAcknowledgementRequest;
 import in.wynk.payment.dto.gpbs.acknowledge.request.GooglePlaySubscriptionAcknowledgementRequest;
 import in.wynk.payment.dto.gpbs.request.GooglePlayAppDetails;
 import in.wynk.payment.dto.gpbs.request.GooglePlayPaymentDetails;
@@ -28,7 +30,7 @@ import java.util.concurrent.TimeUnit;
  */
 
 @Slf4j
-public class SubscriptionAcknowledgementConsumerPollingQueue extends AbstractSQSMessageConsumerPollingQueue<SubscriptionAcknowledgeMessageManager> {
+public class PurchaseAcknowledgementConsumerPollingQueue extends AbstractSQSMessageConsumerPollingQueue<PurchaseAcknowledgeMessageManager> {
 
 
     private final ExecutorService messageHandlerThreadPool;
@@ -43,12 +45,12 @@ public class SubscriptionAcknowledgementConsumerPollingQueue extends AbstractSQS
     @Autowired
     private PaymentManager paymentManager;
 
-    public SubscriptionAcknowledgementConsumerPollingQueue (String queueName,
-                                                            AmazonSQS sqs,
-                                                            ObjectMapper objectMapper,
-                                                            ISQSMessageExtractor messagesExtractor,
-                                                            ExecutorService messageHandlerThreadPool,
-                                                            ScheduledExecutorService pollingThreadPool) {
+    public PurchaseAcknowledgementConsumerPollingQueue (String queueName,
+                                                        AmazonSQS sqs,
+                                                        ObjectMapper objectMapper,
+                                                        ISQSMessageExtractor messagesExtractor,
+                                                        ExecutorService messageHandlerThreadPool,
+                                                        ScheduledExecutorService pollingThreadPool) {
         super(queueName, sqs, objectMapper, messagesExtractor, messageHandlerThreadPool);
         this.pollingThreadPool = pollingThreadPool;
         this.messageHandlerThreadPool = messageHandlerThreadPool;
@@ -56,8 +58,8 @@ public class SubscriptionAcknowledgementConsumerPollingQueue extends AbstractSQS
 
     @Override
     @ClientAware(clientAlias = "#message.clientAlias")
-    @AnalyseTransaction(name = "subscriptionAcknowledgement")
-    public void consume (SubscriptionAcknowledgeMessageManager message) {
+    @AnalyseTransaction(name = "purchaseAcknowledgeMessage")
+    public void consume (PurchaseAcknowledgeMessageManager message) {
         AnalyticService.update(message);
         AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest = null;
         if (BeanConstant.GOOGLE_PLAY.equals(message.getPaymentCode())) {
@@ -66,22 +68,33 @@ public class SubscriptionAcknowledgementConsumerPollingQueue extends AbstractSQS
             appDetails.setService(message.getService());
             GooglePlayProductDetails productDetails = new GooglePlayProductDetails();
             productDetails.setSkuId(message.getSkuId());
-            abstractPaymentAcknowledgementRequest = GooglePlaySubscriptionAcknowledgementRequest.builder()
-                    .paymentDetails(GooglePlayPaymentDetails.builder().purchaseToken(message.getPurchaseToken()).build())
-                    .paymentCode(message.getPaymentCode())
-                    .appDetails(appDetails)
-                    .productDetails(productDetails)
-                    .developerPayload(message.getDeveloperPayload())
-                    .build();
-
+            if (BaseConstants.PLAN.equals(message.getType())) {
+                abstractPaymentAcknowledgementRequest = GooglePlaySubscriptionAcknowledgementRequest.builder()
+                        .paymentDetails(GooglePlayPaymentDetails.builder().purchaseToken(message.getPurchaseToken()).build())
+                        .paymentCode(message.getPaymentCode())
+                        .appDetails(appDetails)
+                        .productDetails(productDetails)
+                        .developerPayload(message.getDeveloperPayload())
+                        .txnId(message.getTxnId())
+                        .build();
+            } else if (BaseConstants.POINT.equals(message.getType())) {
+                abstractPaymentAcknowledgementRequest = GooglePlayProductAcknowledgementRequest.builder()
+                        .paymentDetails(GooglePlayPaymentDetails.builder().purchaseToken(message.getPurchaseToken()).build())
+                        .paymentCode(message.getPaymentCode())
+                        .appDetails(appDetails)
+                        .productDetails(productDetails)
+                        .developerPayload(message.getDeveloperPayload())
+                        .txnId(message.getTxnId())
+                        .build();
+            }
         }
         assert abstractPaymentAcknowledgementRequest != null;
         paymentManager.acknowledgeSubscription(abstractPaymentAcknowledgementRequest);
     }
 
     @Override
-    public Class<SubscriptionAcknowledgeMessageManager> messageType () {
-        return SubscriptionAcknowledgeMessageManager.class;
+    public Class<PurchaseAcknowledgeMessageManager> messageType () {
+        return PurchaseAcknowledgeMessageManager.class;
     }
 
     @Override

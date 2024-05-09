@@ -1,10 +1,7 @@
 package in.wynk.payment.dto.gpbs.acknowledge.request;
 
-import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
-import in.wynk.payment.dto.gpbs.request.GooglePlayAppDetails;
-import in.wynk.payment.dto.gpbs.request.GooglePlayPaymentDetails;
-import in.wynk.payment.dto.gpbs.request.GooglePlayProductDetails;
+import in.wynk.common.constant.BaseConstants;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
@@ -14,16 +11,9 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @SuperBuilder
 @AnalysedEntity
-public class GooglePlaySubscriptionAcknowledgementRequest extends AbstractPaymentAcknowledgementRequest {
-    @Analysed
-    private GooglePlayAppDetails appDetails;
-
-    @Analysed
-    private GooglePlayPaymentDetails paymentDetails;
-
-    @Analysed
-    private GooglePlayProductDetails productDetails;
-
-    @Analysed
-    private String developerPayload;
+public class GooglePlaySubscriptionAcknowledgementRequest extends AbstractAcknowledgement {
+    @Override
+    public String getType () {
+        return BaseConstants.PLAN;
+    }
 }

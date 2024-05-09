@@ -16,7 +16,7 @@ import in.wynk.payment.dto.payu.PayUChargingRequest;
 import in.wynk.payment.dto.response.phonepe.auto.PhonePeChargingRequest;
 import in.wynk.payment.validations.ICouponValidatorRequest;
 import in.wynk.payment.validations.IPaymentMethodValidatorRequest;
-import in.wynk.payment.validations.IPlanValidatorRequest;
+import in.wynk.payment.validations.IProductValidatorRequest;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -41,7 +41,7 @@ import static in.wynk.common.constant.BaseConstants.CLIENT;
         @JsonSubTypes.Type(value = PayUChargingRequest.class, name = "PAYU"),
         @JsonSubTypes.Type(value = PhonePeChargingRequest.class, name = "PHONEPE_AUTO_DEBIT")
 })
-public abstract class AbstractChargingRequest<T extends IPurchaseDetails> implements IPaymentMethodValidatorRequest, IPlanValidatorRequest, IClientValidatorRequest, ICouponValidatorRequest {
+public abstract class AbstractChargingRequest<T extends IPurchaseDetails> implements IPaymentMethodValidatorRequest, IProductValidatorRequest, IClientValidatorRequest, ICouponValidatorRequest {
 
 
     @Valid

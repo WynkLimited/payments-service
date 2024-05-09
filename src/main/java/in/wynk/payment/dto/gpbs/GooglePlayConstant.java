@@ -13,7 +13,7 @@ public class GooglePlayConstant {
     public static final String AUTH_TOKEN_PREFIX = "Bearer ";
     public static final String TOKEN = "/tokens/";
     public static final String ACKNOWLEDGE = ":acknowledge";
-    public static final String EXTERNAL_TRANSACTION_PARAM = "/externalTransactions?externalTransactionId=";
+    public static final String CONSUME = ":consume";
 
     public static final Integer PURCHASE_NOTIFICATION_TYPE = 4;
     public static final String GOOGLE_PLAY_RECEIPT = "googlePlayReceipt";
@@ -33,4 +33,5 @@ public class GooglePlayConstant {
     public static final List<String> NOTIFICATIONS_TYPE_ALLOWED = Arrays.asList("1" , "2", "3");
     public static final Integer FREE_TRIAL_PAYMENT_STATE = 2;
     public static final String FREE_TRIAL_AMOUNT = "0";
+    public static final String GOOGLE_PLAY_ORDER_ID = "orderId";
 }

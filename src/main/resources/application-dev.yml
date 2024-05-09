@@ -1203,3 +1203,20 @@ event:
     dp: data-science-subscription-funnel-information
 
 api.get.endPoint: https://subscription-staging.wynk.in
+
+
+
+########## PUBSUB CONFIGS ###########
+
+payments:
+  pooling:
+    pubSub:
+      reconciliation:
+        projectName: prj-wynk-stg-wcf-svc-01
+        topicName: wcf-staging-payment-reconciliation
+        subscriptionName: wcf-staging-payment-reconciliation-sub
+        bufferInterval: 0
+        enabled: true
+        consumer:
+          delay: 20
+          delayTimeUnit: SECONDS

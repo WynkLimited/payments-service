@@ -155,12 +155,12 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
         }
     }
 
-    public static InformInvoiceKafkaMessage generateInformInvoiceEvent(PublishInvoiceRequest request, Transaction transaction, PlanDTO plan, OfferDTO offer){
+    public static InformInvoiceKafkaMessage generateInformInvoiceEvent(PublishInvoiceRequest request, Transaction transaction, String planTitle, double amount, String offerTitle){
         final InformInvoiceKafkaMessage.LobInvoice.CustomerDetails customerDetails = generateCustomerDetails(request.getOperatorDetails(), request.getTaxableRequest(), transaction.getMsisdn(),
                 request.getUid());
-        final InformInvoiceKafkaMessage.LobInvoice.CustomerInvoiceDetails customerInvoiceDetails = generateCustomerInvoiceDetails(request.getTaxableResponse(), transaction, request.getInvoiceId(), offer, plan,
+        final InformInvoiceKafkaMessage.LobInvoice.CustomerInvoiceDetails customerInvoiceDetails = generateCustomerInvoiceDetails(request.getTaxableResponse(), transaction, request.getInvoiceId(), offerTitle, amount,
                 request.getInvoiceDetails(), request.getPurchaseDetails());
-        final List<InformInvoiceKafkaMessage.LobInvoice.CustomerRechargeRate> customerRechargeRates = generateCustomerRechargeRate(request.getTaxableResponse(), request.getInvoiceDetails(), plan);
+        final List<InformInvoiceKafkaMessage.LobInvoice.CustomerRechargeRate> customerRechargeRates = generateCustomerRechargeRate(request.getTaxableResponse(), request.getInvoiceDetails(), planTitle);
         final InformInvoiceKafkaMessage.LobInvoice.TaxDetails taxDetails = generateTaxDetails(request.getTaxableResponse());
         final boolean sendEmail = Objects.nonNull(request.getOperatorDetails()) &&
                 Objects.nonNull(request.getOperatorDetails().getUserMobilityInfo()) &&
@@ -178,7 +178,7 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
                 .build();
     }
 
-    private static InformInvoiceKafkaMessage.LobInvoice.CustomerInvoiceDetails generateCustomerInvoiceDetails(TaxableResponse taxableResponse, Transaction transaction, String invoiceNumber, OfferDTO offer, PlanDTO plan, InvoiceDetails invoiceDetails, IPurchaseDetails purchaseDetails) {
+    private static InformInvoiceKafkaMessage.LobInvoice.CustomerInvoiceDetails generateCustomerInvoiceDetails(TaxableResponse taxableResponse, Transaction transaction, String invoiceNumber, String title, double amount, InvoiceDetails invoiceDetails, IPurchaseDetails purchaseDetails) {
         /*double CGST = 0.0;
         double SGST = 0.0;
         double IGST = 0.0;
@@ -201,11 +201,11 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
                 .invoiceDate(LocalDateTime.now().format(formatter))
                 .paymentTransactionID(transaction.getIdStr())
                 .invoiceNumber(invoiceNumber)
-                .invoiceAmount(plan.getPrice().getAmount())
+                .invoiceAmount(amount)
                 .paymentDate(transaction.getInitTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().format(formatter))
                 .paymentMode(invoiceDetails.getPaymentModes().getOrDefault(paymentMode, invoiceDetails.getPaymentModes().get(BaseConstants.DEFAULT)))
-                .typeOfService(offer.getTitle())
-                .discount(plan.getPrice().getAmount() - transaction.getAmount())
+                .typeOfService(title)
+                .discount(amount - transaction.getAmount())
                 .discountedPrice(transaction.getAmount())
                 /*.qrCode("upi://pay?" +
                         "pa=21000037032.FL@mairtel&" +
@@ -275,12 +275,12 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
                 .emailId(PaymentConstants.BLANK).gstn(PaymentConstants.BLANK).panNumber(PaymentConstants.BLANK).customerType(PaymentConstants.BLANK).customerClassification(PaymentConstants.BLANK).build();
     }
 
-    private static List<InformInvoiceKafkaMessage.LobInvoice.CustomerRechargeRate> generateCustomerRechargeRate(TaxableResponse taxableResponse, InvoiceDetails invoiceDetails, PlanDTO plan) {
+    private static List<InformInvoiceKafkaMessage.LobInvoice.CustomerRechargeRate> generateCustomerRechargeRate(TaxableResponse taxableResponse, InvoiceDetails invoiceDetails, String title) {
         final List<InformInvoiceKafkaMessage.LobInvoice.CustomerRechargeRate> customerRechargeRatesList = new ArrayList<>();
         customerRechargeRatesList.add(LobInvoice.CustomerRechargeRate.builder()
                 .rate(taxableResponse.getTaxableAmount())
                 .hsnCodeNo(invoiceDetails.getSACCode())
-                .category((Objects.isNull(plan.getTitle()))? PaymentConstants.INVOICE_CATEGORY : plan.getTitle())
+                .category((Objects.isNull(title))? PaymentConstants.INVOICE_CATEGORY : title)
                 .unit(1)
                 .build());
         return customerRechargeRatesList;

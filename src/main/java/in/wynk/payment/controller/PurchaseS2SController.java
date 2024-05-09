@@ -3,6 +3,9 @@ package in.wynk.payment.controller;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.dto.IPresentation;
+import in.wynk.payment.dto.BestValuePlanPurchaseRequest;
+import in.wynk.payment.dto.BestValuePlanResponse;
+import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.subscription.common.request.SessionRequest;
 import in.wynk.common.dto.SessionResponse;
 import in.wynk.common.dto.WynkResponseEntity;
@@ -12,6 +15,7 @@ import in.wynk.payment.dto.PurchaseRequest;
 import in.wynk.payment.service.IPurchaseSessionService;
 import in.wynk.payment.utils.LoadClientUtils;
 import io.swagger.annotations.ApiOperation;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.core.ParameterizedTypeReference;
@@ -20,6 +24,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
@@ -30,6 +35,8 @@ import javax.validation.Valid;
 public class PurchaseS2SController {
 
     private final IPurchaseSessionService sessionService;
+
+    private final ISubscriptionServiceManager iSubscriptionServiceManager;
 
     @PostMapping("/v1/point/purchase")
     @AnalyseTransaction(name = "pointPurchase")
@@ -53,6 +60,21 @@ public class PurchaseS2SController {
         final String sid = sessionService.init(request);
         final WynkResponseEntity<SessionResponse.SessionData> response = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPresentation<WynkResponseEntity<SessionResponse.SessionData>, Pair<String, PurchaseRequest>>>() {
         }).transform(Pair.of(sid, request));
+        AnalyticService.update(response.getBody());
+        return response;
+    }
+    @SneakyThrows
+    @PostMapping(value = {"/v3/plan/purchase"})
+    @AnalyseTransaction(name = "purchaseRequestV3")
+    @ApiOperation("Provides session Id and the webview URL for directToPayment page plan purchase")
+    @PreAuthorize(PaymentConstants.PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"PURCHASE_INIT\")")
+    public WynkResponseEntity<SessionResponse.SessionData> planPurchase(@Valid @RequestBody BestValuePlanPurchaseRequest request,
+                                                                               @RequestParam Map<String, String> additionalParam) {
+        LoadClientUtils.loadClient(true);
+        final String sid = sessionService.init(request , additionalParam);
+        final BestValuePlanResponse bestValuePlan = iSubscriptionServiceManager.getBestValuePlan(request, additionalParam);
+        final WynkResponseEntity<SessionResponse.SessionData> response = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPresentation<WynkResponseEntity<SessionResponse.SessionData>,  Pair<String, BestValuePlanResponse>>>() {
+        }).transform( Pair.of(sid, bestValuePlan));
         AnalyticService.update(response.getBody());
         return response;
     }

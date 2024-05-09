@@ -205,25 +205,22 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                     } else if (FAILURE.equalsIgnoreCase(payUChargingTransactionDetails.getStatus()) || (FAILED.equalsIgnoreCase(payUChargingTransactionDetails.getStatus())) ||
                             PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(payUChargingTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.FAILURE.getValue());
-                        if (!StringUtils.isEmpty(payUChargingTransactionDetails.getErrorCode()) || !StringUtils.isEmpty(payUChargingTransactionDetails.getErrorMessage())) {
-                            recurringTransactionUtils.cancelRenewalBasedOnErrorReason(payUChargingTransactionDetails.getErrorMessage(), transaction);
-                            eventPublisher.publishEvent(
-                                    PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description(payUChargingTransactionDetails.getErrorMessage())
-                                            .build());
-                        }
+                        String errorReason = findPayuErrorMessage(payUChargingTransactionDetails);
+                        recurringTransactionUtils.cancelRenewalBasedOnErrorReason(errorReason, transaction);
+                        eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description(errorReason).build());
                     } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
                             StringUtils.equalsIgnoreCase(PENDING, payUChargingTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.INPROGRESS.getValue());
                     } else if (transaction.getInitTime().getTimeInMillis() < System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
                             StringUtils.equalsIgnoreCase(PENDING, payUChargingTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.FAILURE.getValue());
+                        eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description("Transaction init time is less than current - 1").build());
                     }
                 } else {
                     transaction.setStatus(TransactionStatus.FAILURE.getValue());
-                    recurringTransactionUtils.cancelRenewalBasedOnErrorReason(payUChargingTransactionDetails.getErrorMessage(), transaction);
-                    eventPublisher.publishEvent(
-                            PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description(payUChargingTransactionDetails.getErrorMessage())
-                                    .build());
+                    String errorReason = findPayuErrorMessage(payUChargingTransactionDetails);
+                    recurringTransactionUtils.cancelRenewalBasedOnErrorReason(errorReason, transaction);
+                    eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description(errorReason).build());
                 }
             }
         } catch (WynkRuntimeException e) {
@@ -233,6 +230,20 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             throw e;
         }
         return WynkResponseEntity.<Void>builder().build();
+    }
+
+    private String findPayuErrorMessage (PayUChargingTransactionDetails payUChargingTransactionDetails) {
+        String errorReason = null;
+        if (StringUtils.isNotBlank(payUChargingTransactionDetails.getMostSpecificFailureReason())) {
+            errorReason = payUChargingTransactionDetails.getMostSpecificFailureReason();
+        } else if (StringUtils.isNotBlank(payUChargingTransactionDetails.getSpecificFailureReason())) {
+            errorReason = payUChargingTransactionDetails.getSpecificFailureReason();
+        } else if (StringUtils.isNotBlank(payUChargingTransactionDetails.getPayUResponseFailureMessage())) {
+            errorReason = payUChargingTransactionDetails.getPayUResponseFailureMessage();
+        } else if (StringUtils.isNotBlank(payUChargingTransactionDetails.getErrorMessage())) {
+            errorReason = payUChargingTransactionDetails.getErrorMessage();
+        }
+        return errorReason;
     }
 
     private MerchantTransaction getMerchantData (String id) {

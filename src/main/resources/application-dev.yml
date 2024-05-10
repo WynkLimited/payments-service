@@ -1220,3 +1220,24 @@ payments:
         consumer:
           delay: 20
           delayTimeUnit: SECONDS
+      acknowledgement:
+        projectName: prj-wynk-stg-wcf-svc-01
+        topicName: wcf-payment-receipt-ack-staging-sqs
+        subscriptionName: wcf-payment-receipt-ack-staging-sqs-sub
+        bufferInterval: 0
+        enabled: true
+        consumer:
+          delay: 20
+          delayTimeUnit: SECONDS
+      externalTransaction:
+        report:
+          projectName: prj-wynk-stg-wcf-svc-01
+          topicName: wcf-payment-transaction-ack-staging-sqs
+          subscriptionName: wcf-payment-transaction-ack-staging-sqs-sub
+          bufferInterval: 0
+          enabled: true
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+
+

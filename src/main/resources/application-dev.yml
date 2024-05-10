@@ -1239,5 +1239,74 @@ payments:
           consumer:
             delay: 20
             delayTimeUnit: SECONDS
+      renewal:
+        projectName: prj-wynk-stg-wcf-svc-01
+        topicName: wcf-staging-payment-renewal
+        subscriptionName: wcf-staging-payment-renewal-sub
+        bufferInterval: 180
+        enabled: true
+        consumer:
+          delay: 20
+          delayTimeUnit: SECONDS
+      charging:
+        projectName: prj-wynk-stg-wcf-svc-01
+        topicName: wcf-staging-payment-charging.fifo
+        subscriptionName: wcf-staging-payment-charging.fifo-sub
+        bufferInterval: 180
+        enabled: true
+        consumer:
+          delay: 20
+          delayTimeUnit: SECONDS
+      schedule:
+        projectName: prj-wynk-stg-wcf-svc-01
+        topicName: wcf-staging-subscription-payment
+        subscriptionName: wcf-staging-subscription-payment-sub
+        bufferInterval: 180
+        enabled: true
+        consumer:
+          delay: 20
+          delayTimeUnit: SECONDS
+      unschedule:
+        projectName: prj-wynk-stg-wcf-svc-01
+        topicName:  wcf-staging-payment-recurring
+        subscriptionName:  wcf-staging-payment-recurring-sub
+        bufferInterval: 180
+        enabled: true
+        consumer:
+          delay: 20
+          delayTimeUnit: SECONDS
+      preDebitNotification:
+        projectName: prj-wynk-stg-wcf-svc-01
+        topicName: wcf-staging-mandate-notification-sqs
+        subscriptionName: wcf-staging-mandate-notification-sqs-sub
+        bufferInterval: 180
+        enabled: true
+        consumer:
+          delay: 20
+          delayTimeUnit: SECONDS
+      refund:
+        projectName: prj-wynk-stg-wcf-svc-01
+        topicName: wcf-staging-payment-refund
+        subscriptionName: wcf-staging-payment-refund-sub
+        bufferInterval: 180
+        enabled: true
+        consumer:
+          delay: 20
+          delayTimeUnit: SECONDS
+      userDeactivation:
+        projectName: prj-wynk-stg-wcf-svc-01
+        topicName: wcf-staging-payment-user-deactivation
+        subscriptionName: wcf-staging-payment-user-deactivation-sub
+        bufferInterval: 180
+        enabled: true
+        consumer:
+          delay: 20
+          delayTimeUnit: SECONDS
+
+
+
+
+
+
 
 

@@ -58,20 +58,21 @@ public class PayUPreDebitGatewayServiceImpl implements IPreDebitNotificationServ
     public AbstractPreDebitNotificationResponse notify (PreDebitNotificationMessage message) {
         try {
             LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
-            String id = message.getTransactionId();
+            String txnId = message.getTransactionId();
             if (StringUtils.isNotBlank(message.getInitialTransactionId())) {
-                id = message.getInitialTransactionId();
+                txnId = message.getInitialTransactionId();
             }
-            MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(id);
+            Transaction transaction = transactionManagerService.get(txnId);
+            MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(txnId);
             if (Objects.nonNull(merchantTransaction)) {
                 PayURenewalResponse payURenewalResponse = objectMapper.convertValue(merchantTransaction.getResponse(), PayURenewalResponse.class);
-                PayUChargingTransactionDetails transactionDetails = payURenewalResponse.getTransactionDetails().get(id);
+                PayUChargingTransactionDetails transactionDetails = payURenewalResponse.getTransactionDetails().get(txnId);
                 if (UpiConstants.UPI.equals(transactionDetails.getMode()) || UpiConstants.UPISI.equals(transactionDetails.getMode())) {
                     //check mandate status for UPI
-                    payUCommonGateway.validateStatusForRenewal(transactionDetails.getPayUExternalTxnId(), );
+                    payUCommonGateway.validateStatusForRenewal(transactionDetails.getPayUExternalTxnId(), transaction);
                 }
             }
-            Transaction transaction = transactionManagerService.get(message.getTransactionId());
+
             orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, merchantTransaction.getExternalTransactionId());
             orderedMap.put(PAYU_REQUEST_ID, UUIDs.timeBased());
             orderedMap.put(PAYU_DEBIT_DATE, message.getDate());

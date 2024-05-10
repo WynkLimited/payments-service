@@ -494,28 +494,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         }
         return payload;
     }
-
-    //TODO: ( on AMAN) need to use to fetch user's saved cards.
-    /*public List<String> getUserCards(String uid) {
-        String userCredentials = payUMerchantKey + COLON + uid;
-        MultiValueMap<String, String> userCardDetailsRequest = buildPayUInfoRequest(PayUCommand.USER_CARD_DETAILS.getCode(), userCredentials);
-        PayUUserCardDetailsResponse userCardDetailsResponse = getInfoFromPayU(userCardDetailsRequest, new TypeReference<PayUUserCardDetailsResponse>() {
-        });
-        return userCardDetailsResponse.getUserCards()
-                .entrySet()
-                .parallelStream()
-                .map(cardEntry -> {
-                    CardDetails cardDetails = cardEntry.getValue();
-                    PayUBinWrapper<PayUCardInfo> payUBinWrapper = getInfoFromPayU(buildPayUInfoRequest(PayUCommand.CARD_BIN_INFO.getCode(), "1", new String[]{cardDetails.getCardBin(), null, null,
-                    "1"}),
-                            new TypeReference<PayUBinWrapper<PayUCardInfo>>() {
-                            });
-                    return gson.toJson(cardDetails);
-                })
-                .collect(Collectors.toList());
-    }
-     */
-
+    
     private boolean validateStatusForRenewal (String mihpayid, Transaction transaction) {
         LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
         orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, mihpayid);

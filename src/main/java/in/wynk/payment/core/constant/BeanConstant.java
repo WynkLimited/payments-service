@@ -13,6 +13,8 @@ public interface BeanConstant {
     String GOOGLE_PLAY_BILLING_CACHE_SERVICE = "googlePlayBillingSystemCacheService";
     String PAYMENT_ERROR_DAO = "paymentErrorDao";
     String PAYU_MERCHANT_PAYMENT_SERVICE = "PayU";
+    String AIRTEL_PAY_STACK = "aps";
+    String AIRTEL_PAY_STACK_V2 = "aps_v2";
     String TRANSACTION_DAO = "transactionDaoBean";
     String PAYTM_MERCHANT_WALLET_SERVICE = "PayTm";
     String AMAZON_IAP_PAYMENT_SERVICE = "AmazonIap";

@@ -243,6 +243,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         } else if (StringUtils.isNotBlank(payUChargingTransactionDetails.getErrorMessage())) {
             errorReason = payUChargingTransactionDetails.getErrorMessage();
         }
+        log.error(errorReason);
         return errorReason;
     }
 
@@ -547,9 +548,10 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             isMandateActive = "active".equalsIgnoreCase(paymentResponse.getStatus());
             if (!isMandateActive) {
                 transaction.setStatus(TransactionStatus.FAILURE.getValue());
-                log.error(PAYU_MANDATE_VALIDATION, "mandate status is: " + paymentResponse.getStatus());
-                recurringTransactionUtils.cancelRenewalBasedOnErrorReason(PAY005.getErrorMessage(), transaction);
-                eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PAY005.getErrorCode()).description(PAY005.getErrorMessage()).build());
+                String errorReason = "mandate status is: " + paymentResponse.getStatus();
+                log.error(PAYU_MANDATE_VALIDATION, errorReason);
+                recurringTransactionUtils.cancelRenewalBasedOnErrorReason(errorReason, transaction);
+                eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PAY005.getErrorCode()).description(errorReason).build());
             }
         }
         return isMandateActive;

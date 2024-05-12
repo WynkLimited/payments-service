@@ -243,6 +243,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         } else if (StringUtils.isNotBlank(payUChargingTransactionDetails.getErrorMessage())) {
             errorReason = payUChargingTransactionDetails.getErrorMessage();
         }
+        log.error(errorReason);
         return errorReason;
     }
 

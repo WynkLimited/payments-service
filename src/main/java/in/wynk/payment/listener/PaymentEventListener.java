@@ -284,6 +284,7 @@ public class PaymentEventListener {
                 AnalyticService.update(ITEM_ID, transaction.getItemId());
             }
             AnalyticService.update(PAYMENT_CODE, transaction.getPaymentChannel().getId());
+            AnalyticService.update(PAYMENT_EVENT, transaction.getType().getValue());
         }
         if (transaction.getType() == PaymentEvent.RENEW) {
             PaymentRenewal renewal = recurringPaymentManagerService.getRenewalById(event.getId());

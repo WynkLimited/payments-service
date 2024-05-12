@@ -24,6 +24,7 @@ public interface PaymentConstants extends BaseConstants {
     String PENDING = "pending";
     String SUCCESS = "success";
     String MESSAGE = "message";
+    String ERROR_REASON = "errorReason";
     String PIPE_SEPARATOR = "|";
     String SOURCE_MODE = "mode";
     String BANK_CODE = "bankCode";
@@ -95,13 +96,13 @@ public interface PaymentConstants extends BaseConstants {
     String DESKTOP_DEEP_LINK = "desktop_deep_link";
     String IOS_DEEP_LINK = "ios_deep_link";
     String FALLBACK_URL = "fallback_url";
-    String AIRTEL_XSTREAM="airtelxstream";
+    String AIRTEL_XSTREAM = "airtelxstream";
     String AIRTEL_TV = "airteltv";
     Double MANDATE_FLOW_AMOUNT = 1.0;
     String PAYMENT_FLOW_MANDATE = "MANDATE";
     String PAYMENT_FLOW_TRIAL_OPTED = "TRIALOPTED";
     String PAYMENT_FLOW_AUTO_RENEW = "AUTORENEW";
-    String ADD_TO_BILL_USER_SUBSCRIPTION_STATUS_TASK= "AddToBillUserSubscriptionStatusTask";
+    String ADD_TO_BILL_USER_SUBSCRIPTION_STATUS_TASK = "AddToBillUserSubscriptionStatusTask";
     String EXTERNAL_TRANSACTION_TOKEN = "externalTransactionToken";
     String E6002 = "E6002";
     String ERROR_DESCRIPTION_FOR_E6002 = "Invalid vpa ! please try again";

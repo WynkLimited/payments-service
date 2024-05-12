@@ -549,6 +549,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             if (!isMandateActive) {
                 transaction.setStatus(TransactionStatus.FAILURE.getValue());
                 String errorReason = "mandate status is: " + paymentResponse.getStatus();
+                AnalyticService.update(ERROR_REASON, errorReason);
                 log.error(PAYU_MANDATE_VALIDATION, errorReason);
                 recurringTransactionUtils.cancelRenewalBasedOnErrorReason(errorReason, transaction);
                 eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PAY005.getErrorCode()).description(errorReason).build());

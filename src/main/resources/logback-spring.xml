@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration debug="false" scan="true" scanPeriod="30 seconds">
-    <springProperty name="ANALYTICS_LOG_PATH" source="logging.path.analytics"/>
+    <springProperty name="APP_NAME" source="logging.appName"/>
+    <springProperty name="ACTIVE_PROFILE" source="logging.profile"/>
+
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <layout class="ch.qos.logback.classic.PatternLayout">
             <pattern>
@@ -9,21 +11,39 @@
         </layout>
     </appender>
 
-    <appender name="ERRORLOG"
-              class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <appender name="ERRORLOG" class="ch.qos.logback.core.ConsoleAppender">
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>ERROR</level>
         </filter>
-        <encoder class="in.wynk.logging.WynkErrorEncoder"/>
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>
-                ${LOG_PATH:-/tmp}/logs/payment/error/%d{yyyy-MM-dd,
-                aux}/payment-error.${HOSTNAME}.%d{yyyy-MM-dd}.%i.log.gz
-            </fileNamePattern>
-            <maxHistory>3</maxHistory>
-            <maxFileSize>200MB</maxFileSize>
-        </rollingPolicy>
+        <encoder class="in.wynk.logging.encoder.StandardEventEncoder">
+            <layout class="in.wynk.logging.layout.ErrorLayout">
+                <product>wcf</product>
+                <appName>${APP_NAME}</appName>
+                <profile>${ACTIVE_PROFILE}</profile>
+            </layout>
+        </encoder>
     </appender>
+
+    <appender name="APPLOG" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="in.wynk.logging.encoder.StandardEventEncoder">
+            <layout class="in.wynk.logging.layout.AppLayout">
+                <product>wcf</product>
+                <appName>${APP_NAME}</appName>
+                <profile>${ACTIVE_PROFILE}</profile>
+            </layout>
+        </encoder>
+    </appender>
+
+    <appender name="LOGSTASHLOG" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="in.wynk.logging.encoder.StandardEventEncoder">
+            <layout class="in.wynk.logging.layout.LogstashLayout">
+                <product>wcf</product>
+                <appName>${APP_NAME}</appName>
+                <profile>${ACTIVE_PROFILE}</profile>
+            </layout>
+        </encoder>
+    </appender>
+
     <appender name="ASYNC_ERRORLOG"
               class="ch.qos.logback.classic.AsyncAppender">
         <appender-ref ref="ERRORLOG"/>
@@ -32,44 +52,17 @@
         <includeCallerData>true</includeCallerData>
     </appender>
 
-    <appender name="FILE"
-              class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <Pattern>%level %date [%thread] [%X{rid}] [%file:%line] %msg%n</Pattern>
-        </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_PATH:-/tmp}/logs/payment/app/%d{yyyy-MM-dd,
-                aux}/payment.${HOSTNAME}.%d{yyyy-MM-dd}.%i.log.gz
-            </fileNamePattern>
-            <maxHistory>3</maxHistory>
-            <maxFileSize>200MB</maxFileSize>
-        </rollingPolicy>
-    </appender>
-    <appender name="ASYNC_FILE"
+    <appender name="ASYNC_APPLOG"
               class="ch.qos.logback.classic.AsyncAppender">
-        <appender-ref ref="FILE"/>
+        <appender-ref ref="APPLOG"/>
         <queueSize>10000</queueSize>
         <neverBlock>true</neverBlock>
         <includeCallerData>true</includeCallerData>
     </appender>
 
-    <!-- logstashLogs -->
-    <appender name="ANALYTIC_LOG_FILE"
-              class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <Pattern>%msg%n</Pattern>
-        </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${ANALYTICS_LOG_PATH:-/tmp}/payment/logstash/day=%d{yyyy-MM-dd,
-                aux}/payment-logstash.${HOSTNAME}.%d{yyyy-MM-dd}.%i.log.gz
-            </fileNamePattern>
-            <maxHistory>3</maxHistory>
-            <maxFileSize>200MB</maxFileSize>
-        </rollingPolicy>
-    </appender>
-    <appender name="ASYNC_ANALYTIC_LOG_FILE"
+    <appender name="ASYNC_ANALYTIC_LOG"
               class="ch.qos.logback.classic.AsyncAppender">
-        <appender-ref ref="ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="LOGSTASHLOG"/>
         <queueSize>10000</queueSize>
         <neverBlock>true</neverBlock>
         <includeCallerData>true</includeCallerData>
@@ -77,367 +70,380 @@
 
     <!-- Payment Logger -->
     <logger name="paymentCharging" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="deletePaymentMethod" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="purchaseAcknowledgeMessage" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="subscriptionAcknowledgement" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="productAcknowledgement" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="productConsumption" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="externalTransactionAcknowledgement" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="externalTransactionReportEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="mandateStatusEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="GooglePlayReportEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="externalTransactionReport" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="paymentStatus" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="paymentStatusV2" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="paymentStatusV3" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="paymentCallback" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="userSubscriptionStatus" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="generateItemEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="paymentServerSyncCallback" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="verifyUserPaymentBin" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="refreshInMemoryCache" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="refreshInMemoryCachePaymentMethod" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="refreshInMemoryCachePaymentCode" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="refreshInMemoryCachePaymentGroup" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="refreshInMemoryCacheSkuMapping" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="refreshInMemoryCacheGroupedPaymentMethod" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="pointPurchase" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <!-- Wallet Logger -->
     <logger name="walletLink" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="walletValidateLink" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="walletUnlink" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="walletBalance" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="walletAddMoney" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="paymentOptions" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="paymentRenewalMessageThresholdExceedEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="recurringPaymentEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="purchaseInitEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="purchaseRecordEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="paymentAutoRefundEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="merchantTransactionEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="paymentRefundedEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="paymentErrorEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="paymentRefundInitEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="clientCallback" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="transactionSnapshot" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="receiptVerification" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="applyCoupon" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="removeCoupon" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="eligibleCoupons" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="paymentReconciliation" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="paymentReconciledEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="preDebitNotificationMessage" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="paymentRenewalMessage" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="paymentRenewalChargingMessage" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="paymentRefundInitMessage" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="seRenewal" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="paymentRenew" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="renewalSubscriptionMessage" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="paymentUserDeactivationMessage" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="paymentUserDeactivationMigrationEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="scheduleRenewalMessage" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="schedulePreDebitNotificationMessage" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="paymentRenewalErrorMessage" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="messageThresholdExceedEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="paymentRenew" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="sePaymentRenew" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="renewNotification" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="paymentRenewals" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="sePaymentRenewals" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="renewNotifications" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="savedDetails" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <!-- wynk service module loggers -->
     <logger name="refreshInMemoryCacheWynkService" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="refreshInMemoryCacheOs" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="refreshInMemoryCacheApp" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="transactionDailyDump" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="transactionWeeklyDump" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="startPaymentDumpS3Export" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="userChurnLocator" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="paymentReconciliationThresholdExceedEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="refreshInMemoryCacheCoupon" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="refreshInMemoryCachePlanDto" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="refreshInMemoryCacheItemDto" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="refreshInMemoryCacheCountryCurrencyDetails" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="initRefund" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="wynkUidToExtUserIdMapping" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="userChurnLocator" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="purchaseRequest" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <!-- invoice loggers start -->
 
     <logger name="generateInvoiceEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="generateInvoice" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="publishInvoiceKafka" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="invoiceEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="scheduleInvoiceRetryEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="triggerInvoiceRetryEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="callbackInvoice" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="downloadInvoice" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
+    <logger name="purchaseRequestV3" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
+    </logger>
+
+    <logger name="ATBChargingScheduler" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
+    </logger>
+
+    <logger name="ATBCharging" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
+    </logger>
+
 
     <!-- invoice loggers end -->
 
     <springProfile name="local">
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
-            <appender-ref ref="ASYNC_FILE"/>
+            <appender-ref ref="ASYNC_APPLOG"/>
             <appender-ref ref="ASYNC_ERRORLOG"/>
         </root>
         <logger name="in.wynk" additivity="false" level="DEBUG">
             <appender-ref ref="CONSOLE"/>
-            <appender-ref ref="ASYNC_FILE"/>
+            <appender-ref ref="ASYNC_APPLOG"/>
             <appender-ref ref="ASYNC_ERRORLOG"/>
         </logger>
     </springProfile>
 
     <springProfile name="dev,preprod">
         <root level="INFO">
-            <appender-ref ref="ASYNC_FILE"/>
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="ASYNC_APPLOG"/>
             <appender-ref ref="ASYNC_ERRORLOG"/>
         </root>
         <logger name="in.wynk" additivity="false" level="DEBUG">
-            <appender-ref ref="ASYNC_FILE"/>
+            <appender-ref ref="ASYNC_APPLOG"/>
             <appender-ref ref="ASYNC_ERRORLOG"/>
         </logger>
     </springProfile>
 
     <springProfile name="prod">
         <root level="INFO">
-            <appender-ref ref="ASYNC_FILE"/>
+            <appender-ref ref="ASYNC_APPLOG"/>
             <appender-ref ref="ASYNC_ERRORLOG"/>
         </root>
     </springProfile>

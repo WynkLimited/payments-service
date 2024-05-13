@@ -532,6 +532,10 @@ service:
   subscription:
     api:
       root: http://subscription.wcf.internal
+      purchase:
+        url: /subscriptions/
+      manage:
+        url: /manage-subscription/
   payment:
     api:
       root: https://payments.wynk.in
@@ -1183,3 +1187,5 @@ event:
     dp: wcf-data-science-prod-subscription-funnel
 
 api.get.endPoint: https://subscription.wynk.in
+
+

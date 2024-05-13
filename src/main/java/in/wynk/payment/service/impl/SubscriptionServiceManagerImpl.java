@@ -1,8 +1,10 @@
 package in.wynk.payment.service.impl;
 
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.context.WynkApplicationContext;
 import in.wynk.common.dto.WynkResponse;
+import in.wynk.common.dto.WynkResponse.WynkResponseWrapper;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.utils.ChecksumUtils;
@@ -13,23 +15,27 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.payment.core.dao.entity.IUserDetails;
+import in.wynk.payment.dto.BestValuePlanPurchaseRequest;
+import in.wynk.payment.dto.BestValuePlanResponse;
 import in.wynk.payment.dto.SubscriptionStatus;
 import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.CurrencyCountryUtils;
+import in.wynk.pubsub.service.IPubSubManagerService;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.subscription.common.dto.*;
 import in.wynk.subscription.common.enums.ProvisionState;
-import in.wynk.subscription.common.message.SubscriptionProvisioningMessage;
+import in.wynk.subscription.common.message.SubscriptionProvisionMessage;
 import in.wynk.subscription.common.request.*;
 import in.wynk.subscription.common.response.AllItemsResponse;
 import in.wynk.subscription.common.response.AllPlansResponse;
 import in.wynk.subscription.common.response.PlanProvisioningResponse;
 import in.wynk.subscription.common.response.SelectivePlansComputationResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -92,12 +98,18 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Value("${service.subscription.api.endpoint.status}")
     private String subscriptionStatusEndpoint;
 
+    @Value("${service.subscription.api.endpoint.bestValue}")
+    private String subscriptionBestValueEndpoint;
+
     @Autowired
     @Qualifier(SUBSCRIPTION_SERVICE_S2S_TEMPLATE)
     private RestTemplate restTemplate;
 
     @Autowired
     private ISqsManagerService sqsMessagePublisher;
+
+    @Autowired
+    private IPubSubManagerService pubSubManagerService;
 
     @Autowired
     private WynkApplicationContext myApplicationContext;
@@ -190,7 +202,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
             return;
         }
         try {
-            this.publishAsync(SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId()).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentCode(request.getPaymentGateway().getCode()).paymentPartner(BaseConstants.WYNK.toLowerCase()).referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent()).transactionStatus(request.getTransactionStatus()).externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired()).os(request.getTriggerDataRequest().getOs()).appVersion(request.getTriggerDataRequest().getAppVersion()).build());
+            this.publishAsync(SubscriptionProvisionMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId()).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentCode(request.getPaymentGateway().getCode()).paymentPartner(BaseConstants.WYNK.toLowerCase()).referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent()).transactionStatus(request.getTransactionStatus()).externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired()).os(request.getTriggerDataRequest().getOs()).appVersion(request.getTriggerDataRequest().getAppVersion()).build());
         } catch (Exception e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY013, e);
         }
@@ -198,7 +210,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     @Override
     public void unSubscribePlanAsync(UnSubscribePlanAsyncRequest request) {
-        this.publishAsync(SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).referenceId(request.getTransactionId()).transactionStatus(request.getTransactionStatus()).paymentEvent(request.getPaymentEvent()).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentPartner(BaseConstants.WYNK.toLowerCase()).appVersion(request.getTriggerDataRequest().getAppVersion()).os(request.getTriggerDataRequest().getOs()).build());
+        this.publishAsync(SubscriptionProvisionMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).referenceId(request.getTransactionId()).transactionStatus(request.getTransactionStatus()).paymentEvent(request.getPaymentEvent()).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentPartner(BaseConstants.WYNK.toLowerCase()).appVersion(request.getTriggerDataRequest().getAppVersion()).os(request.getTriggerDataRequest().getOs()).build());
     }
 
     @Override
@@ -234,16 +246,16 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
                 PlanProvisioningResponse provisioningResponse = response.getBody().getData();
                 //TODO: remove deferred state check post IAP fixes.
                 if (provisioningResponse.getState() != ProvisionState.SUBSCRIBED && provisioningResponse.getState() != ProvisionState.DEFERRED) {
-                    this.publishAsync(SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId()).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentCode(request.getPaymentGateway().getCode()).paymentPartner(BaseConstants.WYNK.toLowerCase()).referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent()).transactionStatus(request.getTransactionStatus()).externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired()).os(request.getTriggerDataRequest().getOs()).appVersion(request.getTriggerDataRequest().getAppVersion()).build());
+                    this.publishAsync(SubscriptionProvisionMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId()).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentCode(request.getPaymentGateway().getCode()).paymentPartner(BaseConstants.WYNK.toLowerCase()).referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent()).transactionStatus(request.getTransactionStatus()).externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired()).os(request.getTriggerDataRequest().getOs()).appVersion(request.getTriggerDataRequest().getAppVersion()).build());
                     throw new WynkRuntimeException(PaymentErrorType.PAY013);
                 }
             }
         } catch (HttpStatusCodeException e) {
-            this.publishAsync(SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId()).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentCode(request.getPaymentGateway().getCode()).paymentPartner(BaseConstants.WYNK.toLowerCase()).referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent()).transactionStatus(request.getTransactionStatus()).externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired()).os(request.getTriggerDataRequest().getOs()).appVersion(request.getTriggerDataRequest().getAppVersion()).build());
+            this.publishAsync(SubscriptionProvisionMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId()).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentCode(request.getPaymentGateway().getCode()).paymentPartner(BaseConstants.WYNK.toLowerCase()).referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent()).transactionStatus(request.getTransactionStatus()).externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired()).os(request.getTriggerDataRequest().getOs()).appVersion(request.getTriggerDataRequest().getAppVersion()).build());
             throw new WynkRuntimeException(PaymentErrorType.PAY013, e, e.getResponseBodyAsString());
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.PAYMENT_ERROR, "Error occurred while subscribing {}", e.getMessage(), e);
-            this.publishAsync(SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId()).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentCode(request.getPaymentGateway().getCode()).paymentPartner(BaseConstants.WYNK.toLowerCase()).referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent()).transactionStatus(request.getTransactionStatus()).externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired()).os(request.getTriggerDataRequest().getOs()).appVersion(request.getTriggerDataRequest().getAppVersion()).build());
+            this.publishAsync(SubscriptionProvisionMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId()).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentCode(request.getPaymentGateway().getCode()).paymentPartner(BaseConstants.WYNK.toLowerCase()).referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent()).transactionStatus(request.getTransactionStatus()).externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired()).os(request.getTriggerDataRequest().getOs()).appVersion(request.getTriggerDataRequest().getAppVersion()).build());
             throw new WynkRuntimeException(PaymentErrorType.PAY013, e);
         }
     }
@@ -268,9 +280,10 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         }
     }
 
-    private void publishAsync(SubscriptionProvisioningMessage message) {
+    private void publishAsync(SubscriptionProvisionMessage message) {
         try {
-            sqsMessagePublisher.publishSQSMessage(message);
+           // sqsMessagePublisher.publishSQSMessage(message);
+            pubSubManagerService.publishPubSubMessage(message);
         } catch (Exception e) {
             throw new WynkRuntimeException(QueueErrorType.SQS001, e);
         }
@@ -283,5 +296,36 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     private boolean isExternallyProvisionablePlan(int planId){
         return BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(planId).isProvisionNotRequired();
     }
+    @Override
+    public BestValuePlanResponse getBestValuePlan(final BestValuePlanPurchaseRequest request, final Map<String, String> additionalParam) {
+        String planId = null;
+        try {
+
+
+            if(request.getProductDetails()!=null && StringUtils.isNotEmpty(request.getProductDetails().getId())){
+                AnalyticService.update( BaseConstants.REQUEST_PLAN_ID, request.getProductDetails().getId());
+                return BestValuePlanResponse.builder().planId(request.getProductDetails().getId()).bestValuePlanPurchaseRequest(request).build();
+            }
+            final SessionRequest sessionRequestWithAdditionalParam = request.toSessionWithAdditionalParam(additionalParam);
+            AnalyticService.update(sessionRequestWithAdditionalParam);
+            final RequestEntity<SessionRequest> sessionRequest = ChecksumUtils.buildEntityWithAuthHeaders(subscriptionBestValueEndpoint,
+                                                                                                          myApplicationContext.getClientId(),
+                                                                                                          myApplicationContext.getClientSecret(),
+                                                                                                          sessionRequestWithAdditionalParam,
+                                                                                                          HttpMethod.POST);
+            final WynkResponseWrapper<in.wynk.common.dto.BestValuePlanResponse> body = restTemplate.exchange(sessionRequest,
+                                                                                                             new ParameterizedTypeReference<WynkResponseWrapper<in.wynk.common.dto.BestValuePlanResponse>>() {
+                                                                                                             }).getBody();
+            if (Objects.nonNull(body) && Objects.nonNull(body.getData()) && StringUtils.isNotEmpty(body.getData().getPlanId())) {
+                planId = body.getData().getPlanId();
+                AnalyticService.update( BaseConstants.BEST_VALUE_PLAN, planId);
+            }
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.BEST_VALUE_PLAN_API_ERROR ,e.getMessage());
+        }
+        return BestValuePlanResponse.builder().bestValuePlanPurchaseRequest(request).planId(planId).build();
+    }
+
+
 
 }

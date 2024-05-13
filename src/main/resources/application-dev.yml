@@ -1204,6 +1204,9 @@ lock:
       maxTotal: 200
       minIdle: 50
       maxIdle: 100
+  refreshTokenDuration: 60
+  refreshTokenLifetime: 3600
+  accountName: projects/-/serviceAccounts/gke-wynk-stg-wcf-app-sa@prj-wynk-stg-wcf-svc-01.iam.gserviceaccount.com
 
 ######## lib-auth props #######
 security:

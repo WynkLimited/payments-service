@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.constant.CardConstants;
 import in.wynk.payment.constant.UpiConstants;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -67,9 +68,12 @@ public class PayUPreDebitGatewayServiceImpl implements IPreDebitNotificationServ
             if (Objects.nonNull(merchantTransaction)) {
                 PayURenewalResponse payURenewalResponse = objectMapper.convertValue(merchantTransaction.getResponse(), PayURenewalResponse.class);
                 PayUChargingTransactionDetails transactionDetails = payURenewalResponse.getTransactionDetails().get(txnId);
-                if (UpiConstants.UPI.equals(transactionDetails.getMode()) || UpiConstants.UPISI.equals(transactionDetails.getMode())) {
+                if (transactionDetails.getResponseCardNumber() == null) {
                     //check mandate status for UPI
                     payUCommonGateway.validateStatusForRenewal(transactionDetails.getPayUExternalTxnId(), transaction);
+                } else if(transactionDetails.getResponseCardNumber() != null) {
+                    //check mandate status for CARD
+
                 }
             }
 

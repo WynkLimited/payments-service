@@ -271,13 +271,12 @@ public class PayUCommonGateway {
         }
         boolean isMandateActive = false;
         if (paymentResponse != null) {
-            isMandateActive = "active".equalsIgnoreCase(paymentResponse.getStatus());
-            if (!isMandateActive) {
-                transaction.setStatus(TransactionStatus.FAILURE.getValue());
-                log.error(PAYU_MANDATE_VALIDATION, "mandate status is: " + paymentResponse.getStatus());
-                recurringTransactionUtils.cancelRenewalBasedOnErrorReason(PAY005.getErrorMessage(), transaction);
-                eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PAY005.getErrorCode()).description(PAY005.getErrorMessage()).build());
-            }
+            transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            String errorReason = "mandate status is: " + paymentResponse.getStatus();
+            AnalyticService.update(ERROR_REASON, errorReason);
+            log.error(PAYU_MANDATE_VALIDATION, errorReason);
+            recurringTransactionUtils.cancelRenewalBasedOnErrorReason(errorReason, transaction);
+            eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PAY005.getErrorCode()).description(errorReason).build());
         }
         return isMandateActive;
     }

@@ -16,7 +16,6 @@ import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.payu.PayUChargingTransactionDetails;
 import in.wynk.payment.dto.payu.PayUCommand;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
-import in.wynk.payment.dto.response.payu.PayUMandateUpiStatusResponse;
 import in.wynk.payment.dto.response.payu.PayURenewalResponse;
 import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
 import in.wynk.payment.gateway.IPaymentRenewal;
@@ -39,9 +38,7 @@ import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.ONE_DAY_IN_MILLI;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY005;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY015;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_RENEWAL_STATUS_ERROR;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
@@ -112,7 +109,9 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
                     } else if (transaction.getInitTime().getTimeInMillis() < System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
                             StringUtils.equalsIgnoreCase(PENDING, payUChargingTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.FAILURE.getValue());
-                        eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description("Transaction init time is less than current - 1").build());
+                        eventPublisher.publishEvent(
+                                PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description("Transaction init time is less than current - 1")
+                                        .build());
                     }
                 } else {
                     transaction.setStatus(TransactionStatus.FAILURE.getValue());
@@ -140,6 +139,7 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
         } else if (StringUtils.isNotBlank(payUChargingTransactionDetails.getErrorMessage())) {
             errorReason = payUChargingTransactionDetails.getErrorMessage();
         }
+        AnalyticService.update(ERROR_REASON, errorReason);
         return errorReason;
     }
 

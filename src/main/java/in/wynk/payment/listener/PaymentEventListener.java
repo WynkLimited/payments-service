@@ -42,11 +42,13 @@ import in.wynk.payment.handler.CustomerWinBackHandler;
 import in.wynk.payment.handler.InvoiceRetryTaskHandler;
 import in.wynk.payment.service.*;
 import in.wynk.payment.utils.TaxUtils;
+import in.wynk.pubsub.service.IPubSubManagerService;
 import in.wynk.queue.constant.QueueConstant;
 import in.wynk.queue.dto.MessageThresholdExceedEvent;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.scheduler.task.dto.TaskDefinition;
 import in.wynk.scheduler.task.service.ITaskScheduler;
+import in.wynk.sms.common.message.SmsNotificationGCPMessage;
 import in.wynk.sms.common.message.SmsNotificationMessage;
 import in.wynk.stream.producer.IKafkaEventPublisher;
 import in.wynk.stream.producer.IKinesisEventPublisher;
@@ -94,6 +96,7 @@ public class PaymentEventListener {
     private final PaymentGatewayManager paymentGatewayManager;
     private final ITaskScheduler<TaskDefinition<?>> taskScheduler;
     private final ISqsManagerService<Object> sqsManagerService;
+    private final IPubSubManagerService<Object> pubSubManagerService;
     private final IPaymentErrorService paymentErrorService;
     private final ApplicationEventPublisher eventPublisher;
     private final IClientCallbackService clientCallbackService;
@@ -122,7 +125,7 @@ public class PaymentEventListener {
 
     public PaymentEventListener (TaxUtils taxUtils, ObjectMapper mapper, RetryRegistry retryRegistry, PaymentManager paymentManager,
                                  PaymentGatewayManager paymentGatewayManager, ITaskScheduler<TaskDefinition<?>> taskScheduler,
-                                 ISqsManagerService<Object> sqsManagerService, IPaymentErrorService paymentErrorService, ApplicationEventPublisher eventPublisher,
+                                 ISqsManagerService<Object> sqsManagerService, IPubSubManagerService<Object> pubSubManagerService, IPaymentErrorService paymentErrorService, ApplicationEventPublisher eventPublisher,
                                  IClientCallbackService clientCallbackService, ITransactionManagerService transactionManagerService,
                                  IMerchantTransactionService merchantTransactionService, IRecurringPaymentManagerService recurringPaymentManagerService,
                                  PaymentCachingService cachingService, IQuickPayLinkGenerator quickPayLinkGenerator, InvoiceService invoiceService,
@@ -140,6 +143,7 @@ public class PaymentEventListener {
         this.paymentGatewayManager = paymentGatewayManager;
         this.taskScheduler = taskScheduler;
         this.sqsManagerService = sqsManagerService;
+        this.pubSubManagerService = pubSubManagerService;
         this.paymentErrorService = paymentErrorService;
         this.eventPublisher = eventPublisher;
         this.clientCallbackService = clientCallbackService;
@@ -183,7 +187,7 @@ public class PaymentEventListener {
     public void onPaymentRenewalMessageThresholdExceedEvent (PaymentRenewalMessageThresholdExceedEvent event) {
         AnalyticService.update(event);
         Transaction transaction = transactionManagerService.get(event.getTransactionId());
-        sqsManagerService.publishSQSMessage(PaymentRenewalChargingMessage.builder()
+        pubSubManagerService.publishPubSubMessage(PaymentRenewalChargingMessage.builder()
                 .uid(transaction.getUid())
                 .id(transaction.getIdStr())
                 .planId(transaction.getPlanId())
@@ -409,7 +413,7 @@ public class PaymentEventListener {
     @AnalyseTransaction(name = "paymentRefundInitEvent")
     public void onPaymentRefundInitEvent (PaymentRefundInitEvent event) {
         AnalyticService.update(event);
-        sqsManagerService.publishSQSMessage(PaymentRefundInitMessage.builder()
+        pubSubManagerService.publishPubSubMessage(PaymentRefundInitMessage.builder()
                 .originalTransactionId(event.getOriginalTransactionId())
                 .reason(event.getReason())
                 .build());
@@ -528,7 +532,7 @@ public class PaymentEventListener {
     public void onExternalTransactionReportEvent (ExternalTransactionReportEvent event) {
         AnalyticService.update(event);
         try {
-            sqsManagerService.publishSQSMessage(ExternalTransactionReportMessageManager.builder().clientAlias(event.getClientAlias()).transactionId(event.getTransactionId())
+            pubSubManagerService.publishPubSubMessage(ExternalTransactionReportMessageManager.builder().clientAlias(event.getClientAlias()).transactionId(event.getTransactionId())
                     .externalTransactionId(event.getExternalTokenReferenceId()).paymentEvent(event.getPaymentEvent()).build());
         } catch (Exception e) {
             log.error("Exception occurred while publishing event on ExternalTransactionReport queue for transactionId: {}", event.getTransactionId(), e);
@@ -552,13 +556,13 @@ public class PaymentEventListener {
                 put(OFFER, cachingService.getOffer(plan.getLinkedOfferId()));
                 put(WINBACK_NOTIFICATION_URL, tinyUrl);
             }};
-            SmsNotificationMessage notificationMessage = SmsNotificationMessage.builder()
+            SmsNotificationGCPMessage notificationMessage = SmsNotificationGCPMessage.builder()
                     .messageId(message.getMessageId())
                     .msisdn(msisdn)
                     .service(service)
                     .contextMap(contextMap)
                     .build();
-            sqsManagerService.publishSQSMessage(notificationMessage);
+            pubSubManagerService.publishPubSubMessage(notificationMessage);
         } else {
             log.info("Skipping to send drop out notification for msisdn {} as it has been disabled", msisdn);
         }

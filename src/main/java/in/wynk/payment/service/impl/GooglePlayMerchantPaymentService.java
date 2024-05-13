@@ -57,6 +57,7 @@ import in.wynk.payment.dto.response.LatestReceiptResponse;
 import in.wynk.payment.dto.response.gpbs.GooglePlayBillingResponse;
 import in.wynk.payment.service.*;
 import in.wynk.payment.utils.MerchantServiceUtil;
+import in.wynk.pubsub.service.IPubSubManagerService;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.vas.client.dto.MsisdnOperatorDetails;
@@ -119,6 +120,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     private final WynkRedisLockService wynkRedisLockService;
     private GooglePlayCacheService googlePlayCacheService;
     private ISqsManagerService sqsMessagePublisher;
+    private IPubSubManagerService pubSubManagerService;
     private IAuditableListener auditingListener;
     private final IUserDetailsService userDetailsService;
     private final ITaxManager taxManager;
@@ -128,7 +130,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     public GooglePlayMerchantPaymentService (@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson,
                                              ApplicationEventPublisher eventPublisher, WynkRedisLockService wynkRedisLockService, IErrorCodesCacheService errorCodesCacheServiceImpl,
                                              GooglePlayCacheService googlePlayCacheService, PaymentCachingService cachingService,
-                                             ISqsManagerService sqsMessagePublisher, @Qualifier(AuditConstants.MONGO_AUDIT_LISTENER) IAuditableListener auditingListener,
+                                             ISqsManagerService sqsMessagePublisher,IPubSubManagerService pubSubManagerService, @Qualifier(AuditConstants.MONGO_AUDIT_LISTENER) IAuditableListener auditingListener,
                                              IUserDetailsService userDetailsService, ITaxManager taxManager,
                                              GSTStateCodesCachingService stateCodesCachingService, InvoiceDetailsCachingService invoiceDetailsCachingService) {
         super(cachingService, errorCodesCacheServiceImpl);
@@ -139,6 +141,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         this.wynkRedisLockService = wynkRedisLockService;
         this.googlePlayCacheService = googlePlayCacheService;
         this.sqsMessagePublisher = sqsMessagePublisher;
+        this.pubSubManagerService= pubSubManagerService;
         this.auditingListener = auditingListener;
         this.userDetailsService = userDetailsService;
         this.taxManager = taxManager;
@@ -659,7 +662,8 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                             .getPurchaseToken()).skuId(request.getProductDetails().getSkuId())
                     .developerPayload(request.getDeveloperPayload()).type(request.getType()).txnId(abstractPaymentAcknowledgementRequest.getTxnId()).build();
             try {
-                sqsMessagePublisher.publishSQSMessage(message);
+                //sqsMessagePublisher.publishSQSMessage(message);
+                pubSubManagerService.publishPubSubMessage(message);
             } catch (Exception e) {
                 log.error("Unable to publish acknowledge message on queue {}", e.getMessage());
             }

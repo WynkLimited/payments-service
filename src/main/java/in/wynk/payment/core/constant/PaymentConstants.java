@@ -22,6 +22,7 @@ public interface PaymentConstants extends BaseConstants {
     String PENDING = "pending";
     String SUCCESS = "success";
     String MESSAGE = "message";
+    String ERROR_REASON = "errorReason";
     String PIPE_SEPARATOR = "|";
     String SOURCE_MODE = "mode";
     String BANK_CODE = "bankCode";

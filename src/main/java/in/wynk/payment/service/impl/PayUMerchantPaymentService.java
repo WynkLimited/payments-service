@@ -1,6 +1,5 @@
 package in.wynk.payment.service.impl;
 
-import com.datastax.driver.core.utils.UUIDs;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
@@ -19,16 +18,13 @@ import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.common.enums.BillingCycle;
 import in.wynk.payment.common.utils.BillingUtils;
-import in.wynk.payment.constant.UpiConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.BaseTDRResponse;
-import in.wynk.payment.dto.PreDebitNotificationMessage;
 import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.common.AbstractPreDebitNotificationResponse;
 import in.wynk.payment.dto.payu.PayUUpiCollectResponse;
 import in.wynk.payment.dto.payu.*;
 import in.wynk.payment.dto.request.*;
@@ -243,7 +239,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         } else if (StringUtils.isNotBlank(payUChargingTransactionDetails.getErrorMessage())) {
             errorReason = payUChargingTransactionDetails.getErrorMessage();
         }
-        log.error(errorReason);
+        AnalyticService.update(ERROR_REASON, errorReason);
         return errorReason;
     }
 
@@ -495,7 +491,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         }
         return payload;
     }
-    
+
     private boolean validateStatusForRenewal (String mihpayid, Transaction transaction) {
         LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
         orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, mihpayid);
@@ -528,6 +524,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             if (!isMandateActive) {
                 transaction.setStatus(TransactionStatus.FAILURE.getValue());
                 String errorReason = "mandate status is: " + paymentResponse.getStatus();
+                AnalyticService.update(ERROR_REASON, errorReason);
                 log.error(PAYU_MANDATE_VALIDATION, errorReason);
                 recurringTransactionUtils.cancelRenewalBasedOnErrorReason(errorReason, transaction);
                 eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PAY005.getErrorCode()).description(errorReason).build());

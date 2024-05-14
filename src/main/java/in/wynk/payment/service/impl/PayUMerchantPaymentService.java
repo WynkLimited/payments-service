@@ -180,9 +180,15 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         Transaction transaction = TransactionContext.get();
         PlanPeriodDTO planPeriodDTO = cachingService.getPlan(transaction.getPlanId()).getPeriod();
         String txnId = paymentRenewalChargingRequest.getId();
-        PaymentRenewal renewal = recurringPaymentManagerService.getRenewalById(txnId);
-        if (Objects.nonNull(renewal) && StringUtils.isNotBlank(renewal.getLastSuccessTransactionId())) {
-            txnId = renewal.getLastSuccessTransactionId();
+        PaymentRenewal lastRenewal = recurringPaymentManagerService.getRenewalById(txnId);
+        if (Objects.nonNull(lastRenewal)) {
+            if (StringUtils.isNotBlank(lastRenewal.getInitialTransactionId())) {
+                txnId = lastRenewal.getInitialTransactionId();
+            } else if (StringUtils.isNotBlank(lastRenewal.getLastSuccessTransactionId())) {
+                log.error("Initial transaction id is null but not the  last success transaction id {}", lastRenewal.getLastSuccessTransactionId());
+                PaymentRenewal lastToLastRenewal = recurringPaymentManagerService.getRenewalById(lastRenewal.getLastSuccessTransactionId());
+                txnId = StringUtils.isNotBlank(lastToLastRenewal.getInitialTransactionId()) ? lastToLastRenewal.getInitialTransactionId() : lastRenewal.getLastSuccessTransactionId();
+            }
         }
         MerchantTransaction merchantTransaction = getMerchantData(txnId);
         PayUVerificationResponse<PayUChargingTransactionDetails> currentStatus =

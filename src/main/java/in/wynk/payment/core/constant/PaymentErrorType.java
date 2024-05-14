@@ -65,7 +65,7 @@ public enum PaymentErrorType implements IWynkErrorType {
     /*IAP Specific errorCodes end*/
 
     /*PAYU Specific errorCodes*/
-    PAY005("Mandate Validation", "Mandate is not Active", HttpStatus.PRECONDITION_FAILED, PaymentLoggingMarker.PAYU_MANDATE_VALIDATION),
+    PAYU005("Mandate Validation", "PayU mandate validation failure", HttpStatus.PRECONDITION_FAILED, PaymentLoggingMarker.PAYU_MANDATE_VALIDATION),
     PAY015("PayU API Failure", "Could Not process transaction on payU", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYU_API_FAILURE),
     PAY002("Charging Failure", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYU_CHARGING_FAILURE),
     PAY003("PayU Recon Transaction Status Failure", "No matching status found for payU side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),

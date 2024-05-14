@@ -527,7 +527,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 AnalyticService.update(ERROR_REASON, errorReason);
                 log.error(PAYU_MANDATE_VALIDATION, errorReason);
                 recurringTransactionUtils.cancelRenewalBasedOnErrorReason(errorReason, transaction);
-                eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PAY005.getErrorCode()).description(errorReason).build());
+                eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PAYU005.getErrorCode()).description(errorReason).build());
             }
         }
         return isMandateActive;

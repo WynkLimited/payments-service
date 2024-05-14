@@ -52,8 +52,8 @@ import java.util.Objects;
 
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY005;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY015;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAYU005;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
@@ -242,43 +242,53 @@ public class PayUCommonGateway {
     }
 
 
-
-    public boolean validateStatusForRenewal (String mihpayid, Transaction transaction) {
+    public boolean validateMandateStatus (Transaction transaction, String uniqueId, PayUChargingTransactionDetails transactionDetails, boolean isRenewalFlow) {
+        String mihpayid = transactionDetails.getPayUExternalTxnId();
+        String payuCommand = null;
+        //if card number is null means it is upi and hence check mandate status for UPI else check mandate status for card
+        if (transactionDetails.getResponseCardNumber() == null) {
+            payuCommand = PayUCommand.UPI_MANDATE_STATUS.getCode();
+        } else if (transactionDetails.getResponseCardNumber() != null) {
+            payuCommand = PayUCommand.CHECK_MANDATE_STATUS.getCode();
+        }
         LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
         orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, mihpayid);
-        orderedMap.put(PAYU_REQUEST_ID, transaction.getIdStr());
+        orderedMap.put(PAYU_REQUEST_ID, uniqueId);
         String variable = gson.toJson(orderedMap);
         PayUMandateUpiStatusResponse paymentResponse;
         rateLimiter.acquire();
-        final MultiValueMap<String, String> requestMap = buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.UPI_MANDATE_STATUS.getCode(), variable);
+        final MultiValueMap<String, String> requestMap = buildPayUInfoRequest(transaction.getClientAlias(), payuCommand, variable);
         try {
             paymentResponse = exchange(INFO_API, requestMap, new TypeReference<PayUMandateUpiStatusResponse>() {
             });
         } catch (RestClientException e) {
             if (e.getRootCause() != null) {
                 if (e.getRootCause() instanceof SocketTimeoutException || e.getRootCause() instanceof ConnectTimeoutException) {
-                    log.error(PAYU_RENEWAL_STATUS_ERROR, "Socket timeout but valid for reconciliation for request : {} due to {}", requestMap, e.getMessage(), e);
-                    throw new WynkRuntimeException(PaymentErrorType.PAY014);
+                    log.error(PAYU_MANDATE_VALIDATION_API_FAILURE, "Socket timeout during mandate validation but retry will happen {}, {} ", requestMap, e.getMessage(), e);
+                    throw new WynkRuntimeException(PAYU005);
                 } else {
-                    throw new WynkRuntimeException(PaymentErrorType.PAY009, e);
+                    throw new WynkRuntimeException(PAYU005, e);
                 }
             } else {
-                throw new WynkRuntimeException(PaymentErrorType.PAY009, e);
+                throw new WynkRuntimeException(PAYU005, e);
             }
         } catch (Exception ex) {
-            log.error(PAYU_API_FAILURE, ex.getMessage(), ex);
-            throw new WynkRuntimeException(PAY015, ex);
+            log.error(PAYU_MANDATE_VALIDATION_API_FAILURE, ex.getMessage(), ex);
+            throw new WynkRuntimeException(PAYU005, ex);
         }
         boolean isMandateActive = false;
         if (paymentResponse != null) {
-            transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            String errorReason = "mandate status is: " + paymentResponse.getStatus();
-            AnalyticService.update(ERROR_REASON, errorReason);
-            log.error(PAYU_MANDATE_VALIDATION, errorReason);
-            recurringTransactionUtils.cancelRenewalBasedOnErrorReason(errorReason, transaction);
-            eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PAY005.getErrorCode()).description(errorReason).build());
+            isMandateActive = "active".equalsIgnoreCase(paymentResponse.getStatus());
+            if (!isMandateActive) {
+                String errorReason = "mandate status is: " + paymentResponse.getStatus();
+                AnalyticService.update(ERROR_REASON, errorReason);
+                recurringTransactionUtils.cancelRenewalBasedOnErrorReason(errorReason, transaction);
+                if (isRenewalFlow) {
+                    transaction.setStatus(TransactionStatus.FAILURE.getValue());
+                    eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PAYU005.getErrorCode()).description(errorReason).build());
+                }
+            }
         }
         return isMandateActive;
     }
-
 }

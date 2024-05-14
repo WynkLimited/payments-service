@@ -6,8 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.constant.CardConstants;
-import in.wynk.payment.constant.UpiConstants;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PreDebitNotificationMessage;
@@ -27,6 +25,7 @@ import org.springframework.util.MultiValueMap;
 
 import java.util.LinkedHashMap;
 import java.util.Objects;
+import java.util.UUID;
 
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY111;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_PRE_DEBIT_NOTIFICATION_ERROR;
@@ -45,7 +44,8 @@ public class PayUPreDebitGatewayServiceImpl implements IPreDebitNotificationServ
     private final ITransactionManagerService transactionManagerService;
     private final IMerchantTransactionService merchantTransactionService;
 
-    public PayUPreDebitGatewayServiceImpl (Gson gson, ObjectMapper objectMapper, PaymentCachingService paymentCachingService, PayUCommonGateway payUCommonGateway, ITransactionManagerService transactionManagerService,
+    public PayUPreDebitGatewayServiceImpl (Gson gson, ObjectMapper objectMapper, PaymentCachingService paymentCachingService, PayUCommonGateway payUCommonGateway,
+                                           ITransactionManagerService transactionManagerService,
                                            IMerchantTransactionService merchantTransactionService) {
         this.gson = gson;
         this.objectMapper = objectMapper;
@@ -68,35 +68,31 @@ public class PayUPreDebitGatewayServiceImpl implements IPreDebitNotificationServ
             if (Objects.nonNull(merchantTransaction)) {
                 PayURenewalResponse payURenewalResponse = objectMapper.convertValue(merchantTransaction.getResponse(), PayURenewalResponse.class);
                 PayUChargingTransactionDetails transactionDetails = payURenewalResponse.getTransactionDetails().get(txnId);
-                if (transactionDetails.getResponseCardNumber() == null) {
-                    //check mandate status for UPI
-                    payUCommonGateway.validateStatusForRenewal(transactionDetails.getPayUExternalTxnId(), transaction);
-                } else if(transactionDetails.getResponseCardNumber() != null) {
-                    //check mandate status for CARD
-
+                UUID requestId = UUIDs.timeBased();
+                if (payUCommonGateway.validateMandateStatus(transaction, requestId.toString(), transactionDetails, false)) {
+                    orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, merchantTransaction.getExternalTransactionId());
+                    orderedMap.put(PAYU_REQUEST_ID, requestId);
+                    orderedMap.put(PAYU_DEBIT_DATE, message.getDate());
+                    orderedMap.put(PAYU_INVOICE_DISPLAY_NUMBER, message.getTransactionId());
+                    orderedMap.put(PAYU_TRANSACTION_AMOUNT, paymentCachingService.getPlan(transaction.getPlanId()).getFinalPrice());
+                    String variable = gson.toJson(orderedMap);
+                    MultiValueMap<String, String> requestMap = payUCommonGateway.buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.PRE_DEBIT_SI.getCode(), variable);
+                    PayUPreDebitNotificationResponse response = payUCommonGateway.exchange(payUCommonGateway.INFO_API, requestMap, new TypeReference<PayUPreDebitNotificationResponse>() {
+                    });
+                    if (response.getStatus().equalsIgnoreCase(INTEGER_VALUE)) {
+                        log.info(PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS, "invoiceId: " + response.getInvoiceId() + " invoiceStatus: " + response.getInvoiceStatus());
+                    } else {
+                        throw new WynkRuntimeException(PAY111, response.getMessage());
+                    }
                 }
             }
-
-            orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, merchantTransaction.getExternalTransactionId());
-            orderedMap.put(PAYU_REQUEST_ID, UUIDs.timeBased());
-            orderedMap.put(PAYU_DEBIT_DATE, message.getDate());
-            orderedMap.put(PAYU_INVOICE_DISPLAY_NUMBER, message.getTransactionId());
-            orderedMap.put(PAYU_TRANSACTION_AMOUNT, paymentCachingService.getPlan(transaction.getPlanId()).getFinalPrice());
-            String variable = gson.toJson(orderedMap);
-            MultiValueMap<String, String> requestMap = payUCommonGateway.buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.PRE_DEBIT_SI.getCode(), variable);
-            PayUPreDebitNotificationResponse response = payUCommonGateway.exchange(payUCommonGateway.INFO_API, requestMap, new TypeReference<PayUPreDebitNotificationResponse>() {});
-            if (response.getStatus().equalsIgnoreCase(INTEGER_VALUE)) {
-                log.info(PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS, "invoiceId: " + response.getInvoiceId() + " invoiceStatus: " + response.getInvoiceStatus());
-            } else {
-                throw new WynkRuntimeException(PAY111, response.getMessage());
-            }
-            return PayUPreDebitNotification.builder().tid(message.getTransactionId()).transactionStatus(TransactionStatus.SUCCESS).build();
         } catch (Exception e) {
-            log.error(PAYU_PRE_DEBIT_NOTIFICATION_ERROR, e.getMessage());
             if (e instanceof WynkRuntimeException) {
                 throw e;
             }
+            log.error(PAYU_PRE_DEBIT_NOTIFICATION_ERROR, e.getMessage());
             throw new WynkRuntimeException(PAY111);
         }
+        return PayUPreDebitNotification.builder().tid(message.getTransactionId()).transactionStatus(TransactionStatus.SUCCESS).build();
     }
 }

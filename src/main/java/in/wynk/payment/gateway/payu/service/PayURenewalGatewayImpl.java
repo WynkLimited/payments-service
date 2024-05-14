@@ -87,10 +87,8 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
             PayUChargingTransactionDetails payUChargingTransactionDetails = payURenewalResponse.getTransactionDetails().get(txnId);
             String mode = payUChargingTransactionDetails.getMode();
             AnalyticService.update(PAYMENT_MODE, mode);
-            boolean isUpi = StringUtils.isNotEmpty(mode) && mode.equals("UPI");
-            String externalTransactionId =
-                    (merchantTransaction != null) ? merchantTransaction.getExternalTransactionId() : currentStatus.getTransactionDetails(txnId).getPayUExternalTxnId();
-            if (!isUpi || common.validateStatusForRenewal(externalTransactionId, transaction)) {
+            String externalTransactionId = (merchantTransaction != null) ? merchantTransaction.getExternalTransactionId() : currentStatus.getTransactionDetails(txnId).getPayUExternalTxnId();
+            if (common.validateMandateStatus(transaction, transaction.getIdStr(), payUChargingTransactionDetails, true)) {
                 payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest, externalTransactionId, txnId);
                 payUChargingTransactionDetails = payURenewalResponse.getTransactionDetails().get(transaction.getIdStr());
                 int retryInterval = planPeriodDTO.getRetryInterval();

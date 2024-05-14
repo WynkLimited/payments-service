@@ -187,7 +187,12 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             } else if (StringUtils.isNotBlank(lastRenewal.getLastSuccessTransactionId())) {
                 log.error("Initial transaction id is null but not the  last success transaction id {}", lastRenewal.getLastSuccessTransactionId());
                 PaymentRenewal lastToLastRenewal = recurringPaymentManagerService.getRenewalById(lastRenewal.getLastSuccessTransactionId());
-                txnId = StringUtils.isNotBlank(lastToLastRenewal.getInitialTransactionId()) ? lastToLastRenewal.getInitialTransactionId() : lastRenewal.getLastSuccessTransactionId();
+                if (StringUtils.isNotBlank(lastToLastRenewal.getInitialTransactionId())) {
+                    txnId = lastToLastRenewal.getInitialTransactionId();
+                } else {
+                    txnId = StringUtils.isNotBlank(lastToLastRenewal.getLastSuccessTransactionId()) ? lastToLastRenewal.getLastSuccessTransactionId() : lastRenewal.getLastSuccessTransactionId();
+                }
+
             }
         }
         MerchantTransaction merchantTransaction = getMerchantData(txnId);
@@ -220,7 +225,9 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                     } else if (transaction.getInitTime().getTimeInMillis() < System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
                             StringUtils.equalsIgnoreCase(PENDING, payUChargingTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.FAILURE.getValue());
-                        eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description("Transaction init time is less than current - 1").build());
+                        eventPublisher.publishEvent(
+                                PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description("Transaction init time is less than current - 1")
+                                        .build());
                     }
                 } else {
                     transaction.setStatus(TransactionStatus.FAILURE.getValue());

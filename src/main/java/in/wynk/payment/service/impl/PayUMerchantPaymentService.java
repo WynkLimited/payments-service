@@ -179,7 +179,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     public WynkResponseEntity<Void> doRenewal (PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
         Transaction transaction = TransactionContext.get();
         PlanPeriodDTO planPeriodDTO = cachingService.getPlan(transaction.getPlanId()).getPeriod();
-        String txnId = getUpdatedTransactionId(paymentRenewalChargingRequest.getId());
+        PaymentRenewal lastRenewal = recurringPaymentManagerService.getRenewalById(paymentRenewalChargingRequest.getId());
+        String txnId = getUpdatedTransactionId(paymentRenewalChargingRequest.getId(), lastRenewal);
         MerchantTransaction merchantTransaction = getMerchantData(txnId);
         PayUVerificationResponse<PayUChargingTransactionDetails> currentStatus =
                 (merchantTransaction == null) ? syncChargingTransactionFromSource(transactionManagerService.get(txnId), Optional.empty()) : null;
@@ -192,7 +193,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             boolean isUpi = StringUtils.isNotEmpty(mode) && mode.equals("UPI");
             String externalTransactionId = (merchantTransaction != null) ? merchantTransaction.getExternalTransactionId() : currentStatus.getTransactionDetails(txnId).getPayUExternalTxnId();
             if (!isUpi || validateStatusForRenewal(externalTransactionId, transaction)) {
-                payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest, externalTransactionId, txnId);
+                payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest, externalTransactionId, lastRenewal.getLastSuccessTransactionId());
                 payUChargingTransactionDetails = payURenewalResponse.getTransactionDetails().get(transaction.getIdStr());
                 int retryInterval = planPeriodDTO.getRetryInterval();
                 if (payURenewalResponse.getStatus() == 1) {
@@ -230,9 +231,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         return WynkResponseEntity.<Void>builder().build();
     }
 
-    private String getUpdatedTransactionId (String txnId) {
+    private String getUpdatedTransactionId (String txnId, PaymentRenewal lastRenewal) {
         String updatedTransactionId = txnId;
-        PaymentRenewal lastRenewal = recurringPaymentManagerService.getRenewalById(updatedTransactionId);
         if (Objects.nonNull(lastRenewal)) {
             if (StringUtils.isNotBlank(lastRenewal.getInitialTransactionId())) {
                 updatedTransactionId = lastRenewal.getInitialTransactionId();
@@ -840,7 +840,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     public AbstractPreDebitNotificationResponse notify (PreDebitNotificationMessage message) {
         try {
             LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
-            String txnId = getUpdatedTransactionId(message.getTransactionId());
+            PaymentRenewal lastRenewal = recurringPaymentManagerService.getRenewalById(message.getTransactionId());
+            String txnId = getUpdatedTransactionId(message.getTransactionId(), lastRenewal);
             MerchantTransaction merchantTransaction = getMerchantData(txnId);
             if(merchantTransaction == null) {
                 throw new WynkRuntimeException(PAY111, "merchant data is null");

@@ -111,7 +111,7 @@ public interface PaymentConstants extends BaseConstants {
     ArrayList<String> ERROR_REASONS = new ArrayList<>(
             Arrays.asList("mandate status is: revoked", "|Mandate has been revoked", "mandate status is: pause", "Card has been classified as lost and has been blocked.",
                     "|Execution Request Already Initiated",
-                    "Mandated SI transactions, consent transaction is not enrolled for SI", "Mandated SI transactions, Recurring transaction already processed for the given invoice",
+                    "Mandated SI transactions, consent transaction is not enrolled for SI",
                     "PDN Failed. Mandate is not Active", "Mandate is in FAILURE state. Recurring cannot be executed", "Mandate is in CREATED state. Recurring cannot be executed",
                     "Mandate is in REVOKED state. Recurring cannot be executed", "PDN Failed. Unable to process the request with PG. Please try again", "Mandate is already pause",
                     "Mandate is already revoked", "PDN Failed. Consent is Not Enrolled Or Not IN Active State", "PDN Failed. Gateway not supported."));

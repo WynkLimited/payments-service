@@ -124,11 +124,11 @@ public class RedirectToPaymentPagePresentation implements
         }
     }
 
-    public SessionResponse getPlanPageUrl (SessionRequest request) {
-        if (request.getService().equalsIgnoreCase(MUSIC) && request.getAppId().equalsIgnoreCase(WEB) && (request.getOs().equalsIgnoreCase(WEBOS)
-                || request.getOs()
-                .equalsIgnoreCase(M_WEBOS))) {
+    public SessionResponse getPlanPageUrl(SessionRequest request) {
+        if (request.getService().equalsIgnoreCase(MUSIC)) {
             return getSession(request, purchaseUrl);
+        } else if (request.getService().equalsIgnoreCase(XSTREAM) ){
+            return getSession(request, manageUrl);
         }
         return getSession(request, manageUrl);
     }

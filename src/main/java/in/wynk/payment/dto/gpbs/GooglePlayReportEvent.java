@@ -19,6 +19,8 @@ public class GooglePlayReportEvent {
     @Analysed
     private String transactionId;
     @Analysed
+    private String paymentEvent;
+    @Analysed
     private String service;
     @Analysed
     private Price currentPreTaxAmount;

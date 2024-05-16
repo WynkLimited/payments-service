@@ -590,7 +590,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
             ResponseEntity<GooglePlayReportResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(body, headers), GooglePlayReportResponse.class);
             if (responseEntity.getStatusCode() == HttpStatus.OK) {
                 GooglePlayReportResponse response = responseEntity.getBody();
-                eventPublisher.publishEvent(GooglePlayReportEvent.builder().transactionId(response.getExternalTransactionId())
+                eventPublisher.publishEvent(GooglePlayReportEvent.builder().transactionId(response.getExternalTransactionId()).paymentEvent(paymentEvent.getValue())
                         .transactionState(response.getTransactionState()).createTime(response.getCreateTime())
                         .currentPreTaxAmount(response.getCurrentPreTaxAmount()).currentTaxAmount(response.getCurrentTaxAmount())
                         .service(MerchantServiceUtil.getService(response.getPackageName())).isTestPurchase(Objects.nonNull(response.getTestPurchase())).build());

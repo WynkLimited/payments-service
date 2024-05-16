@@ -22,4 +22,6 @@ public class ExternalTransactionReportEvent {
     private String externalTokenReferenceId;
     @Analysed
     private PaymentEvent paymentEvent;
+    @Analysed
+    private String initialTransactionId;
 }

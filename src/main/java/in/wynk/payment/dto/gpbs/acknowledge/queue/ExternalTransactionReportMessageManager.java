@@ -23,7 +23,9 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 @NoArgsConstructor
 @AllArgsConstructor
 @AnalysedEntity
-@WynkQueue(queueName = "${payment.pooling.queue.externalTransaction.report.name}", producerType = ProducerType.QUARTZ_MESSAGE_PRODUCER, quartz = @WynkQueue.QuartzConfiguration(expression = "T(java.util.Arrays).asList(60, 60, 60, 60, 120, 300, 300, 300, 890, 890, 2400, 3600, 79200, 172800, 179800).get(#n)", publishUntil = 1, publishUntilUnit = TimeUnit.DAYS))
+@WynkQueue(queueName = "${payment.pooling.queue.externalTransaction.report.name}", producerType = ProducerType.QUARTZ_MESSAGE_PRODUCER,
+        quartz = @WynkQueue.QuartzConfiguration(expression = "T(java.util.Arrays).asList(60, 60, 60, 60, 120, 300, 300, 300, 890, 890, 2400, 3600, 79200, 172800, 179800).get(#n)", publishUntil = 1,
+                publishUntilUnit = TimeUnit.DAYS))
 public class ExternalTransactionReportMessageManager extends AbstractExternalTransactionReportMessage implements MessageToEventMapper<ExternalTransactionReportMessageThresholdEvent> {
     @Builder.Default
     private String clientAlias = ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT);
@@ -31,6 +33,7 @@ public class ExternalTransactionReportMessageManager extends AbstractExternalTra
     @Override
     public ExternalTransactionReportMessageThresholdEvent map () {
         return ExternalTransactionReportMessageThresholdEvent.builder().transactionId(getTransactionId()).externalTransactionId(getExternalTransactionId()).paymentEvent(this.getPaymentEvent())
+                .initialTransactionId(getInitialTransactionId())
                 .build();
     }
 }

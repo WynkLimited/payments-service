@@ -10,9 +10,9 @@ import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.coupon.core.dao.entity.Coupon;
+import in.wynk.coupon.core.dao.entity.CouponCodeLink;
 import in.wynk.coupon.core.dao.entity.UserCouponAvailedRecord;
 import in.wynk.coupon.core.dao.repository.AvailedCouponsDao;
-import in.wynk.coupon.core.dao.entity.CouponCodeLink;
 import in.wynk.coupon.core.service.CouponCachingService;
 import in.wynk.coupon.core.service.ICouponCodeLinkService;
 import in.wynk.data.dto.IEntityCacheService;
@@ -70,7 +70,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     private final ApplicationEventPublisher eventPublisher;
     private final IMerchantTransactionService merchantTransactionService;
 
-    private Transaction upsert(Transaction transaction) {
+    private Transaction upsert (Transaction transaction) {
         Transaction persistedEntity = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).save(transaction);
         final TransactionSnapshotEvent.TransactionSnapshotEventBuilder builder = TransactionSnapshotEvent.builder().transaction(transaction);
         Optional.ofNullable(purchaseDetailsManger.get(transaction)).ifPresent(builder::purchaseDetails);
@@ -80,22 +80,24 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     }
 
     @Override
-    public Transaction get(String id) {
-        return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).findById(id).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY010, id));
+    public Transaction get (String id) {
+        return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).findById(id)
+                .orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY010, id));
     }
 
     @Override
-    public Set<Transaction> getAll(Set<String> idList) {
+    public Set<Transaction> getAll (Set<String> idList) {
         return idList.stream().map(this::get).collect(Collectors.toSet());
     }
 
-    public List<Transaction> saveAll(List<Transaction> transactionsList) {
+    public List<Transaction> saveAll (List<Transaction> transactionsList) {
         return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).saveAll(transactionsList);
     }
 
     //Update new uid in all transactions & update uid in receipt_details
-    public void migrateOldTransactions(String userId, String uid, String oldUid, String service) {
-        final List<ReceiptDetails> allReceiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByUid(oldUid);
+    public void migrateOldTransactions (String userId, String uid, String oldUid, String service) {
+        final List<ReceiptDetails> allReceiptDetails =
+                RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByUid(oldUid);
         //update new uid in all transactions
         updateTransactions(userId, uid, allReceiptDetails);
         //update new uid in all receipts
@@ -105,7 +107,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         applicationEventPublisher.publishEvent(PaymentUserDeactivationMigrationEvent.builder().id(userId).uid(uid).oldUid(oldUid).build());
     }
 
-    private void updateCouponData(String uid, String oldUid) {
+    private void updateCouponData (String uid, String oldUid) {
         try {
             AvailedCouponsDao availedCouponsRepository = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse("paymentApi"), AvailedCouponsDao.class);
             availedCouponsRepository.findById(oldUid).ifPresent(userCouponAvailedRecord -> availedCouponsRepository
@@ -120,7 +122,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         }
     }
 
-    private void updateReceiptDetails(String uid, String service, List<ReceiptDetails> allReceiptDetails) {
+    private void updateReceiptDetails (String uid, String service, List<ReceiptDetails> allReceiptDetails) {
         try {
             if (!CollectionUtils.isEmpty(allReceiptDetails)) {
                 allReceiptDetails.forEach(receiptDetails -> {
@@ -139,7 +141,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         }
     }
 
-    private void updateTransactions(String userId, String uid, List<ReceiptDetails> allReceiptDetails) {
+    private void updateTransactions (String userId, String uid, List<ReceiptDetails> allReceiptDetails) {
         try {
             List<String> transactionIds = purchaseDetailsManger.getByUserId(userId);
             if (Objects.nonNull(transactionIds)) {
@@ -162,7 +164,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         }
     }
 
-    private Transaction initTransaction(Transaction txn, String originalTransactionId) {
+    private Transaction initTransaction (Transaction txn, String originalTransactionId) {
         Transaction transaction = upsert(txn);
         Session<String, SessionDTO> session = SessionContextHolder.get();
         if (Objects.nonNull(session) && Objects.nonNull(session.getBody())) {
@@ -187,9 +189,11 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     }
 
     @Override
-    public Transaction init(AbstractTransactionInitRequest transactionInitRequest) {
-        PurchaseDetails purchaseDetails= null;
-        final Transaction transaction = PlanTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass()) ? initPlanTransaction((PlanTransactionInitRequest) transactionInitRequest) : initPointTransaction((PointTransactionInitRequest) transactionInitRequest);
+    public Transaction init (AbstractTransactionInitRequest transactionInitRequest) {
+        PurchaseDetails purchaseDetails = null;
+        final Transaction transaction =
+                PlanTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass()) ? initPlanTransaction((PlanTransactionInitRequest) transactionInitRequest) :
+                        initPointTransaction((PointTransactionInitRequest) transactionInitRequest);
         if (Objects.nonNull(transactionInitRequest.getTxnId())) {
             final String oldTransactionId = transactionInitRequest.getTxnId();
             final Transaction oldTransaction = get(oldTransactionId);
@@ -210,13 +214,13 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             }
         }
         final TransactionDetails.TransactionDetailsBuilder transactionDetailsBuilder = TransactionDetails.builder();
-        Optional.ofNullable(Objects.isNull(purchaseDetails) ? purchaseDetailsManger.get(transaction): purchaseDetails ).ifPresent(transactionDetailsBuilder::purchaseDetails);
+        Optional.ofNullable(Objects.isNull(purchaseDetails) ? purchaseDetailsManger.get(transaction) : purchaseDetails).ifPresent(transactionDetailsBuilder::purchaseDetails);
         TransactionContext.set(transactionDetailsBuilder.transaction(transaction).build());
         return transaction;
     }
 
     @Override
-    public Transaction init(AbstractTransactionInitRequest transactionInitRequest, IPurchaseDetails purchaseDetails) {
+    public Transaction init (AbstractTransactionInitRequest transactionInitRequest, IPurchaseDetails purchaseDetails) {
         if (PlanTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass())) {
             final Transaction transaction = initPlanTransaction((PlanTransactionInitRequest) transactionInitRequest);
             purchaseDetailsManger.save(transaction, purchaseDetails);
@@ -232,7 +236,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     }
 
     @Override
-    public Transaction init(AbstractTransactionInitRequest transactionInitRequest, AbstractPaymentChargingRequest request) {
+    public Transaction init (AbstractTransactionInitRequest transactionInitRequest, AbstractPaymentChargingRequest request) {
         if (PlanTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass())) {
             final Transaction transaction = initPlanTransaction((PlanTransactionInitRequest) transactionInitRequest);
             purchaseDetailsManger.save(transaction, request);
@@ -240,7 +244,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             return transaction;
         } else if (PointTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass())) {
             final Transaction transaction = initPointTransaction((PointTransactionInitRequest) transactionInitRequest);
-            PointDetails productDetails=((PointDetails)request.getProductDetails());
+            PointDetails productDetails = ((PointDetails) request.getProductDetails());
             productDetails.setTitle(null);
             purchaseDetailsManger.save(transaction, request);
             TransactionContext.set(TransactionDetails.builder().transaction(transaction).request(request).build());
@@ -249,18 +253,24 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         return init(transactionInitRequest);
     }
 
-    private Transaction initPlanTransaction(PlanTransactionInitRequest transactionInitRequest) {
-        Transaction txn = Transaction.builder().paymentChannel(transactionInitRequest.getPaymentGateway().name()).clientAlias(transactionInitRequest.getClientAlias()).type(transactionInitRequest.getEvent().name()).discount(transactionInitRequest.getDiscount()).mandateAmount(transactionInitRequest.getMandateAmount()).coupon(transactionInitRequest.getCouponId()).planId(transactionInitRequest.getPlanId()).amount(transactionInitRequest.getAmount()).msisdn(transactionInitRequest.getMsisdn()).status(transactionInitRequest.getStatus()).uid(transactionInitRequest.getUid()).initTime(Calendar.getInstance()).consent(Calendar.getInstance()).build();
+    private Transaction initPlanTransaction (PlanTransactionInitRequest transactionInitRequest) {
+        Transaction txn = Transaction.builder().paymentChannel(transactionInitRequest.getPaymentGateway().name()).clientAlias(transactionInitRequest.getClientAlias())
+                .type(transactionInitRequest.getEvent().name()).discount(transactionInitRequest.getDiscount()).mandateAmount(transactionInitRequest.getMandateAmount())
+                .coupon(transactionInitRequest.getCouponId()).planId(transactionInitRequest.getPlanId()).amount(transactionInitRequest.getAmount()).msisdn(transactionInitRequest.getMsisdn())
+                .status(transactionInitRequest.getStatus()).uid(transactionInitRequest.getUid()).initTime(Calendar.getInstance()).consent(Calendar.getInstance()).build();
         return initTransaction(txn, transactionInitRequest.getTxnId());
     }
 
-    private Transaction initPointTransaction(PointTransactionInitRequest transactionInitRequest) {
-        Transaction txn = Transaction.builder().paymentChannel(transactionInitRequest.getPaymentGateway().name()).clientAlias(transactionInitRequest.getClientAlias()).type(transactionInitRequest.getEvent().name()).discount(transactionInitRequest.getDiscount()).coupon(transactionInitRequest.getCouponId()).itemId(transactionInitRequest.getItemId()).amount(transactionInitRequest.getAmount()).msisdn(transactionInitRequest.getMsisdn()).status(transactionInitRequest.getStatus()).uid(transactionInitRequest.getUid()).initTime(Calendar.getInstance()).consent(Calendar.getInstance()).build();
+    private Transaction initPointTransaction (PointTransactionInitRequest transactionInitRequest) {
+        Transaction txn = Transaction.builder().paymentChannel(transactionInitRequest.getPaymentGateway().name()).clientAlias(transactionInitRequest.getClientAlias())
+                .type(transactionInitRequest.getEvent().name()).discount(transactionInitRequest.getDiscount()).coupon(transactionInitRequest.getCouponId()).itemId(transactionInitRequest.getItemId())
+                .amount(transactionInitRequest.getAmount()).msisdn(transactionInitRequest.getMsisdn()).status(transactionInitRequest.getStatus()).uid(transactionInitRequest.getUid())
+                .initTime(Calendar.getInstance()).consent(Calendar.getInstance()).build();
         return initTransaction(txn, transactionInitRequest.getTxnId());
     }
 
     @Override
-    public void revision(AbstractTransactionRevisionRequest request) {
+    public void revision (AbstractTransactionRevisionRequest request) {
         try {
             if (!EnumSet.of(PaymentEvent.POINT_PURCHASE, PaymentEvent.REFUND).contains(request.getTransaction().getType())) {
                 if (EnumSet.of(PaymentEvent.UNSUBSCRIBE, PaymentEvent.CANCELLED).contains(request.getTransaction().getType())) {
@@ -300,11 +310,21 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
 
     private void initiateTransactionReportToMerchant (Transaction transaction) {
         try {
-            MerchantTransaction merchantData = merchantTransactionService.getMerchantTransaction(transaction.getIdStr());
+            String initialTxnId = null;
+            if (transaction.getType() == PaymentEvent.RENEW) {
+                PaymentRenewal renewal = recurringPaymentManagerService.getRenewalById(transaction.getIdStr());
+                initialTxnId = renewal.getInitialTransactionId();
+            }
+            MerchantTransaction merchantData = merchantTransactionService.getMerchantTransaction((initialTxnId != null) ? initialTxnId : transaction.getIdStr());
             if (Objects.nonNull(merchantData.getExternalTokenReferenceId())) {
                 AnalyticService.update(EXTERNAL_TRANSACTION_TOKEN, merchantData.getExternalTokenReferenceId());
-                eventPublisher.publishEvent(ExternalTransactionReportEvent.builder().transactionId(transaction.getIdStr()).externalTokenReferenceId(merchantData.getExternalTokenReferenceId())
-                        .clientAlias(transaction.getClientAlias()).paymentEvent(transaction.getType()).build());
+                ExternalTransactionReportEvent.ExternalTransactionReportEventBuilder builder =
+                        ExternalTransactionReportEvent.builder().transactionId(transaction.getIdStr()).externalTokenReferenceId(merchantData.getExternalTokenReferenceId())
+                                .clientAlias(transaction.getClientAlias()).paymentEvent(transaction.getType());
+                if (transaction.getType() == PaymentEvent.RENEW) {
+                    builder.initialTransactionId(initialTxnId);
+                }
+                eventPublisher.publishEvent(builder.build());
             }
         } catch (Exception ignored) {
         }
@@ -317,7 +337,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         eventPublisher.publishEvent(event);
     }
 
-    private void publishAnalytics(Transaction transaction) {
+    private void publishAnalytics (Transaction transaction) {
         AnalyticService.update(UID, transaction.getUid());
         AnalyticService.update(MSISDN, transaction.getMsisdn());
         AnalyticService.update(PLAN_ID, transaction.getPlanId());

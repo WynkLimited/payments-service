@@ -511,7 +511,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         } else if (GooglePlayProductAcknowledgementRequest.class.isAssignableFrom(abstractPaymentAcknowledgementRequest.getClass())) {
             consumeProduct((AbstractAcknowledgement) abstractPaymentAcknowledgementRequest);
         } else {
-            reportExternalTransactionSubscription((GooglePlayReportExternalTransactionRequest) abstractPaymentAcknowledgementRequest, abstractPaymentAcknowledgementRequest.getTxnId());
+            reportExternalTransactionSubscription((GooglePlayReportExternalTransactionRequest) abstractPaymentAcknowledgementRequest);
         }
     }
 
@@ -549,7 +549,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     }
 
     @AnalyseTransaction(name = "externalTransactionAcknowledgement")
-    public void reportExternalTransactionSubscription (GooglePlayReportExternalTransactionRequest request, String txnId) {
+    public void reportExternalTransactionSubscription (GooglePlayReportExternalTransactionRequest request) {
         AnalyticService.update(request);
         final MsisdnOperatorDetails operatorDetails = userDetailsService.getOperatorDetails(request.getTransaction().getMsisdn());
         final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(request.getClientAlias());
@@ -579,17 +579,10 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         } else if (EnumSet.of(PURCHASE, POINT_PURCHASE).contains(paymentEvent)) {
             body = builder.oneTimeTransaction(OneTimeExternalTransaction.builder().externalTransactionToken(request.getExternalTransactionToken()).build()).build();
         } else if (paymentEvent == RENEW) {
-            Optional<PaymentRenewal> renewalOptional =
-                    RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class)
-                            .findById(request.getTransaction().getIdStr());
-            if (renewalOptional.isPresent()) {
-                body = builder.recurringTransaction(
-                        RecurringExternalTransaction.builder().initialExternalTransactionId(renewalOptional.get().getInitialTransactionId())
-                                .externalSubscription(ExternalSubscription.builder().subscriptionType(SubscriptionType.RECURRING).build())
-                                .build()).build();
-            } else {
-                throw new WynkRuntimeException("Unable to report renewal transactions to google");
-            }
+            body = builder.recurringTransaction(
+                    RecurringExternalTransaction.builder().initialExternalTransactionId(request.getInitialTransactionId())
+                            .externalSubscription(ExternalSubscription.builder().subscriptionType(SubscriptionType.RECURRING).build())
+                            .build()).build();
         }
         HttpHeaders headers = getHeaders(service);
         String url = baseUrl.concat(packageName).concat(externalPurchase).concat(request.getTransaction().getIdStr()).concat(ETERNAL_TRANSACTION_API_KEY_PARAM).concat(getApiKey(service));

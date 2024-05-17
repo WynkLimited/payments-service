@@ -179,11 +179,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     public WynkResponseEntity<Void> doRenewal (PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
         Transaction transaction = TransactionContext.get();
         PlanPeriodDTO planPeriodDTO = cachingService.getPlan(transaction.getPlanId()).getPeriod();
-        String txnId = paymentRenewalChargingRequest.getId();
-        PaymentRenewal renewal = recurringPaymentManagerService.getRenewalById(txnId);
-        if (Objects.nonNull(renewal) && StringUtils.isNotBlank(renewal.getLastSuccessTransactionId())) {
-            txnId = renewal.getLastSuccessTransactionId();
-        }
+        String txnId = getUpdatedTransactionId(paymentRenewalChargingRequest.getId());
         MerchantTransaction merchantTransaction = getMerchantData(txnId);
         PayUVerificationResponse<PayUChargingTransactionDetails> currentStatus =
                 (merchantTransaction == null) ? syncChargingTransactionFromSource(transactionManagerService.get(txnId), Optional.empty()) : null;
@@ -214,7 +210,9 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                     } else if (transaction.getInitTime().getTimeInMillis() < System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
                             StringUtils.equalsIgnoreCase(PENDING, payUChargingTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.FAILURE.getValue());
-                        eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description("Transaction init time is less than current - 1").build());
+                        eventPublisher.publishEvent(
+                                PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description("Transaction init time is less than current - 1")
+                                        .build());
                     }
                 } else {
                     transaction.setStatus(TransactionStatus.FAILURE.getValue());
@@ -230,6 +228,27 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             throw e;
         }
         return WynkResponseEntity.<Void>builder().build();
+    }
+
+    private String getUpdatedTransactionId (String txnId) {
+        String updatedTransactionId = txnId;
+        PaymentRenewal lastRenewal = recurringPaymentManagerService.getRenewalById(updatedTransactionId);
+        if (Objects.nonNull(lastRenewal)) {
+            if (StringUtils.isNotBlank(lastRenewal.getInitialTransactionId())) {
+                updatedTransactionId = lastRenewal.getInitialTransactionId();
+            } else if (StringUtils.isNotBlank(lastRenewal.getLastSuccessTransactionId())) {
+                log.error("Initial transaction id is null but not the  last success transaction id {}", lastRenewal.getLastSuccessTransactionId());
+                PaymentRenewal lastToLastRenewal = recurringPaymentManagerService.getRenewalById(lastRenewal.getLastSuccessTransactionId());
+                if (StringUtils.isNotBlank(lastToLastRenewal.getInitialTransactionId())) {
+                    updatedTransactionId = lastToLastRenewal.getInitialTransactionId();
+                } else {
+                    updatedTransactionId =
+                            StringUtils.isNotBlank(lastToLastRenewal.getLastSuccessTransactionId()) ? lastToLastRenewal.getLastSuccessTransactionId() : lastRenewal.getLastSuccessTransactionId();
+                }
+
+            }
+        }
+        return updatedTransactionId;
     }
 
     private String findPayuErrorMessage (PayUChargingTransactionDetails payUChargingTransactionDetails) {
@@ -821,7 +840,11 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     public AbstractPreDebitNotificationResponse notify (PreDebitNotificationMessage message) {
         try {
             LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
-            MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(message.getTransactionId());
+            String txnId = getUpdatedTransactionId(message.getTransactionId());
+            MerchantTransaction merchantTransaction = getMerchantData(txnId);
+            if(merchantTransaction == null) {
+                throw new WynkRuntimeException(PAY111, "merchant data is null");
+            }
             Transaction transaction = transactionManagerService.get(message.getTransactionId());
             orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, merchantTransaction.getExternalTransactionId());
             orderedMap.put(PAYU_REQUEST_ID, UUIDs.timeBased());

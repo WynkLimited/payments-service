@@ -2,6 +2,7 @@ package in.wynk.payment.utils;
 
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
@@ -10,9 +11,11 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PageResponseDetails;
-import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayLatestReceiptResponse;
 import in.wynk.payment.dto.gpbs.request.GooglePlayPaymentDetails;
 import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
+import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayLatestReceiptResponse;
+import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayProductReceiptResponse;
+import in.wynk.payment.dto.gpbs.response.receipt.GooglePlaySubscriptionReceiptResponse;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
 import in.wynk.payment.dto.response.gpbs.GooglePlayBillingResponse;
 import in.wynk.session.context.SessionContextHolder;
@@ -29,23 +32,22 @@ import static in.wynk.payment.dto.gpbs.GooglePlayConstant.*;
 public class MerchantServiceUtil {
 
     public static GooglePlayBillingResponse.GooglePlayBillingData getUrl (Transaction transaction, LatestReceiptResponse latestReceiptResponse,
-                                                                          GooglePlayBillingResponse.GooglePlayBillingData.GooglePlayBillingDataBuilder builder){
+                                                                          GooglePlayBillingResponse.GooglePlayBillingData.GooglePlayBillingDataBuilder builder) {
         SessionDTO sessionDTO = SessionContextHolder.getBody();
         Map<String, Object> payload = null;
-        if(Objects.nonNull(sessionDTO)) {
-             payload = sessionDTO.getSessionPayload();
+        if (Objects.nonNull(sessionDTO)) {
+            payload = sessionDTO.getSessionPayload();
         }
         if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
             GooglePlayLatestReceiptResponse googlePlayVerificationResponse = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
 
-            GooglePlayPaymentDetails paymentDetails =
-                    GooglePlayPaymentDetails.builder().valid(true).orderId(googlePlayVerificationResponse.getSubscriptionId()).purchaseToken(googlePlayVerificationResponse.getPurchaseToken()).build();
+            GooglePlayPaymentDetails paymentDetails = GooglePlayPaymentDetails.builder().valid(true).orderId(googlePlayVerificationResponse.getSubscriptionId())
+                    .purchaseToken(googlePlayVerificationResponse.getPurchaseToken()).build();
             builder.paymentDetails(paymentDetails);
 
             if (latestReceiptResponse.getSuccessUrl() != null || Objects.nonNull(payload.get("successWebUrl"))) {
-                builder.pageDetails(
-                        PageResponseDetails.builder().pageUrl(Objects.nonNull(latestReceiptResponse.getSuccessUrl()) ? latestReceiptResponse.getSuccessUrl() : (String) payload.get("successWebUrl"))
-                                .build());
+                builder.pageDetails(PageResponseDetails.builder().pageUrl(Objects.nonNull(latestReceiptResponse.getSuccessUrl()) ? latestReceiptResponse.getSuccessUrl()
+                        : (String) payload.get("successWebUrl")).build());
             } else {
                 addSuccessUrl(builder);
             }
@@ -61,35 +63,48 @@ public class MerchantServiceUtil {
         return builder.build();
     }
 
-    public static PaymentEvent getGooglePlayEvent (GooglePlayVerificationRequest gRequest, GooglePlayLatestReceiptResponse gResponse) {
+    public static PaymentEvent getGooglePlayEvent (GooglePlayVerificationRequest gRequest, GooglePlayLatestReceiptResponse gResponse, String productType) {
         //if call is for linkedPurchaseToken, payment event should be cancelled for this old purchaseToken
-       if(Objects.nonNull(gResponse.getGooglePlayResponse().getLinkedPurchaseToken()) && gResponse.getPurchaseToken().equalsIgnoreCase(gResponse.getGooglePlayResponse().getLinkedPurchaseToken())){
-            return PaymentEvent.CANCELLED;
-        }
         Integer notificationType = gRequest.getPaymentDetails().getNotificationType();
-        switch (notificationType) {
-            case 1:
-            case 2:
-            case 7:
-            case 8:
-                return PaymentEvent.RENEW;
-            case 3:
-                if (Long.parseLong(gResponse.getGooglePlayResponse().getExpiryTimeMillis()) < System.currentTimeMillis()) {
-                    return PaymentEvent.CANCELLED;
-                } else {
-                    return PaymentEvent.UNSUBSCRIBE;
-                }
-            case 4:
-                return PaymentEvent.PURCHASE;
-            case 5:
-            case 10:
+        if (BaseConstants.POINT.equals(productType)) {
+            GooglePlayProductReceiptResponse productReceiptResponse = (GooglePlayProductReceiptResponse) gResponse.getGooglePlayResponse();
+            if (productReceiptResponse.getPurchaseState() == 0) {
+                return PaymentEvent.POINT_PURCHASE;
+
+            } else if (productReceiptResponse.getPurchaseState() == 1) {
                 return PaymentEvent.CANCELLED;
-            case 9:
-                return PaymentEvent.DEFERRED;
-            case 12:
-                return PaymentEvent.UNSUBSCRIBE;
+            }
+        } else {
+            GooglePlaySubscriptionReceiptResponse subscriptionReceiptResponse = ((GooglePlaySubscriptionReceiptResponse) gResponse.getGooglePlayResponse());
+            if (Objects.nonNull(subscriptionReceiptResponse.getLinkedPurchaseToken()) && gResponse.getPurchaseToken().equalsIgnoreCase(subscriptionReceiptResponse.getLinkedPurchaseToken())) {
+                return PaymentEvent.CANCELLED;
+            }
+
+            switch (notificationType) {
+                case 1:
+                case 2:
+                case 7:
+                case 8:
+                    return PaymentEvent.RENEW;
+                case 3:
+                    if (Long.parseLong(subscriptionReceiptResponse.getExpiryTimeMillis()) < System.currentTimeMillis()) {
+                        return PaymentEvent.CANCELLED;
+                    } else {
+                        return PaymentEvent.UNSUBSCRIBE;
+                    }
+                case 4:
+                    return PaymentEvent.PURCHASE;
+                case 5:
+                case 10:
+                    return PaymentEvent.CANCELLED;
+                case 9:
+                    return PaymentEvent.DEFERRED;
+                case 12:
+                    return PaymentEvent.UNSUBSCRIBE;
+            }
+            throw new WynkRuntimeException("This event is not supported");
         }
-        throw new WynkRuntimeException("This event is not supported");
+        throw new WynkRuntimeException("This product type is not supported");
     }
 
     private static void addFailureUrl (GooglePlayBillingResponse.GooglePlayBillingData.GooglePlayBillingDataBuilder builder) {
@@ -160,7 +175,7 @@ public class MerchantServiceUtil {
         return null;
     }
 
-    public static String getPackageFromService(String service) {
+    public static String getPackageFromService (String service) {
         switch (service) {
             case SERVICE_MUSIC:
                 return MUSIC_PACKAGE_NAME;

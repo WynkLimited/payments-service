@@ -11,6 +11,7 @@ import in.wynk.country.core.service.CountryCurrencyDetailsCachingService;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.dto.BestValuePlanPurchaseRequest;
 import in.wynk.payment.dto.PurchaseRequest;
 import in.wynk.payment.service.IPurchaseSessionService;
 import in.wynk.session.constant.SessionConstant;
@@ -25,6 +26,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.net.URISyntaxException;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static in.wynk.common.constant.BaseConstants.*;
@@ -71,6 +73,11 @@ public class PurchaseSessionServiceImpl implements IPurchaseSessionService {
     @Override
     public String init (PurchaseRequest request) {
         return generate(request.toSession());
+    }
+
+    @Override
+    public String init (final BestValuePlanPurchaseRequest request, final Map<String, String> additionalParam) {
+        return generate(request.toSessionWithAdditionalParam(additionalParam));
     }
 
     private String generate (SessionRequest request) {

@@ -17,11 +17,9 @@ import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
+import in.wynk.payment.core.event.PaymentRefundInitEvent;
 import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.aps.common.ApsConstant;
-import in.wynk.payment.dto.aps.common.ApsFailureResponse;
-import in.wynk.payment.dto.aps.common.ApsResponseWrapper;
-import in.wynk.payment.dto.aps.common.CardDetails;
+import in.wynk.payment.dto.aps.common.*;
 import in.wynk.payment.dto.aps.request.status.refund.RefundStatusRequest;
 import in.wynk.payment.dto.aps.response.order.ApsOrderStatusResponse;
 import in.wynk.payment.dto.aps.response.order.OrderInfo;
@@ -31,6 +29,7 @@ import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
 import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.PropertyResolverUtils;
+import in.wynk.payment.utils.RecurringTransactionUtils;
 import in.wynk.vas.client.service.ApsClientService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -88,10 +87,12 @@ public class ApsCommonGatewayService {
     private final ApplicationEventPublisher eventPublisher;
     private final PaymentCachingService cachingService;
     private final IMerchantTransactionService merchantTransactionService;
+    private final RecurringTransactionUtils recurringTransactionUtils;
 
 
     public ApsCommonGatewayService (ResourceLoader resourceLoader, ApsClientService apsClientService, Gson gson, ApplicationEventPublisher eventPublisher,
-                                    @Qualifier("apsHttpTemplate") RestTemplate httpTemplate, ObjectMapper objectMapper, PaymentCachingService cachingService, IMerchantTransactionService merchantTransactionService) {
+                                    @Qualifier("apsHttpTemplate") RestTemplate httpTemplate, ObjectMapper objectMapper, PaymentCachingService cachingService,
+                                    IMerchantTransactionService merchantTransactionService, RecurringTransactionUtils recurringTransactionUtils) {
         this.gson = gson;
         this.objectMapper = objectMapper;
         this.httpTemplate = httpTemplate;
@@ -99,7 +100,8 @@ public class ApsCommonGatewayService {
         this.apsClientService = apsClientService;
         this.eventPublisher = eventPublisher;
         this.cachingService = cachingService;
-        this.merchantTransactionService =  merchantTransactionService;
+        this.merchantTransactionService = merchantTransactionService;
+        this.recurringTransactionUtils = recurringTransactionUtils;
     }
 
     @SneakyThrows
@@ -112,7 +114,7 @@ public class ApsCommonGatewayService {
     public <T> T exchange (String clientAlias, String url, HttpMethod method, String msisdn, Object body, Class<T> target) {
         if (StringUtils.isEmpty(clientAlias)) {
             log.error("client is not loaded for url {}", clientAlias);
-            throw new WynkRuntimeException(PAY044);
+            throw new WynkRuntimeException(APS002);
         }
         try {
             ResponseEntity<String> responseEntity = apsClientService.apsOperations(getLoginId(msisdn), generateToken(url, clientAlias), url, method, body);
@@ -121,18 +123,18 @@ public class ApsCommonGatewayService {
                 if (HttpStatus.OK.name().equals(apsVasResponse.getStatusCode())) {
                     return objectMapper.convertValue(apsVasResponse.getBody(), target);
                 }
-                ApsFailureResponse failureResponse = objectMapper.readValue((String) apsVasResponse.getBody(), ApsFailureResponse.class);
+                ApsFailureResponse failureResponse = objectMapper.readValue((String) responseEntity.getBody(), ApsFailureResponse.class);
                 failureResponse.setStatusCode(apsVasResponse.getStatusCode());
-                throw new WynkRuntimeException(failureResponse.getErrorCode(), failureResponse.getErrorMessage(), failureResponse.getStatusCode());
+                throw new WynkRuntimeException(failureResponse.getErrorCode(), failureResponse.getMessage(), failureResponse.getStatusCode());
             }
-            throw new WynkRuntimeException(PAY041, responseEntity.getStatusCode().name());
+            throw new WynkRuntimeException(APS001, responseEntity.getStatusCode().name());
         } catch (JsonProcessingException ex) {
             throw new WynkRuntimeException("Unknown Object from ApsGateway", ex);
         } catch (Exception e) {
             if (e instanceof WynkRuntimeException) {
                 throw e;
             }
-            throw new WynkRuntimeException(PAY041, e);
+            throw new WynkRuntimeException(APS001, e);
         }
     }
 
@@ -148,7 +150,9 @@ public class ApsCommonGatewayService {
         try {
             final RefundStatusRequest refundStatusRequest = RefundStatusRequest.builder().refundId(refundId).build();
             mBuilder.request(refundStatusRequest);
-            ExternalPaymentRefundStatusResponse externalPaymentRefundStatusResponse = exchange(transaction.getClientAlias(), REFUND_STATUS_ENDPOINT, HttpMethod.POST, getLoginId(transaction.getMsisdn()), refundStatusRequest, ExternalPaymentRefundStatusResponse.class);
+            ExternalPaymentRefundStatusResponse externalPaymentRefundStatusResponse =
+                    exchange(transaction.getClientAlias(), REFUND_STATUS_ENDPOINT, HttpMethod.POST, getLoginId(transaction.getMsisdn()), refundStatusRequest,
+                            ExternalPaymentRefundStatusResponse.class);
             mBuilder.response(externalPaymentRefundStatusResponse);
             mBuilder.externalTransactionId(externalPaymentRefundStatusResponse.getRefundId());
             AnalyticService.update(BaseConstants.EXTERNAL_TRANSACTION_ID, externalPaymentRefundStatusResponse.getRefundId());
@@ -206,6 +210,7 @@ public class ApsCommonGatewayService {
             syncTransactionWithSourceResponse(apsChargeStatusResponses[0]);
             if (transaction.getStatus() == TransactionStatus.FAILURE) {
                 if (!StringUtils.isEmpty(apsChargeStatusResponses[0].getErrorCode()) || !StringUtils.isEmpty(apsChargeStatusResponses[0].getErrorDescription())) {
+                    recurringTransactionUtils.cancelRenewalBasedOnErrorReason(apsChargeStatusResponses[0].getErrorDescription(), transaction);
                     eventPublisher.publishEvent(
                             PaymentErrorEvent.builder(transaction.getIdStr()).code(apsChargeStatusResponses[0].getErrorCode()).description(apsChargeStatusResponses[0].getErrorDescription()).build());
                 }
@@ -217,21 +222,25 @@ public class ApsCommonGatewayService {
             log.error(APS_CHARGING_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to " + e.getMessage());
             throw new WynkRuntimeException(PAY998, e);
         }
-        if (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE) {
-            eventPublisher.publishEvent(builder.build());
-        }
+        eventPublisher.publishEvent(builder.build());
         return apsChargeStatusResponses;
     }
 
     private void syncTransactionWithSourceResponse (ApsChargeStatusResponse apsChargeStatusResponse) {
         TransactionStatus finalTransactionStatus = TransactionStatus.UNKNOWN;
         final Transaction transaction = TransactionContext.get();
-        if ("PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) {
+        if ((!apsChargeStatusResponse.getLob().equals(LOB.AUTO_PAY_REGISTER_WYNK.toString()) && "PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) || (apsChargeStatusResponse.getLob().equals(LOB.AUTO_PAY_REGISTER_WYNK.toString()) && ("PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) && SiRegistrationStatus.ACTIVE == apsChargeStatusResponse.getMandateStatus())) {
             finalTransactionStatus = TransactionStatus.SUCCESS;
             evict(transaction.getMsisdn());
-        } else if ("PAYMENT_FAILED".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus()) || ("PG_FAILED".equalsIgnoreCase(apsChargeStatusResponse.getPgStatus()))) {
+        } else if ((apsChargeStatusResponse.getLob().equals(LOB.AUTO_PAY_REGISTER_WYNK.toString()) && SiRegistrationStatus.ACTIVE != apsChargeStatusResponse.getMandateStatus() && "PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) || ("PAYMENT_FAILED".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) || ("PG_FAILED".equalsIgnoreCase(apsChargeStatusResponse.getPgStatus()))) {
+            if ("PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) {
+                eventPublisher.publishEvent(PaymentRefundInitEvent.builder()
+                        .reason("mandate status was not active")
+                        .originalTransactionId(transaction.getIdStr())
+                        .build());
+            }
             finalTransactionStatus = TransactionStatus.FAILURE;
-        } else if("PAYMENT_PENDING".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus()) || ("PG_PENDING".equalsIgnoreCase(apsChargeStatusResponse.getPgStatus()))) {
+        } else if ("PAYMENT_PENDING".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus()) || ("PG_PENDING".equalsIgnoreCase(apsChargeStatusResponse.getPgStatus()))) {
             finalTransactionStatus = TransactionStatus.INPROGRESS;
         }
         transaction.setStatus(finalTransactionStatus.getValue());
@@ -286,6 +295,7 @@ public class ApsCommonGatewayService {
             syncTransactionWithSourceResponse(apsChargeStatusResponse.getOrderInfo());
             if (transaction.getStatus() == TransactionStatus.FAILURE) {
                 if (!StringUtils.isEmpty(paymentDetails.getErrorCode()) || !StringUtils.isEmpty(paymentDetails.getErrorDescription())) {
+                    recurringTransactionUtils.cancelRenewalBasedOnErrorReason(paymentDetails.getErrorDescription(), transaction);
                     eventPublisher.publishEvent(
                             PaymentErrorEvent.builder(transaction.getIdStr()).code(paymentDetails.getErrorCode())
                                     .description(paymentDetails.getErrorDescription()).build());

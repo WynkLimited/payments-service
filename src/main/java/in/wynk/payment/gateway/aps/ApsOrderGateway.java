@@ -115,7 +115,7 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
             response.setTxnId(txnId);
         } catch (Exception e) {
             log.error("Exception occurred while finding orderId in merchant table for order created with APS");
-            throw new WynkRuntimeException(PaymentErrorType.PAY049, e);
+            throw new WynkRuntimeException(PaymentErrorType.APS010, e);
         }
         return response;
     }

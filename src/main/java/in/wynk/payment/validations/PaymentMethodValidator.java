@@ -52,7 +52,7 @@ public class PaymentMethodValidator<T extends IPaymentMethodValidatorRequest> ex
                 .build();
         EligibilityResult<PaymentMethod> eligibilityResult = BeanLocatorFactory.getBean(AbstractEligibilityService.class).evaluate(abstractEligibilityEvaluation);
        if (!eligibilityResult.isEligible()) throw new WynkRuntimeException(PAY601);
-        if((request.getPaymentDetails().isMandate() || request.getPaymentDetails().isTrialOpted()) && !paymentMethod.isAutoRenewSupported()) throw new WynkRuntimeException(PAY602);
+        if((request.getPaymentDetails().isMandate() || request.getPaymentDetails().isTrialOpted()) && !paymentMethod.isAutoRenewSupported()) throw new WynkRuntimeException(PAY603);
         if(request.getPaymentDetails().isMandate() && request.getPaymentDetails().isTrialOpted()) throw new WynkRuntimeException(PAY608);
        super.handle(request);
     }

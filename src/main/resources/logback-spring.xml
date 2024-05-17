@@ -77,8 +77,24 @@
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
+    <logger name="purchaseAcknowledgeMessage" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+
     <logger name="subscriptionAcknowledgement" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
+    </logger>
+
+    <logger name="productAcknowledgement" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+
+    <logger name="productConsumption" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+
+    <logger name="externalTransactionAcknowledgement" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
 
     <logger name="externalTransactionReportEvent" additivity="false" level="INFO">
@@ -115,6 +131,10 @@
 
     <logger name="userSubscriptionStatus" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
+    </logger>
+
+    <logger name="generateItemEvent" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
 
     <logger name="paymentServerSyncCallback" additivity="false" level="INFO">
@@ -381,6 +401,9 @@
     </logger>
     <logger name="downloadInvoice" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
+    </logger>
+    <logger name="purchaseRequestV3" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
 
     <!-- invoice loggers end -->

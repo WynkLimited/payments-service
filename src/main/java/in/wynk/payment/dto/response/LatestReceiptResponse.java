@@ -15,6 +15,9 @@ public abstract class LatestReceiptResponse {
     private final int planId;
 
     @Analysed
+    private final String itemId;
+
+    @Analysed
     private final String extTxnId;
 
     @Analysed

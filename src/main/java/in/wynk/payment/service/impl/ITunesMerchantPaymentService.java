@@ -532,7 +532,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     }
 
     @Override
-    public PaymentEvent getPaymentEvent(DecodedNotificationWrapper<ItunesCallbackRequest> wrapper) {
+    public PaymentEvent getPaymentEvent(DecodedNotificationWrapper<ItunesCallbackRequest> wrapper, String productType) {
         String notificationType = wrapper.getDecodedNotification().getNotificationType();
         PaymentEvent event;
         if (RENEWAL_NOTIFICATION.contains(notificationType)) {

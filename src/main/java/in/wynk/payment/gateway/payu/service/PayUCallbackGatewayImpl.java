@@ -144,7 +144,7 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
         final String transactionId = transaction.getIdStr();
         final String payUMerchantKey = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_ID);
         final String payUMerchantSecret = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_SECRET);
-        return validateCallbackChecksum(payUMerchantKey, payUMerchantSecret, transactionId, callbackRequest.getStatus(), callbackRequest.getUdf(), callbackRequest.getEmail(), callbackRequest.getFirstName(), String.valueOf(transaction.getPlanId()), transaction.getAmount(), callbackRequest.getResponseHash());
+        return validateCallbackChecksum(payUMerchantKey, payUMerchantSecret, transactionId, callbackRequest.getStatus(), callbackRequest.getUdf(), callbackRequest.getEmail(), callbackRequest.getFirstName(), ((transaction.getType()== PaymentEvent.POINT_PURCHASE) ? transaction.getItemId(): String.valueOf(transaction.getPlanId())), transaction.getAmount(), callbackRequest.getResponseHash());
     }
 
     @SneakyThrows

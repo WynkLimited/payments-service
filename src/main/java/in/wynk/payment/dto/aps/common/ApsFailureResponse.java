@@ -13,6 +13,7 @@ public class ApsFailureResponse {
     private String requestId;
     private String errorCode;
     private String  errorMessage;
+    private String message;
     private String statusCode;
 
     public void setStatusCode (String statusCode) {

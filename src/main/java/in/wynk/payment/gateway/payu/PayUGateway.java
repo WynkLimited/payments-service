@@ -20,6 +20,7 @@ import in.wynk.payment.gateway.*;
 import in.wynk.payment.gateway.payu.service.*;
 import in.wynk.payment.service.*;
 import in.wynk.payment.service.impl.PayUMerchantPaymentService;
+import in.wynk.payment.utils.RecurringTransactionUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -63,16 +64,16 @@ public class PayUGateway extends PayUMerchantPaymentService implements
                        ApplicationEventPublisher eventPublisher,
                        ITransactionManagerService transactionManagerService,
                        IMerchantTransactionService merchantTransactionService,
-                       ISubscriptionServiceManager subscriptionServiceManager,
                        IRecurringPaymentManagerService recurringPaymentManagerService,
+                       RecurringTransactionUtils recurringTransactionUtils,
                        @Qualifier(EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate) {
-        super(gson, mapper, eventPublisher, payCache, merchantTransactionService, errorCodeCache, restTemplate, transactionManagerService, subscriptionServiceManager, recurringPaymentManagerService);
+        super(gson, mapper, eventPublisher, payCache, merchantTransactionService, errorCodeCache, restTemplate, transactionManagerService, recurringPaymentManagerService, recurringTransactionUtils);
         this.statusGateway = new PayUStatusGatewayImpl(commonGateway);
         this.callbackGateway = new PayUCallbackGatewayImpl(commonGateway, mapper, eventPublisher);
         this.refundGateway = new PayURefundGatewayImpl(commonGateway, eventPublisher, transactionManagerService);
         this.verificationGateway = new PayUVerificationGatewayImpl(commonGateway, mapper);
         this.chargeGateway = new PayUChargingGatewayImpl(commonGateway, cache, paymentApi);
-        this.renewalGateway = new PayURenewalGatewayImpl(commonGateway, gson, mapper, payCache, eventPublisher, merchantTransactionService, transactionManagerService, recurringPaymentManagerService);
+        this.renewalGateway = new PayURenewalGatewayImpl(commonGateway, gson, mapper, payCache, eventPublisher, merchantTransactionService, transactionManagerService, recurringPaymentManagerService, recurringTransactionUtils);
         this.iMerchantTDRService = new PayUTdrGatewayServiceImpl(payuInfoApi, commonGateway, merchantTransactionService);
     }
 

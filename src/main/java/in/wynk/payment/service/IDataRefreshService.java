@@ -11,4 +11,6 @@ public interface IDataRefreshService {
     void refreshMerchantTableData (String transactionId, String paymentCode);
 
     void handleCallback (String partner, String applicationAlias, HttpHeaders headers, String payload);
+
+    void handleCallback (String applicationAlias, HttpHeaders headers, String txnId);
 }

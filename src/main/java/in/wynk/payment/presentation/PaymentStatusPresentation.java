@@ -218,7 +218,7 @@ public class PaymentStatusPresentation implements IPaymentPresentation<AbstractC
             } else if (transaction.getStatus() == TransactionStatus.FAILURE) {
                 return WynkResponseEntity.<AbstractAirtelPaymentStatus>builder().data(ChargingStatusResponseV3.failure(transaction.getIdStr(), transaction.getPlanId())).build();
             }
-            throw new WynkRuntimeException(PaymentErrorType.PAY025);
+            throw new WynkRuntimeException(PaymentErrorType.APS006);
             }
         }
 }

@@ -15,10 +15,10 @@ import lombok.experimental.SuperBuilder;
 public abstract class AbstractPaymentRefundResponse {
 
     @Analysed
-    private final int planId;
+    private final Integer planId;
 
     @Analysed
-    private final double amount;
+    private final Double amount;
 
     @Analysed
     private final String uid;

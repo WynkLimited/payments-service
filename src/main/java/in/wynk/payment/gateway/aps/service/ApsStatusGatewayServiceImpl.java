@@ -61,10 +61,10 @@ public class ApsStatusGatewayServiceImpl implements IPaymentStatus<AbstractPayme
             }
             if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
                 log.warn(APS_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at APS end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-                throw new WynkRuntimeException(PaymentErrorType.PAY038);
+                throw new WynkRuntimeException(PaymentErrorType.APS005);
             } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
                 log.warn(APS_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at APS end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-                throw new WynkRuntimeException(PaymentErrorType.PAY025);
+                throw new WynkRuntimeException(PaymentErrorType.APS006);
             }
             return DefaultPaymentStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType()).build();
         }
@@ -79,10 +79,10 @@ public class ApsStatusGatewayServiceImpl implements IPaymentStatus<AbstractPayme
             common.syncRefundTransactionFromSource(transaction, refundRequest.getExtTxnId());
             if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
                 log.warn(APS_REFUND_STATUS_VERIFICATION, "Refund Transaction is still pending at APS end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-                throw new WynkRuntimeException(PaymentErrorType.PAY038);
+                throw new WynkRuntimeException(PaymentErrorType.APS005);
             } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
                 log.warn(APS_REFUND_STATUS_VERIFICATION, "Unknown Refund Transaction status at APS end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-                throw new WynkRuntimeException(PaymentErrorType.PAY025);
+                throw new WynkRuntimeException(PaymentErrorType.APS006);
             }
             return DefaultPaymentStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType()).build();
         }
@@ -96,10 +96,10 @@ public class ApsStatusGatewayServiceImpl implements IPaymentStatus<AbstractPayme
             common.syncChargingTransactionFromSource(transaction, Optional.empty());
             if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
                 log.warn(APS_RENEWAL_STATUS_VERIFICATION, "Renewal transaction is still pending at APS end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-                throw new WynkRuntimeException(PaymentErrorType.PAY038);
+                throw new WynkRuntimeException(PaymentErrorType.APS005);
             } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
                 log.warn(APS_RENEWAL_STATUS_VERIFICATION, "Unknown renewal transaction status at APS end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-                throw new WynkRuntimeException(PaymentErrorType.PAY025);
+                throw new WynkRuntimeException(PaymentErrorType.APS006);
             }
             return DefaultPaymentStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType()).build();
         }

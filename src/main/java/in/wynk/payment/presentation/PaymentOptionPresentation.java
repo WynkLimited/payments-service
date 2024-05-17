@@ -1,7 +1,9 @@
 package in.wynk.payment.presentation;
 
 import in.wynk.common.constant.BaseConstants;
-import in.wynk.common.dto.*;
+import in.wynk.common.dto.GeoLocation;
+import in.wynk.common.dto.IPresentation;
+import in.wynk.common.dto.IWynkPresentation;
 import in.wynk.payment.constant.CardConstants;
 import in.wynk.payment.constant.NetBankingConstants;
 import in.wynk.payment.constant.UpiConstants;
@@ -129,6 +131,8 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                             .id(item.getId())
                             .title(item.getName())
                             .price(item.getPrice())
+                            .discountedPrice(item.getPrice())
+                            .currency("INR")
                             .build();
                 }
                 PointDetails pointDetails=(PointDetails)payload.getFirst().getProductDetails();
@@ -136,6 +140,8 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                         .id(pointDetails.getItemId())
                         .title(pointDetails.getTitle())
                         .price(Objects.nonNull(pointDetails.getPrice()) ? Double.parseDouble(pointDetails.getPrice()) :0.0)
+                        .discountedPrice(Objects.nonNull(pointDetails.getPrice()) ? Double.parseDouble(pointDetails.getPrice()) :0.0)
+                        .currency("INR")
                         .build();
             }
         }

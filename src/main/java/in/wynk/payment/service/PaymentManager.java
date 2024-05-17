@@ -5,6 +5,7 @@ import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.data.utils.RepositoryUtils;
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.AbstractErrorDetails;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponseEntity;
@@ -23,10 +24,12 @@ import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.dto.*;
-import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayLatestReceiptResponse;
+import in.wynk.payment.dto.gpbs.acknowledge.request.AbstractAcknowledgement;
 import in.wynk.payment.dto.gpbs.acknowledge.request.AbstractPaymentAcknowledgementRequest;
+import in.wynk.payment.dto.gpbs.acknowledge.request.GooglePlayProductAcknowledgementRequest;
 import in.wynk.payment.dto.gpbs.acknowledge.request.GooglePlaySubscriptionAcknowledgementRequest;
 import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
+import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayLatestReceiptResponse;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.*;
 import in.wynk.payment.exception.PaymentRuntimeException;
@@ -70,12 +73,13 @@ public class PaymentManager
     public static final Integer PURCHASE_NOTIFICATION_TYPE = 4;
 
     @TransactionAware(txnId = "#request.originalTransactionId")
-    public WynkResponseEntity<AbstractPaymentRefundResponse> refund(PaymentRefundInitRequest request) {
+    public WynkResponseEntity<AbstractPaymentRefundResponse> refund (PaymentRefundInitRequest request) {
         final Transaction originalTransaction = TransactionContext.get();
         try {
             final String externalReferenceId = getExternalReferenceId(request.getOriginalTransactionId());
             final Transaction refundTransaction =
-                    transactionManager.init(DefaultTransactionInitRequestMapper.from(RefundTransactionRequestWrapper.builder().request(request).txnId(originalTransaction.getIdStr()).originalTransaction(originalTransaction).build()));
+                    transactionManager.init(DefaultTransactionInitRequestMapper.from(
+                            RefundTransactionRequestWrapper.builder().request(request).txnId(originalTransaction.getIdStr()).originalTransaction(originalTransaction).build()));
             final IMerchantPaymentRefundService<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest> refundService = BeanLocatorFactory.getBean(refundTransaction.getPaymentChannel().getCode(),
                     new ParameterizedTypeReference<IMerchantPaymentRefundService<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest>>() {
                     });
@@ -85,7 +89,8 @@ public class PaymentManager
                 final AbstractPaymentRefundResponse refundResponse = refundInitResponse.getBody().getData();
                 if (refundResponse.getTransactionStatus() != TransactionStatus.FAILURE) {
                     sqsManagerService.publishSQSMessage(
-                            PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transactionManager.get(request.getOriginalTransactionId()))).paymentCode(refundTransaction.getPaymentChannel().getId()).extTxnId(refundResponse.getExternalReferenceId())
+                            PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transactionManager.get(request.getOriginalTransactionId())))
+                                    .paymentCode(refundTransaction.getPaymentChannel().getId()).extTxnId(refundResponse.getExternalReferenceId())
                                     .transactionId(refundTransaction.getIdStr()).paymentEvent(refundTransaction.getType()).itemId(refundTransaction.getItemId()).planId(refundTransaction.getPlanId())
                                     .msisdn(refundTransaction.getMsisdn()).uid(refundTransaction.getUid()).build());
                 }
@@ -98,7 +103,7 @@ public class PaymentManager
         }
     }
 
-    private String getExternalReferenceId(String originalTransactionId) {
+    private String getExternalReferenceId (String originalTransactionId) {
         try {
             return merchantTransactionService.getPartnerReferenceId(originalTransactionId);
         } catch (Exception e) {
@@ -108,7 +113,7 @@ public class PaymentManager
     }
 
     @Override
-    public WynkResponseEntity<AbstractChargingResponse> charge(AbstractChargingRequest<?> request) {
+    public WynkResponseEntity<AbstractChargingResponse> charge (AbstractChargingRequest<?> request) {
         BeanLocatorFactory.getBean(CHARGING_FRAUD_DETECTION_CHAIN, IHandler.class).handle(request);
         final PaymentGateway paymentGateway = paymentMethodCache.get(request.getPurchaseDetails().getPaymentDetails().getPaymentId()).getPaymentCode();
         final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request.getPurchaseDetails()), request.getPurchaseDetails());
@@ -130,11 +135,15 @@ public class PaymentManager
             }
             return response;
         } finally {
-            eventPublisher.publishEvent(PurchaseInitEvent.builder().clientAlias(transaction.getClientAlias()).transactionId(transaction.getIdStr()).uid(transaction.getUid()).msisdn(transaction
-                    .getMsisdn()).productDetails(request.getPurchaseDetails().getProductDetails()).appDetails(request.getPurchaseDetails().getAppDetails()).sid(Optional.ofNullable(SessionContextHolder
-                    .getId())).build());
+            if (BaseConstants.PLAN.equals(request.getProductDetails().getType())) {
+                eventPublisher.publishEvent(PurchaseInitEvent.builder().clientAlias(transaction.getClientAlias()).transactionId(transaction.getIdStr()).uid(transaction.getUid()).msisdn(transaction
+                                .getMsisdn()).productDetails(request.getPurchaseDetails().getProductDetails()).appDetails(request.getPurchaseDetails().getAppDetails())
+                        .sid(Optional.ofNullable(SessionContextHolder
+                                .getId())).build());
+            }
             sqsManagerService.publishSQSMessage(
-                    PaymentReconciliationMessage.builder().paymentMethodId(request.getPurchaseDetails().getPaymentDetails().getPaymentId()).paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
+                    PaymentReconciliationMessage.builder().paymentMethodId(request.getPurchaseDetails().getPaymentDetails().getPaymentId()).paymentCode(transaction.getPaymentChannel().getId())
+                            .paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
                             .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
             //publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_CHARGING_EVENT).data(getEventsWrapperBuilder(transaction, Optional.ofNullable(request
             // .getPurchaseDetails())).build()).build());
@@ -143,7 +152,7 @@ public class PaymentManager
 
     @Override
     @TransactionAware(txnId = "#request.transactionId")
-    public WynkResponseEntity<AbstractCallbackResponse> handleCallback(CallbackRequestWrapper<?> request) {
+    public WynkResponseEntity<AbstractCallbackResponse> handleCallback (CallbackRequestWrapper<?> request) {
         final PaymentGateway paymentGateway = request.getPaymentGateway();
         final Transaction transaction = TransactionContext.get();
         final TransactionStatus existingStatus = transaction.getStatus();
@@ -166,7 +175,8 @@ public class PaymentManager
         } finally {
             final TransactionStatus finalStatus = TransactionContext.get().getStatus();
             String lastSuccessTransactionId = getLastSuccessTransactionId(transaction);
-            transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
+            transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(existingStatus)
+                    .finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
             //publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_CALLBACK_EVENT).data(getEventsWrapperBuilder(transaction, TransactionContext.getPurchaseDetails())
             // .callbackRequest(request.getBody()).build()).build());
@@ -174,7 +184,7 @@ public class PaymentManager
     }
 
     @ClientAware(clientAlias = "#request.clientAlias")
-    public WynkResponseEntity<Void> handleNotification(NotificationRequest request) {
+    public WynkResponseEntity<Void> handleNotification (NotificationRequest request) {
         final IReceiptDetailService<?, IAPNotification> receiptDetailService =
                 BeanLocatorFactory.getBean(request.getPaymentGateway().getCode(), new ParameterizedTypeReference<IReceiptDetailService<?, IAPNotification>>() {
                 });
@@ -183,9 +193,10 @@ public class PaymentManager
         if (wrapper.isEligible()) {
             final UserPlanMapping<?> mapping = receiptDetailService.getUserPlanMapping(wrapper);
             if (mapping != null) {
-                final in.wynk.common.enums.PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper);
+                final in.wynk.common.enums.PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper, BaseConstants.PLAN);
                 final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
-                        PlanRenewalRequest.builder().planId(mapping.getPlanId()).txnId(mapping.getLinkedTransactionId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentGateway(request.getPaymentGateway())
+                        PlanRenewalRequest.builder().planId(mapping.getPlanId()).txnId(mapping.getLinkedTransactionId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn())
+                                .paymentGateway(request.getPaymentGateway())
                                 .clientAlias(request.getClientAlias()).build());
                 transactionInitRequest.setEvent(event);
                 final Transaction transaction = transactionManager.init(transactionInitRequest);
@@ -196,7 +207,7 @@ public class PaymentManager
         return WynkResponseEntity.<Void>builder().success(false).build();
     }
 
-    private <T> void handleNotification(Transaction transaction, UserPlanMapping<T> mapping) {
+    private <T> void handleNotification (Transaction transaction, UserPlanMapping<T> mapping) {
         final TransactionStatus existingStatus = transaction.getStatus();
         final IPaymentNotificationService<T> notificationService =
                 BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), new ParameterizedTypeReference<IPaymentNotificationService<T>>() {
@@ -209,7 +220,8 @@ public class PaymentManager
         } finally {
             TransactionStatus finalStatus = TransactionContext.get().getStatus();
             String lastSuccessTransactionId = getLastSuccessTransactionId(transaction);
-            transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
+            transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(existingStatus)
+                    .finalTransactionStatus(finalStatus).build());
             if (finalStatus == TransactionStatus.SUCCESS) {
                 //unsubscribe existing transaction plan id/transaction id
                 ItunesReceiptDetails receiptDetails = (ItunesReceiptDetails) mapping.getMessage();
@@ -219,13 +231,19 @@ public class PaymentManager
     }
 
     @TransactionAware(txnId = "#transactionId", lock = false)
-    public WynkResponseEntity<AbstractChargingStatusResponse> status(String transactionId) {
+    public WynkResponseEntity<AbstractChargingStatusResponse> status (String transactionId) {
         final Transaction transaction = TransactionContext.get();
+        if (Objects.isNull(transaction.getPlanId())) {
+            if (Objects.isNull(transaction.getItemId())) {
+                throw new WynkRuntimeException(PaymentErrorType.PAY025);
+            }
+            return internalStatus(ChargingTransactionStatusRequest.builder().transactionId(transactionId).itemId(transaction.getItemId()).build());
+        }
         return internalStatus(ChargingTransactionStatusRequest.builder().transactionId(transactionId).planId(transaction.getPlanId()).build());
     }
 
     @TransactionAware(txnId = "#transactionId", lock = false)
-    public TransactionSnapShot statusV2(String transactionId) {
+    public TransactionSnapShot statusV2 (String transactionId) {
         final Transaction transaction = TransactionContext.get();
         final IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().orElse(null);
         return TransactionSnapShot.builder().transactionDetails(TransactionDetails.builder().transaction(transaction).purchaseDetails(purchaseDetails).build()).build();
@@ -233,7 +251,7 @@ public class PaymentManager
 
     @Override
     @TransactionAware(txnId = "#request.transactionId")
-    public WynkResponseEntity<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest request) {
+    public WynkResponseEntity<AbstractChargingStatusResponse> status (AbstractTransactionReconciliationStatusRequest request) {
         final Transaction transaction = TransactionContext.get();
         final TransactionStatus existingStatus = transaction.getStatus();
         try {
@@ -258,7 +276,7 @@ public class PaymentManager
         }
     }
 
-    private EventsWrapper.EventsWrapperBuilder getEventsWrapperBuilder(Transaction transaction, Optional<IPurchaseDetails> purchaseDetails) {
+    private EventsWrapper.EventsWrapperBuilder getEventsWrapperBuilder (Transaction transaction, Optional<IPurchaseDetails> purchaseDetails) {
         return EventsWrapper.builder()
                 .transaction(transaction)
                 .uid(transaction.getUid())
@@ -286,7 +304,7 @@ public class PaymentManager
     }
 
     @ClientAware(clientId = "#clientId")
-    public BaseResponse<?> doVerifyIap(String clientId, IapVerificationRequest request) {
+    public BaseResponse<?> doVerifyIap (String clientId, IapVerificationRequest request) {
         final PaymentGateway paymentGateway = request.getPaymentGateway();
         final IMerchantIapPaymentVerificationService verificationService = BeanLocatorFactory.getBean(paymentGateway.getCode(), IMerchantIapPaymentVerificationService.class);
         final LatestReceiptResponse latestReceiptResponse = verificationService.getLatestReceiptResponse(request);
@@ -307,13 +325,14 @@ public class PaymentManager
         } finally {
             final TransactionStatus finalStatus = transaction.getStatus();
             String lastSuccessTransactionId = getLastSuccessTransactionId(transaction);
-            transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus).build());
+            transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(initialStatus)
+                    .finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(initialStatus, finalStatus, transaction);
         }
     }
 
     @ClientAware(clientId = "#clientId")
-    public BaseResponse<?> doVerifyIap(String clientId, IapVerificationRequestV2Wrapper requestWrapper) {
+    public BaseResponse<?> doVerifyIap (String clientId, IapVerificationRequestV2Wrapper requestWrapper) {
         IapVerificationRequestV2 request = requestWrapper.getIapVerificationV2();
         String paymentCode = request.getPaymentCode().getCode();
         LatestReceiptResponse latestReceiptResponse = requestWrapper.getLatestReceiptResponse();
@@ -342,33 +361,49 @@ public class PaymentManager
         } finally {
             final TransactionStatus finalStatus = transaction.getStatus();
             String lastSuccessTransactionId = getLastSuccessTransactionId(transaction);
-            transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus).build());
+            transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(initialStatus)
+                    .finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(initialStatus, finalStatus, transaction);
-            if (transaction.getStatus() == TransactionStatus.SUCCESS) {
-                publishAsync(Objects.requireNonNull(getRequest(request, latestReceiptResponse)));
+            if ((transaction.getStatus() == TransactionStatus.SUCCESS) && (request.getPaymentCode().getCode().equals(BeanConstant.GOOGLE_PLAY))) {
+                AbstractAcknowledgement acknowledgementRequest = getRequest(request, latestReceiptResponse, transaction);
+                if(Objects.nonNull(acknowledgementRequest)) {
+                    publishAsync(acknowledgementRequest);
+                }
             }
         }
     }
 
-    private AbstractPaymentAcknowledgementRequest getRequest(IapVerificationRequestV2 request, LatestReceiptResponse latestReceiptResponse) {
-        if (request.getPaymentCode().getCode().equals(BeanConstant.GOOGLE_PLAY)) {
-            GooglePlayLatestReceiptResponse googleResponse = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
-            GooglePlayVerificationRequest googleRequest = (GooglePlayVerificationRequest) request;
+    private AbstractAcknowledgement getRequest (IapVerificationRequestV2 request, LatestReceiptResponse latestReceiptResponse, Transaction transaction) {
+        String txnId = transaction.getIdStr();
+        GooglePlayLatestReceiptResponse googleResponse = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
+        GooglePlayVerificationRequest googleRequest = (GooglePlayVerificationRequest) request;
+        if (transaction.getType() != PaymentEvent.POINT_PURCHASE) {
             return GooglePlaySubscriptionAcknowledgementRequest.builder()
                     .developerPayload(googleResponse.getGooglePlayResponse().getDeveloperPayload())
                     .productDetails(googleRequest.getProductDetails())
                     .appDetails(googleRequest.getAppDetails())
                     .paymentDetails(googleRequest.getPaymentDetails())
                     .paymentCode(request.getPaymentCode().getCode())
+                    .txnId(txnId)
+                    .build();
+        } else if (transaction.getType() == PaymentEvent.POINT_PURCHASE) {
+            return GooglePlayProductAcknowledgementRequest.builder()
+                    .developerPayload(googleResponse.getGooglePlayResponse().getDeveloperPayload())
+                    .productDetails(googleRequest.getProductDetails())
+                    .appDetails(googleRequest.getAppDetails())
+                    .paymentDetails(googleRequest.getPaymentDetails())
+                    .paymentCode(request.getPaymentCode().getCode())
+                    .txnId(txnId)
                     .build();
         }
-        return null;
+       throw new WynkRuntimeException("Exception occurred as type is missing");
     }
 
     @Override
-    public WynkResponseEntity<Void> doRenewal(PaymentRenewalChargingRequest request) {
+    public WynkResponseEntity<Void> doRenewal (PaymentRenewalChargingRequest request) {
         final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
-                PlanRenewalRequest.builder().txnId(request.getId()).planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(request.getPaymentGateway()).clientAlias(request.getClientAlias())
+                PlanRenewalRequest.builder().txnId(request.getId()).planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(request.getPaymentGateway())
+                        .clientAlias(request.getClientAlias())
                         .build());
         final Transaction transaction = transactionManager.init(transactionInitRequest);
         final TransactionStatus initialStatus = transaction.getStatus();
@@ -380,7 +415,8 @@ public class PaymentManager
         } finally {
             if (merchantPaymentRenewalService.supportsRenewalReconciliation()) {
                 sqsManagerService.publishSQSMessage(
-                        PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transactionManager.get(request.getId()))).paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
+                        PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transactionManager.get(request.getId()))).paymentCode(transaction.getPaymentChannel().getId())
+                                .paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
                                 .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid())
                                 .originalAttemptSequence(request.getAttemptSequence() + 1).originalTransactionId(request.getId()).build());
             }
@@ -393,7 +429,7 @@ public class PaymentManager
         }
     }
 
-    public void addToPaymentRenewalMigration(MigrationTransactionRequest request) {
+    public void addToPaymentRenewalMigration (MigrationTransactionRequest request) {
         final Calendar nextChargingDate = Calendar.getInstance();
         final Map<String, String> paymentMetaData = request.getPaymentMetaData();
         nextChargingDate.setTime(request.getNextChargingDate());
@@ -407,29 +443,35 @@ public class PaymentManager
                 .finalTransactionStatus(transaction.getStatus()).build());
     }
 
-    public WynkResponseEntity<WalletTopUpResponse> topUp(WalletTopUpRequest<?> request) {
+    public WynkResponseEntity<WalletTopUpResponse> topUp (WalletTopUpRequest<?> request) {
         BeanLocatorFactory.getBean(CHARGING_FRAUD_DETECTION_CHAIN, IHandler.class).handle(request);
         final PaymentGateway paymentGateway = paymentMethodCache.get(request.getPurchaseDetails().getPaymentDetails().getPaymentId()).getPaymentCode();
         final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request.getPurchaseDetails()));
         sqsManagerService.publishSQSMessage(
-                PaymentReconciliationMessage.builder().paymentMethodId(request.getPurchaseDetails().getPaymentDetails().getPaymentId()).paymentCode(transaction.getPaymentChannel().getId()).transactionId(transaction.getIdStr()).paymentEvent(transaction.getType())
+                PaymentReconciliationMessage.builder().paymentMethodId(request.getPurchaseDetails().getPaymentDetails().getPaymentId()).paymentCode(transaction.getPaymentChannel().getId())
+                        .transactionId(transaction.getIdStr()).paymentEvent(transaction.getType())
                         .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
         return BeanLocatorFactory.getBean(paymentGateway.getCode(), new ParameterizedTypeReference<IWalletTopUpService<WalletTopUpResponse, WalletTopUpRequest<?>>>() {
         }).topUp(request);
     }
 
-    private WynkResponseEntity<AbstractChargingStatusResponse> internalStatus(AbstractTransactionStatusRequest request) {
+    private WynkResponseEntity<AbstractChargingStatusResponse> internalStatus (AbstractTransactionStatusRequest request) {
         final Transaction transaction = TransactionContext.get();
         final PaymentGateway paymentGateway = transaction.getPaymentChannel();
         final IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest> statusService =
                 BeanLocatorFactory.getBean(paymentGateway.getCode(), new ParameterizedTypeReference<IMerchantPaymentStatusService<AbstractChargingStatusResponse, AbstractTransactionStatusRequest>>() {
                 });
-        request.setPlanId(
-                transaction.getType() == in.wynk.common.enums.PaymentEvent.TRIAL_SUBSCRIPTION ? cachingService.getPlan(transaction.getPlanId()).getLinkedFreePlanId() : transaction.getPlanId());
+        if (request.getPlanId() == 0) {
+            request.setItemId(transaction.getItemId());
+        } else {
+            request.setPlanId(
+                    transaction.getType() == in.wynk.common.enums.PaymentEvent.TRIAL_SUBSCRIPTION ? cachingService.getPlan(transaction.getPlanId()).getLinkedFreePlanId() : transaction.getPlanId());
+        }
+
         return statusService.status(request);
     }
 
-    private void exhaustCouponIfApplicable(TransactionStatus existingStatus, TransactionStatus finalStatus, Transaction transaction) {
+    private void exhaustCouponIfApplicable (TransactionStatus existingStatus, TransactionStatus finalStatus, Transaction transaction) {
         if (existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
             if (StringUtils.isNotEmpty(transaction.getCoupon())) {
                 try {
@@ -441,20 +483,20 @@ public class PaymentManager
         }
     }
 
-    private void publishEventsOnReconcileCompletion(TransactionStatus existingStatus, TransactionStatus finalStatus, Transaction transaction) {
+    private void publishEventsOnReconcileCompletion (TransactionStatus existingStatus, TransactionStatus finalStatus, Transaction transaction) {
         eventPublisher.publishEvent(PaymentReconciledEvent.from(transaction));
         if (!EnumSet.of(in.wynk.common.enums.PaymentEvent.REFUND).contains(transaction.getType()) && existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
             eventPublisher.publishEvent(ClientCallbackEvent.from(transaction));
         }
     }
 
-    private void publishBranchEvent(PaymentsBranchEvent paymentsBranchEvent) {
+    private void publishBranchEvent (PaymentsBranchEvent paymentsBranchEvent) {
         eventPublisher.publishEvent(paymentsBranchEvent);
     }
 
     @Override
     @TransactionAware(txnId = "#request.tid", lock = false)
-    public AbstractPaymentSettlementResponse settle(PaymentSettlementRequest request) {
+    public AbstractPaymentSettlementResponse settle (PaymentSettlementRequest request) {
         final Transaction transaction = TransactionContext.get();
         final String pgId = merchantTransactionService.getPartnerReferenceId(request.getTid());
         return BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(),
@@ -464,21 +506,21 @@ public class PaymentManager
 
     @Override
     @TransactionAware(txnId = "#transactionId", lock = false)
-    public BaseTDRResponse getTDR(String transactionId) {
+    public BaseTDRResponse getTDR (String transactionId) {
         final Transaction transaction = TransactionContext.get();
         return BeanLocatorFactory.getBeanOrDefault(transaction.getPaymentChannel().getCode(), IMerchantTDRService.class, nope -> BaseTDRResponse.from(-1)).getTDR(transactionId);
     }
 
 
     @Override
-    public void acknowledgeSubscription(AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
+    public void acknowledgeSubscription (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
         final IMerchantIapSubscriptionAcknowledgementService acknowledgementService =
                 BeanLocatorFactory.getBean(abstractPaymentAcknowledgementRequest.getPaymentCode(), IMerchantIapSubscriptionAcknowledgementService.class);
         acknowledgementService.acknowledgeSubscription(abstractPaymentAcknowledgementRequest);
     }
 
     @Override
-    public void publishAsync(AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
+    public void publishAsync (AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest) {
         final IMerchantIapSubscriptionAcknowledgementService acknowledgementService =
                 BeanLocatorFactory.getBean(abstractPaymentAcknowledgementRequest.getPaymentCode(), IMerchantIapSubscriptionAcknowledgementService.class);
         acknowledgementService.publishAsync(abstractPaymentAcknowledgementRequest);

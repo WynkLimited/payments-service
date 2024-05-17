@@ -16,7 +16,7 @@ import in.wynk.payment.service.ITransactionManagerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpMethod;
 
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY040;
+import static in.wynk.payment.core.constant.PaymentErrorType.APS012;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_MANDATE_REVOKE_ERROR;
 
 /**
@@ -48,7 +48,7 @@ public class ApsCancelMandateGatewayServiceImpl implements ICancellingRecurringS
             MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(transactionId);
             ApsChargeStatusResponse[] apsChargeStatusResponses = mapper.convertValue(merchantTransaction.getResponse(), ApsChargeStatusResponse[].class);
             if (apsChargeStatusResponses.length == 0) {
-                throw new WynkRuntimeException(PAY040, "data is corrupted in merchant table for transaction Id {}" + transactionId);
+                throw new WynkRuntimeException(APS012, "data is corrupted in merchant table for transaction Id {}" + transactionId);
             }
             ApsChargeStatusResponse apsChargeStatusResponse = apsChargeStatusResponses[0];
             CancelMandateRequest mandateCancellationRequest = CancelMandateRequest.builder()
@@ -65,7 +65,7 @@ public class ApsCancelMandateGatewayServiceImpl implements ICancellingRecurringS
             throw ex;
         } catch (Exception e) {
             log.error(APS_MANDATE_REVOKE_ERROR, e.getMessage());
-            throw new WynkRuntimeException(PAY040, e);
+            throw new WynkRuntimeException(APS012, e);
         }
     }
 }

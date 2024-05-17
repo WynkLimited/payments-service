@@ -21,6 +21,7 @@ import in.wynk.payment.dto.payu.PayURefundTransactionDetails;
 import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.PropertyResolverUtils;
+import in.wynk.payment.utils.RecurringTransactionUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
@@ -65,22 +66,25 @@ public class PayUCommonGateway {
     private final ObjectMapper mapper;
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
+    private final RecurringTransactionUtils recurringTransactionUtils;
     @Getter
     private final ICacheService<PaymentMethod, String> cache;
 
-    public PayUCommonGateway(@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ObjectMapper objectMapper, ICacheService<PaymentMethod, String> cache, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher) {
+    public PayUCommonGateway (@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ObjectMapper objectMapper, ICacheService<PaymentMethod, String> cache,
+                              PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, RecurringTransactionUtils recurringTransactionUtils) {
         this.cache = cache;
         this.restTemplate = restTemplate;
         this.mapper = objectMapper;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
+        this.recurringTransactionUtils = recurringTransactionUtils;
     }
 
-    public  <T> T exchange(String uri, MultiValueMap<String, String> request, TypeReference<T> target) {
-       return exchange(uri, request, new HttpHeaders(), target);
+    public <T> T exchange (String uri, MultiValueMap<String, String> request, TypeReference<T> target) {
+        return exchange(uri, request, new HttpHeaders(), target);
     }
 
-    public  <T> T exchange(String uri, MultiValueMap<String, String> request, HttpHeaders headers, TypeReference<T> target) {
+    public <T> T exchange (String uri, MultiValueMap<String, String> request, HttpHeaders headers, TypeReference<T> target) {
         try {
             final String response = restTemplate.exchange(RequestEntity.method(HttpMethod.POST, URI.create(uri)).body(request), String.class).getBody();
             if (StringUtils.isNotEmpty(response) && response.contains("Record not found")) {
@@ -93,7 +97,7 @@ public class PayUCommonGateway {
         }
     }
 
-    public MultiValueMap<String, String> buildPayUInfoRequest(String client, String command, String var1, String... vars) {
+    public MultiValueMap<String, String> buildPayUInfoRequest (String client, String command, String var1, String... vars) {
         final String payUMerchantKey = PropertyResolverUtils.resolve(client, PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_ID);
         final String payUMerchantSecret = PropertyResolverUtils.resolve(client, PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_SECRET);
         String hash = generateHashForPayUApi(payUMerchantKey, payUMerchantSecret, command, var1);
@@ -112,7 +116,7 @@ public class PayUCommonGateway {
         return requestMap;
     }
 
-    public String generateHashForPayUApi(String payUMerchantKey, String payUSalt, String command, String var1) {
+    public String generateHashForPayUApi (String payUMerchantKey, String payUSalt, String command, String var1) {
         String builder = payUMerchantKey + PIPE_SEPARATOR +
                 command +
                 PIPE_SEPARATOR +
@@ -122,7 +126,7 @@ public class PayUCommonGateway {
         return EncryptionUtils.generateSHA512Hash(builder);
     }
 
-    public PayUVerificationResponse<PayUChargingTransactionDetails> syncChargingTransactionFromSource(Transaction transaction) {
+    public PayUVerificationResponse<PayUChargingTransactionDetails> syncChargingTransactionFromSource (Transaction transaction) {
         final MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         PayUVerificationResponse<PayUChargingTransactionDetails> payUChargingVerificationResponse;
         try {
@@ -150,6 +154,7 @@ public class PayUCommonGateway {
             syncTransactionWithSourceResponse(transaction, payUChargingVerificationResponse);
             if (transaction.getStatus() == TransactionStatus.FAILURE) {
                 if (!StringUtils.isEmpty(payUChargingTransactionDetails.getErrorCode()) || !StringUtils.isEmpty(payUChargingTransactionDetails.getErrorMessage())) {
+                    recurringTransactionUtils.cancelRenewalBasedOnErrorReason(payUChargingTransactionDetails.getErrorMessage(), transaction);
                     eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr())
                             .code(Objects.nonNull(payUChargingTransactionDetails.getErrorCode()) ? payUChargingTransactionDetails.getErrorCode() : "UNKNOWN")
                             .description(payUChargingTransactionDetails.getErrorMessage()).build());
@@ -162,14 +167,11 @@ public class PayUCommonGateway {
             log.error(PAYU_CHARGING_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to ", e);
             throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
         }
-        if (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE) {
-            eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
-        }
-
+        eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
         return payUChargingVerificationResponse;
     }
 
-    public void syncRefundTransactionFromSource(Transaction transaction, String refundRequestId) {
+    public void syncRefundTransactionFromSource (Transaction transaction, String refundRequestId) {
         MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
             MultiValueMap<String, String> payURefundStatusRequest = buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.CHECK_ACTION_STATUS.getCode(), refundRequestId);
@@ -200,17 +202,19 @@ public class PayUCommonGateway {
         }
     }
 
-    public void syncTransactionWithSourceResponse(Transaction transaction, PayUVerificationResponse<? extends AbstractPayUTransactionDetails> transactionDetailsWrapper) {
+    public void syncTransactionWithSourceResponse (Transaction transaction, PayUVerificationResponse<? extends AbstractPayUTransactionDetails> transactionDetailsWrapper) {
         TransactionStatus finalTransactionStatus = TransactionStatus.UNKNOWN;
-        int retryInterval = cachingService.getPlan(transaction.getPlanId()).getPeriod().getRetryInterval();
+        int retryInterval = (transaction.getType() == PaymentEvent.POINT_PURCHASE) ? 1 : cachingService.getPlan(transaction.getPlanId()).getPeriod().getRetryInterval();
         if (transactionDetailsWrapper.getStatus() == 1) {
             final AbstractPayUTransactionDetails transactionDetails = transactionDetailsWrapper.getTransactionDetails(transaction.getIdStr());
             if (SUCCESS.equalsIgnoreCase(transactionDetails.getStatus())) {
                 finalTransactionStatus = TransactionStatus.SUCCESS;
-            } else if (FAILURE.equalsIgnoreCase(transactionDetails.getStatus()) || (FAILED.equalsIgnoreCase(transactionDetails.getStatus())) || PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(transactionDetails.getStatus())) {
+            } else if (FAILURE.equalsIgnoreCase(transactionDetails.getStatus()) || (FAILED.equalsIgnoreCase(transactionDetails.getStatus())) ||
+                    PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(transactionDetails.getStatus())) {
                 finalTransactionStatus = TransactionStatus.FAILURE;
             } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (ONE_DAY_IN_MILLI * retryInterval)) &&
-                    (StringUtils.equalsIgnoreCase(PENDING, transactionDetails.getStatus()) || (transaction.getType() == PaymentEvent.REFUND && StringUtils.equalsIgnoreCase(QUEUED, transactionDetails.getStatus())))) {
+                    (StringUtils.equalsIgnoreCase(PENDING, transactionDetails.getStatus()) ||
+                            (transaction.getType() == PaymentEvent.REFUND && StringUtils.equalsIgnoreCase(QUEUED, transactionDetails.getStatus())))) {
                 finalTransactionStatus = TransactionStatus.INPROGRESS;
             } else if ((transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - (ONE_DAY_IN_MILLI * retryInterval)) &&
                     StringUtils.equalsIgnoreCase(PENDING, transactionDetails.getStatus())) {

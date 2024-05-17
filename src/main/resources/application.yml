@@ -86,7 +86,9 @@ service:
         selectivePlanComputation: ${service.subscription.api.root}/wynk/s2s/v1/plans/selective/eligible
         selectivePlanComputationV2: ${service.subscription.api.root}/wynk/s2s/v2/plans/selective/eligible
         status: ${service.subscription.api.root}/wynk/s2s/v1/subscription/status/{uid}/{service}
-
+        bestValue: ${service.subscription.api.root}/wynk/s2s/v1/plans/bestValue
+    webView:
+      root: ${webview.host}/#/
 
   ####### payment props #######
   payment:
@@ -204,7 +206,10 @@ payment:
     page: ${webview.host}/#/payment-timer/v2/
   googlePlay:
       baseUrl: https://androidpublisher.googleapis.com/androidpublisher/v3/applications/
-      purchaseUrl: /purchases/subscriptions/
+      purchaseUrl:
+        subscription: /purchases/subscriptions/
+        product: /purchases/products/
+        external: /externalTransactions?externalTransactionId=
       authorizationUrl: https://accounts.google.com/o/oauth2/v2/auth
       tokenUrl: https://oauth2.googleapis.com/token
       mockUrl: http://demo6110921.mockable.io/google/api/response

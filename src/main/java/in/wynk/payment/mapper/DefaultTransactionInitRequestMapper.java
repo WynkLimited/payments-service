@@ -3,6 +3,7 @@ package in.wynk.payment.mapper;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.client.service.ClientDetailsCachingService;
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.IGeoLocation;
 import in.wynk.common.dto.IObjectMapper;
 import in.wynk.common.dto.SessionDTO;
@@ -11,12 +12,14 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.data.dto.IEntityCacheService;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.identity.client.utils.IdentityUtils;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.dto.*;
-import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayLatestReceiptResponse;
 import in.wynk.payment.dto.gpbs.GooglePlayStatusCodes;
 import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
+import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayLatestReceiptResponse;
+import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayProductReceiptResponse;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
 import in.wynk.payment.service.IPricingManager;
@@ -24,11 +27,11 @@ import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.MerchantServiceUtil;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
-import in.wynk.identity.client.utils.IdentityUtils;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import java.util.Optional;
+import java.util.Objects;
 
 import static in.wynk.common.constant.BaseConstants.CLIENT;
 
@@ -56,12 +59,10 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
 
     public static AbstractTransactionInitRequest from(RefundTransactionRequestWrapper wrapper) {
         final Transaction originalTransaction = wrapper.getOriginalTransaction();
-        final PaymentRefundInitRequest refundInitRequest=wrapper.getRequest();
-        final double amountToRefunded= Optional.ofNullable(refundInitRequest.getAmount()).orElse(originalTransaction.getAmount());
         if (originalTransaction.getType() == PaymentEvent.POINT_PURCHASE) {
-            return PointTransactionInitRequest.builder().uid(originalTransaction.getUid()).msisdn(originalTransaction.getMsisdn()).amount(amountToRefunded).itemId(originalTransaction.getItemId()).clientAlias(originalTransaction.getClientAlias()).paymentGateway(originalTransaction.getPaymentChannel()).event(PaymentEvent.REFUND).build();
+            return PointTransactionInitRequest.builder().uid(originalTransaction.getUid()).msisdn(originalTransaction.getMsisdn()).amount(originalTransaction.getAmount()).itemId(originalTransaction.getItemId()).clientAlias(originalTransaction.getClientAlias()).paymentGateway(originalTransaction.getPaymentChannel()).event(PaymentEvent.REFUND).build();
         } else {
-            return PlanTransactionInitRequest.builder().uid(originalTransaction.getUid()).msisdn(originalTransaction.getMsisdn()).amount(amountToRefunded).planId(originalTransaction.getPlanId()).clientAlias(originalTransaction.getClientAlias()).paymentGateway(originalTransaction.getPaymentChannel()).event(PaymentEvent.REFUND).build();
+            return PlanTransactionInitRequest.builder().uid(originalTransaction.getUid()).msisdn(originalTransaction.getMsisdn()).amount(originalTransaction.getAmount()).planId(originalTransaction.getPlanId()).clientAlias(originalTransaction.getClientAlias()).paymentGateway(originalTransaction.getPaymentChannel()).event(PaymentEvent.REFUND).build();
         }
     }
 
@@ -80,18 +81,34 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
         GooglePlayVerificationRequest gRequest = (GooglePlayVerificationRequest) request;
         final LatestReceiptResponse receiptResponse = wrapper.getReceiptResponse();
         GooglePlayLatestReceiptResponse googleResponse = (GooglePlayLatestReceiptResponse) receiptResponse;
-        int planId = cachingService.getPlanFromSku(gRequest.getProductDetails().getSkuId()).getId();
-        final PlanDTO selectedPlan = BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(planId);
-        if(!selectedPlan.getService().equalsIgnoreCase(gRequest.getAppDetails().getService())){
-            throw new WynkRuntimeException(GooglePlayStatusCodes.GOOGLE_31020.getErrorTitle());
-        }
         final ClientDetails clientDetails = (ClientDetails) BeanLocatorFactory.getBean(ClientDetailsCachingService.class).getClientById(wrapper.getClientId());
-        final AbstractTransactionInitRequest initRequest = PlanTransactionInitRequest.builder().planId(receiptResponse.getPlanId())
-                .uid(gRequest.getUserDetails().getUid()).msisdn(gRequest.getUserDetails().getMsisdn()).paymentGateway(request.getPaymentCode())
-                .event(MerchantServiceUtil.getGooglePlayEvent(gRequest,googleResponse))
-                .autoRenewOpted(MerchantServiceUtil.getAutoRenewalOpted(gRequest,receiptResponse))
-                .clientAlias(clientDetails.getAlias()).couponId(receiptResponse.getCouponCode()).trialOpted(receiptResponse.isFreeTrial()).userDetails(UserDetails.builder().msisdn(gRequest.getUserDetails().getMsisdn()).build())
-                .appDetails(AppDetails.builder().os(gRequest.getAppDetails().getOs()).deviceId(gRequest.getAppDetails().getDeviceId()).service(selectedPlan.getService()).buildNo(gRequest.getAppDetails().getBuildNo()).build()).build();
+        PlanDTO planDTO = cachingService.getPlanFromSku(gRequest.getProductDetails().getSkuId());
+        AbstractTransactionInitRequest initRequest = null;
+        if (planDTO != null) {
+            final PlanDTO selectedPlan = BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(planDTO.getId());
+            if (!selectedPlan.getService().equalsIgnoreCase(gRequest.getAppDetails().getService())) {
+                throw new WynkRuntimeException(GooglePlayStatusCodes.GOOGLE_31020.getErrorTitle());
+            }
+            initRequest = PlanTransactionInitRequest.builder().planId(receiptResponse.getPlanId())
+                    .uid(gRequest.getUserDetails().getUid()).msisdn(gRequest.getUserDetails().getMsisdn()).paymentGateway(request.getPaymentCode())
+                    .event(MerchantServiceUtil.getGooglePlayEvent(gRequest, googleResponse, BaseConstants.PLAN))
+                    .autoRenewOpted(MerchantServiceUtil.getAutoRenewalOpted(gRequest, receiptResponse))
+                    .clientAlias(clientDetails.getAlias()).couponId(receiptResponse.getCouponCode()).trialOpted(receiptResponse.isFreeTrial())
+                    .userDetails(UserDetails.builder().msisdn(gRequest.getUserDetails().getMsisdn()).build())
+                    .appDetails(AppDetails.builder().os(gRequest.getAppDetails().getOs()).deviceId(gRequest.getAppDetails().getDeviceId()).service(selectedPlan.getService())
+                            .buildNo(gRequest.getAppDetails().getBuildNo()).build()).build();
+        } else {
+            String itemId = request.getProductDetails().getItemId();
+            if (Objects.isNull(itemId)) {
+                GooglePlayProductReceiptResponse googlePlayProductResponse = (GooglePlayProductReceiptResponse) googleResponse.getGooglePlayResponse();
+                itemId = StringUtils.isNotEmpty(googlePlayProductResponse.getDeveloperPayload()) ? googlePlayProductResponse.getDeveloperPayload() : itemId;
+            }
+            initRequest =
+                    PointTransactionInitRequest.builder().itemId(itemId).uid(gRequest.getUserDetails().getUid()).msisdn(gRequest.getUserDetails().getMsisdn()).paymentGateway(request.getPaymentCode())
+                            .event(MerchantServiceUtil.getGooglePlayEvent(gRequest, googleResponse, BaseConstants.POINT))
+                            .clientAlias(clientDetails.getAlias()).amount(request.getProductDetails().getPrice())
+                            .build();
+        }
         BeanLocatorFactory.getBean(IPricingManager.class).computePriceAndApplyDiscount(initRequest);
         return initRequest;
     }

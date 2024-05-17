@@ -7,7 +7,7 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.dto.WynkResponse;
 import in.wynk.common.enums.PaymentEvent;
-import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
@@ -19,7 +19,6 @@ import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
 import in.wynk.queue.service.ISqsManagerService;
-import in.wynk.subscription.common.dto.PlanPeriodDTO;
 import in.wynk.subscription.common.dto.RenewalPlanEligibilityResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -111,24 +110,23 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
     }
 
     private boolean isEligibleForRenewal (Transaction transaction, int attemptSequence) {
-        PlanPeriodDTO planPeriodDTO = cachingService.getPlan(transaction.getPlanId()).getPeriod();
-        if (planPeriodDTO.getMaxRetryCount() <= attemptSequence) {
-            log.error(PaymentLoggingMarker.MAX_RENEWAL_ATTEMPT_ERROR, "Need to break the chain in Payment Renewal as maximum attempts are already exceeded for transactionId {}", transaction.getIdStr());
-            throw new WynkRuntimeException("Need to break the chain in Payment Renewal as maximum attempts are already exceeded");
-        }
-
-        ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> response =
-                subscriptionServiceManager.renewalPlanEligibilityResponse(transaction.getPlanId(), transaction.getUid());
-        if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {
-            RenewalPlanEligibilityResponse renewalPlanEligibilityResponse = response.getBody().getData();
-            long today = System.currentTimeMillis();
-            long furtherDefer = renewalPlanEligibilityResponse.getDeferredUntil() - today;
-            if (subscriptionServiceManager.isDeferred(transaction.getPaymentChannel().getCode(), furtherDefer)) {
-                recurringPaymentManagerService.unScheduleRecurringPayment(transaction.getIdStr(), PaymentEvent.DEFERRED, today, furtherDefer);
-                return false;
+        if (attemptSequence < PaymentConstants.MAXIMUM_RENEWAL_RETRY_ALLOWED) {
+            ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> response =
+                    subscriptionServiceManager.renewalPlanEligibilityResponse(transaction.getPlanId(), transaction.getUid());
+            if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {
+                RenewalPlanEligibilityResponse renewalPlanEligibilityResponse = response.getBody().getData();
+                long today = System.currentTimeMillis();
+                long furtherDefer = renewalPlanEligibilityResponse.getDeferredUntil() - today;
+                if (subscriptionServiceManager.isDeferred(transaction.getPaymentChannel().getCode(), furtherDefer)) {
+                    recurringPaymentManagerService.unScheduleRecurringPayment(transaction.getIdStr(), PaymentEvent.DEFERRED, today, furtherDefer);
+                    return false;
+                }
             }
+            return true;
+        } else {
+            log.error("Need to break the chain in Payment Renewal as maximum attempts are already exceeded");
+            return false;
         }
-        return true;
     }
 
     @Override

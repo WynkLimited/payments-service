@@ -90,6 +90,9 @@ public class PaymentOptionsDTO {
         private final String id;
         private final String title;
         private final double price;
+        @JsonProperty("discounted_price")
+        private final double discountedPrice;
+        private final String currency;
         private final String type = BaseConstants.POINT;
     }
 

@@ -3,7 +3,7 @@ package in.wynk.payment.dto.gpbs.acknowledge.queue;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
-import in.wynk.payment.core.event.SubscriptionAcknowledgementMessageThresholdEvent;
+import in.wynk.payment.core.event.PurchaseAcknowledgementMessageThresholdEvent;
 import in.wynk.queue.dto.MessageToEventMapper;
 import in.wynk.queue.dto.ProducerType;
 import in.wynk.queue.dto.WynkQueue;
@@ -24,20 +24,22 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 @AllArgsConstructor
 @AnalysedEntity
 @WynkQueue(queueName = "${payment.pooling.queue.acknowledgement.name}", producerType = ProducerType.QUARTZ_MESSAGE_PRODUCER, quartz = @WynkQueue.QuartzConfiguration(expression = "T(java.util.Arrays).asList(60, 60, 60, 60, 120, 300, 300, 300, 890, 890, 2400, 3600, 79200, 172800, 179800).get(#n)", publishUntil = 1, publishUntilUnit = TimeUnit.DAYS))
-public class SubscriptionAcknowledgeMessageManager extends AbstractAcknowledgementMessage implements MessageToEventMapper<SubscriptionAcknowledgementMessageThresholdEvent> {
+public class PurchaseAcknowledgeMessageManager extends AbstractAcknowledgementMessage implements MessageToEventMapper<PurchaseAcknowledgementMessageThresholdEvent> {
 
     @Builder.Default
     private String clientAlias = ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT);
 
     @Override
-    public SubscriptionAcknowledgementMessageThresholdEvent map () {
-        return SubscriptionAcknowledgementMessageThresholdEvent.builder()
+    public PurchaseAcknowledgementMessageThresholdEvent map () {
+        return PurchaseAcknowledgementMessageThresholdEvent.builder()
                 .developerPayload(getDeveloperPayload())
                 .service(getService())
                 .packageName(getService())
                 .purchaseToken(getPurchaseToken())
                 .skuId(getSkuId())
                 .paymentCode(this.getPaymentCode())
+                .type(getType())
+                .txnId(getTxnId())
                 .build();
     }
 }

@@ -547,6 +547,10 @@ service:
   subscription:
     api:
       root: http://subscription-staging.wcf.internal
+      purchase:
+        url: /subscriptions/
+      manage:
+        url: /manage-subscription/
   payment:
     api:
       root: https://payments-staging.wynk.in
@@ -656,7 +660,12 @@ wynk:
               name: PAYMENT_CHARGE_RETRY_BEAN
   multi:
     kafka:
-      enabled: false
+      enabled: true
+      templates:
+        item:
+          enabled: true
+          nodes: 10.70.3.4:9092,10.70.3.128:9092,10.70.3.180:9092,10.70.3.245:9092,10.70.3.44:9092,10.70.3.80:9092,10.70.1.57:9092,10.70.3.152:9092
+          topic: wcf_ringtone_transactions
   ########### MONGO CONFIG ###########
   mongodb:
     enabled: true

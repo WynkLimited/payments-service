@@ -435,6 +435,7 @@ subscription:
           producer:
             delayInSecond: 1
 
+
 ####### sms props #######
 sms:
   notification:
@@ -541,6 +542,12 @@ service:
   subscription:
     api:
       root: http://subscription-preprod.wcf.internal
+      purchase:
+        url: /subscriptions/
+      manage:
+        url: /manage-subscription/
+
+
   payment:
     api:
       root: https://payments-preprod.wynk.in
@@ -580,9 +587,6 @@ wynk:
          topic: wcf_preprod.pay_state_retry_resp
        dlt:
          topic: wcf_preprod.pay_state_dlt_resp
-      item:
-       generate:
-         topic: wcf_local.generate_item
     consumers:
       enabled: true
       listenerFactory:
@@ -651,7 +655,12 @@ wynk:
               name: PAYMENT_CHARGE_RETRY_BEAN
   multi:
     kafka:
-      enabled: false
+      enabled: true
+      templates:
+        item:
+         enabled: true
+         nodes: 10.70.3.4:9092,10.70.3.128:9092,10.70.3.180:9092,10.70.3.245:9092,10.70.3.44:9092,10.70.3.80:9092,10.70.1.57:9092,10.70.3.152:9092
+         topic: wcf_ringtone_transactions
   ########### MONGO CONFIG ###########
   mongodb:
     enabled: true
@@ -1286,3 +1295,4 @@ event:
     dp: data-science-subscription-funnel-information
 
 api.get.endPoint: https://subscription-preprod.wynk.in
+

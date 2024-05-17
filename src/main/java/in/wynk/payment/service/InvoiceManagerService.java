@@ -8,19 +8,18 @@ import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.core.constant.ClientErrorType;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.lock.WynkRedisLockService;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.InvoiceState;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.dao.entity.IPurchaseDetails;
-import in.wynk.payment.core.dao.entity.Invoice;
-import in.wynk.payment.core.dao.entity.InvoiceDetails;
-import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.InvoiceRetryEvent;
 import in.wynk.payment.core.service.GSTStateCodesCachingService;
 import in.wynk.payment.core.service.InvoiceDetailsCachingService;
+import in.wynk.payment.dto.PointDetails;
 import in.wynk.payment.dto.invoice.*;
 import in.wynk.stream.producer.IKafkaEventPublisher;
 import in.wynk.subscription.common.dto.OfferDTO;
@@ -159,12 +158,27 @@ public class InvoiceManagerService implements InvoiceManager {
     }
 
     @AnalyseTransaction(name = "publishInvoiceKafka")
-    private void publishInvoiceMessage(PublishInvoiceRequest request){
-        try{
-            final PlanDTO plan = cachingService.getPlan(request.getTransaction().getPlanId());
-            final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
+    private void publishInvoiceMessage (PublishInvoiceRequest request) {
+        try {
+            String planTitle;
+            String offerTitle;
+            double amount;
+            if (request.getTransaction().getType() == PaymentEvent.POINT_PURCHASE) {
+                final IPurchaseDetails purchaseDetails = purchaseDetailsManager.get(request.getTransaction());
+                PointDetails pointDetails = (PointDetails) purchaseDetails.getProductDetails();
+                planTitle = pointDetails.getTitle();
+                offerTitle = pointDetails.getTitle();
+                amount = request.getTransaction().getAmount();
+            } else {
+                final PlanDTO plan = cachingService.getPlan(request.getTransaction().getPlanId());
+                final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
+                planTitle = plan.getTitle();
+                offerTitle = offer.getTitle();
+                amount = plan.getPrice().getAmount();
+            }
+
             final InformInvoiceKafkaMessage informInvoiceKafkaMessage = InformInvoiceKafkaMessage.generateInformInvoiceEvent(request,
-                    request.getTransaction(), plan, offer);
+                    request.getTransaction(), planTitle, amount, offerTitle);
             final String informInvoiceKafkaMessageStr = objectMapper.setSerializationInclusion(JsonInclude.Include.ALWAYS).writeValueAsString(informInvoiceKafkaMessage);
             AnalyticService.update(INFORM_INVOICE_MESSAGE, informInvoiceKafkaMessageStr);
             kafkaEventPublisher.publish(informInvoiceTopic, informInvoiceKafkaMessageStr);

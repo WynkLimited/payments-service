@@ -5,6 +5,10 @@ import in.wynk.common.enums.TransactionStatus;
 import lombok.Builder;
 import lombok.Getter;
 
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import java.util.Calendar;
+
 /**
  * @author Nishesh Pandey
  */
@@ -14,8 +18,11 @@ public class GenerateItemEvent {
     private String transactionId;
     private String itemId;
     private String uid;
-    private String createdDate;
-    private String updatedDate;
+    private Double price;
+    @Temporal(TemporalType.TIMESTAMP)
+    private Calendar createdDate;
+    @Temporal(TemporalType.TIMESTAMP)
+    private Calendar updatedDate;
     private TransactionStatus transactionStatus;
     private PaymentEvent event;
 }

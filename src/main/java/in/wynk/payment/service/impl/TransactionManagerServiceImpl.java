@@ -22,14 +22,17 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.*;
-import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 import in.wynk.payment.core.dao.repository.ITransactionDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
+import in.wynk.payment.core.event.ExternalTransactionReportEvent;
 import in.wynk.payment.core.event.PaymentSettlementEvent;
 import in.wynk.payment.core.event.PaymentUserDeactivationMigrationEvent;
 import in.wynk.payment.core.event.TransactionSnapshotEvent;
+import in.wynk.payment.dto.GenerateItemEvent;
+import in.wynk.payment.dto.PointDetails;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.TransactionDetails;
+import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.service.*;
 import in.wynk.session.context.SessionContextHolder;
@@ -48,6 +51,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
+import static in.wynk.payment.core.constant.PaymentConstants.EXTERNAL_TRANSACTION_TOKEN;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 
 @Slf4j
@@ -63,6 +67,8 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     private final ICouponCodeLinkService couponCodeLinkService;
     private final CouponCachingService couponCachingService;
     private final MongoAuditingListener auditingListener;
+    private final ApplicationEventPublisher eventPublisher;
+    private final IMerchantTransactionService merchantTransactionService;
 
     private Transaction upsert(Transaction transaction) {
         Transaction persistedEntity = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).save(transaction);
@@ -209,13 +215,15 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         return transaction;
     }
 
-    /**
-     * initiate transaction and upsert payer info for plan based charging, skip in case point charging
-     **/
     @Override
     public Transaction init(AbstractTransactionInitRequest transactionInitRequest, IPurchaseDetails purchaseDetails) {
         if (PlanTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass())) {
             final Transaction transaction = initPlanTransaction((PlanTransactionInitRequest) transactionInitRequest);
+            purchaseDetailsManger.save(transaction, purchaseDetails);
+            TransactionContext.set(TransactionDetails.builder().transaction(transaction).purchaseDetails(purchaseDetails).build());
+            return transaction;
+        } else if (PointTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass())) {
+            final Transaction transaction = initPointTransaction((PointTransactionInitRequest) transactionInitRequest);
             purchaseDetailsManger.save(transaction, purchaseDetails);
             TransactionContext.set(TransactionDetails.builder().transaction(transaction).purchaseDetails(purchaseDetails).build());
             return transaction;
@@ -227,6 +235,13 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     public Transaction init(AbstractTransactionInitRequest transactionInitRequest, AbstractPaymentChargingRequest request) {
         if (PlanTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass())) {
             final Transaction transaction = initPlanTransaction((PlanTransactionInitRequest) transactionInitRequest);
+            purchaseDetailsManger.save(transaction, request);
+            TransactionContext.set(TransactionDetails.builder().transaction(transaction).request(request).build());
+            return transaction;
+        } else if (PointTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass())) {
+            final Transaction transaction = initPointTransaction((PointTransactionInitRequest) transactionInitRequest);
+            PointDetails productDetails=((PointDetails)request.getProductDetails());
+            productDetails.setTitle(null);
             purchaseDetailsManger.save(transaction, request);
             TransactionContext.set(TransactionDetails.builder().transaction(transaction).request(request).build());
             return transaction;
@@ -254,12 +269,24 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                     }
                 } else {
                     recurringPaymentManagerService.scheduleRecurringPayment(request);
-                    if ((request.getExistingTransactionStatus() != TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.SUCCESS) || (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS && request.getFinalTransactionStatus() == TransactionStatus.MIGRATED)) {
+                    if ((request.getExistingTransactionStatus() != TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.SUCCESS) ||
+                            (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS && request.getFinalTransactionStatus() == TransactionStatus.MIGRATED)) {
                         subscriptionServiceManager.subscribePlan(AbstractSubscribePlanRequest.from(request));
-                        if (StringUtils.isEmpty(request.getTransaction().getItemId()) && cachingService.getPlan(request.getTransaction().getPlanId()).getSettlementType() == SettlementType.SPLIT)
+                        if (StringUtils.isEmpty(request.getTransaction().getItemId()) && cachingService.getPlan(request.getTransaction().getPlanId()).getSettlementType() == SettlementType.SPLIT) {
                             applicationEventPublisher.publishEvent(PaymentSettlementEvent.builder().tid(request.getOriginalTransactionId()).build());
+                        }
+                        if (ApsConstant.APS.equals(request.getTransaction().getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(request.getTransaction().getPaymentChannel().getId())) {
+                            initiateTransactionReportToMerchant(request.getTransaction());
+                        }
                     }
                 }
+            } else if (PaymentEvent.POINT_PURCHASE == request.getTransaction().getType() && (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS &&
+                    (request.getFinalTransactionStatus() == TransactionStatus.SUCCESS || request.getFinalTransactionStatus() == TransactionStatus.FAILURE))) {
+                if (request.getFinalTransactionStatus() == TransactionStatus.SUCCESS &&
+                        (ApsConstant.APS.equals(request.getTransaction().getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(request.getTransaction().getPaymentChannel().getId()))) {
+                    initiateTransactionReportToMerchant(request.getTransaction());
+                }
+                publishDataToWynkKafka(request.getTransaction());
             }
         } finally {
             if (request.getTransaction().getStatus() != TransactionStatus.INPROGRESS && request.getTransaction().getStatus() != TransactionStatus.UNKNOWN) {
@@ -269,6 +296,25 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                 this.upsert(request.getTransaction());
             }
         }
+    }
+
+    private void initiateTransactionReportToMerchant (Transaction transaction) {
+        try {
+            MerchantTransaction merchantData = merchantTransactionService.getMerchantTransaction(transaction.getIdStr());
+            if (Objects.nonNull(merchantData.getExternalTokenReferenceId())) {
+                AnalyticService.update(EXTERNAL_TRANSACTION_TOKEN, merchantData.getExternalTokenReferenceId());
+                eventPublisher.publishEvent(ExternalTransactionReportEvent.builder().transactionId(transaction.getIdStr()).externalTokenReferenceId(merchantData.getExternalTokenReferenceId())
+                        .clientAlias(transaction.getClientAlias()).paymentEvent(transaction.getType()).build());
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void publishDataToWynkKafka (Transaction transaction) {
+        GenerateItemEvent event =
+                GenerateItemEvent.builder().transactionId(transaction.getIdStr()).itemId(transaction.getItemId()).uid(transaction.getUid()).createdDate(transaction.getInitTime())
+                        .updatedDate(Calendar.getInstance()).transactionStatus(transaction.getStatus()).event(transaction.getType()).price(transaction.getAmount()).build();
+        eventPublisher.publishEvent(event);
     }
 
     private void publishAnalytics(Transaction transaction) {

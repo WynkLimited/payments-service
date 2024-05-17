@@ -135,10 +135,15 @@ public class PaymentStatusPresentationV2 implements IWynkPresentation<PaymentSta
                                 paymentMethodCachingService.get(purchaseDetails.getPaymentDetails().getPaymentId()).getGroup());
             } else {
                 SuccessPaymentStatusResponse.SuccessPaymentStatusResponseBuilder<?, ?> builder = SuccessPaymentStatusResponse.builder()
-                        .transactionStatus(payload.getTransactionStatus()).planId(transaction.getPlanId())
+                        .transactionStatus(payload.getTransactionStatus())
                         .tid(payload.getTid()).transactionType(payload.getTransactionType())
-                        .validity(cachingService.validTillDate(transaction.getPlanId(),transaction.getMsisdn()))
                         .paymentGroup(paymentMethodCachingService.get(purchaseDetails.getPaymentDetails().getPaymentId()).getGroup());
+                if (transaction.getType() == PaymentEvent.POINT_PURCHASE) {
+                    builder.itemId(transaction.getItemId());
+                } else {
+                    builder.validity(cachingService.validTillDate(transaction.getPlanId(), transaction.getMsisdn()));
+                    builder.planId(transaction.getPlanId());
+                }
                 if (txnStatus == TransactionStatus.SUCCESS) {
                     builder.packDetails(getPackDetails(transaction));
                     builder.redirectUrl(pageUrlDetails.getSuccessPageUrl());
@@ -171,7 +176,13 @@ public class PaymentStatusPresentationV2 implements IWynkPresentation<PaymentSta
         final IChargingDetails.IPageUrlDetails pageUrlDetails = TransactionContext.getPurchaseDetails().map(details -> (IChargingDetails) details).map(IChargingDetails::getPageUrlDetails).orElseGet(() ->  {
             // NOTE: Added backward support to avoid failure for transaction created pre-payment refactoring build, once the build is live it has no significance
             final String clientAlias = ClientContext.getClient().map(Client::getAlias).orElse(transaction.getClientAlias());
-            final String service = cachingService.getPlan(transaction.getPlanId()).getService();
+            String service = null;
+            if (Objects.isNull(transaction.getPlanId())) {
+                service = clientAlias.equalsIgnoreCase("music") ? "music" : "airteltv";
+            } else {
+                service = cachingService.getPlan(transaction.getPlanId()).getService();
+            }
+
             final String clientPagePlaceHolder = PAYMENT_PAGE_PLACE_HOLDER.replace("%c", clientAlias);
             final IAppDetails appDetails = AppDetails.builder().buildNo(-1).service(service).appId(MOBILITY).os(ANDROID).build();
             final String successPage = buildUrlFrom(EmbeddedPropertyResolver.resolveEmbeddedValue(clientPagePlaceHolder.replace("%p", "success"),"${payment.success.page}"), appDetails);
@@ -191,57 +202,81 @@ public class PaymentStatusPresentationV2 implements IWynkPresentation<PaymentSta
         final Optional<String> subtitle = errorCode.getMeta(SUBTITLE_TEXT);
         final Optional<String> buttonText = errorCode.getMeta(BUTTON_TEXT);
         final Optional<Boolean> buttonArrow = errorCode.getMeta(BUTTON_ARROW);
-        return FailurePaymentStatusResponse.populate(errorCode, subtitle.orElse(""),buttonText.orElse(""),buttonArrow.orElse(Boolean.FALSE), transaction.getIdStr(), transaction.getPlanId(), getPackDetails(transaction), transaction.getStatus(), redirectUrl, paymentGroup);
+        return FailurePaymentStatusResponse.populate(errorCode, subtitle.orElse(""),buttonText.orElse(""),buttonArrow.orElse(Boolean.FALSE), transaction.getIdStr(), transaction.getPlanId(), getPackDetails(transaction), transaction.getStatus(), redirectUrl, paymentGroup, transaction.getItemId());
     }
 
     private AbstractPack getPackDetails (Transaction transaction) {
+        if (Objects.nonNull(transaction.getItemId())) {
+            return null;
+        }
         final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
         final OfferDTO offer = cachingService.getOffer(plan.getLinkedOfferId());
         final PartnerDTO partner = cachingService.getPartner(Optional.ofNullable(offer.getPackGroup()).orElse(BaseConstants.DEFAULT_PACK_GROUP + offer.getService()));
         AbstractPack abstractPack;
         String appId = null;
         final Optional<IPurchaseDetails> purchaseDetails = TransactionContext.getPurchaseDetails();
-        if(purchaseDetails.isPresent() && purchaseDetails.get().getAppDetails() != null)
+        if (purchaseDetails.isPresent() && purchaseDetails.get().getAppDetails() != null) {
             appId = purchaseDetails.get().getAppDetails().getAppId();
+        }
         if (transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
             final PlanDTO paidPlan = cachingService.getPlan(transaction.getPlanId());
-            final TrialPack.TrialPackBuilder<?, ?> trialPackBuilder = TrialPack.builder().title(offer.getTitle()).day(plan.getPeriod().getDay()).amount(plan.getFinalPrice()).month(plan.getPeriod().getMonth()).period(plan.getPeriod().getValidity()).timeUnit(plan.getPeriod().getTimeUnit().name()).currency(plan.getPrice().getCurrency()).isCombo(offer.isCombo());
+            final TrialPack.TrialPackBuilder<?, ?> trialPackBuilder =
+                    TrialPack.builder().title(offer.getTitle()).day(plan.getPeriod().getDay()).amount(plan.getFinalPrice()).month(plan.getPeriod().getMonth()).period(plan.getPeriod().getValidity())
+                            .timeUnit(plan.getPeriod().getTimeUnit().name()).currency(plan.getPrice().getCurrency()).isCombo(offer.isCombo());
             if (offer.isCombo()) {
-                final BundleBenefits.BundleBenefitsBuilder<?, ?> bundleBenefitsBuilder = BundleBenefits.builder().id(partner.getId()).name(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo()).rails(
-                        PresentationUtils.getRails(partner,offer));
+                final BundleBenefits.BundleBenefitsBuilder<?, ?> bundleBenefitsBuilder =
+                        BundleBenefits.builder().id(partner.getId()).name(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo()).rails(
+                                PresentationUtils.getRails(partner, offer));
                 final List<ChannelBenefits>
-                        channelBenefits = offer.getProducts().values().stream().map(cachingService::getPartner).map(channelPartner -> ChannelBenefits.builder().name(channelPartner.getName()).notVisible(channelPartner.isNotVisible()).packGroup(channelPartner.getPackGroup()).icon(channelPartner.getIcon()).logo(channelPartner.getLogo()).build()).collect(
-                        Collectors.toList());
-                if(!Strings.isNullOrEmpty(appId)) {
+                        channelBenefits = offer.getProducts().values().stream().map(cachingService::getPartner)
+                        .map(channelPartner -> ChannelBenefits.builder().name(channelPartner.getName()).notVisible(channelPartner.isNotVisible()).packGroup(channelPartner.getPackGroup())
+                                .icon(channelPartner.getIcon()).logo(channelPartner.getLogo()).build()).collect(
+                                Collectors.toList());
+                if (!Strings.isNullOrEmpty(appId)) {
                     Set<String> packGroupAppIdHierarchySet = getPackGroupAppIdHierarchySet(appId.toUpperCase());
                     channelBenefits.forEach(channelBenefit -> {
-                        if (!channelBenefit.isNotVisible() && channelBenefit.getPackGroup() != null && packGroupAppIdHierarchySet.contains(channelBenefit.getPackGroup()))
+                        if (!channelBenefit.isNotVisible() && channelBenefit.getPackGroup() != null && packGroupAppIdHierarchySet.contains(channelBenefit.getPackGroup())) {
                             channelBenefit.setNotVisible(true);
+                        }
                     });
                 }
                 trialPackBuilder.benefits(bundleBenefitsBuilder.channelsBenefits(channelBenefits).build());
 
-            }else {
-                final ChannelBenefits.ChannelBenefitsBuilder<?, ?> channelBenefitsBuilder = ChannelBenefits.builder().id(partner.getId()).name(partner.getName()).notVisible(partner.isNotVisible()).packGroup(partner.getPackGroup()).icon(partner.getIcon()).logo(partner.getLogo()).rails(PresentationUtils.getRails(partner,offer));
+            } else {
+                final ChannelBenefits.ChannelBenefitsBuilder<?, ?> channelBenefitsBuilder =
+                        ChannelBenefits.builder().id(partner.getId()).name(partner.getName()).notVisible(partner.isNotVisible()).packGroup(partner.getPackGroup()).icon(partner.getIcon())
+                                .logo(partner.getLogo()).rails(PresentationUtils.getRails(partner, offer));
                 trialPackBuilder.benefits(channelBenefitsBuilder.build());
             }
-            abstractPack = trialPackBuilder.paidPack(PaidPack.builder().title(paidPlan.getTitle()).amount(paidPlan.getFinalPrice()).period(paidPlan.getPeriod().getValidity()).timeUnit(paidPlan.getPeriod().getTimeUnit().name()).month(paidPlan.getPeriod().getMonth()).perMonthValue((int) paidPlan.getPrice().getMonthlyAmount()).day(paidPlan.getPeriod().getDay()).dailyAmount(paidPlan.getPrice().getDailyAmount()).currency(paidPlan.getPrice().getCurrency()).build()).isCombo(offer.isCombo()).build();
+            abstractPack = trialPackBuilder.paidPack(
+                    PaidPack.builder().title(paidPlan.getTitle()).amount(paidPlan.getFinalPrice()).period(paidPlan.getPeriod().getValidity()).timeUnit(paidPlan.getPeriod().getTimeUnit().name())
+                            .month(paidPlan.getPeriod().getMonth()).perMonthValue((int) paidPlan.getPrice().getMonthlyAmount()).day(paidPlan.getPeriod().getDay())
+                            .dailyAmount(paidPlan.getPrice().getDailyAmount()).currency(paidPlan.getPrice().getCurrency()).build()).isCombo(offer.isCombo()).build();
         } else {
-            PaidPack.PaidPackBuilder<?, ?> paidPackBuilder = PaidPack.builder().title(offer.getTitle()).amount((int) plan.getFinalPrice()).period(plan.getPeriod().getValidity()).timeUnit(plan.getPeriod().getTimeUnit().name()).month(plan.getPeriod().getMonth()).perMonthValue((int) plan.getPrice().getMonthlyAmount()).dailyAmount( plan.getPrice().getDailyAmount()).day(plan.getPeriod().getDay()).currency(plan.getPrice().getCurrency()).isCombo(offer.isCombo());
+            PaidPack.PaidPackBuilder<?, ?> paidPackBuilder =
+                    PaidPack.builder().title(offer.getTitle()).amount((int) plan.getFinalPrice()).period(plan.getPeriod().getValidity()).timeUnit(plan.getPeriod().getTimeUnit().name())
+                            .month(plan.getPeriod().getMonth()).perMonthValue((int) plan.getPrice().getMonthlyAmount()).dailyAmount(plan.getPrice().getDailyAmount()).day(plan.getPeriod().getDay())
+                            .currency(plan.getPrice().getCurrency()).isCombo(offer.isCombo());
             if (offer.isCombo()) {
-                final BundleBenefits.BundleBenefitsBuilder<?, ?> benefitsBuilder = BundleBenefits.builder().id(partner.getId()).name(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo()).rails(PresentationUtils.getRails(partner,offer));
-                final List<ChannelBenefits> channelBenefits = offer.getProducts().values().stream().map(cachingService::getPartner).map(channelPartner -> ChannelBenefits.builder().packGroup(channelPartner.getPackGroup()).name(channelPartner.getName()).notVisible(channelPartner.isNotVisible()).icon(channelPartner.getIcon()).logo(channelPartner.getLogo()).build()).collect(Collectors.toList());
+                final BundleBenefits.BundleBenefitsBuilder<?, ?> benefitsBuilder =
+                        BundleBenefits.builder().id(partner.getId()).name(partner.getName()).icon(partner.getIcon()).logo(partner.getLogo()).rails(PresentationUtils.getRails(partner, offer));
+                final List<ChannelBenefits> channelBenefits = offer.getProducts().values().stream().map(cachingService::getPartner)
+                        .map(channelPartner -> ChannelBenefits.builder().packGroup(channelPartner.getPackGroup()).name(channelPartner.getName()).notVisible(channelPartner.isNotVisible())
+                                .icon(channelPartner.getIcon()).logo(channelPartner.getLogo()).build()).collect(Collectors.toList());
 
-                if(!Strings.isNullOrEmpty(appId)) {
+                if (!Strings.isNullOrEmpty(appId)) {
                     Set<String> packGroupAppIdHierarchySet = getPackGroupAppIdHierarchySet(appId.toUpperCase());
                     channelBenefits.forEach(channelBenefit -> {
-                        if(!channelBenefit.isNotVisible() && channelBenefit.getPackGroup() != null && packGroupAppIdHierarchySet.contains(channelBenefit.getPackGroup()))
+                        if (!channelBenefit.isNotVisible() && channelBenefit.getPackGroup() != null && packGroupAppIdHierarchySet.contains(channelBenefit.getPackGroup())) {
                             channelBenefit.setNotVisible(true);
+                        }
                     });
                 }
                 paidPackBuilder.benefits(benefitsBuilder.channelsBenefits(channelBenefits).build());
             } else {
-                final ChannelBenefits.ChannelBenefitsBuilder<?, ?> channelBenefitsBuilder = ChannelBenefits.builder().id(partner.getId()).name(partner.getName()).packGroup(partner.getPackGroup()).notVisible(partner.isNotVisible()).icon(partner.getIcon()).logo(partner.getLogo()).rails(PresentationUtils.getRails(partner,offer));
+                final ChannelBenefits.ChannelBenefitsBuilder<?, ?> channelBenefitsBuilder =
+                        ChannelBenefits.builder().id(partner.getId()).name(partner.getName()).packGroup(partner.getPackGroup()).notVisible(partner.isNotVisible()).icon(partner.getIcon())
+                                .logo(partner.getLogo()).rails(PresentationUtils.getRails(partner, offer));
                 paidPackBuilder.benefits(channelBenefitsBuilder.build());
             }
             abstractPack = paidPackBuilder.build();

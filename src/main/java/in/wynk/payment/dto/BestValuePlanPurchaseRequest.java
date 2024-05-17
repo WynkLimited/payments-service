@@ -8,7 +8,9 @@ import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.GeoLocation;
 import in.wynk.common.dto.MiscellaneousDetails;
 import in.wynk.identity.client.utils.IdentityUtils;
+import in.wynk.payment.constant.Validity;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
+import in.wynk.payment.core.dao.entity.IChargingDetails.IPageUrlDetails;
 import in.wynk.subscription.common.request.SessionRequest;
 import in.wynk.wynkservice.api.validations.IWynkServiceValidatorRequest;
 import lombok.AllArgsConstructor;
@@ -17,6 +19,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import javax.validation.Valid;
+import java.util.Map;
 import java.util.Optional;
 
 @Getter
@@ -25,7 +28,7 @@ import java.util.Optional;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class PurchaseRequest implements IClientValidatorRequest, IWynkServiceValidatorRequest {
+public class BestValuePlanPurchaseRequest implements IClientValidatorRequest, IWynkServiceValidatorRequest {
 
     @Valid
     @Analysed
@@ -37,7 +40,7 @@ public class PurchaseRequest implements IClientValidatorRequest, IWynkServiceVal
 
     @Valid
     @Analysed
-    private AbstractProductDetails productDetails;
+    private AbstractBestValueProductDetails productDetails;
 
     @Analysed
     private PageUrlDetails pageUrlDetails;
@@ -64,7 +67,7 @@ public class PurchaseRequest implements IClientValidatorRequest, IWynkServiceVal
     }
 
     public SessionRequest toSession () {
-        final Optional<IChargingDetails.IPageUrlDetails> pageUrlDetailsOption = Optional.ofNullable(getPageUrlDetails());
+        final Optional<IPageUrlDetails> pageUrlDetailsOption = Optional.ofNullable(getPageUrlDetails());
         SessionRequest.SessionRequestBuilder sessionRequestBuilder = SessionRequest.builder()
                 .appId(getAppDetails().getAppId())
                 .appVersion(getAppDetails().getAppVersion())
@@ -82,14 +85,31 @@ public class PurchaseRequest implements IClientValidatorRequest, IWynkServiceVal
                 .successUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getSuccessPageUrl).orElse(null))
                 .pendingUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getPendingPageUrl).orElse(null))
                 .unknownUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getUnknownPageUrl).orElse(null));
-        if (BaseConstants.POINT.equals(productDetails.getType())) {
-            PointDetails pointDetails = (PointDetails) productDetails;
-            sessionRequestBuilder.itemId(pointDetails.getItemId());
-            sessionRequestBuilder.itemPrice(pointDetails.getPrice());
-            sessionRequestBuilder.title(pointDetails.getTitle());
-            sessionRequestBuilder.skuId(pointDetails.getSkuId());
-        }
         return sessionRequestBuilder.build();
     }
 
+    public SessionRequest toSessionWithAdditionalParam (Map<String, String> additionalPram) {
+        final Optional<IPageUrlDetails> pageUrlDetailsOption = Optional.ofNullable(getPageUrlDetails());
+        return SessionRequest.builder()
+                .appId(getAppDetails().getAppId())
+                .appVersion(getAppDetails().getAppVersion())
+                .buildNo(getAppDetails().getBuildNo())
+                .deviceId(getAppDetails().getDeviceId())
+                .deviceType(getAppDetails().getDeviceType())
+                .os(getAppDetails().getOs())
+                .geoLocation(getGeoLocation())
+                .service(getAppDetails().getService())
+                .countryCode(getUserDetails().getCountryCode())
+                .msisdn(getUserDetails().getMsisdn())
+                .miscellaneousDetails(getMiscellaneousDetails())
+                .uid(IdentityUtils.getUidFromUserName(getUserDetails().getMsisdn(), getAppDetails().getService()))
+                .failureUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getFailurePageUrl).orElse(null))
+                .successUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getSuccessPageUrl).orElse(null))
+                .pendingUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getPendingPageUrl).orElse(null))
+                .unknownUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getUnknownPageUrl).orElse(null))
+                .packGroup(additionalPram.get(BaseConstants.DEEPLINK_PACK_GROUP))
+                .validity(Validity.getValidity(additionalPram.get(BaseConstants.VALIDITY)))
+                .validityUnit(additionalPram.get(BaseConstants.VALIDITY))
+                .build();
+    }
 }

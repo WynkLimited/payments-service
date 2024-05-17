@@ -6,6 +6,7 @@ import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.data.utils.RepositoryUtils;
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
@@ -18,7 +19,9 @@ import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
+import in.wynk.payment.core.dao.entity.PaymentRenewal;
+import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
@@ -37,6 +40,7 @@ import in.wynk.payment.dto.response.AbstractPaymentRefundResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.gateway.*;
 import in.wynk.payment.mapper.DefaultTransactionInitRequestMapper;
+import in.wynk.payment.utils.RecurringTransactionUtils;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.session.context.SessionContextHolder;
 import io.netty.channel.ConnectTimeoutException;
@@ -55,7 +59,8 @@ import java.util.*;
 import static in.wynk.payment.core.constant.BeanConstant.CHARGING_FRAUD_DETECTION_CHAIN;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
-import static in.wynk.payment.core.constant.PaymentErrorType.*;
+import static in.wynk.payment.core.constant.PaymentErrorType.APS007;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY024;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.CHARGING_API_FAILURE;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.RENEWAL_STATUS_ERROR;
 
@@ -83,6 +88,7 @@ public class PaymentGatewayManager
     private final Map<Class<? extends AbstractTransactionStatusRequest>, IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>> statusDelegator = new HashMap<>();
     private final Gson gson;
     private final PaymentGatewayCommon common;
+    private final RecurringTransactionUtils recurringTransactionUtils;
 
     @PostConstruct
     public void init() {
@@ -123,12 +129,15 @@ public class PaymentGatewayManager
             throw new PaymentRuntimeException(PaymentErrorType.PAY007, ex.getMessage());
         } finally {
             sqsManagerService.publishSQSMessage(
-                    PaymentReconciliationMessage.builder().paymentMethodId(request.getPaymentDetails().getPaymentId()).paymentCode(transaction.getPaymentChannel().getId()).paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
+                    PaymentReconciliationMessage.builder().paymentMethodId(request.getPaymentDetails().getPaymentId()).paymentCode(transaction.getPaymentChannel().getId())
+                            .paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
                             .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
-            eventPublisher.publishEvent(PurchaseInitEvent.builder().clientAlias(transaction.getClientAlias()).transactionId(transaction.getIdStr()).uid(transaction.getUid()).msisdn(transaction
-                    .getMsisdn()).productDetails(request.getProductDetails()).appDetails(request.getAppDetails()).sid(Optional.ofNullable(SessionContextHolder
-                    .getId())).build());
-            if(Objects.nonNull(request.getAppStoreDetails()) && Objects.nonNull(request.getAppStoreDetails().getExternalTransactionToken())) {
+            if (BaseConstants.PLAN.equals(request.getProductDetails().getType())) {
+                eventPublisher.publishEvent(PurchaseInitEvent.builder().clientAlias(transaction.getClientAlias()).transactionId(transaction.getIdStr()).uid(transaction.getUid()).msisdn(transaction
+                        .getMsisdn()).productDetails(request.getProductDetails()).appDetails(request.getAppDetails()).sid(Optional.ofNullable(SessionContextHolder
+                        .getId())).build());
+            }
+            if (Objects.nonNull(request.getAppStoreDetails()) && Objects.nonNull(request.getAppStoreDetails().getExternalTransactionToken())) {
                 final MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
                 merchantTransactionEventBuilder.externalTokenReferenceId(request.getAppStoreDetails().getExternalTransactionToken());
                 eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
@@ -229,7 +238,8 @@ public class PaymentGatewayManager
         if (wrapper.isEligible()) {
             final UserPlanMapping<?> mapping = receiptDetailService.getUserPlanMapping(wrapper);
             if (mapping != null) {
-                final in.wynk.common.enums.PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper);
+                String productType = Objects.nonNull(mapping.getItemId()) ? BaseConstants.POINT : BaseConstants.PLAN;
+                final in.wynk.common.enums.PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper, productType);
                 final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
                         PlanRenewalRequest.builder().txnId(mapping.getLinkedTransactionId()).planId(mapping.getPlanId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentGateway(request.getPaymentGateway())
                                 .clientAlias(request.getClientAlias()).build());
@@ -282,10 +292,10 @@ public class PaymentGatewayManager
             if (e.getRootCause() != null) {
                 if (e.getRootCause() instanceof SocketTimeoutException || e.getRootCause() instanceof ConnectTimeoutException) {
                     log.error(RENEWAL_STATUS_ERROR, "Socket timeout but valid for reconciliation for request : due to {}", e.getMessage(), e);
-                    errorEventBuilder.code(PAY036.getErrorCode());
-                    errorEventBuilder.description(PAY036.getErrorMessage() + "for " + paymentGateway);
+                    errorEventBuilder.code(APS007.getErrorCode());
+                    errorEventBuilder.description(APS007.getErrorMessage() + "for " + paymentGateway);
                     eventPublisher.publishEvent(errorEventBuilder.build());
-                    throw new WynkRuntimeException(PAY036);
+                    throw new WynkRuntimeException(APS007);
                 } else {
                     handleException(errorEventBuilder, paymentGateway, e, transaction);
                 }
@@ -300,10 +310,12 @@ public class PaymentGatewayManager
                 final IWynkErrorType errorType = original.getErrorType();
                 errorEventBuilder.code(Objects.nonNull(errorType) ? errorType.getErrorCode() : original.getErrorCode());
                 errorEventBuilder.description(Objects.nonNull(errorType) ? errorType.getErrorMessage() : original.getMessage());
-                eventPublisher.publishEvent(errorEventBuilder.build());
+                PaymentErrorEvent errorEvent = errorEventBuilder.build();
+                recurringTransactionUtils.cancelRenewalBasedOnErrorReason(errorEvent.getDescription(), transaction);
+                eventPublisher.publishEvent(errorEvent);
                 throw ex;
             } else {
-                errorEventBuilder.code(PaymentErrorType.PAY024.getErrorCode()).description(ex.getMessage());
+                errorEventBuilder.code(PaymentErrorType.PAY024.getErrorCode()).description(PaymentErrorType.PAY024.getErrorMessage());
                 eventPublisher.publishEvent(errorEventBuilder.build());
                 throw new WynkRuntimeException(PAY024, ex);
             }

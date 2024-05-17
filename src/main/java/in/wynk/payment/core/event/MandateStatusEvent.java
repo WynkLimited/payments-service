@@ -1,5 +1,6 @@
 package in.wynk.payment.core.event;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import lombok.Builder;
@@ -11,6 +12,7 @@ import lombok.Getter;
 @Getter
 @Builder
 @AnalysedEntity
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class MandateStatusEvent {
     @Analysed
     private String txnId;
@@ -20,6 +22,8 @@ public class MandateStatusEvent {
     private String uid;
     @Analysed
     private Integer planId;
+    @Analysed
+    private String paymentMethod;
     @Analysed
     private String clientAlias;
     @Analysed

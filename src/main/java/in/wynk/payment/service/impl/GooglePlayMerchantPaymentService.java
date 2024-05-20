@@ -429,10 +429,10 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     @Override
     public LatestReceiptResponse getLatestReceiptResponse (IapVerificationRequestV2 iapVerificationRequest) {
         final GooglePlayVerificationRequest request = (GooglePlayVerificationRequest) iapVerificationRequest;
-        if (Objects.isNull(request.getPaymentDetails()) || Objects.isNull(request.getProductDetails()) || Objects.isNull(request.getAppDetails())) {
+        String productType = (Objects.nonNull(request.getProductDetails().getType()) && (Objects.equals(request.getProductDetails().getType(), BaseConstants.POINT))) ? BaseConstants.POINT : BaseConstants.PLAN;
+        if (Objects.isNull(request.getPaymentDetails()) || Objects.isNull(request.getProductDetails()) || Objects.isNull(request.getAppDetails()) || (productType.equals(BaseConstants.POINT) && StringUtils.isEmpty(request.getProductDetails().getItemId()))) {
             throw new WynkRuntimeException(PaymentErrorType.PAY501);
         }
-        String productType = (Objects.nonNull(request.getProductDetails().getType()) && (Objects.equals(request.getProductDetails().getType(), BaseConstants.POINT))) ? BaseConstants.POINT : BaseConstants.PLAN;
         AbstractGooglePlayReceiptVerificationResponse abstractGooglePlayReceiptVerificationResponse =
                 googlePlayResponse(request.getPaymentDetails().getPurchaseToken(), request.getProductDetails().getSkuId(), request.getAppDetails().getPackageName(),
                         request.getAppDetails().getService(), productType);

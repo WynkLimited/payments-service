@@ -429,10 +429,10 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     @Override
     public LatestReceiptResponse getLatestReceiptResponse (IapVerificationRequestV2 iapVerificationRequest) {
         final GooglePlayVerificationRequest request = (GooglePlayVerificationRequest) iapVerificationRequest;
-        if (Objects.isNull(request.getPaymentDetails()) || Objects.isNull(request.getProductDetails()) || Objects.isNull(request.getAppDetails())) {
+        String productType = (Objects.nonNull(request.getProductDetails().getType()) && (Objects.equals(request.getProductDetails().getType(), BaseConstants.POINT))) ? BaseConstants.POINT : BaseConstants.PLAN;
+        if (Objects.isNull(request.getPaymentDetails()) || Objects.isNull(request.getProductDetails()) || Objects.isNull(request.getAppDetails()) || (productType.equals(BaseConstants.POINT) && StringUtils.isEmpty(request.getProductDetails().getItemId()))) {
             throw new WynkRuntimeException(PaymentErrorType.PAY501);
         }
-        String productType = (Objects.nonNull(request.getProductDetails().getType()) && (Objects.equals(request.getProductDetails().getType(), BaseConstants.POINT))) ? BaseConstants.POINT : BaseConstants.PLAN;
         AbstractGooglePlayReceiptVerificationResponse abstractGooglePlayReceiptVerificationResponse =
                 googlePlayResponse(request.getPaymentDetails().getPurchaseToken(), request.getProductDetails().getSkuId(), request.getAppDetails().getPackageName(),
                         request.getAppDetails().getService(), productType);
@@ -511,7 +511,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         } else if (GooglePlayProductAcknowledgementRequest.class.isAssignableFrom(abstractPaymentAcknowledgementRequest.getClass())) {
             consumeProduct((AbstractAcknowledgement) abstractPaymentAcknowledgementRequest);
         } else {
-            reportExternalTransactionSubscription((GooglePlayReportExternalTransactionRequest) abstractPaymentAcknowledgementRequest, abstractPaymentAcknowledgementRequest.getTxnId());
+            reportExternalTransactionSubscription((GooglePlayReportExternalTransactionRequest) abstractPaymentAcknowledgementRequest);
         }
     }
 
@@ -549,7 +549,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     }
 
     @AnalyseTransaction(name = "externalTransactionAcknowledgement")
-    public void reportExternalTransactionSubscription (GooglePlayReportExternalTransactionRequest request, String txnId) {
+    public void reportExternalTransactionSubscription (GooglePlayReportExternalTransactionRequest request) {
         AnalyticService.update(request);
         final MsisdnOperatorDetails operatorDetails = userDetailsService.getOperatorDetails(request.getTransaction().getMsisdn());
         final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(request.getClientAlias());
@@ -579,17 +579,10 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         } else if (EnumSet.of(PURCHASE, POINT_PURCHASE).contains(paymentEvent)) {
             body = builder.oneTimeTransaction(OneTimeExternalTransaction.builder().externalTransactionToken(request.getExternalTransactionToken()).build()).build();
         } else if (paymentEvent == RENEW) {
-            Optional<PaymentRenewal> renewalOptional =
-                    RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class)
-                            .findById(request.getTransaction().getIdStr());
-            if (renewalOptional.isPresent()) {
-                body = builder.recurringTransaction(
-                        RecurringExternalTransaction.builder().initialExternalTransactionId(renewalOptional.get().getInitialTransactionId())
-                                .externalSubscription(ExternalSubscription.builder().subscriptionType(SubscriptionType.RECURRING).build())
-                                .build()).build();
-            } else {
-                throw new WynkRuntimeException("Unable to report renewal transactions to google");
-            }
+            body = builder.recurringTransaction(
+                    RecurringExternalTransaction.builder().initialExternalTransactionId(request.getInitialTransactionId())
+                            .externalSubscription(ExternalSubscription.builder().subscriptionType(SubscriptionType.RECURRING).build())
+                            .build()).build();
         }
         HttpHeaders headers = getHeaders(service);
         String url = baseUrl.concat(packageName).concat(externalPurchase).concat(request.getTransaction().getIdStr()).concat(ETERNAL_TRANSACTION_API_KEY_PARAM).concat(getApiKey(service));
@@ -597,7 +590,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
             ResponseEntity<GooglePlayReportResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(body, headers), GooglePlayReportResponse.class);
             if (responseEntity.getStatusCode() == HttpStatus.OK) {
                 GooglePlayReportResponse response = responseEntity.getBody();
-                eventPublisher.publishEvent(GooglePlayReportEvent.builder().transactionId(response.getExternalTransactionId())
+                eventPublisher.publishEvent(GooglePlayReportEvent.builder().transactionId(response.getExternalTransactionId()).paymentEvent(paymentEvent.getValue())
                         .transactionState(response.getTransactionState()).createTime(response.getCreateTime())
                         .currentPreTaxAmount(response.getCurrentPreTaxAmount()).currentTaxAmount(response.getCurrentTaxAmount())
                         .service(MerchantServiceUtil.getService(response.getPackageName())).isTestPurchase(Objects.nonNull(response.getTestPurchase())).build());

@@ -30,6 +30,9 @@ public class GooglePlayReportExternalTransactionRequest extends AbstractPaymentA
     @Analysed
     private final String paymentCode;
 
+    @Analysed
+    private String initialTransactionId;
+
     @Override
     public String getPaymentCode () {
         return this.paymentCode;

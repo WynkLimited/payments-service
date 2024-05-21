@@ -62,7 +62,7 @@ public class ExternalTransactionReportConsumerPollingQueue extends AbstractSQSMe
         IPurchaseDetails purchaseDetails = TransactionContext.getPurchaseDetails().orElse(null);
         AbstractPaymentAcknowledgementRequest abstractPaymentAcknowledgementRequest =
                 GooglePlayReportExternalTransactionRequest.builder().transaction(transaction).externalTransactionToken(message.getExternalTransactionId()).paymentCode(BeanConstant.GOOGLE_PLAY)
-                        .clientAlias(message.getClientAlias()).purchaseDetails(purchaseDetails).build();
+                        .clientAlias(message.getClientAlias()).purchaseDetails(purchaseDetails).initialTransactionId(message.getInitialTransactionId()).build();
         paymentManager.acknowledgeSubscription(abstractPaymentAcknowledgementRequest);
     }
 

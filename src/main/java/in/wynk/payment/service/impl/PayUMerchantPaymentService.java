@@ -175,11 +175,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     public WynkResponseEntity<Void> doRenewal (PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
         Transaction transaction = TransactionContext.get();
         PlanPeriodDTO planPeriodDTO = cachingService.getPlan(transaction.getPlanId()).getPeriod();
-        String txnId = paymentRenewalChargingRequest.getId();
-        PaymentRenewal renewal = recurringPaymentManagerService.getRenewalById(txnId);
-        if (Objects.nonNull(renewal) && StringUtils.isNotBlank(renewal.getLastSuccessTransactionId())) {
-            txnId = renewal.getLastSuccessTransactionId();
-        }
+        PaymentRenewal lastRenewal = recurringPaymentManagerService.getRenewalById(paymentRenewalChargingRequest.getId());
+        String txnId = getUpdatedTransactionId(paymentRenewalChargingRequest.getId(), lastRenewal);
         MerchantTransaction merchantTransaction = getMerchantData(txnId);
         PayUVerificationResponse<PayUChargingTransactionDetails> currentStatus =
                 (merchantTransaction == null) ? syncChargingTransactionFromSource(transactionManagerService.get(txnId), Optional.empty()) : null;
@@ -192,7 +189,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             boolean isUpi = StringUtils.isNotEmpty(mode) && mode.equals("UPI");
             String externalTransactionId = (merchantTransaction != null) ? merchantTransaction.getExternalTransactionId() : currentStatus.getTransactionDetails(txnId).getPayUExternalTxnId();
             if (!isUpi || validateStatusForRenewal(externalTransactionId, transaction)) {
-                payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest, externalTransactionId, txnId);
+                payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest, externalTransactionId, lastRenewal.getLastSuccessTransactionId());
                 payUChargingTransactionDetails = payURenewalResponse.getTransactionDetails().get(transaction.getIdStr());
                 int retryInterval = planPeriodDTO.getRetryInterval();
                 if (payURenewalResponse.getStatus() == 1) {
@@ -210,7 +207,9 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                     } else if (transaction.getInitTime().getTimeInMillis() < System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
                             StringUtils.equalsIgnoreCase(PENDING, payUChargingTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.FAILURE.getValue());
-                        eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description("Transaction init time is less than current - 1").build());
+                        eventPublisher.publishEvent(
+                                PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description("Transaction init time is less than current - 1")
+                                        .build());
                     }
                 } else {
                     transaction.setStatus(TransactionStatus.FAILURE.getValue());
@@ -226,6 +225,26 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             throw e;
         }
         return WynkResponseEntity.<Void>builder().build();
+    }
+
+    private String getUpdatedTransactionId (String txnId, PaymentRenewal lastRenewal) {
+        String updatedTransactionId = txnId;
+        if (Objects.nonNull(lastRenewal)) {
+            if (StringUtils.isNotBlank(lastRenewal.getInitialTransactionId())) {
+                updatedTransactionId = lastRenewal.getInitialTransactionId();
+            } else if (StringUtils.isNotBlank(lastRenewal.getLastSuccessTransactionId())) {
+                log.error("Initial transaction id is null but not the  last success transaction id {}", lastRenewal.getLastSuccessTransactionId());
+                PaymentRenewal lastToLastRenewal = recurringPaymentManagerService.getRenewalById(lastRenewal.getLastSuccessTransactionId());
+                if (StringUtils.isNotBlank(lastToLastRenewal.getInitialTransactionId())) {
+                    updatedTransactionId = lastToLastRenewal.getInitialTransactionId();
+                } else {
+                    updatedTransactionId =
+                            StringUtils.isNotBlank(lastToLastRenewal.getLastSuccessTransactionId()) ? lastToLastRenewal.getLastSuccessTransactionId() : lastRenewal.getLastSuccessTransactionId();
+                }
+
+            }
+        }
+        return updatedTransactionId;
     }
 
     private String findPayuErrorMessage (PayUChargingTransactionDetails payUChargingTransactionDetails) {

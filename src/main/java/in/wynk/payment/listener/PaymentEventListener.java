@@ -535,7 +535,7 @@ public class PaymentEventListener {
         AnalyticService.update(event);
         try {
             sqsManagerService.publishSQSMessage(ExternalTransactionReportMessageManager.builder().clientAlias(event.getClientAlias()).transactionId(event.getTransactionId())
-                    .externalTransactionId(event.getExternalTokenReferenceId()).paymentEvent(event.getPaymentEvent()).build());
+                    .externalTransactionId(event.getExternalTokenReferenceId()).paymentEvent(event.getPaymentEvent()).initialTransactionId(event.getInitialTransactionId()).build());
         } catch (Exception e) {
             log.error("Exception occurred while publishing event on ExternalTransactionReport queue for transactionId: {}", event.getTransactionId(), e);
         }

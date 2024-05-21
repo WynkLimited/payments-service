@@ -34,7 +34,7 @@ public class PaymentMethodsItemEligibilityEvaluation extends PaymentOptionsCommo
     public boolean isExternalEligible() {
         final EligibilityResult.EligibilityResultBuilder<PaymentMethod> resultBuilder = EligibilityResult.<PaymentMethod>builder().entity(getEntity()).status(EligibilityStatus.NOT_ELIGIBLE);
         try {
-            final PaymentOptionsPlanEligibilityRequest root = (PaymentOptionsPlanEligibilityRequest) getRoot();
+            final PaymentOptionsItemEligibilityRequest root = (PaymentOptionsItemEligibilityRequest) getRoot();
             if (StringUtils.isBlank(root.getMsisdn())) {
                 resultBuilder.reason(CommonEligibilityStatusReason.MSISDN_REQUIRED);
             } else {

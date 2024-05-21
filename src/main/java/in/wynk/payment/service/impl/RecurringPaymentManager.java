@@ -243,8 +243,12 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
         if (PaymentEvent.RENEW != event) {
             return transaction.getIdStr();
         } else {
-            PaymentRenewal renewal = getRenewalById(updatedLastSuccessTransactionId);
-            return renewal != null ? renewal.getInitialTransactionId() : null;
+            if (updatedLastSuccessTransactionId != null) {
+                PaymentRenewal renewal = getRenewalById(updatedLastSuccessTransactionId);
+                return renewal != null ? renewal.getInitialTransactionId() : null;
+            } else {
+                return null;
+            }
         }
     }
 

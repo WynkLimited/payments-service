@@ -27,4 +27,7 @@ public abstract class AbstractExternalTransactionReportMessage {
 
     @Analysed
     private PaymentEvent paymentEvent;
+
+    @Analysed
+    private String initialTransactionId;
 }

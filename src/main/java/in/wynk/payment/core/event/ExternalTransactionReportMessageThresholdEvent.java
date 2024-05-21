@@ -27,4 +27,7 @@ public class ExternalTransactionReportMessageThresholdEvent  extends MessageThre
 
     @Analysed
     private PaymentEvent paymentEvent;
+
+    @Analysed
+    private String initialTransactionId;
 }

@@ -78,7 +78,7 @@
     </logger>
 
     <logger name="purchaseAcknowledgeMessage" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="subscriptionAcknowledgement" additivity="false" level="INFO">
@@ -86,15 +86,15 @@
     </logger>
 
     <logger name="productAcknowledgement" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="productConsumption" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="externalTransactionAcknowledgement" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="externalTransactionReportEvent" additivity="false" level="INFO">
@@ -134,7 +134,7 @@
     </logger>
 
     <logger name="generateItemEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="paymentServerSyncCallback" additivity="false" level="INFO">
@@ -273,7 +273,7 @@
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="paymentRefundInitMessage" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="seRenewal" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
@@ -403,7 +403,7 @@
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
     <logger name="purchaseRequestV3" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <!-- invoice loggers end -->

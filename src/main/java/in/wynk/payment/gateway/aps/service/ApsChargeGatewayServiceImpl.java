@@ -1,6 +1,7 @@
 package in.wynk.payment.gateway.aps.service;
 
 import in.wynk.common.constant.BaseConstants;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.constant.FlowType;
@@ -216,8 +217,12 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                             Arrays.stream(apsUpiIntentChargingChargingResponse.getUpiLink().split("\\?")[1].split("&")).map(s -> s.split("=", 2)).filter(p -> StringUtils.isNotBlank(p[1]))
                                     .collect(Collectors.toMap(x -> x[0], x -> x[1]));
                     PaymentCachingService paymentCachingService = BeanLocatorFactory.getBean(PaymentCachingService.class);
-                    String offerTitle = paymentCachingService.getOffer(paymentCachingService.getPlan(TransactionContext.get().getPlanId()).getLinkedOfferId()).getTitle();
-
+                    String offerTitle;
+                    if (transaction.getType() == PaymentEvent.POINT_PURCHASE) {
+                        offerTitle = transaction.getItemId();
+                    } else {
+                        offerTitle = paymentCachingService.getOffer(paymentCachingService.getPlan(TransactionContext.get().getPlanId()).getLinkedOfferId()).getTitle();
+                    }
                     return UpiIntentChargingResponse.builder()
                             .mn(map.get(MN))
                             .rev(map.get(REV))

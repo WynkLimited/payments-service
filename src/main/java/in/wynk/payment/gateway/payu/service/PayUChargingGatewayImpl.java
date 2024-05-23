@@ -148,7 +148,12 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
                         final Map<String, String> map = Arrays.stream(result.getIntentURIData().split(AND)).map(s -> s.split(EQUAL, 2)).filter(p -> StringUtils.isNotBlank(p[1]))
                                 .collect(Collectors.toMap(x -> x[0], x -> x[1]));
                         final PaymentCachingService paymentCachingService = BeanLocatorFactory.getBean(PaymentCachingService.class);
-                        final String offerTitle = paymentCachingService.getOffer(paymentCachingService.getPlan(TransactionContext.get().getPlanId()).getLinkedOfferId()).getTitle();
+                        String offerTitle;
+                        if (transaction.getType() == PaymentEvent.POINT_PURCHASE) {
+                            offerTitle = transaction.getItemId();
+                        } else {
+                            offerTitle = paymentCachingService.getOffer(paymentCachingService.getPlan(TransactionContext.get().getPlanId()).getLinkedOfferId()).getTitle();
+                        }
                         return UpiIntentChargingResponse.builder()
                                 .mn(map.get(MN))
                                 .rev(map.get(REV))

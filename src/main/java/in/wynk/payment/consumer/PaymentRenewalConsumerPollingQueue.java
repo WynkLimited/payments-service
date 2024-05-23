@@ -96,7 +96,7 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
         AnalyticService.update(message);
         log.info(PaymentLoggingMarker.PAYMENT_RENEWAL_QUEUE, "processing PaymentRenewalMessage for transactionId {}", message.getTransactionId());
         Transaction transaction = transactionManager.get(message.getTransactionId());
-        if (isEligibleForRenewal(transaction, message.getAttemptSequence())) {
+        if (isEligibleForRenewal(transaction)) {
             sqsManagerService.publishSQSMessage(PaymentRenewalChargingMessage.builder()
                     .uid(transaction.getUid())
                     .id(transaction.getIdStr())
@@ -109,24 +109,19 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
         }
     }
 
-    private boolean isEligibleForRenewal (Transaction transaction, int attemptSequence) {
-        if (attemptSequence < PaymentConstants.MAXIMUM_RENEWAL_RETRY_ALLOWED) {
-            ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> response =
-                    subscriptionServiceManager.renewalPlanEligibilityResponse(transaction.getPlanId(), transaction.getUid());
-            if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {
-                RenewalPlanEligibilityResponse renewalPlanEligibilityResponse = response.getBody().getData();
-                long today = System.currentTimeMillis();
-                long furtherDefer = renewalPlanEligibilityResponse.getDeferredUntil() - today;
-                if (subscriptionServiceManager.isDeferred(transaction.getPaymentChannel().getCode(), furtherDefer)) {
-                    recurringPaymentManagerService.unScheduleRecurringPayment(transaction.getIdStr(), PaymentEvent.DEFERRED, today, furtherDefer);
-                    return false;
-                }
+    private boolean isEligibleForRenewal (Transaction transaction) {
+        ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> response =
+                subscriptionServiceManager.renewalPlanEligibilityResponse(transaction.getPlanId(), transaction.getUid());
+        if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {
+            RenewalPlanEligibilityResponse renewalPlanEligibilityResponse = response.getBody().getData();
+            long today = System.currentTimeMillis();
+            long furtherDefer = renewalPlanEligibilityResponse.getDeferredUntil() - today;
+            if (subscriptionServiceManager.isDeferred(transaction.getPaymentChannel().getCode(), furtherDefer)) {
+                recurringPaymentManagerService.unScheduleRecurringPayment(transaction.getIdStr(), PaymentEvent.DEFERRED, today, furtherDefer);
+                return false;
             }
-            return true;
-        } else {
-            log.error("Need to break the chain in Payment Renewal as maximum attempts are already exceeded");
-            return false;
         }
+        return true;
     }
 
     @Override

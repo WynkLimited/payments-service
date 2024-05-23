@@ -195,17 +195,26 @@ public class PaymentEventListener {
     }
 
     @EventListener
-    @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "recurringPaymentEvent")
     public void onRecurringPaymentEvent (RecurringPaymentEvent event) {
+        AnalyticService.update(event);
+        cancelMandateFromPG(event);
+    }
+
+    @ClientAware(clientAlias = "#event.clientAlias")
+    @AnalyseTransaction(name = "cancelMandateFromPGEvent")
+    private void cancelMandateFromPG (RecurringPaymentEvent event) {
         try {
-            AnalyticService.update(event);
-            if (event.getPaymentEvent() == PaymentEvent.UNSUBSCRIBE) {
-                BeanLocatorFactory.getBean(transactionManagerService.get(event.getTransactionId()).getPaymentChannel().getCode(), ICancellingRecurringService.class)
+            Transaction transaction = transactionManagerService.get(event.getTransactionId());
+            AnalyticService.update("paymentCode", transaction.getPaymentChannel().getId());
+            if ((transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.UNSUBSCRIBE) && event.getPaymentEvent() == PaymentEvent.UNSUBSCRIBE) {
+                BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), ICancellingRecurringService.class)
                         .cancelRecurring(event.getTransactionId());
+                AnalyticService.update("isMandateCancelled", true);
             }
         } catch (Exception e) {
-            throw new WynkRuntimeException(UT025, e);
+            AnalyticService.update("isMandateCancelled", false);
+            log.error(PaymentLoggingMarker.MANDATE_REVOKE_ERROR, e.getMessage(), e);
         }
     }
 

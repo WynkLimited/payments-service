@@ -10,7 +10,6 @@ import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.eligibility.enums.PaymentsEligibilityReason;
 import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsItemEligibilityRequest;
-import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
 import in.wynk.payment.service.IExternalPaymentEligibilityService;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
@@ -34,7 +33,7 @@ public class PaymentMethodsItemEligibilityEvaluation extends PaymentOptionsCommo
     public boolean isExternalEligible() {
         final EligibilityResult.EligibilityResultBuilder<PaymentMethod> resultBuilder = EligibilityResult.<PaymentMethod>builder().entity(getEntity()).status(EligibilityStatus.NOT_ELIGIBLE);
         try {
-            final PaymentOptionsPlanEligibilityRequest root = (PaymentOptionsPlanEligibilityRequest) getRoot();
+            final PaymentOptionsItemEligibilityRequest root = (PaymentOptionsItemEligibilityRequest) getRoot();
             if (StringUtils.isBlank(root.getMsisdn())) {
                 resultBuilder.reason(CommonEligibilityStatusReason.MSISDN_REQUIRED);
             } else {

@@ -70,7 +70,8 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     private final ApplicationEventPublisher eventPublisher;
     private final IMerchantTransactionService merchantTransactionService;
 
-    private Transaction upsert (Transaction transaction) {
+    @Override
+    public Transaction upsert (Transaction transaction) {
         Transaction persistedEntity = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).save(transaction);
         final TransactionSnapshotEvent.TransactionSnapshotEventBuilder builder = TransactionSnapshotEvent.builder().transaction(transaction);
         Optional.ofNullable(purchaseDetailsManger.get(transaction)).ifPresent(builder::purchaseDetails);

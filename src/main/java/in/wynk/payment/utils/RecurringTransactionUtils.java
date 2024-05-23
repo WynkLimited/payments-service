@@ -102,7 +102,7 @@ public class RecurringTransactionUtils {
 
     private void updateTransaction (Transaction transaction) {
         transaction.setStatus(TransactionStatus.CANCELLED.getValue());
-        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).save(transaction);
+        transactionManagerService.upsert(transaction);
     }
 
     public void cancelRenewalBasedOnRealtimeMandate (String description, Transaction firstTransaction) {

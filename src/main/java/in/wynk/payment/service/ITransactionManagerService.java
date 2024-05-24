@@ -24,4 +24,6 @@ public interface ITransactionManagerService {
 
     void migrateOldTransactions(String userId, String uid, String oldUid, String service);
 
+    Transaction upsert (Transaction transaction);
+
 }

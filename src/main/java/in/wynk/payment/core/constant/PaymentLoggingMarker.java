@@ -23,6 +23,7 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker APS_VALIDATION_FAILURE = MarkerFactory.getMarker("APS_VALIDATION_FAILURE");
     Marker APS_REFUND_STATUS_VERIFICATION = MarkerFactory.getMarker("APS_REFUND_STATUS_VERIFICATION");
     Marker APS_MANDATE_REVOKE_ERROR = MarkerFactory.getMarker("APS_MANDATE_REVOKE_ERROR");
+    Marker MANDATE_REVOKE_ERROR = MarkerFactory.getMarker("MANDATE_REVOKE_ERROR");
     Marker APS_CALLBACK_ORDER_ERROR = MarkerFactory.getMarker("APS_CALLBACK_ORDER_ERROR");
     Marker APS_TDR_ERROR= MarkerFactory.getMarker("APS_TDR_ERROR");
     Marker MAX_RENEWAL_ATTEMPT_ERROR= MarkerFactory.getMarker("MAX_RENEWAL_ATTEMPT_ERROR");

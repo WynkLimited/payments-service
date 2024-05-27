@@ -103,22 +103,18 @@ public class PaymentRenewalsScheduler {
     }
 
     private boolean checkRenewalEligibility (String transactionId, int attemptSequence) {
-        if (attemptSequence < PaymentConstants.MAXIMUM_RENEWAL_RETRY_ALLOWED) {
-            Transaction transaction = transactionManager.get(transactionId);
-            if ((transaction.getStatus() == TransactionStatus.FAILURE && transaction.getType() != RENEW) || (transaction.getStatus() == TransactionStatus.CANCELLED)) {
-                try {
-                    eventPublisher.publishEvent(UnScheduleRecurringPaymentEvent.builder().transactionId(transaction.getIdStr()).clientAlias(transaction.getClientAlias())
-                            .reason("Stopping Payment Renewal because transaction status is " + transaction.getStatus().getValue()).build());
-                } catch (Exception e) {
-                    return false;
-                }
+        Transaction transaction = transactionManager.get(transactionId);
+        if ((transaction.getStatus() == TransactionStatus.FAILURE && attemptSequence >= PaymentConstants.MAXIMUM_RENEWAL_RETRY_ALLOWED) ||
+                (transaction.getStatus() == TransactionStatus.FAILURE && transaction.getType() != RENEW) || (transaction.getStatus() == TransactionStatus.CANCELLED)) {
+            try {
+                eventPublisher.publishEvent(UnScheduleRecurringPaymentEvent.builder().transactionId(transaction.getIdStr()).clientAlias(transaction.getClientAlias())
+                        .reason("Stopping Payment Renewal because transaction status is " + transaction.getStatus().getValue()).build());
+            } catch (Exception e) {
                 return false;
             }
-            return !renewalUnSupportedPG.contains(transaction.getPaymentChannel().getId());
-        } else {
-            log.error("Need to break the chain in Payment Renewal as maximum attempts are already exceeded");
             return false;
         }
+        return !renewalUnSupportedPG.contains(transaction.getPaymentChannel().getId());
     }
 
     @AnalyseTransaction(name = "schedulePreDebitNotificationMessage")

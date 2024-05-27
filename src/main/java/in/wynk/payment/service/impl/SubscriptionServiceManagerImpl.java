@@ -52,6 +52,7 @@ import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static in.wynk.payment.core.constant.BeanConstant.AIRTEL_PAY_STACK;
 import static in.wynk.payment.core.constant.BeanConstant.SUBSCRIPTION_SERVICE_S2S_TEMPLATE;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY105;
 
@@ -202,7 +203,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     public boolean isDeferred (String paymentMethod, long furtherDefer) {
         long oneHourWindow = (long) hour * 60 * 60 * 1000;
         long twoDayPlusOneHourWindow = ((long) 2 * 24 * 60 * 60 * 1000) + oneHourWindow;
-        return Objects.equals(paymentMethod, ApsConstant.AIRTEL_PAY_STACK) ? (furtherDefer > twoDayPlusOneHourWindow) : (furtherDefer > oneHourWindow);
+        return Objects.equals(paymentMethod, AIRTEL_PAY_STACK) ? (furtherDefer > twoDayPlusOneHourWindow) : (furtherDefer > oneHourWindow);
     }
 
     @Override

@@ -274,7 +274,8 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     }
 
     @Override
-    public void unScheduleRecurringPayment (String transactionId, PaymentEvent paymentEvent, long validUntil, long deferredUntil) {
+    public void unScheduleRecurringPayment (Transaction transaction, PaymentEvent paymentEvent, long validUntil, long deferredUntil) {
+        String transactionId = transaction.getIdStr();
         try {
             final IPaymentRenewalDao paymentRenewalDao = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class);
             paymentRenewalDao.findById(transactionId).ifPresent(recurringPayment -> {
@@ -299,7 +300,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
                     recurringPayment.setTransactionEvent(paymentEvent.name());
 
                     paymentRenewalDao.save(recurringPayment);
-                    eventPublisher.publishEvent(RecurringPaymentEvent.builder().transactionId(transactionId).paymentEvent(paymentEvent).build());
+                    eventPublisher.publishEvent(RecurringPaymentEvent.builder().transaction(transaction).paymentEvent(paymentEvent).build());
                 } else {
                     log.info("recurring can not be deferred further for transaction id {}, since offset {} is less than zero", transactionId, furtherDeferUntil);
                 }

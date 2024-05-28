@@ -117,7 +117,7 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
             long today = System.currentTimeMillis();
             long furtherDefer = renewalPlanEligibilityResponse.getDeferredUntil() - today;
             if (subscriptionServiceManager.isDeferred(transaction.getPaymentChannel().getCode(), furtherDefer)) {
-                recurringPaymentManagerService.unScheduleRecurringPayment(transaction.getIdStr(), PaymentEvent.DEFERRED, today, furtherDefer);
+                recurringPaymentManagerService.unScheduleRecurringPayment(transaction, PaymentEvent.DEFERRED, today, furtherDefer);
                 return false;
             }
         }

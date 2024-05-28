@@ -875,7 +875,10 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     public void cancelRecurring (String transactionId) {
         try {
             LinkedHashMap<String, String> orderedMap = new LinkedHashMap<>();
-            MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(transactionId);
+            PaymentRenewal lastRenewal = recurringPaymentManagerService.getRenewalById(transactionId);
+            String txnId = getUpdatedTransactionId(transactionId, lastRenewal);
+            MerchantTransaction merchantTransaction = getMerchantData(txnId);
+            assert merchantTransaction != null;
             orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, merchantTransaction.getExternalTransactionId());
             orderedMap.put(PAYU_REQUEST_ID, transactionId);
             String variable = gson.toJson(orderedMap);
@@ -883,7 +886,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             MultiValueMap<String, String> requestMap = buildPayUInfoRequest(transactionManagerService.get(transactionId).getClientAlias(), UPI_MANDATE_REVOKE.getCode(), variable);
             PayUBaseResponse response = this.getInfoFromPayU(requestMap, new TypeReference<PayUBaseResponse>() {
             });
-            AnalyticService.update(UPI_MANDATE_REVOKE.getCode(), gson.toJson(response));
+            AnalyticService.update(MANDATE_REVOKE_RESPONSE, gson.toJson(response));
         } catch (Exception e) {
             log.error(PAYU_UPI_MANDATE_REVOKE_ERROR, e.getMessage());
             throw new WynkRuntimeException(PAY112);

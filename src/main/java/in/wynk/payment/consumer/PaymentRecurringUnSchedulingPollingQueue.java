@@ -2,6 +2,7 @@ package in.wynk.payment.consumer;
 
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.payment.common.messages.PaymentRecurringUnSchedulingMessage;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
@@ -54,6 +55,7 @@ public class PaymentRecurringUnSchedulingPollingQueue extends AbstractSQSMessage
 
     @Override
     @ClientAware(clientAlias = "#message.clientAlias")
+    @AnalyseTransaction(name = "paymentRecurringUnSchedulingMessage")
     public void consume(PaymentRecurringUnSchedulingMessage message) {
         log.info(PaymentLoggingMarker.PAYMENT_RECONCILIATION_QUEUE, "processing PaymentRecurringUnSchedulingMessage for uid {} and transactionId {}", message.getUid(), message.getTransactionId());
         // TODO : This is temporary solution. need to discuss with Zuber sir how we can remove this check of ADDTOBILL

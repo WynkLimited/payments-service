@@ -11,6 +11,7 @@ import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
 import in.wynk.payment.dto.aps.request.callback.ApsOrderStatusCallBackPayload;
 import in.wynk.payment.dto.common.AbstractPaymentInstrumentsProxy;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
+import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractPaymentChargingResponse;
@@ -20,17 +21,16 @@ import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsItemEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
 import in.wynk.payment.gateway.*;
-import in.wynk.payment.gateway.aps.service.ApsCommonGatewayService;
-import in.wynk.payment.gateway.aps.service.ApsEligibilityGatewayServiceImpl;
-import in.wynk.payment.gateway.aps.service.ApsOrderGatewayServiceImpl;
-import in.wynk.payment.gateway.aps.service.ApsPaymentOptionsServiceImpl;
+import in.wynk.payment.gateway.aps.service.*;
 import in.wynk.payment.service.IExternalPaymentEligibilityService;
 import in.wynk.payment.service.IMerchantTransactionService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
 
@@ -44,24 +44,29 @@ import static in.wynk.payment.dto.aps.common.ApsConstant.AIRTEL_PAY_STACK_V2;
 @Service(AIRTEL_PAY_STACK_V2)
 public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPaymentInstrumentsProxy<PaymentOptionsEligibilityRequest>,
         IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload>, IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>,
-        IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
+        IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
+        IPaymentAccountVerification<AbstractVerificationResponse, AbstractVerificationRequest> {
 
     private final IRechargeOrder<AbstractRechargeOrderResponse, AbstractRechargeOrderRequest> orderGateway;
     private final IExternalPaymentEligibilityService eligibilityGateway;
     private final IPaymentInstrumentsProxy<PaymentOptionsEligibilityRequest> payOptionsGateway;
     private final IMerchantTransactionService merchantTransactionService;
     private final ApplicationEventPublisher eventPublisher;
+    private final IPaymentAccountVerification<AbstractVerificationResponse, AbstractVerificationRequest> verificationGateway;
 
-    public ApsOrderGateway (@Value("${aps.payment.order.api}") String orderEndpoint, @Value("${aps.payment.option.api}") String payOptionEndpoint, ApsCommonGatewayService commonGateway, IMerchantTransactionService merchantTransactionService, ApplicationEventPublisher eventPublisher) {
+
+    public ApsOrderGateway(@Value("${aps.payment.order.api}") String orderEndpoint, @Value("${aps.payment.option.api}") String payOptionEndpoint, ApsCommonGatewayService commonGateway, IMerchantTransactionService merchantTransactionService, ApplicationEventPublisher eventPublisher, @Value("${aps.payment.verify.vpa.api}") String vpaVerifyEndpoint,
+                           @Value("${aps.payment.verify.bin.api}") String binVerifyEndpoint, @Qualifier("apsHttpTemplate") RestTemplate httpTemplate) {
         this.orderGateway = new ApsOrderGatewayServiceImpl(orderEndpoint, commonGateway);
         this.eligibilityGateway = new ApsEligibilityGatewayServiceImpl();
+        this.verificationGateway = new ApsVerificationGatewayImpl(vpaVerifyEndpoint, binVerifyEndpoint, httpTemplate, commonGateway);
         this.payOptionsGateway = new ApsPaymentOptionsServiceImpl(payOptionEndpoint, commonGateway);
         this.merchantTransactionService = merchantTransactionService;
         this.eventPublisher = eventPublisher;
     }
 
     @Override
-    public AbstractPaymentChargingResponse charge (AbstractPaymentChargingRequest request) {
+    public AbstractPaymentChargingResponse charge(AbstractPaymentChargingRequest request) {
         RechargeOrderResponse orderResponse = (RechargeOrderResponse) orderGateway.order(RechargeOrderRequest.builder().build());
         request.setOrderId(orderResponse.getOrderId());
         final IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest> chargingService =
@@ -73,7 +78,7 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
         return chargeResponse;
     }
 
-    private void publishMerchantTransactionEvent (RechargeOrderResponse orderResponse) {
+    private void publishMerchantTransactionEvent(RechargeOrderResponse orderResponse) {
         Transaction transaction = TransactionContext.get();
         final MerchantTransactionEvent.Builder mBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         mBuilder.orderId(orderResponse.getOrderId());
@@ -86,17 +91,17 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
     }
 
     @Override
-    public boolean isEligible (PaymentMethod entity, PaymentOptionsItemEligibilityRequest request) {
+    public boolean isEligible(PaymentMethod entity, PaymentOptionsItemEligibilityRequest request) {
         return eligibilityGateway.isEligible(entity, request);
     }
 
     @Override
-    public AbstractPaymentInstrumentsProxy<?, ?> load (PaymentOptionsEligibilityRequest request) {
+    public AbstractPaymentInstrumentsProxy<?, ?> load(PaymentOptionsEligibilityRequest request) {
         return payOptionsGateway.load(request);
     }
 
     @Override
-    public AbstractPaymentCallbackResponse handle (ApsCallBackRequestPayload callbackRequest) {
+    public AbstractPaymentCallbackResponse handle(ApsCallBackRequestPayload callbackRequest) {
         final IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest> callbackService =
                 BeanLocatorFactory.getBean(AIRTEL_PAY_STACK, new ParameterizedTypeReference<IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest>>() {
                 });
@@ -104,7 +109,7 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
     }
 
     @Override
-    public ApsCallBackRequestPayload parse (Map<String, Object> payload) {
+    public ApsCallBackRequestPayload parse(Map<String, Object> payload) {
         final IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest> callbackService =
                 BeanLocatorFactory.getBean(AIRTEL_PAY_STACK, new ParameterizedTypeReference<IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest>>() {
                 });
@@ -121,10 +126,15 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
     }
 
     @Override
-    public AbstractPaymentStatusResponse reconcile (AbstractTransactionStatusRequest request) {
+    public AbstractPaymentStatusResponse reconcile(AbstractTransactionStatusRequest request) {
         final IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> reconcileService =
                 BeanLocatorFactory.getBean(AIRTEL_PAY_STACK, new ParameterizedTypeReference<IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>>() {
                 });
         return reconcileService.reconcile(request);
+    }
+
+    @Override
+    public AbstractVerificationResponse verify(AbstractVerificationRequest request) {
+        return verificationGateway.verify(request);
     }
 }

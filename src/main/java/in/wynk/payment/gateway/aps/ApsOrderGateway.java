@@ -6,6 +6,8 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
+import in.wynk.payment.dto.ApsPaymentRefundRequest;
+import in.wynk.payment.dto.ApsPaymentRefundResponse;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
 import in.wynk.payment.dto.aps.request.callback.ApsOrderStatusCallBackPayload;
@@ -45,22 +47,34 @@ import static in.wynk.payment.dto.aps.common.ApsConstant.AIRTEL_PAY_STACK_V2;
 public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPaymentInstrumentsProxy<PaymentOptionsEligibilityRequest>,
         IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload>, IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>,
         IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>,
-        IPaymentAccountVerification<AbstractVerificationResponse, AbstractVerificationRequest> {
+        IPaymentAccountVerification<AbstractVerificationResponse, AbstractVerificationRequest>,
+        IPaymentRefund<ApsPaymentRefundResponse, ApsPaymentRefundRequest> {
 
     private final IRechargeOrder<AbstractRechargeOrderResponse, AbstractRechargeOrderRequest> orderGateway;
     private final IExternalPaymentEligibilityService eligibilityGateway;
+    private final IPaymentRefund<ApsPaymentRefundResponse, ApsPaymentRefundRequest> refundGateway;
     private final IPaymentInstrumentsProxy<PaymentOptionsEligibilityRequest> payOptionsGateway;
     private final IMerchantTransactionService merchantTransactionService;
     private final ApplicationEventPublisher eventPublisher;
     private final IPaymentAccountVerification<AbstractVerificationResponse, AbstractVerificationRequest> verificationGateway;
 
 
-    public ApsOrderGateway(@Value("${aps.payment.order.api}") String orderEndpoint, @Value("${aps.payment.option.api}") String payOptionEndpoint, ApsCommonGatewayService commonGateway, IMerchantTransactionService merchantTransactionService, ApplicationEventPublisher eventPublisher, @Value("${aps.payment.verify.vpa.api}") String vpaVerifyEndpoint,
-                           @Value("${aps.payment.verify.bin.api}") String binVerifyEndpoint, @Qualifier("apsHttpTemplate") RestTemplate httpTemplate) {
+    public ApsOrderGateway(@Value("${aps.payment.order.api}") String orderEndpoint,
+                           @Value("${aps.payment.option.api}") String payOptionEndpoint,
+                           @Value("${aps.payment.init.refund.api}") String refundEndpoint,
+                           @Value("${aps.payment.verify.vpa.api}") String vpaVerifyEndpoint,
+                           @Value("${aps.payment.verify.bin.api}") String binVerifyEndpoint,
+                           @Qualifier("apsHttpTemplate") RestTemplate httpTemplate,
+                           ApsCommonGatewayService commonGateway,
+                           IMerchantTransactionService merchantTransactionService,
+                           ApplicationEventPublisher eventPublisher) {
+
         this.orderGateway = new ApsOrderGatewayServiceImpl(orderEndpoint, commonGateway);
         this.eligibilityGateway = new ApsEligibilityGatewayServiceImpl();
         this.verificationGateway = new ApsVerificationGatewayImpl(vpaVerifyEndpoint, binVerifyEndpoint, httpTemplate, commonGateway);
         this.payOptionsGateway = new ApsPaymentOptionsServiceImpl(payOptionEndpoint, commonGateway);
+        this.refundGateway = new ApsRefundGatewayServiceImpl(refundEndpoint, eventPublisher, commonGateway);
+
         this.merchantTransactionService = merchantTransactionService;
         this.eventPublisher = eventPublisher;
     }
@@ -136,5 +150,10 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
     @Override
     public AbstractVerificationResponse verify(AbstractVerificationRequest request) {
         return verificationGateway.verify(request);
+    }
+
+    @Override
+    public ApsPaymentRefundResponse doRefund(ApsPaymentRefundRequest request) {
+        return refundGateway.doRefund(request);
     }
 }

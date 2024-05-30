@@ -203,13 +203,13 @@ public class PaymentEventListener {
         Transaction transaction = event.getTransaction();
         if ((!cancelMandatePG.contains(transaction.getPaymentChannel().getId())) && (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.UNSUBSCRIBE) &&
                 event.getPaymentEvent() == PaymentEvent.UNSUBSCRIBE) {
-            cancelMandateFromPG(transaction.getPaymentChannel().getId(), transaction.getPaymentChannel().getCode(), transaction.getIdStr());
+            cancelMandateFromPG(transaction.getPaymentChannel().getId(), transaction.getPaymentChannel().getCode(), transaction.getIdStr(), event.getClientAlias());
         }
     }
 
-    @ClientAware(clientAlias = "#event.clientAlias")
+    @ClientAware(clientAlias = "#clientAlias")
     @AnalyseTransaction(name = "cancelMandateFromPGEvent")
-    private void cancelMandateFromPG (String paymentCode, String paymentMethod, String txnId) {
+    private void cancelMandateFromPG (String paymentCode, String paymentMethod, String txnId, String clientAlias) {
         try {
             AnalyticService.update("paymentCode", paymentCode);
             AnalyticService.update("txnId", txnId);

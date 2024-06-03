@@ -221,6 +221,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                             .autoRenewal(autoRenewal)
                             .itunesReceiptType(receiptType)
                             .decodedReceipt(decodedReceipt)
+                            .service(planDTO.getService())
                             .couponCode(latestReceiptInfo.getOfferCodeRefName())
                             .extTxnId(latestReceiptInfo.getOriginalTransactionId())
                             .pendingRenewalInfo(itunesReceipt.getPendingRenewalInfo())
@@ -253,6 +254,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                 .uid(transaction.getUid())
                 .msisdn(transaction.getMsisdn())
                 .planId(transaction.getPlanId())
+                .service(mapping.getService())
                 .paymentTransactionId(transaction.getIdStr())
                 .receiptTransactionId(receiptType.getTransactionId(receiptInfo))
                 .expiry(receiptType.getExpireDate(receiptInfo))
@@ -330,6 +332,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                                         .msisdn(transaction.getMsisdn())
                                         .planId(transaction.getPlanId())
                                         .paymentTransactionId(transaction.getIdStr())
+                                        .service(itunesLatestReceiptResponse.getService())
                                         .receiptTransactionId(receiptType.getTransactionId(latestReceiptInfo))
                                         .expiry(receiptType.getExpireDate(latestReceiptInfo))
                                         .receipt(itunesLatestReceiptResponse.getDecodedReceipt())
@@ -363,7 +366,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             if (oldReceiptOption.isPresent()) {
                 LatestReceiptInfo oldReceiptInfo = oldReceiptOption.get();
                 if (!oldReceipt.isTransactionIdPresent()){
-                    ItunesReceiptDetails receiptDetails = ItunesReceiptDetails.builder().receipt(oldReceipt.getReceipt()).msisdn(oldReceipt.getMsisdn()).planId(oldReceipt.getPlanId()).expiry(oldReceipt.getExpiry()).type(oldReceipt.getType()).uid(oldReceipt.getUid()).id(oldReceipt.getId()).receiptTransactionId(oldReceiptType.getTransactionId(oldReceiptInfo)).build();
+                    ItunesReceiptDetails receiptDetails = ItunesReceiptDetails.builder().receipt(oldReceipt.getReceipt()).service(oldReceipt.getService()).msisdn(oldReceipt.getMsisdn()).planId(oldReceipt.getPlanId()).expiry(oldReceipt.getExpiry()).type(oldReceipt.getType()).uid(oldReceipt.getUid()).id(oldReceipt.getId()).receiptTransactionId(oldReceiptType.getTransactionId(oldReceiptInfo)).build();
                     auditingListener.onBeforeSave(receiptDetails);
                     RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).save(receiptDetails);
                 }
@@ -501,14 +504,14 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                             if (isFreeTrial) {
                                 if (planDTO.getLinkedFreePlanId() != -1) {
                                     return UserPlanMapping.<Pair<LatestReceiptInfo, ReceiptDetails>>builder().planId(planDTO.getLinkedFreePlanId()).msisdn(details.getMsisdn()).uid(details.getUid()).linkedTransactionId(details.getPaymentTransactionId())
-                                            .message(Pair.of(latestReceiptInfo, details)).build();
+                                            .message(Pair.of(latestReceiptInfo, details)).service(planDTO.getService()).build();
                                 } else {
                                     log.error("No Free Trial mapping present for planId {}", planDTO.getId());
                                     throw new WynkRuntimeException(PaymentErrorType.PAY034);
                                 }
                             }
                             return UserPlanMapping.<Pair<LatestReceiptInfo, ReceiptDetails>>builder().planId(planDTO.getId()).msisdn(details.getMsisdn()).uid(details.getUid()).linkedTransactionId(details.getPaymentTransactionId())
-                                    .message(Pair.of(latestReceiptInfo, details)).build();
+                                    .message(Pair.of(latestReceiptInfo, details)).service(planDTO.getService()).build();
                         }
                     }
                 }
@@ -562,7 +565,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             final ItunesReceiptType receiptType = ItunesReceiptType.valueOf(receiptDetails.getType());
             final ItunesReceipt itunesReceipt = getReceiptObjForUser(receiptDetails.getReceipt(), receiptType, receiptDetails.getMsisdn());
             final ItunesLatestReceiptResponse latestReceiptResponse = getLatestReceiptResponseInternal(receiptDetails.getReceipt(), itunesReceipt, receiptType);
-            final List<LatestReceiptInfo> filteredReceiptResponse = latestReceiptResponse.getLatestReceiptInfo().stream().filter(details -> receiptDetails.getId().equals(details.getOriginalTransactionId())).sorted(Comparator.comparingLong(receiptType::getExpireDate).reversed()).collect(Collectors.toList());
+            final List<LatestReceiptInfo> filteredReceiptResponse = latestReceiptResponse.getLatestReceiptInfo().stream().filter(details -> receiptDetails.getId() == details.getOriginalTransactionId()).sorted(Comparator.comparingLong(receiptType::getExpireDate).reversed()).collect(Collectors.toList());
             latestReceiptResponse.setLatestReceiptInfo(filteredReceiptResponse);
             fetchAndUpdateFromReceipt(transaction, latestReceiptResponse, receiptDetails);
             return WynkResponseEntity.<Void>builder().success(true).build();

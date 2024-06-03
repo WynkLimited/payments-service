@@ -25,6 +25,8 @@ public class ItunesLatestReceiptResponse extends LatestReceiptResponse {
     private List<LatestReceiptInfo> latestReceiptInfo;
     @Analysed
     private final List<PendingRenewalInfo> pendingRenewalInfo;
+    @Analysed
+    private final String service;
 
     public List<PendingRenewalInfo> getPendingRenewalInfo() {
         return CollectionUtils.isNotEmpty(pendingRenewalInfo) ?  pendingRenewalInfo: Collections.EMPTY_LIST;

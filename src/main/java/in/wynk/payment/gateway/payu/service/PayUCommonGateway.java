@@ -12,7 +12,9 @@ import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
+import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
+import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
@@ -22,6 +24,8 @@ import in.wynk.payment.dto.payu.PayUCommand;
 import in.wynk.payment.dto.payu.PayURefundTransactionDetails;
 import in.wynk.payment.dto.response.payu.PayUMandateUpiStatusResponse;
 import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
+import in.wynk.payment.service.IMerchantTransactionService;
+import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.payment.utils.RecurringTransactionUtils;
@@ -45,10 +49,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.SocketTimeoutException;
 import java.net.URI;
-import java.util.EnumSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
@@ -75,6 +76,9 @@ public class PayUCommonGateway {
     private final ApplicationEventPublisher eventPublisher;
     private final RecurringTransactionUtils recurringTransactionUtils;
     private final Gson gson;
+    private final IRecurringPaymentManagerService recurringPaymentManagerService;
+    private final IMerchantTransactionService merchantTransactionService;
+
     @Getter
     private final ICacheService<PaymentMethod, String> cache;
 
@@ -82,7 +86,8 @@ public class PayUCommonGateway {
 
     public PayUCommonGateway (Gson gson, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ObjectMapper objectMapper,
                               ICacheService<PaymentMethod, String> cache,
-                              PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, RecurringTransactionUtils recurringTransactionUtils) {
+                              PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, RecurringTransactionUtils recurringTransactionUtils,
+                              IRecurringPaymentManagerService recurringPaymentManagerService, IMerchantTransactionService merchantTransactionService) {
         this.gson = gson;
         this.cache = cache;
         this.restTemplate = restTemplate;
@@ -90,6 +95,8 @@ public class PayUCommonGateway {
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
         this.recurringTransactionUtils = recurringTransactionUtils;
+        this.recurringPaymentManagerService = recurringPaymentManagerService;
+        this.merchantTransactionService = merchantTransactionService;
     }
 
     public <T> T exchange (String uri, MultiValueMap<String, String> request, TypeReference<T> target) {
@@ -141,18 +148,17 @@ public class PayUCommonGateway {
         return EncryptionUtils.generateSHA512Hash(builder);
     }
 
-    public PayUVerificationResponse<PayUChargingTransactionDetails> syncChargingTransactionFromSource (Transaction transaction) {
+    public PayUVerificationResponse<PayUChargingTransactionDetails> syncChargingTransactionFromSource (Transaction transaction,
+                                                                                                       Optional<PayUVerificationResponse<PayUChargingTransactionDetails>> verifyOption) {
         final MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         PayUVerificationResponse<PayUChargingTransactionDetails> payUChargingVerificationResponse;
         try {
             final MultiValueMap<String, String> payUChargingVerificationRequest =
-                    buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.VERIFY_PAYMENT.getCode(), transaction.getId().toString());
+                    this.buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.VERIFY_PAYMENT.getCode(), transaction.getId().toString());
             merchantTransactionEventBuilder.request(payUChargingVerificationRequest);
-            payUChargingVerificationResponse = exchange(INFO_API, payUChargingVerificationRequest, new TypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
-            });
-            if (Objects.isNull(payUChargingVerificationResponse.getTransactionDetails())) {
-                throw new WynkRuntimeException("Failed to sync transaction from payu with error: " + payUChargingVerificationResponse.getMessage());
-            }
+            payUChargingVerificationResponse =
+                    verifyOption.orElseGet(() -> exchange(INFO_API, payUChargingVerificationRequest, new TypeReference<PayUVerificationResponse<PayUChargingTransactionDetails>>() {
+                    }));
             merchantTransactionEventBuilder.response(payUChargingVerificationResponse);
             final PayUChargingTransactionDetails payUChargingTransactionDetails = payUChargingVerificationResponse.getTransactionDetails(transaction.getId().toString());
             if (StringUtils.isNotEmpty(payUChargingTransactionDetails.getMode())) {
@@ -168,11 +174,10 @@ public class PayUCommonGateway {
             AnalyticService.update(EXTERNAL_TRANSACTION_ID, payUChargingTransactionDetails.getPayUExternalTxnId());
             syncTransactionWithSourceResponse(transaction, payUChargingVerificationResponse);
             if (transaction.getStatus() == TransactionStatus.FAILURE) {
-                if (!StringUtils.isEmpty(payUChargingTransactionDetails.getErrorCode()) || !StringUtils.isEmpty(payUChargingTransactionDetails.getErrorMessage())) {
-                    recurringTransactionUtils.cancelRenewalBasedOnErrorReason(payUChargingTransactionDetails.getErrorMessage(), transaction);
-                    eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr())
-                            .code(Objects.nonNull(payUChargingTransactionDetails.getErrorCode()) ? payUChargingTransactionDetails.getErrorCode() : "UNKNOWN")
-                            .description(payUChargingTransactionDetails.getErrorMessage()).build());
+                if (!StringUtils.isEmpty(payUChargingTransactionDetails.getErrorCode()) || !StringUtils.isEmpty(payUChargingTransactionDetails.getTransactionFailureReason())) {
+                    final String failureReason = payUChargingTransactionDetails.getTransactionFailureReason();
+                    recurringTransactionUtils.cancelRenewalBasedOnErrorReason(failureReason, transaction);
+                    eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description(failureReason).build());
                 }
             }
         } catch (HttpStatusCodeException e) {
@@ -211,7 +216,7 @@ public class PayUCommonGateway {
             throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
         }
         if (EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION, PaymentEvent.MANDATE).contains(transaction.getType())) {
-            syncChargingTransactionFromSource(transaction);
+            syncChargingTransactionFromSource(transaction, Optional.empty());
         } else {
             eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
         }
@@ -242,13 +247,16 @@ public class PayUCommonGateway {
     }
 
 
-    public boolean validateMandateStatus (Transaction transaction, String uniqueId, PayUChargingTransactionDetails transactionDetails, boolean isRenewalFlow) {
-        String mihpayid = transactionDetails.getPayUExternalTxnId();
+    public boolean validateMandateStatus (Transaction transaction, String uniqueId, PayUChargingTransactionDetails payUChargingTransactionDetails, boolean isRenewalFlow) {
+        String mode = payUChargingTransactionDetails.getMode();
+        AnalyticService.update(PAYMENT_MODE, mode);
+
+        String mihpayid = payUChargingTransactionDetails.getPayUExternalTxnId();
         String payuCommand = null;
         //if card number is null means it is upi and hence check mandate status for UPI else check mandate status for card
-        if (transactionDetails.getResponseCardNumber() == null) {
+        if (payUChargingTransactionDetails.getResponseCardNumber() == null) {
             payuCommand = PayUCommand.UPI_MANDATE_STATUS.getCode();
-        } else if (transactionDetails.getResponseCardNumber() != null) {
+        } else if (payUChargingTransactionDetails.getResponseCardNumber() != null) {
             payuCommand = PayUCommand.CHECK_MANDATE_STATUS.getCode();
         }
         LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
@@ -290,5 +298,49 @@ public class PayUCommonGateway {
             }
         }
         return isMandateActive;
+    }
+
+    public String getUpdatedTransactionId (String txnId, PaymentRenewal lastRenewal) {
+        String updatedTransactionId = txnId;
+        if (Objects.nonNull(lastRenewal)) {
+            if (StringUtils.isNotBlank(lastRenewal.getInitialTransactionId())) {
+                updatedTransactionId = lastRenewal.getInitialTransactionId();
+            } else if (StringUtils.isNotBlank(lastRenewal.getLastSuccessTransactionId())) {
+                log.error("Initial transaction id is null but not the  last success transaction id {}", lastRenewal.getLastSuccessTransactionId());
+                PaymentRenewal lastToLastRenewal = recurringPaymentManagerService.getRenewalById(lastRenewal.getLastSuccessTransactionId());
+                if (StringUtils.isNotBlank(lastToLastRenewal.getInitialTransactionId())) {
+                    updatedTransactionId = lastToLastRenewal.getInitialTransactionId();
+                } else {
+                    updatedTransactionId =
+                            StringUtils.isNotBlank(lastToLastRenewal.getLastSuccessTransactionId()) ? lastToLastRenewal.getLastSuccessTransactionId() : lastRenewal.getLastSuccessTransactionId();
+                }
+
+            }
+        }
+        return updatedTransactionId;
+    }
+
+    public MerchantTransaction getMerchantData (String id) {
+        try {
+            return merchantTransactionService.getMerchantTransaction(id);
+        } catch (Exception e) {
+            log.error("Exception occurred while getting data for tid {} from merchant table: {}", id, e.getMessage());
+            return null;
+        }
+    }
+
+    public String findPayuErrorMessage (PayUChargingTransactionDetails payUChargingTransactionDetails) {
+        String errorReason = null;
+        if (StringUtils.isNotBlank(payUChargingTransactionDetails.getMostSpecificFailureReason())) {
+            errorReason = payUChargingTransactionDetails.getMostSpecificFailureReason();
+        } else if (StringUtils.isNotBlank(payUChargingTransactionDetails.getSpecificFailureReason())) {
+            errorReason = payUChargingTransactionDetails.getSpecificFailureReason();
+        } else if (StringUtils.isNotBlank(payUChargingTransactionDetails.getPayUResponseFailureMessage())) {
+            errorReason = payUChargingTransactionDetails.getPayUResponseFailureMessage();
+        } else if (StringUtils.isNotBlank(payUChargingTransactionDetails.getErrorMessage())) {
+            errorReason = payUChargingTransactionDetails.getErrorMessage();
+        }
+        AnalyticService.update(ERROR_REASON, errorReason);
+        return errorReason;
     }
 }

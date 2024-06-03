@@ -30,6 +30,8 @@ public abstract class ReceiptDetails extends MongoBaseEntity<String> implements 
     private String paymentTransactionId;
     @Field("receipt_transaction_id")
     private String receiptTransactionId;
+    @Field("service")
+    private String service;
 
     public abstract Integer getNotificationType();
     public abstract boolean isRenew ();

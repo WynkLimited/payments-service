@@ -173,7 +173,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     @Override
     public UserPlanMapping<Pair<GooglePlayLatestReceiptResponse, ReceiptDetails>> getUserPlanMapping (DecodedNotificationWrapper<GooglePlayCallbackRequest> wrapper) {
         GooglePlayCallbackRequest callbackRequest = wrapper.getDecodedNotification();
-        //verify the receipt from server and then add txnType to mappingU
+        //verify the receipt from server and then add txnType to mapping
         Optional<ReceiptDetails> optionalReceiptDetails =
                 RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
                         .findById(callbackRequest.getPurchaseToken());

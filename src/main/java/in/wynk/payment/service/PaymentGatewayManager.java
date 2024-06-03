@@ -228,7 +228,6 @@ public class PaymentGatewayManager
         return null;
     }
 
-    @ClientAware(clientAlias = "#request.clientAlias")
     public WynkResponseEntity<Void> handleNotification(NotificationRequest request) {
         final IReceiptDetailService<?, IAPNotification> receiptDetailService =
                 BeanLocatorFactory.getBean(request.getPaymentGateway().getCode(), new ParameterizedTypeReference<IReceiptDetailService<?, IAPNotification>>() {
@@ -242,7 +241,7 @@ public class PaymentGatewayManager
                 final in.wynk.common.enums.PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper, productType);
                 final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
                         PlanRenewalRequest.builder().txnId(mapping.getLinkedTransactionId()).planId(mapping.getPlanId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentGateway(request.getPaymentGateway())
-                                .clientAlias(request.getClientAlias()).build());
+                                .clientAlias(mapping.getService().equalsIgnoreCase("music") ? "music" : "airtelxstream").build());
                 transactionInitRequest.setEvent(event);
                 final Transaction transaction = transactionManager.init(transactionInitRequest);
                 handleNotification(transaction, mapping);

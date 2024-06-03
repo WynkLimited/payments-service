@@ -8,7 +8,6 @@ import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.ApsPaymentRefundRequest;
 import in.wynk.payment.dto.ApsPaymentRefundResponse;
 import in.wynk.payment.dto.BaseTDRResponse;
-import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
 import in.wynk.payment.dto.common.AbstractPaymentInstrumentsProxy;
 import in.wynk.payment.dto.common.response.AbstractPaymentAccountDeletionResponse;
@@ -36,9 +35,10 @@ import org.springframework.web.client.RestTemplate;
 import java.util.Map;
 
 import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
+import static in.wynk.payment.core.constant.BeanConstant.AIRTEL_PAY_STACK;
 
 @Slf4j
-@Service(ApsConstant.AIRTEL_PAY_STACK)
+@Service(AIRTEL_PAY_STACK)
 public class ApsGateway implements
         IExternalPaymentEligibilityService,
         IPaymentRenewal<PaymentRenewalChargingRequest>,

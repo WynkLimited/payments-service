@@ -79,7 +79,8 @@ public class PaymentRenewalsScheduler {
                 .collect(Collectors.toList());
         SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
         paymentRenewals.forEach(paymentRenewal -> publishPreDebitNotificationMessage(
-                PreDebitNotificationMessage.builder().transactionId(paymentRenewal.getTransactionId()).date(format.format(paymentRenewal.getDay().getTime())).build()));
+                PreDebitNotificationMessage.builder().transactionId(paymentRenewal.getTransactionId()).date(format.format(paymentRenewal.getDay().getTime()))
+                        .initialTransactionId(paymentRenewal.getInitialTransactionId()).lastSuccessTransactionId(paymentRenewal.getLastSuccessTransactionId()).build()));
         AnalyticService.update("renewNotificationsCompleted", true);
     }
 
@@ -119,9 +120,7 @@ public class PaymentRenewalsScheduler {
     @AnalyseTransaction(name = "schedulePreDebitNotificationMessage")
     private void publishPreDebitNotificationMessage(PreDebitNotificationMessage message) {
         AnalyticService.update(message);
-        if(checkPreDebitEligibility(message.getTransactionId())) {
-            sqsManagerService.publishSQSMessage(message);
-        }
+        sqsManagerService.publishSQSMessage(message);
     }
 
     private boolean checkPreDebitEligibility (String transactionId) {

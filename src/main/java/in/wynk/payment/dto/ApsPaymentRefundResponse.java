@@ -7,7 +7,7 @@ import in.wynk.payment.dto.response.AbstractPaymentRefundResponse;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
-import static in.wynk.payment.dto.aps.common.ApsConstant.AIRTEL_PAY_STACK;
+import static in.wynk.payment.core.constant.BeanConstant.AIRTEL_PAY_STACK;
 
 @Getter
 @SuperBuilder

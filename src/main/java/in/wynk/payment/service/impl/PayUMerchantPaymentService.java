@@ -815,7 +815,9 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     public void cancelRecurring (String transactionId) {
         try {
             LinkedHashMap<String, String> orderedMap = new LinkedHashMap<>();
-            MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(transactionId);
+            PaymentRenewal lastRenewal = recurringPaymentManagerService.getRenewalById(transactionId);
+            String txnId = getUpdatedTransactionId(transactionId, lastRenewal);
+            MerchantTransaction merchantTransaction = getMerchantData(txnId);
             orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, merchantTransaction.getExternalTransactionId());
             orderedMap.put(PAYU_REQUEST_ID, transactionId);
             String variable = gson.toJson(orderedMap);

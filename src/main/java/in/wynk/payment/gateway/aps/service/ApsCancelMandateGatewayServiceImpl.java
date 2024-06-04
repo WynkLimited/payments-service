@@ -16,6 +16,8 @@ import in.wynk.payment.service.ITransactionManagerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpMethod;
 
+import java.util.Objects;
+
 import static in.wynk.payment.core.constant.PaymentErrorType.APS012;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_MANDATE_REVOKE_ERROR;
 
@@ -45,7 +47,15 @@ public class ApsCancelMandateGatewayServiceImpl implements ICancellingRecurringS
     @Override
     public void cancelRecurring (String transactionId) {
         try {
-            MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(transactionId);
+            MerchantTransaction merchantTransaction = getMerchantData(transactionId);
+            //retry getting data from database
+            if (Objects.isNull(merchantTransaction)) {
+                merchantTransaction = getMerchantData(transactionId);
+                ;
+            }
+            if (Objects.isNull(merchantTransaction)) {
+                throw new WynkRuntimeException(APS012, "could not find mandate id in merchant Table for transaction Id" + transactionId);
+            }
             ApsChargeStatusResponse[] apsChargeStatusResponses = mapper.convertValue(merchantTransaction.getResponse(), ApsChargeStatusResponse[].class);
             if (apsChargeStatusResponses.length == 0) {
                 throw new WynkRuntimeException(APS012, "data is corrupted in merchant table for transaction Id {}" + transactionId);
@@ -66,6 +76,16 @@ public class ApsCancelMandateGatewayServiceImpl implements ICancellingRecurringS
         } catch (Exception e) {
             log.error(APS_MANDATE_REVOKE_ERROR, e.getMessage());
             throw new WynkRuntimeException(APS012, e);
+        }
+    }
+
+
+    private MerchantTransaction getMerchantData (String id) {
+        try {
+            return merchantTransactionService.getMerchantTransaction(id);
+        } catch (Exception e) {
+            log.error("Exception occurred while getting data for tid {} from merchant table: {}", id, e.getMessage());
+            return null;
         }
     }
 }

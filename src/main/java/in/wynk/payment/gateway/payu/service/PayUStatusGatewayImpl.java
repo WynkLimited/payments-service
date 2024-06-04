@@ -59,7 +59,7 @@ public class PayUStatusGatewayImpl implements IPaymentStatus<AbstractPaymentStat
                         return reconcileInternal(transaction);
                     }
                 }
-            common.syncChargingTransactionFromSource(transaction);
+            common.syncChargingTransactionFromSource(transaction, Optional.empty());
             return reconcileInternal(transaction);
         }
 
@@ -100,7 +100,7 @@ public class PayUStatusGatewayImpl implements IPaymentStatus<AbstractPaymentStat
         @Override
         public AbstractPaymentStatusResponse reconcile(AbstractTransactionStatusRequest request) {
             final Transaction transaction = TransactionContext.get();
-            common.syncChargingTransactionFromSource(transaction);
+            common.syncChargingTransactionFromSource(transaction, Optional.empty());
             if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
                 log.warn(PAYU_RENEWAL_CHARGING_STATUS_VERIFICATION, "Renewal transaction is still pending at PAYU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                 throw new WynkRuntimeException(PaymentErrorType.PAY004);

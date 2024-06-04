@@ -2,7 +2,6 @@ package in.wynk.payment.gateway.payu.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
 import in.wynk.common.enums.TransactionStatus;
@@ -16,11 +15,9 @@ import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.payu.PayUChargingTransactionDetails;
 import in.wynk.payment.dto.payu.PayUCommand;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
-import in.wynk.payment.dto.response.payu.PayUMandateUpiStatusResponse;
 import in.wynk.payment.dto.response.payu.PayURenewalResponse;
 import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
 import in.wynk.payment.gateway.IPaymentRenewal;
-import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentCachingService;
@@ -35,13 +32,11 @@ import org.springframework.web.client.RestClientException;
 
 import java.net.SocketTimeoutException;
 import java.util.LinkedHashMap;
-import java.util.Objects;
+import java.util.Optional;
 
 import static in.wynk.common.constant.BaseConstants.ONE_DAY_IN_MILLI;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY005;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY015;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_RENEWAL_STATUS_ERROR;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
@@ -49,24 +44,21 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
 
     private final Gson gson;
     private final ObjectMapper objectMapper;
-    private final PayUCommonGateway common;
+    private final PayUCommonGateway payUCommonGateway;
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
     private final RateLimiter rateLimiter = RateLimiter.create(6.0);
-    private final IMerchantTransactionService merchantTransactionService;
     private final ITransactionManagerService transactionManager;
     private final IRecurringPaymentManagerService recurringPaymentManagerService;
     private final RecurringTransactionUtils recurringTransactionUtils;
 
     public PayURenewalGatewayImpl (PayUCommonGateway common, Gson gson, ObjectMapper objectMapper, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher,
-                                   IMerchantTransactionService merchantTransactionService, ITransactionManagerService transactionManager,
-                                   IRecurringPaymentManagerService recurringPaymentManagerService, RecurringTransactionUtils recurringTransactionUtils) {
+                                   ITransactionManagerService transactionManager, IRecurringPaymentManagerService recurringPaymentManagerService, RecurringTransactionUtils recurringTransactionUtils) {
         this.gson = gson;
-        this.common = common;
+        this.payUCommonGateway = common;
         this.objectMapper = objectMapper;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
-        this.merchantTransactionService = merchantTransactionService;
         this.transactionManager = transactionManager;
         this.recurringPaymentManagerService = recurringPaymentManagerService;
         this.recurringTransactionUtils = recurringTransactionUtils;
@@ -76,34 +68,30 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
     public void renew (PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
         Transaction transaction = TransactionContext.get();
         PlanPeriodDTO planPeriodDTO = cachingService.getPlan(transaction.getPlanId()).getPeriod();
-        String txnId = paymentRenewalChargingRequest.getId();
-        PaymentRenewal renewal = recurringPaymentManagerService.getRenewalById(txnId);
-        if (Objects.nonNull(renewal) && StringUtils.isNotBlank(renewal.getLastSuccessTransactionId())) {
-            txnId = renewal.getLastSuccessTransactionId();
-        }
-        MerchantTransaction merchantTransaction = getMerchantData(txnId);
+        PaymentRenewal lastRenewal = recurringPaymentManagerService.getRenewalById(paymentRenewalChargingRequest.getId());
+        String txnId = payUCommonGateway.getUpdatedTransactionId(paymentRenewalChargingRequest.getId(), lastRenewal);
+        MerchantTransaction merchantTransaction = payUCommonGateway.getMerchantData(txnId);
+
         PayUVerificationResponse<PayUChargingTransactionDetails> currentStatus =
-                (merchantTransaction == null) ? common.syncChargingTransactionFromSource(transactionManager.get(txnId)) : null;
+                (merchantTransaction == null) ? payUCommonGateway.syncChargingTransactionFromSource(transactionManager.get(txnId), Optional.empty()) : null;
         try {
             PayURenewalResponse payURenewalResponse = (merchantTransaction == null) ? objectMapper.convertValue(currentStatus, PayURenewalResponse.class) :
                     objectMapper.convertValue(merchantTransaction.getResponse(), PayURenewalResponse.class);
             PayUChargingTransactionDetails payUChargingTransactionDetails = payURenewalResponse.getTransactionDetails().get(txnId);
-            String mode = payUChargingTransactionDetails.getMode();
-            AnalyticService.update(PAYMENT_MODE, mode);
-            boolean isUpi = StringUtils.isNotEmpty(mode) && mode.equals("UPI");
-            String externalTransactionId =
-                    (merchantTransaction != null) ? merchantTransaction.getExternalTransactionId() : currentStatus.getTransactionDetails(txnId).getPayUExternalTxnId();
-            if (!isUpi || validateStatusForRenewal(externalTransactionId, transaction)) {
-                payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest, externalTransactionId, txnId);
+
+            if (payUCommonGateway.validateMandateStatus(transaction, transaction.getIdStr(), payUChargingTransactionDetails, true)) {
+                String externalTransactionId = (merchantTransaction != null) ? merchantTransaction.getExternalTransactionId() : currentStatus.getTransactionDetails(txnId).getPayUExternalTxnId();
+                payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest, externalTransactionId, lastRenewal.getLastSuccessTransactionId());
                 payUChargingTransactionDetails = payURenewalResponse.getTransactionDetails().get(transaction.getIdStr());
-                int retryInterval = planPeriodDTO.getRetryInterval();
+
                 if (payURenewalResponse.getStatus() == 1) {
+                    int retryInterval = planPeriodDTO.getRetryInterval();
                     if (SUCCESS.equalsIgnoreCase(payUChargingTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.SUCCESS.getValue());
                     } else if (FAILURE.equalsIgnoreCase(payUChargingTransactionDetails.getStatus()) || (FAILED.equalsIgnoreCase(payUChargingTransactionDetails.getStatus())) ||
                             PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(payUChargingTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.FAILURE.getValue());
-                        String errorReason = findPayuErrorMessage(payUChargingTransactionDetails);
+                        String errorReason = payUCommonGateway.findPayuErrorMessage(payUChargingTransactionDetails);
                         recurringTransactionUtils.cancelRenewalBasedOnErrorReason(errorReason, transaction);
                         eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description(errorReason).build());
                     } else if (transaction.getInitTime().getTimeInMillis() > System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
@@ -112,11 +100,13 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
                     } else if (transaction.getInitTime().getTimeInMillis() < System.currentTimeMillis() - ONE_DAY_IN_MILLI * retryInterval &&
                             StringUtils.equalsIgnoreCase(PENDING, payUChargingTransactionDetails.getStatus())) {
                         transaction.setStatus(TransactionStatus.FAILURE.getValue());
-                        eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description("Transaction init time is less than current - 1").build());
+                        eventPublisher.publishEvent(
+                                PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description("Transaction init time is less than current - 1")
+                                        .build());
                     }
                 } else {
                     transaction.setStatus(TransactionStatus.FAILURE.getValue());
-                    String errorReason = findPayuErrorMessage(payUChargingTransactionDetails);
+                    String errorReason = payUCommonGateway.findPayuErrorMessage(payUChargingTransactionDetails);
                     recurringTransactionUtils.cancelRenewalBasedOnErrorReason(errorReason, transaction);
                     eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(payUChargingTransactionDetails.getErrorCode()).description(errorReason).build());
                 }
@@ -129,67 +119,6 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
         }
     }
 
-    private String findPayuErrorMessage (PayUChargingTransactionDetails payUChargingTransactionDetails) {
-        String errorReason = null;
-        if (StringUtils.isNotBlank(payUChargingTransactionDetails.getMostSpecificFailureReason())) {
-            errorReason = payUChargingTransactionDetails.getMostSpecificFailureReason();
-        } else if (StringUtils.isNotBlank(payUChargingTransactionDetails.getSpecificFailureReason())) {
-            errorReason = payUChargingTransactionDetails.getSpecificFailureReason();
-        } else if (StringUtils.isNotBlank(payUChargingTransactionDetails.getPayUResponseFailureMessage())) {
-            errorReason = payUChargingTransactionDetails.getPayUResponseFailureMessage();
-        } else if (StringUtils.isNotBlank(payUChargingTransactionDetails.getErrorMessage())) {
-            errorReason = payUChargingTransactionDetails.getErrorMessage();
-        }
-        return errorReason;
-    }
-
-    private MerchantTransaction getMerchantData (String id) {
-        try {
-            return merchantTransactionService.getMerchantTransaction(id);
-        } catch (Exception e) {
-            log.error("Exception occurred while getting data for tid {} from merchant table: {}", id, e.getMessage());
-            return null;
-        }
-    }
-
-    private boolean validateStatusForRenewal (String mihpayid, Transaction transaction) {
-        LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
-        orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, mihpayid);
-        orderedMap.put(PAYU_REQUEST_ID, transaction.getIdStr());
-        String variable = gson.toJson(orderedMap);
-        PayUMandateUpiStatusResponse paymentResponse;
-        rateLimiter.acquire();
-        final MultiValueMap<String, String> requestMap = common.buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.UPI_MANDATE_STATUS.getCode(), variable);
-        try {
-            paymentResponse = common.exchange(common.PAYMENT_API, requestMap, new TypeReference<PayUMandateUpiStatusResponse>() {
-            });
-        } catch (RestClientException e) {
-            if (e.getRootCause() != null) {
-                if (e.getRootCause() instanceof SocketTimeoutException || e.getRootCause() instanceof ConnectTimeoutException) {
-                    log.error(PAYU_RENEWAL_STATUS_ERROR, "Socket timeout but valid for reconciliation for request : {} due to {}", requestMap, e.getMessage(), e);
-                    throw new WynkRuntimeException(PaymentErrorType.PAY014);
-                } else {
-                    throw new WynkRuntimeException(PaymentErrorType.PAY009, e);
-                }
-            } else {
-                throw new WynkRuntimeException(PaymentErrorType.PAY009, e);
-            }
-        } catch (Exception ex) {
-            log.error(PAYU_API_FAILURE, ex.getMessage(), ex);
-            throw new WynkRuntimeException(PAY015, ex);
-        }
-        boolean isMandateActive = false;
-        if (paymentResponse != null) {
-            isMandateActive = "active".equalsIgnoreCase(paymentResponse.getStatus());
-            if (!isMandateActive) {
-                transaction.setStatus(TransactionStatus.FAILURE.getValue());
-                log.error(PAYU_MANDATE_VALIDATION, "mandate status is: " + paymentResponse.getStatus());
-                recurringTransactionUtils.cancelRenewalBasedOnErrorReason(PAY005.getErrorMessage(), transaction);
-                eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PAY005.getErrorCode()).description(PAY005.getErrorMessage()).build());
-            }
-        }
-        return isMandateActive;
-    }
 
     private PayURenewalResponse doChargingForRenewal (PaymentRenewalChargingRequest paymentRenewalChargingRequest, String mihpayid, String lastSuccessTxnId) {
         Transaction transaction = TransactionContext.get();
@@ -205,10 +134,10 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
         orderedMap.put(PAYU_CUSTOMER_MSISDN, msisdn);
         orderedMap.put(PAYU_CUSTOMER_EMAIL, email);
         String variable = gson.toJson(orderedMap);
-        MultiValueMap<String, String> requestMap = common.buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.SI_TRANSACTION.getCode(), variable);
+        MultiValueMap<String, String> requestMap = payUCommonGateway.buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.SI_TRANSACTION.getCode(), variable);
         rateLimiter.acquire();
         try {
-            PayURenewalResponse paymentResponse = common.exchange(common.PAYMENT_API, requestMap, new TypeReference<PayURenewalResponse>() {
+            PayURenewalResponse paymentResponse = payUCommonGateway.exchange(payUCommonGateway.PAYMENT_API, requestMap, new TypeReference<PayURenewalResponse>() {
             });
             if (paymentResponse == null) {
                 paymentResponse = new PayURenewalResponse();

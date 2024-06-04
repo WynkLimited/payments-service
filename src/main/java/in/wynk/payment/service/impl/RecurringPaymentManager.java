@@ -66,7 +66,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     private int duePreDebitNotificationOffsetTime;
 
     private final Map<String, Integer> CODE_TO_RENEW_OFFSET = new HashMap<String, Integer>() {{
-        put(ApsConstant.AIRTEL_PAY_STACK, -2);
+        put(BeanConstant.AIRTEL_PAY_STACK, -2);
     }};
 
     @Override
@@ -138,10 +138,12 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     @Override
     @Transactional(transactionManager = "#clientAlias", source = "payments")
     public void unScheduleRecurringPayment (String clientAlias, String transactionId, PaymentEvent paymentEvent) {
+        Calendar nextRecurringDateTime = Calendar.getInstance();
         final IPaymentRenewalDao paymentRenewalDao = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class);
         paymentRenewalDao.findById(transactionId).ifPresent(recurringPayment -> {
             recurringPayment.setTransactionEvent(paymentEvent.name());
-            recurringPayment.setUpdatedTimestamp(Calendar.getInstance());
+            recurringPayment.setUpdatedTimestamp(nextRecurringDateTime);
+            recurringPayment.setDay(nextRecurringDateTime);
             paymentRenewalDao.save(recurringPayment);
         });
     }

@@ -7,6 +7,7 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.common.dto.WynkResponse;
 import in.wynk.common.enums.PaymentEvent;
+import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -120,7 +121,7 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
             long today = System.currentTimeMillis();
             long furtherDefer = renewalPlanEligibilityResponse.getDeferredUntil() - today;
             if (subscriptionServiceManager.isDeferred(transaction.getPaymentChannel().getCode(), furtherDefer)) {
-                if (Objects.equals(transaction.getPaymentChannel().getCode(), ApsConstant.AIRTEL_PAY_STACK)) {
+                if (Objects.equals(transaction.getPaymentChannel().getCode(), BeanConstant.AIRTEL_PAY_STACK)) {
                     furtherDefer = furtherDefer - ((long) 2 * 24 * 60 * 60 * 1000) + ((long) 60 * 60 * 1000);
                 }
                 recurringPaymentManagerService.unScheduleRecurringPayment(transaction, PaymentEvent.DEFERRED, today, furtherDefer);

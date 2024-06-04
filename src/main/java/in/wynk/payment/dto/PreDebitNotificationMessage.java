@@ -29,4 +29,9 @@ public class PreDebitNotificationMessage {
     @Analysed
     private String transactionId;
 
+    @Analysed
+    private String initialTransactionId;
+
+    @Analysed
+    private String lastSuccessTransactionId;
 }

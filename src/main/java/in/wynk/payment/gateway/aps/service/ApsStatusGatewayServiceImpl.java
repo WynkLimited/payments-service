@@ -19,6 +19,7 @@ import java.util.Optional;
 
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY888;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
+import static in.wynk.payment.core.constant.BeanConstant.AIRTEL_PAY_STACK_V2;
 
 /**
  * @author Nishesh Pandey
@@ -54,7 +55,7 @@ public class ApsStatusGatewayServiceImpl implements IPaymentStatus<AbstractPayme
         @Override
         public AbstractPaymentStatusResponse reconcile(AbstractTransactionStatusRequest request) {
             final Transaction transaction = TransactionContext.get();
-            if (ApsConstant.AIRTEL_PAY_STACK_V2.equalsIgnoreCase(transaction.getPaymentChannel().getCode())) {
+            if (AIRTEL_PAY_STACK_V2.equalsIgnoreCase(transaction.getPaymentChannel().getCode())) {
                 common.syncOrderTransactionFromSource(transaction);
             } else {
                 common.syncChargingTransactionFromSource(transaction, Optional.empty());

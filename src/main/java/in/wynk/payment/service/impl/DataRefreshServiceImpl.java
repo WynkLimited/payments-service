@@ -56,7 +56,7 @@ public class DataRefreshServiceImpl implements IDataRefreshService {
             if ("aps".equalsIgnoreCase(paymentCode)) {
                 apsCommonGatewayService.syncChargingTransactionFromSource(transaction, Optional.empty());
             } else if ("payu".equalsIgnoreCase(paymentCode)) {
-                payUCommonGateway.syncChargingTransactionFromSource(transaction);
+                payUCommonGateway.syncChargingTransactionFromSource(transaction, Optional.empty());
             }
         } catch (Exception e) {
             log.error("Exception occurred while refreshing merchnat transaction  table with PG data");

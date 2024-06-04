@@ -9,11 +9,9 @@ import java.util.List;
 public interface PaymentConstants extends BaseConstants {
 
     String SKU_ID = "skuId";
-    String SAVED = "SAVED";
     String PAYU = "PAYU";
     String TXN_ID = "tid";
     String ERROR = "error";
-    String VERSION_2 = "V2";
     String FAILED = "failed";
     String QUEUED = "queued";
     String PROD_ENV = "PROD";
@@ -51,26 +49,19 @@ public interface PaymentConstants extends BaseConstants {
     String MERCHANT_CLIENT_ID = "clientId";
     String PAYMENT_METHOD = "paymentMethod";
     String TDR = "tdr";
-    String SHOULD_WINBACK = "shouldWinBack";
     String MIGRATED_TXN_ID = "transactionid";
     String PAYMENT_API_CLIENT = "paymentApi";
     String PAYMENT_GATEWAY = "paymentGateway";
     String REQUEST_PAYLOAD = "requestPayload";
-    String ATTEMPT_SEQUENCE = "attemptSequence";
     String WINBACK_CAMPAIGN = "winback_campaign";
-    String PHONEPE_AUTO_DEBIT = "PHONEPE_AUTO_DEBIT";
     String PAY_OPTION_DEEPLINK = "pay_option_deeplink";
-    String PAYMENT_DETAILS_KEY = "PAYMENT_DETAILS_KEY:";
-    String MERCHANT_TRANSACTION = "merchantTransaction";
     String PAYMENT_PAGE_PLACE_HOLDER = "${payment.%c.%p.page}";
     String PAYMENT_PAGE_PLACE_HOLDER_V2 = "${payment.%c.%p.v2.page}";
-    String ORIGINAL_TRANSACTION_ID = "ORIGINAL_TRANSACTION_ID";
     String PAYMENT_DROPOUT_TRACKER_IN_SECONDS = "PAYMENT_DROPOUT_TRACKER_IN_SECONDS";
     String PAYMENT_ENTITY_BASE_PACKAGE = "in.wynk.payment.core.dao";
     String PAYMENT_CLIENT_PLACE_HOLDER = "payment.merchant.%p.%c.%f";
     String PAYMENT_CLIENT_PLACE_HOLDER2 = "payment.merchant.%p.%c.%r.%f";
     String PAYMENT_ERROR_UPSERT_RETRY_KEY = "paymentErrorUpsertRetry";
-    String PAYMENT_CLIENT_CALLBACK_RETRY = "paymentClientCallbackRetry";
     String MERCHANT_TRANSACTION_UPSERT_RETRY_KEY = "merchantTransactionUpsertRetry";
     String INVOICE_RETRY = "invoiceRetry";
     String INVOICE_SEQUENCE_LOCK_KEY = "invoiceSequenceLockKey";
@@ -89,12 +80,11 @@ public interface PaymentConstants extends BaseConstants {
     List<String> IAP_PAYMENT_METHODS = Arrays.asList(PaymentConstants.ITUNES, PaymentConstants.AMAZON_IAP, PaymentConstants.GOOGLE_IAP);
 
     String CONTENT_TYPE = "Content-Type";
-    String CURRENCY_INR="INR";
+    String CURRENCY_INR = "INR";
     String WHATSAPP = "WHATSAPP";
     String UNKNOWN_VPA = "UNKNOWN_VPA";
     String ANDROID_DEEP_LINK = "android_deep_link";
     String DESKTOP_DEEP_LINK = "desktop_deep_link";
-    String IOS_DEEP_LINK = "ios_deep_link";
     String FALLBACK_URL = "fallback_url";
     String AIRTEL_XSTREAM = "airtelxstream";
     String AIRTEL_TV = "airteltv";

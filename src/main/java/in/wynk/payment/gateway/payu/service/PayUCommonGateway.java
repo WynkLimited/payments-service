@@ -53,7 +53,7 @@ import java.util.*;
 
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY015;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAYU006;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAYU005;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
@@ -112,10 +112,10 @@ public class PayUCommonGateway {
             return mapper.readValue(response, target);
         } catch (HttpStatusCodeException ex) {
             log.error(PAYU_API_FAILURE, ex.getResponseBodyAsString(), ex);
-            throw new WynkRuntimeException(PAY015, ex);
+            throw new WynkRuntimeException(PAYU006, ex);
         } catch (Exception ex) {
             log.error(PAYU_API_FAILURE, ex.getMessage(), ex);
-            throw new WynkRuntimeException(PAY015, ex);
+            throw new WynkRuntimeException(PAYU006, ex);
         }
     }
 
@@ -254,10 +254,13 @@ public class PayUCommonGateway {
         String mihpayid = payUChargingTransactionDetails.getPayUExternalTxnId();
         String payuCommand = null;
         //if card number is null means it is upi and hence check mandate status for UPI else check mandate status for card
-        if (payUChargingTransactionDetails.getResponseCardNumber() == null) {
+        if (mode.equals("UPI")) {
             payuCommand = PayUCommand.UPI_MANDATE_STATUS.getCode();
-        } else if (payUChargingTransactionDetails.getResponseCardNumber() != null) {
+        } else if (mode.equals("CC") || mode.equals("DC")) {
             payuCommand = PayUCommand.CHECK_MANDATE_STATUS.getCode();
+        } else {
+            log.error("Could not find mode, " + mode);
+            return true;
         }
         LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
         orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, mihpayid);

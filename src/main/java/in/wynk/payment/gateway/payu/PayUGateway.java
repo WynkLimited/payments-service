@@ -78,7 +78,7 @@ public class PayUGateway extends PayUMerchantPaymentService implements
         this.chargeGateway = new PayUChargingGatewayImpl(commonGateway, cache, paymentApi);
         this.renewalGateway = new PayURenewalGatewayImpl(commonGateway, gson, mapper, payCache, eventPublisher, transactionManagerService, recurringPaymentManagerService, recurringTransactionUtils);
         this.iMerchantTDRService = new PayUTdrGatewayServiceImpl(payuInfoApi, commonGateway, merchantTransactionService);
-        this.preDebitGatewayService = new PayUPreDebitGatewayServiceImpl(gson, mapper, payCache, commonGateway, transactionManagerService, recurringPaymentManagerService);
+        this.preDebitGatewayService = new PayUPreDebitGatewayServiceImpl(gson,mapper, payCache, commonGateway, transactionManagerService, recurringPaymentManagerService, recurringTransactionUtils);
     }
 
     @Override

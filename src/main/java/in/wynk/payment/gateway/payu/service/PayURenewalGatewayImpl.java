@@ -112,7 +112,7 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
                 }
             }
         } catch (WynkRuntimeException e) {
-            if (e.getErrorCode().equals(PaymentErrorType.PAY009.getErrorCode()) || e.getErrorCode().equals(PaymentErrorType.PAY002.getErrorCode())) {
+            if (e.getErrorCode().equals(PaymentErrorType.PAYU009.getErrorCode())) {
                 transaction.setStatus(TransactionStatus.FAILURE.getValue());
             }
             throw e;
@@ -148,21 +148,21 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
             if (e.getRootCause() != null) {
                 if (e.getRootCause() instanceof SocketTimeoutException || e.getRootCause() instanceof ConnectTimeoutException) {
                     log.error(PAYU_RENEWAL_STATUS_ERROR, "Socket timeout but valid for reconciliation for request : {} due to {}", requestMap, e.getMessage(), e);
-                    errorEventBuilder.code(PaymentErrorType.PAY014.getErrorCode());
-                    errorEventBuilder.description(PaymentErrorType.PAY014.getErrorMessage());
+                    errorEventBuilder.code(PaymentErrorType.PAYU008.getErrorCode());
+                    errorEventBuilder.description(PaymentErrorType.PAYU008.getErrorMessage());
                     eventPublisher.publishEvent(errorEventBuilder.build());
-                    throw new WynkRuntimeException(PaymentErrorType.PAY014);
+                    throw new WynkRuntimeException(PaymentErrorType.PAYU008);
                 } else {
-                    errorEventBuilder.code(PaymentErrorType.PAY009.getErrorCode());
-                    errorEventBuilder.description(PaymentErrorType.PAY009.getErrorMessage());
+                    errorEventBuilder.code(PaymentErrorType.PAYU009.getErrorCode());
+                    errorEventBuilder.description(PaymentErrorType.PAYU009.getErrorMessage());
                     eventPublisher.publishEvent(errorEventBuilder.build());
-                    throw new WynkRuntimeException(PaymentErrorType.PAY009, e);
+                    throw new WynkRuntimeException(PaymentErrorType.PAYU009, e);
                 }
             } else {
-                errorEventBuilder.code(PaymentErrorType.PAY009.getErrorCode());
-                errorEventBuilder.description(PaymentErrorType.PAY009.getErrorMessage());
+                errorEventBuilder.code(PaymentErrorType.PAYU009.getErrorCode());
+                errorEventBuilder.description(PaymentErrorType.PAYU009.getErrorMessage());
                 eventPublisher.publishEvent(errorEventBuilder.build());
-                throw new WynkRuntimeException(PaymentErrorType.PAY009, e);
+                throw new WynkRuntimeException(PaymentErrorType.PAYU009, e);
             }
         }
     }

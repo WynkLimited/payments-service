@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.payment.consumer.*;
 import in.wynk.payment.extractor.*;
 import in.wynk.payment.service.*;
+import in.wynk.payment.utils.RecurringTransactionUtils;
 import in.wynk.queue.constant.BeanConstant;
 import in.wynk.queue.service.ISqsManagerService;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -67,7 +68,7 @@ public class PaymentQueuesConfig {
                                                                                   ISqsManagerService sqsManagerService,
                                                                                   ITransactionManagerService transactionManager,
                                                                                   ISubscriptionServiceManager subscriptionServiceManager,
-                                                                                  IRecurringPaymentManagerService recurringPaymentManagerService, PaymentCachingService cachingService) {
+                                                                                  IRecurringPaymentManagerService recurringPaymentManagerService, PaymentCachingService cachingService, RecurringTransactionUtils recurringTransactionUtils) {
         return new PaymentRenewalConsumerPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
@@ -76,7 +77,7 @@ public class PaymentQueuesConfig {
                 scheduledThreadPoolExecutor(),
                 sqsManagerService,
                 transactionManager,
-                subscriptionServiceManager, recurringPaymentManagerService, cachingService);
+                subscriptionServiceManager, recurringPaymentManagerService, cachingService, recurringTransactionUtils);
     }
 
     @Bean

@@ -159,7 +159,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             }
             builder.data(PayUChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).info(encryptedParams).build());
         } catch (Exception e) {
-            final PaymentErrorType errorType = PAY015;
+            final PaymentErrorType errorType = PAYU006;
             builder.error(TechnicalErrorDetails.builder().code(errorType.getErrorCode()).description(errorType.getErrorMessage()).build()).status(errorType.getHttpResponseStatusCode()).success(false);
             log.error(errorType.getMarker(), e.getMessage(), e);
         }
@@ -217,10 +217,10 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         syncRefundTransactionFromSource(transaction, extTxnId);
         if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
             log.warn(PAYU_REFUND_STATUS_VERIFICATION, "Refund Transaction is still pending at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-            throw new WynkRuntimeException(PaymentErrorType.PAY004);
+            throw new WynkRuntimeException(PaymentErrorType.PAYU004);
         } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
             log.warn(PAYU_REFUND_STATUS_VERIFICATION, "Unknown Refund Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-            throw new WynkRuntimeException(PaymentErrorType.PAY003);
+            throw new WynkRuntimeException(PaymentErrorType.PAYU003);
         }
         ChargingStatusResponseBuilder<?, ?> responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(transaction.getPlanId());
         if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
@@ -266,10 +266,10 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         syncChargingTransactionFromSource(transaction, Optional.empty());
         if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
             log.warn(PAYU_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-            throw new WynkRuntimeException(PaymentErrorType.PAY004);
+            throw new WynkRuntimeException(PaymentErrorType.PAYU004);
         } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
             log.warn(PAYU_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
-            throw new WynkRuntimeException(PaymentErrorType.PAY003);
+            throw new WynkRuntimeException(PaymentErrorType.PAYU003);
         }
         ChargingStatusResponseBuilder<?, ?> responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(transaction.getPlanId());
         if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
@@ -453,7 +453,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             return objectMapper.readValue(response, target);
         } catch (Exception ex) {
             log.error(PAYU_API_FAILURE, ex.getMessage(), ex);
-            throw new WynkRuntimeException(PAY015, ex);
+            throw new WynkRuntimeException(PAYU006, ex);
         }
     }
 
@@ -466,10 +466,10 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             return objectMapper.readValue(response, target);
         } catch (HttpStatusCodeException ex) {
             log.error(PAYU_API_FAILURE, ex.getResponseBodyAsString(), ex);
-            throw new WynkRuntimeException(PAY015, ex);
+            throw new WynkRuntimeException(PAYU006, ex);
         } catch (Exception ex) {
             log.error(PAYU_API_FAILURE, ex.getMessage(), ex);
-            throw new WynkRuntimeException(PAY015, ex);
+            throw new WynkRuntimeException(PAYU006, ex);
         }
     }
 

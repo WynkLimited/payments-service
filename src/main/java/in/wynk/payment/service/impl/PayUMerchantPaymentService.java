@@ -193,7 +193,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             boolean isUpi = StringUtils.isNotEmpty(mode) && mode.equals("UPI");
             String externalTransactionId = (merchantTransaction != null) ? merchantTransaction.getExternalTransactionId() : currentStatus.getTransactionDetails(txnId).getPayUExternalTxnId();
             if (!isUpi || validateStatusForRenewal(externalTransactionId, transaction)) {
-                String invoiceDisplayNumber = Objects.nonNull(lastRenewal) ? lastRenewal.getLastSuccessTransactionId() : paymentRenewalChargingRequest.getId();
+                String invoiceDisplayNumber = (Objects.nonNull(lastRenewal) && Objects.nonNull(lastRenewal.getLastSuccessTransactionId())) ? lastRenewal.getLastSuccessTransactionId() : paymentRenewalChargingRequest.getId();
                 payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest, externalTransactionId, invoiceDisplayNumber);
                 payUChargingTransactionDetails = payURenewalResponse.getTransactionDetails().get(transaction.getIdStr());
                 int retryInterval = planPeriodDTO.getRetryInterval();

@@ -80,6 +80,7 @@ import static in.wynk.exception.WynkErrorType.UT999;
 import static in.wynk.payment.core.constant.PaymentConstants.AIRTEL_TV;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_CODE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
+import static in.wynk.payment.dto.aps.common.ApsConstant.APS_V2;
 import static in.wynk.queue.constant.BeanConstant.MESSAGE_PAYLOAD;
 import static in.wynk.tinylytics.constants.TinylyticsConstants.EVENT;
 import static in.wynk.tinylytics.constants.TinylyticsConstants.TRANSACTION_SNAPShOT_EVENT;
@@ -560,7 +561,10 @@ public class PaymentEventListener {
         final PlanDTO plan = cachingService.getPlan(productDetails.getId());
         final String service = productDetails.getType().equalsIgnoreCase(PLAN) ? plan.getService() : cachingService.getItem(productDetails.getId()).getService();
         final WynkService wynkService = WynkServiceUtils.fromServiceId(service);
-        final Message message = wynkService.getMessages().get(PaymentConstants.USER_WINBACK).get(txnStatus.getValue());
+        final Message message = Optional.ofNullable(wynkService.getMessages().get(USER_WINBACK))
+                .map(userwinback -> userwinback.getOrDefault(APS_V2, userwinback.get(DEFAULT)))
+                .map(config -> config.get(txnStatus.getValue()))
+                .orElse(null);
         if ((Objects.nonNull(message)) && message.isEnabled()) {
             Map<String, Object> contextMap = new HashMap<String, Object>() {{
                 put(PLAN, plan);

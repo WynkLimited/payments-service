@@ -2,7 +2,6 @@ package in.wynk.payment.gateway.payu.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
 import in.wynk.common.enums.TransactionStatus;
@@ -83,7 +82,8 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
             PayUChargingTransactionDetails oldPayUChargingTransactionDetails = oldPayURenewalResponse.getTransactionDetails().get(txnId);
             String mode = oldPayUChargingTransactionDetails.getMode();
             if (payUCommonGateway.validateMandateStatus(transaction, oldPayUChargingTransactionDetails, mode, true)) {
-                String invoiceDisplayNumber = Objects.nonNull(lastRenewal) ? lastRenewal.getLastSuccessTransactionId() : paymentRenewalChargingRequest.getId();
+                String invoiceDisplayNumber = (Objects.nonNull(lastRenewal) && Objects.nonNull(lastRenewal.getLastSuccessTransactionId())) ? lastRenewal.getLastSuccessTransactionId() :
+                        paymentRenewalChargingRequest.getId();
                 PayURenewalResponse payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest, oldPayUChargingTransactionDetails, invoiceDisplayNumber);
                 PayUChargingTransactionDetails payUChargingTransactionDetails = payURenewalResponse.getTransactionDetails().get(transaction.getIdStr());
 
@@ -123,7 +123,8 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
     }
 
 
-    private PayURenewalResponse doChargingForRenewal (PaymentRenewalChargingRequest paymentRenewalChargingRequest, PayUChargingTransactionDetails oldPayUChargingTransactionDetails, String invoiceDisplayNumber) {
+    private PayURenewalResponse doChargingForRenewal (PaymentRenewalChargingRequest paymentRenewalChargingRequest, PayUChargingTransactionDetails oldPayUChargingTransactionDetails,
+                                                      String invoiceDisplayNumber) {
         Transaction transaction = TransactionContext.get();
         LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
         String uid = paymentRenewalChargingRequest.getUid();
@@ -133,7 +134,7 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
         String mode = oldPayUChargingTransactionDetails.getMode();
         final String email = uid + BASE_USER_EMAIL;
         orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID_SMALL, mihpayid);
-        if(CardConstants.CREDIT_CARD.equals(mode) || CardConstants.DEBIT_CARD.equals(mode) || CardConstants.SI.equals(mode)) {
+        if (CardConstants.CREDIT_CARD.equals(mode) || CardConstants.DEBIT_CARD.equals(mode) || CardConstants.SI.equals(mode)) {
             orderedMap.put(PAYU_INVOICE_DISPLAY_NUMBER, invoiceDisplayNumber);
         }
         orderedMap.put(PAYU_TRANSACTION_AMOUNT, amount);

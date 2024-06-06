@@ -7,6 +7,7 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.constant.CardConstants;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -73,12 +74,15 @@ public class PayUPreDebitGatewayServiceImpl implements IPreDebitNotificationServ
             // check mandate status
             PayUChargingTransactionDetails payUChargingTransactionDetails =
                     objectMapper.convertValue(merchantTransaction.getResponse(), PayURenewalResponse.class).getTransactionDetails().get(message.getTransactionId());
-            boolean isMandateActive = payUCommonGateway.validateMandateStatus(transaction, transaction.getIdStr(), payUChargingTransactionDetails, false);
+            String mode = payUChargingTransactionDetails.getMode();
+            boolean isMandateActive = payUCommonGateway.validateMandateStatus(transaction, payUChargingTransactionDetails, mode,false);
             if (isMandateActive) {
                 orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, merchantTransaction.getExternalTransactionId());
                 orderedMap.put(PAYU_REQUEST_ID, UUIDs.timeBased());
                 orderedMap.put(PAYU_DEBIT_DATE, message.getDate());
-                orderedMap.put(PAYU_INVOICE_DISPLAY_NUMBER, message.getTransactionId()); // it is last success transactionId
+                if(CardConstants.CREDIT_CARD.equals(mode) || CardConstants.DEBIT_CARD.equals(mode) || CardConstants.SI.equals(mode)) {
+                    orderedMap.put(PAYU_INVOICE_DISPLAY_NUMBER, message.getTransactionId());
+                }
                 orderedMap.put(PAYU_TRANSACTION_AMOUNT, paymentCachingService.getPlan(transaction.getPlanId()).getFinalPrice());
                 String variable = gson.toJson(orderedMap);
                 MultiValueMap<String, String> requestMap = payUCommonGateway.buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.PRE_DEBIT_SI.getCode(), variable);

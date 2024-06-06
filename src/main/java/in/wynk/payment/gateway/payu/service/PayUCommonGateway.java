@@ -1,5 +1,6 @@
 package in.wynk.payment.gateway.payu.service;
 
+import com.datastax.driver.core.utils.UUIDs;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
@@ -10,6 +11,8 @@ import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.constant.CardConstants;
+import in.wynk.payment.constant.UpiConstants;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
@@ -247,24 +250,20 @@ public class PayUCommonGateway {
     }
 
 
-    public boolean validateMandateStatus (Transaction transaction, String uniqueId, PayUChargingTransactionDetails payUChargingTransactionDetails, boolean isRenewalFlow) {
-        String mode = payUChargingTransactionDetails.getMode();
+    public boolean validateMandateStatus (Transaction transaction, PayUChargingTransactionDetails payUChargingTransactionDetails, String mode, boolean isRenewalFlow) {
         AnalyticService.update(PAYMENT_MODE, mode);
-
-        String mihpayid = payUChargingTransactionDetails.getPayUExternalTxnId();
-        String payuCommand = null;
-        //if card number is null means it is upi and hence check mandate status for UPI else check mandate status for card
-        if (mode.equals("UPI")) {
+        String payuCommand;
+        if (UpiConstants.UPI.equals(mode) || UpiConstants.UPISI.equals(mode)) {
             payuCommand = PayUCommand.UPI_MANDATE_STATUS.getCode();
-        } else if (mode.equals("CC") || mode.equals("DC")) {
+        } else if (CardConstants.CREDIT_CARD.equals(mode) || CardConstants.DEBIT_CARD.equals(mode) || CardConstants.SI.equals(mode)) {
             payuCommand = PayUCommand.CHECK_MANDATE_STATUS.getCode();
         } else {
             log.error("Could not find mode, " + mode);
             return true;
         }
         LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
-        orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, mihpayid);
-        orderedMap.put(PAYU_REQUEST_ID, uniqueId);
+        orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, payUChargingTransactionDetails.getPayUExternalTxnId());
+        orderedMap.put(PAYU_REQUEST_ID, UUIDs.timeBased().toString());
         String variable = gson.toJson(orderedMap);
         PayUMandateUpiStatusResponse paymentResponse;
         rateLimiter.acquire();

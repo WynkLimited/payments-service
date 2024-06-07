@@ -71,10 +71,10 @@ public class PayUPreDebitGatewayServiceImpl implements IPreDebitNotificationServ
         Transaction transaction = transactionManagerService.get(message.getTransactionId());
         // check eligibility for renewal
         if (recurringTransactionUtils.isEligibleForRenewal(transaction, true)) {
-            // check mandate status
             PayUChargingTransactionDetails payUChargingTransactionDetails =
                     objectMapper.convertValue(merchantTransaction.getResponse(), PayURenewalResponse.class).getTransactionDetails().get(message.getTransactionId());
             String mode = payUChargingTransactionDetails.getMode();
+            // check mandate status
             boolean isMandateActive = payUCommonGateway.validateMandateStatus(transaction, payUChargingTransactionDetails, mode,false);
             if (isMandateActive) {
                 orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, merchantTransaction.getExternalTransactionId());

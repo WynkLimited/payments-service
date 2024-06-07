@@ -493,7 +493,7 @@ public class PaymentEventListener {
             }
             final String tinyUrl = quickPayLinkGenerator.generate(event.getTransactionId(), event.getClientAlias(), event.getSid(), event.getAppDetails(), event.getProductDetails());
             AnalyticService.update(WINBACK_NOTIFICATION_URL, tinyUrl);
-            sendNotificationToUser(event.getProductDetails(), tinyUrl, event.getMsisdn(), lastTransaction.getStatus());
+            sendNotificationToUser(event.getProductDetails(), tinyUrl, event.getMsisdn(), lastTransaction.getStatus(), lastTransaction);
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.PAYMENT_DROP_OUT_NOTIFICATION_FAILURE, "Unable to trigger the drop out notification due to {}", e.getMessage(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY047, e);
@@ -509,7 +509,7 @@ public class PaymentEventListener {
             final String tinyUrl = quickPayLinkGenerator.generate(event.getTransaction().getIdStr(), event.getClientAlias(), event.getPurchaseDetails().getAppDetails(),
                     event.getPurchaseDetails().getProductDetails());
             AnalyticService.update(WINBACK_NOTIFICATION_URL, tinyUrl);
-            sendNotificationToUser(event.getPurchaseDetails().getProductDetails(), tinyUrl, event.getTransaction().getMsisdn(), event.getTransaction().getStatus());
+            sendNotificationToUser(event.getPurchaseDetails().getProductDetails(), tinyUrl, event.getTransaction().getMsisdn(), event.getTransaction().getStatus(), event.getTransaction());
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.PAYMENT_AUTO_REFUND_NOTIFICATION_FAILURE, "Unable to trigger the payment auto refund notification due to {}", e.getMessage(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY048, e);
@@ -559,14 +559,15 @@ public class PaymentEventListener {
         AnalyticService.update(event);
     }
 
-    private void sendNotificationToUser (IProductDetails productDetails, String tinyUrl, String msisdn, TransactionStatus txnStatus) {
+    private void sendNotificationToUser (IProductDetails productDetails, String tinyUrl, String msisdn, TransactionStatus txnStatus, Transaction transaction) {
         final PlanDTO plan = cachingService.getPlan(productDetails.getId());
         final String service = productDetails.getType().equalsIgnoreCase(PLAN) ? plan.getService() : cachingService.getItem(productDetails.getId()).getService();
         final WynkService wynkService = WynkServiceUtils.fromServiceId(service);
         final Message message = Optional.ofNullable(wynkService.getMessages().get(USER_WINBACK))
-                .map(userwinback -> userwinback.getOrDefault(APS_V2, userwinback.get(DEFAULT)))
+                .map(userwinback -> userwinback.getOrDefault(transaction.getPaymentChannel().getCode().toUpperCase(), userwinback.get("DEFAULT")))
                 .map(config -> config.get(txnStatus.getValue()))
                 .orElse(null);
+
         if ((Objects.nonNull(message)) && message.isEnabled()) {
             Map<String, Object> contextMap = new HashMap<String, Object>() {{
                 put(PLAN, plan);

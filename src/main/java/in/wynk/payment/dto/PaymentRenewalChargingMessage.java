@@ -3,6 +3,7 @@ package in.wynk.payment.dto;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
+import in.wynk.pubsub.dto.WynkPubSub;
 import in.wynk.queue.dto.FIFOQueueMessageMarker;
 import in.wynk.queue.dto.QueueType;
 import in.wynk.queue.dto.WynkQueue;
@@ -16,7 +17,8 @@ import lombok.NoArgsConstructor;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-@WynkQueue(queueName = "${payment.pooling.queue.charging.name}", delaySeconds = "${payment.pooling.queue.charging.sqs.producer.delayInSecond}", queueType = QueueType.FIFO)
+//@WynkQueue(queueName = "${payment.pooling.queue.charging.name}", delaySeconds = "${payment.pooling.queue.charging.sqs.producer.delayInSecond}", queueType = QueueType.FIFO)
+@WynkPubSub(projectName = "${payments.pooling.pubSub.charging.projectName}", topicName = "${payments.pooling.pubSub.charging.topicName}", subscriptionName = "${payments.pooling.pubSub.charging.subscriptionName}", bufferInterval = "${payments.pooling.pubSub.charging.bufferInterval}")
 public class PaymentRenewalChargingMessage implements FIFOQueueMessageMarker {
 
     @Analysed

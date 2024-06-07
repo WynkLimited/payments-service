@@ -410,6 +410,15 @@
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
+    <logger name="ATBChargingScheduler" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
+    </logger>
+
+    <logger name="ATBCharging" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
+    </logger>
+
+
     <!-- invoice loggers end -->
 
     <springProfile name="local">
@@ -426,6 +435,7 @@
     </springProfile>
     <springProfile name="dev,preprod">
         <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
             <appender-ref ref="ASYNC_APPLOG"/>
             <appender-ref ref="ASYNC_ERRORLOG"/>
         </root>

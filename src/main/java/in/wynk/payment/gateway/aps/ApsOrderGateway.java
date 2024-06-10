@@ -128,7 +128,7 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
         final IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest> callbackService =
                 BeanLocatorFactory.getBean(AIRTEL_PAY_STACK, new ParameterizedTypeReference<IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest>>() {
                 });
-        AnalyticService.update("PayloadIs", String.valueOf(payload));
+        payload.put("lob", "PREPAID");
         ApsOrderStatusCallBackPayload response = (ApsOrderStatusCallBackPayload) callbackService.parse(payload);
         try {
             String txnId = merchantTransactionService.findTransactionId(response.getOrderId());

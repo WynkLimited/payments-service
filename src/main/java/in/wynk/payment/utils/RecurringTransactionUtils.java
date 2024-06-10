@@ -89,7 +89,6 @@ public class RecurringTransactionUtils {
                         request = AsyncTransactionRevisionRequest.builder().transaction(transactionCopy).existingTransactionStatus(transactionCopy.getStatus())
                                 .finalTransactionStatus(TransactionStatus.CANCELLED).build();
                     }
-
                     subscriptionServiceManager.unSubscribePlan(AbstractUnSubscribePlanRequest.from(request));
                     updateTransaction(request.getTransaction());
                 }
@@ -128,7 +127,7 @@ public class RecurringTransactionUtils {
         try {
             updateSubscriptionAndTransaction(description, transaction, true);
         } catch (Exception ex) {
-            throw new WynkRuntimeException(PaymentErrorType.RTMANDATE001);
+            throw new WynkRuntimeException(PaymentErrorType.RTMANDATE002);
         }
     }
 }

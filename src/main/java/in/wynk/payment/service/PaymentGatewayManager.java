@@ -244,7 +244,9 @@ public class PaymentGatewayManager
                 String productType = Objects.nonNull(mapping.getItemId()) ? BaseConstants.POINT : BaseConstants.PLAN;
                 final in.wynk.common.enums.PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper, productType);
                 if (event != PaymentEvent.RENEW) {
-                    cancelRenewalBasedOnPaymentEvent(wrapper);
+                    String paymentTransactionId = receiptDetailService.getIdAndUpdateReceiptDetails(wrapper);
+                    Transaction transaction = transactionManager.get(paymentTransactionId);
+                    recurringTransactionUtils.cancelRenewalBasedOnRealtimeMandateForIAP("PaymentEvent Unsubscribed", transaction);
                 } else {
                     final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
                             PlanRenewalRequest.builder().txnId(mapping.getLinkedTransactionId()).planId(mapping.getPlanId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentGateway(request.getPaymentGateway())
@@ -456,15 +458,5 @@ public class PaymentGatewayManager
         }
         transactionManager.revision(abstractTransactionRevisionRequest);
         exhaustCouponIfApplicable(existingStatus, transaction.getStatus(), transaction);
-    }
-
-    private void cancelRenewalBasedOnPaymentEvent(DecodedNotificationWrapper<IAPNotification> wrapper) {
-        ItunesCallbackRequest itunesCallbackRequest = (ItunesCallbackRequest) wrapper.getDecodedNotification();
-        final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList().get(0);
-        final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
-        Optional<ReceiptDetails> optionalReceiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(iTunesId);
-        ReceiptDetails details = optionalReceiptDetails.get();
-        Transaction transaction = transactionManager.get(details.getPaymentTransactionId());
-        recurringTransactionUtils.cancelRenewalBasedOnRealtimeMandateForIAP("PaymentEvent Unsubscribed", transaction);
     }
 }

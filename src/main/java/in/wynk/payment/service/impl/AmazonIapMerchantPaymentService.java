@@ -449,6 +449,13 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
             saveReceipt(transaction.getUid(), transaction.getMsisdn(), transaction.getPlanId(), receipt.getId(), receipt.getAmazonUserId(), transaction.getIdStr(), receipt.getService());
         }
     }
+    //mujhe yha change karna he
+
+
+    @Override
+    public String getIdAndUpdateReceiptDetails(DecodedNotificationWrapper<AmazonNotificationRequest> wrapper) {
+        return "";
+    }
 
     public boolean supportsRenewalReconciliation() {
         return false;

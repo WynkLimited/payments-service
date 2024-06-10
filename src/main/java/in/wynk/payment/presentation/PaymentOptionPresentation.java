@@ -41,6 +41,7 @@ import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.request.UserPersonalisedPlanRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Component;
@@ -126,7 +127,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
             @Override
             public PaymentOptionsDTO.PointDetails transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
                 ItemDTO item = payCache.getItem(payload.getFirst().getProductDetails().getId());
-                if(Objects.nonNull(item)) {
+                if (Objects.nonNull(item)) {
                     return PaymentOptionsDTO.PointDetails.builder()
                             .id(item.getId())
                             .title(item.getName())
@@ -135,12 +136,12 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
                             .currency("INR")
                             .build();
                 }
-                PointDetails pointDetails=(PointDetails)payload.getFirst().getProductDetails();
+                PointDetails pointDetails = (PointDetails) payload.getFirst().getProductDetails();
                 return PaymentOptionsDTO.PointDetails.builder()
                         .id(pointDetails.getItemId())
                         .title(pointDetails.getTitle())
-                        .price(Objects.nonNull(pointDetails.getPrice()) ? Double.parseDouble(pointDetails.getPrice()) :0.0)
-                        .discountedPrice(Objects.nonNull(pointDetails.getPrice()) ? Double.parseDouble(pointDetails.getPrice()) :0.0)
+                        .price(Objects.nonNull(pointDetails.getPrice()) ? Double.parseDouble(pointDetails.getPrice()) : 0.0)
+                        .discountedPrice(Objects.nonNull(pointDetails.getPrice()) ? Double.parseDouble(pointDetails.getPrice()) : 0.0)
                         .currency("INR")
                         .build();
             }
@@ -183,6 +184,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
         private class UPIPresentation implements IPaymentOptionInfoPresentation<UPI, UpiOptionInfo> {
             private static final String INTENT_SUPPORT = "intent";
             private static final String IS_CUSTOM_UPI = "isCustom";
+
             @Override
             public UPI transform(Pair<PaymentMethodDTO, Optional<UpiOptionInfo>> payload) {
                 final PaymentMethodDTO methodDTO = payload.getFirst();
@@ -217,6 +219,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
 
         private class CardPresentation implements IPaymentOptionInfoPresentation<Card, CardOptionInfo> {
             private static final String SUPPORTED_CARD_ICONS = "supported_card_icons";
+
             @Override
             public Card transform(Pair<PaymentMethodDTO, Optional<CardOptionInfo>> payload) {
                 final PaymentMethodDTO methodDTO = payload.getFirst();
@@ -302,7 +305,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
         //To be implemented Phase 2
         private class GooglePlayBillingPresentation implements IPaymentOptionInfoPresentation<GooglePlayBilling, GooglePlayBillingOptionInfo> {
             @Override
-            public GooglePlayBilling transform (Pair<PaymentMethodDTO, Optional<GooglePlayBillingOptionInfo>> payload) {
+            public GooglePlayBilling transform(Pair<PaymentMethodDTO, Optional<GooglePlayBillingOptionInfo>> payload) {
 
                 final PaymentMethodDTO methodDTO = payload.getFirst();
                 return GooglePlayBilling.builder().id(methodDTO.getPaymentId())
@@ -351,7 +354,8 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
 
     }
 
-    private interface ISavedDetailsPresentation<R extends AbstractSavedPaymentDTO, T extends AbstractSavedInstrumentInfo> extends IPresentation<R, T> {}
+    private interface ISavedDetailsPresentation<R extends AbstractSavedPaymentDTO, T extends AbstractSavedInstrumentInfo> extends IPresentation<R, T> {
+    }
 
     private class SavedDetailsPresentation implements IPresentation<List<AbstractSavedPaymentDTO>, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> {
 
@@ -369,14 +373,15 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
         public List<AbstractSavedPaymentDTO> transform(Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult> payload) {
             //add filter for Saved Card which doesn't support mandate(PennyDrop)/AutoRenewal
             Map<String, String> aliasToIds = null;
-            if(Objects.isNull(payload.getFirst().getPaymentDetails()) || (Objects.nonNull(payload.getFirst().getPaymentDetails()) && !(payload.getFirst().getPaymentDetails().isMandate() || payload.getFirst().getPaymentDetails().isAutoRenew() || payload.getFirst().getPaymentDetails().isTrialOpted()))) {
+            if (Objects.isNull(payload.getFirst().getPaymentDetails()) || (Objects.nonNull(payload.getFirst().getPaymentDetails()) && !(payload.getFirst().getPaymentDetails().isMandate() || payload.getFirst().getPaymentDetails().isAutoRenew() || payload.getFirst().getPaymentDetails().isTrialOpted()))) {
                 aliasToIds = payload.getSecond().getMethods().stream().map(PaymentMethodDTO::getPaymentId).filter(methodCache::containsKey).map(methodCache::get).collect(Collectors.toMap(PaymentMethod::getAlias, PaymentMethod::getId, (k1, k2) -> k1, LinkedHashMap::new));
-            } else if(Objects.nonNull(payload.getFirst().getPaymentDetails()) && (payload.getFirst().getPaymentDetails().isMandate() || payload.getFirst().getPaymentDetails().isAutoRenew() || payload.getFirst().getPaymentDetails().isTrialOpted())) {
-                aliasToIds = payload.getSecond().getMethods().stream().filter(paymentMethodDTO-> !CardConstants.CARD.equals(paymentMethodDTO.getGroup())).map(PaymentMethodDTO::getPaymentId).filter(methodCache::containsKey).map(methodCache::get).collect(Collectors.toMap(PaymentMethod::getAlias, PaymentMethod::getId, (k1, k2) -> k1, LinkedHashMap::new));
+            } else if (Objects.nonNull(payload.getFirst().getPaymentDetails()) && (payload.getFirst().getPaymentDetails().isMandate() || payload.getFirst().getPaymentDetails().isAutoRenew() || payload.getFirst().getPaymentDetails().isTrialOpted())) {
+                aliasToIds = payload.getSecond().getMethods().stream().filter(paymentMethodDTO -> !CardConstants.CARD.equals(paymentMethodDTO.getGroup())).map(PaymentMethodDTO::getPaymentId).filter(methodCache::containsKey).map(methodCache::get).collect(Collectors.toMap(PaymentMethod::getAlias, PaymentMethod::getId, (k1, k2) -> k1, LinkedHashMap::new));
             }
             final Map<String, String> finalAliasToIds = aliasToIds;
             return payload.getSecond().getEligibilityRequest().getPayInstrumentProxyMap().values().stream().filter(Objects::nonNull).flatMap(proxy -> proxy.getSavedDetails(payload.getSecond().getEligibilityRequest().getMsisdn()).stream().filter(details -> finalAliasToIds.containsKey(details.getId()))).map(details -> {
                 try {
+                    details.setEligibleAliasToIds(finalAliasToIds);
                     return ((AbstractSavedPaymentDTO) delegate.get(details.getGroup()).transform(details));
                 } catch (URISyntaxException e) {
                     throw new RuntimeException(e);
@@ -387,7 +392,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
         private class UPIPresentation implements ISavedDetailsPresentation<UpiSavedDetails, UpiSavedInfo> {
             @Override
             public UpiSavedDetails transform(UpiSavedInfo payload) {
-                final PaymentMethod method = methodCache.getByAlias(payload.getId());
+                final PaymentMethod method = getPaymentMethod(payload);
                 return UpiSavedDetails.builder()
                         .id(method.getId())
                         .vpa(payload.getVpa())
@@ -405,10 +410,18 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
 
         }
 
+        public PaymentMethod getPaymentMethod(AbstractSavedInstrumentInfo payload) {
+            if (ObjectUtils.isEmpty(payload.getEligibleAliasToIds())) {
+                return methodCache.getByAlias(payload.getId());
+            } else {
+                return methodCache.get(payload.getEligibleAliasToIds().get(payload.getId()));
+            }
+        }
+
         private class CardPresentation implements ISavedDetailsPresentation<CardSavedDetails, SavedCardInfo> {
             @Override
             public CardSavedDetails transform(SavedCardInfo payload) {
-                final PaymentMethod method = methodCache.getByAlias(payload.getId());
+                final PaymentMethod method = getPaymentMethod(payload);
                 return CardSavedDetails.builder()
                         .id(method.getId())
                         .group(method.getGroup())
@@ -442,7 +455,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
         private class WalletPresentation implements ISavedDetailsPresentation<WalletSavedDetails, WalletSavedInfo> {
             @Override
             public WalletSavedDetails transform(WalletSavedInfo payload) {
-                final PaymentMethod method = methodCache.getByAlias(payload.getId());
+                final PaymentMethod method = getPaymentMethod(payload);
                 return WalletSavedDetails.builder()
                         .id(method.getId())
                         .valid(payload.isValid())
@@ -468,7 +481,7 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
         private class NetBankingPresentation implements ISavedDetailsPresentation<NetBankingSavedDetails, NetBankingSavedInfo> {
             @Override
             public NetBankingSavedDetails transform(NetBankingSavedInfo payload) {
-                final PaymentMethod method = methodCache.getByAlias(payload.getId());
+                final PaymentMethod method = getPaymentMethod(payload);
                 return NetBankingSavedDetails.builder()
                         .id(method.getId())
                         .group(method.getGroup())
@@ -487,7 +500,8 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
         private class BillingPresentation implements ISavedDetailsPresentation<BillingSavedDetails, BillingSavedInfo> {
             @Override
             public BillingSavedDetails transform(BillingSavedInfo payload) {
-                final PaymentMethod method = methodCache.getByAlias(payload.getId());
+                final PaymentMethod method = getPaymentMethod(payload);
+
                 return BillingSavedDetails.builder()
                         .id(method.getId())
                         .group(method.getGroup())

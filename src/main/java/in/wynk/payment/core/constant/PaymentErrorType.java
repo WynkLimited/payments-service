@@ -150,6 +150,7 @@ public enum PaymentErrorType implements IWynkErrorType {
 
     /*Realtime Mandate start*/
     RTMANDATE001("Realtime Mandate Processing Failure", "Could not stop renewal based on realtime mandate as we don't have record for initial transaction id",HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.STOP_RENEWAL_FAILURE),
+    RTMANDATE002("Realtime Mandate Processing Failure", "Could not stop renewal based on realtime mandate for IAPgoi",HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.STOP_RENEWAL_FAILURE),
     /*Realtime Mandate start*/
 
     /*Add to bill errorCodes start*/

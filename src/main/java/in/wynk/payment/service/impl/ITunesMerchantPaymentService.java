@@ -565,7 +565,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             final ItunesReceiptType receiptType = ItunesReceiptType.valueOf(receiptDetails.getType());
             final ItunesReceipt itunesReceipt = getReceiptObjForUser(receiptDetails.getReceipt(), receiptType, receiptDetails.getMsisdn());
             final ItunesLatestReceiptResponse latestReceiptResponse = getLatestReceiptResponseInternal(receiptDetails.getReceipt(), itunesReceipt, receiptType);
-            final List<LatestReceiptInfo> filteredReceiptResponse = latestReceiptResponse.getLatestReceiptInfo().stream().filter(details -> receiptDetails.getId().equalsIgnoreCase(details.getOriginalTransactionId())).sorted(Comparator.comparingLong(receiptType::getExpireDate).reversed()).collect(Collectors.toList());
+            final List<LatestReceiptInfo> filteredReceiptResponse = latestReceiptResponse.getLatestReceiptInfo().stream().filter(details -> receiptDetails.getId().equals(details.getOriginalTransactionId())).sorted(Comparator.comparingLong(receiptType::getExpireDate).reversed()).collect(Collectors.toList());
             latestReceiptResponse.setLatestReceiptInfo(filteredReceiptResponse);
             fetchAndUpdateFromReceipt(transaction, latestReceiptResponse, receiptDetails);
             return WynkResponseEntity.<Void>builder().success(true).build();

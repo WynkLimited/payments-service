@@ -44,14 +44,14 @@ public class RecurringTransactionUtils {
     private final ISubscriptionServiceManager subscriptionServiceManager;
     private final ITransactionManagerService transactionManagerService;
 
-    public void cancelRenewalBasedOnErrorReason(String description, Transaction transaction) {
+    public void cancelRenewalBasedOnErrorReason (String description, Transaction transaction) {
         if (ERROR_REASONS.contains(description)) {
             updateSubscriptionAndTransaction(description, transaction, false);
         }
     }
 
     @TransactionAware(txnId = "#txn.id")
-    private void updateSubscriptionAndTransaction(String description, Transaction txn, boolean isRealTimeMandateFlow) {
+    private void updateSubscriptionAndTransaction (String description, Transaction txn, boolean isRealTimeMandateFlow) {
         Transaction transactionCopy = Transaction.builder().id(txn.getIdStr()).planId(txn.getPlanId()).amount(txn.getAmount()).mandateAmount(txn.getMandateAmount()).discount(txn.getDiscount())
                 .initTime(txn.getInitTime()).uid(txn.getUid()).msisdn(txn.getMsisdn()).clientAlias(txn.getClientAlias()).itemId(txn.getItemId())
                 .paymentChannel(txn.getPaymentChannel().getId()).type(txn.getType().getValue()).status(txn.getStatus().getValue()).coupon(txn.getCoupon()).exitTime(txn.getExitTime())
@@ -100,12 +100,12 @@ public class RecurringTransactionUtils {
 
     }
 
-    private void updateTransaction(Transaction transaction) {
+    private void updateTransaction (Transaction transaction) {
         transaction.setStatus(TransactionStatus.CANCELLED.getValue());
         transactionManagerService.upsert(transaction);
     }
 
-    public void cancelRenewalBasedOnRealtimeMandate(String description, Transaction firstTransaction) {
+    public void cancelRenewalBasedOnRealtimeMandate (String description, Transaction firstTransaction) {
         try {
             PaymentRenewal paymentRenewal = recurringPaymentManagerService.getLatestRecurringPaymentByInitialTxnId(firstTransaction.getIdStr());
             if (Objects.nonNull(paymentRenewal)) {
@@ -124,7 +124,7 @@ public class RecurringTransactionUtils {
 
     }
 
-    public void cancelRenewalBasedOnRealtimeMandateForIAP(String description, Transaction transaction) {
+    public void cancelRenewalBasedOnRealtimeMandateForIAP (String description, Transaction transaction) {
         try {
             updateSubscriptionAndTransaction(description, transaction, true);
         } catch (Exception ex) {

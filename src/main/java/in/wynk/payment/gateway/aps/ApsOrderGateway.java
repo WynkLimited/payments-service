@@ -1,5 +1,6 @@
 package in.wynk.payment.gateway.aps;
 
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -127,7 +128,7 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
         final IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest> callbackService =
                 BeanLocatorFactory.getBean(AIRTEL_PAY_STACK, new ParameterizedTypeReference<IPaymentCallback<AbstractPaymentCallbackResponse, CallbackRequest>>() {
                 });
-
+        AnalyticService.update("PayloadIs", String.valueOf(payload));
         ApsOrderStatusCallBackPayload response = (ApsOrderStatusCallBackPayload) callbackService.parse(payload);
         try {
             String txnId = merchantTransactionService.findTransactionId(response.getOrderId());

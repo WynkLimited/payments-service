@@ -44,6 +44,8 @@ public class PurchaseSessionPresentation implements IPresentation<WynkResponseEn
                 PlanDTO planDto = cache.getPlan(request.getProductDetails().getId());
                 if (Objects.nonNull(planDto.getSku()) && Objects.nonNull(planDto.getSku().get("google_iap"))) {
                     queryBuilder.addParameter(PaymentConstants.SKU_ID, planDto.getSku().get("google_iap"));
+                } else {
+                    queryBuilder.addParameter(PaymentConstants.SHOW_GPB, String.valueOf(false));
                 }
             } else {
                 PointDetails pointDetails = (PointDetails) request.getProductDetails();

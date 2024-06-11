@@ -9,6 +9,8 @@ import java.util.List;
 public interface PaymentConstants extends BaseConstants {
 
     String SKU_ID = "skuId";
+    String SHOW_GPB = "showGPB";
+    String SAVED = "SAVED";
     String PAYU = "PAYU";
     String TXN_ID = "tid";
     String ERROR = "error";

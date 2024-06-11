@@ -449,12 +449,17 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
             saveReceipt(transaction.getUid(), transaction.getMsisdn(), transaction.getPlanId(), receipt.getId(), receipt.getAmazonUserId(), transaction.getIdStr(), receipt.getService());
         }
     }
-    //mujhe yha change karna he
-
 
     @Override
     public String getIdAndUpdateReceiptDetails(DecodedNotificationWrapper<AmazonNotificationRequest> wrapper) {
-        return "";
+        AmazonNotificationMessage message = Utils.getData(wrapper.getDecodedNotification().getMessage(), AmazonNotificationMessage.class);
+        AmazonIapReceiptResponse receiptResponse = getReceiptStatus(message.getReceiptId(), message.getAppUserId());
+        Optional<ReceiptDetails> optionalReceiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(message.getReceiptId());
+        AmazonReceiptDetails amazonReceiptDetails = (AmazonReceiptDetails) optionalReceiptDetails.get();
+        amazonReceiptDetails.setExpiry(System.currentTimeMillis());
+        auditingListener.onBeforeSave(amazonReceiptDetails);
+        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).save(amazonReceiptDetails);
+        return amazonReceiptDetails.getPaymentTransactionId();
     }
 
     public boolean supportsRenewalReconciliation() {

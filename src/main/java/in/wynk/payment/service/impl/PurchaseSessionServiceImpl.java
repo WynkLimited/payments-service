@@ -9,20 +9,14 @@ import in.wynk.common.dto.SessionResponse;
 import in.wynk.common.utils.EmbeddedPropertyResolver;
 import in.wynk.country.core.service.CountryCurrencyDetailsCachingService;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.identity.client.utils.IdentityUtils;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.dto.BestValuePlanPurchaseRequest;
-import in.wynk.payment.dto.PlanDetails;
-import in.wynk.payment.dto.PointDetails;
 import in.wynk.payment.dto.PurchaseRequest;
 import in.wynk.payment.service.IPurchaseSessionService;
-import in.wynk.payment.service.PlanDtoCachingService;
 import in.wynk.session.constant.SessionConstant;
 import in.wynk.session.service.ISessionManager;
 import in.wynk.subscription.common.adapter.SessionDTOAdapter;
-import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.request.SessionRequest;
 import in.wynk.wynkservice.api.utils.WynkServiceUtils;
 import lombok.RequiredArgsConstructor;
@@ -33,8 +27,6 @@ import org.springframework.stereotype.Service;
 
 import java.net.URISyntaxException;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import static in.wynk.common.constant.BaseConstants.*;
@@ -47,7 +39,6 @@ public class PurchaseSessionServiceImpl implements IPurchaseSessionService {
     private final ISessionManager<String, SessionDTO> sessionManager;
     private final ClientDetailsCachingService clientDetailsCachingService;
     private final CountryCurrencyDetailsCachingService countryCurrencyDetailsCachingService;
-    private final PlanDtoCachingService planDtoCachingService;
 
     @Value("${session.duration:15}")
     private Integer duration;
@@ -81,7 +72,7 @@ public class PurchaseSessionServiceImpl implements IPurchaseSessionService {
 
     @Override
     public String init (PurchaseRequest request) {
-        return generate(toSession(request));
+        return generate(request.toSession());
     }
 
     @Override
@@ -111,43 +102,5 @@ public class PurchaseSessionServiceImpl implements IPurchaseSessionService {
         } catch (Exception ex) {
             throw new WynkRuntimeException("Unable to generate session url for purchase request due to", ex);
         }
-    }
-
-    public SessionRequest toSession (PurchaseRequest request) {
-        final Optional<IChargingDetails.IPageUrlDetails> pageUrlDetailsOption = Optional.ofNullable(request.getPageUrlDetails());
-        SessionRequest.SessionRequestBuilder sessionRequestBuilder = SessionRequest.builder()
-                .appId(request.getAppDetails().getAppId())
-                .appVersion(request.getAppDetails().getAppVersion())
-                .buildNo(request.getAppDetails().getBuildNo())
-                .deviceId(request.getAppDetails().getDeviceId())
-                .deviceType(request.getAppDetails().getDeviceType())
-                .os(request.getAppDetails().getOs())
-                .geoLocation(request.getGeoLocation())
-                .service(request.getAppDetails().getService())
-                .countryCode(request.getUserDetails().getCountryCode())
-                .msisdn(request.getUserDetails().getMsisdn())
-                .miscellaneousDetails(request.getMiscellaneousDetails())
-                .uid(IdentityUtils.getUidFromUserName(request.getUserDetails().getMsisdn(), request.getAppDetails().getService()))
-                .failureUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getFailurePageUrl).orElse(null))
-                .successUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getSuccessPageUrl).orElse(null))
-                .pendingUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getPendingPageUrl).orElse(null))
-                .unknownUrl(pageUrlDetailsOption.map(IChargingDetails.IPageUrlDetails::getUnknownPageUrl).orElse(null));
-        if (POINT.equals(request.getProductDetails().getType())) {
-            PointDetails pointDetails = (PointDetails) request.getProductDetails();
-            sessionRequestBuilder.itemId(pointDetails.getItemId());
-            sessionRequestBuilder.itemPrice(pointDetails.getPrice());
-            sessionRequestBuilder.title(pointDetails.getTitle());
-            sessionRequestBuilder.skuId(pointDetails.getSkuId());
-        } else if (PLAN.equals(request.getProductDetails().getType())) {
-            PlanDetails planDetails = (PlanDetails) request.getProductDetails();
-            PlanDTO planDto = planDtoCachingService.get(planDetails.getPlanId());
-            String googlePlaySKu = planDto.getSku().get("google_iap");
-            if (Objects.isNull(googlePlaySKu)) {
-                sessionRequestBuilder.showGPB(false);
-            } else {
-                sessionRequestBuilder.skuId(googlePlaySKu);
-            }
-        }
-        return sessionRequestBuilder.build();
     }
 }

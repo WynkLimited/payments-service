@@ -193,7 +193,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             boolean isUpi = StringUtils.isNotEmpty(mode) && mode.equals("UPI");
             String externalTransactionId = (merchantTransaction != null) ? merchantTransaction.getExternalTransactionId() : currentStatus.getTransactionDetails(txnId).getPayUExternalTxnId();
             if (!isUpi || validateStatusForRenewal(externalTransactionId, transaction)) {
-                payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest, externalTransactionId, lastRenewal.getLastSuccessTransactionId());
+                String invoiceDisplayNumber = (Objects.nonNull(lastRenewal) && Objects.nonNull(lastRenewal.getLastSuccessTransactionId())) ? lastRenewal.getLastSuccessTransactionId() : paymentRenewalChargingRequest.getId();
+                payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest, externalTransactionId, invoiceDisplayNumber);
                 payUChargingTransactionDetails = payURenewalResponse.getTransactionDetails().get(transaction.getIdStr());
                 int retryInterval = planPeriodDTO.getRetryInterval();
                 if (payURenewalResponse.getStatus() == 1) {
@@ -577,7 +578,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         return isMandateActive;
     }
 
-    private PayURenewalResponse doChargingForRenewal (PaymentRenewalChargingRequest paymentRenewalChargingRequest, String mihpayid, String lastSuccessTxnId) {
+    private PayURenewalResponse doChargingForRenewal (PaymentRenewalChargingRequest paymentRenewalChargingRequest, String mihpayid, String invoiceDisplayNumber) {
         Transaction transaction = TransactionContext.get();
         LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
         String uid = paymentRenewalChargingRequest.getUid();
@@ -585,7 +586,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         double amount = cachingService.getPlan(transaction.getPlanId()).getFinalPrice();
         final String email = uid + BASE_USER_EMAIL;
         orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID_SMALL, mihpayid);
-        orderedMap.put(PAYU_INVOICE_DISPLAY_NUMBER, lastSuccessTxnId);
+        orderedMap.put(PAYU_INVOICE_DISPLAY_NUMBER, invoiceDisplayNumber);
         orderedMap.put(PAYU_TRANSACTION_AMOUNT, amount);
         orderedMap.put(PAYU_REQUEST_TRANSACTION_ID, transaction.getIdStr());
         orderedMap.put(PAYU_CUSTOMER_MSISDN, msisdn);
@@ -875,7 +876,9 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     public void cancelRecurring (String transactionId) {
         try {
             LinkedHashMap<String, String> orderedMap = new LinkedHashMap<>();
-            MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(transactionId);
+            PaymentRenewal lastRenewal = recurringPaymentManagerService.getRenewalById(transactionId);
+            String txnId = getUpdatedTransactionId(transactionId, lastRenewal);
+            MerchantTransaction merchantTransaction = getMerchantData(txnId);
             orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, merchantTransaction.getExternalTransactionId());
             orderedMap.put(PAYU_REQUEST_ID, transactionId);
             String variable = gson.toJson(orderedMap);

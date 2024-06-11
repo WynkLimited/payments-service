@@ -37,9 +37,8 @@ public abstract class AbstractPaymentRefundRequest {
             case PHONEPE_WALLET:
                 return PhonePePaymentRefundRequest.from(originalTransaction, externalReferenceId, reason);
             case APS:
-                return ApsPaymentRefundRequest.from(originalTransaction, externalReferenceId, reason);
             case APS_V2:
-                throw new WynkRuntimeException("Refunds not supported on recharges");
+                return ApsPaymentRefundRequest.from(originalTransaction, externalReferenceId, reason);
             default:
                 throw new WynkRuntimeException("Invalid Payment Channel Id");
         }

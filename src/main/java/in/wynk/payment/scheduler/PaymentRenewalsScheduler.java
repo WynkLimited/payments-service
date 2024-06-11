@@ -73,9 +73,8 @@ public class PaymentRenewalsScheduler {
                 .filter(paymentRenewal -> checkPreDebitEligibility(paymentRenewal.getTransactionId()) &&
                         (paymentRenewal.getTransactionEvent() == RENEW || paymentRenewal.getTransactionEvent() == SUBSCRIBE || paymentRenewal.getTransactionEvent() == DEFERRED))
                 .collect(Collectors.toList());
-        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
         paymentRenewals.forEach(paymentRenewal -> publishPreDebitNotificationMessage(
-                PreDebitNotificationMessage.builder().transactionId(paymentRenewal.getTransactionId()).date(format.format(paymentRenewal.getDay().getTime()))
+                PreDebitNotificationMessage.builder().transactionId(paymentRenewal.getTransactionId()).renewalDay(paymentRenewal.getDay()).renewalHour(paymentRenewal.getHour())
                         .initialTransactionId(paymentRenewal.getInitialTransactionId()).lastSuccessTransactionId(paymentRenewal.getLastSuccessTransactionId()).build()));
         AnalyticService.update("renewNotificationsCompleted", true);
     }

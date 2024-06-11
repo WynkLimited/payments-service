@@ -12,6 +12,7 @@ import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PreDebitNotificationMessage;
+import in.wynk.payment.dto.PreDebitRequest;
 import in.wynk.payment.dto.common.AbstractPreDebitNotificationResponse;
 import in.wynk.payment.dto.payu.PayUChargingTransactionDetails;
 import in.wynk.payment.dto.payu.PayUCommand;
@@ -59,7 +60,7 @@ public class PayUPreDebitGatewayServiceImpl implements IPreDebitNotificationServ
     }
 
     @Override
-    public AbstractPreDebitNotificationResponse notify (PreDebitNotificationMessage message) {
+    public AbstractPreDebitNotificationResponse notify (PreDebitRequest message) {
 
         LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
         PaymentRenewal lastRenewal = recurringPaymentManagerService.getRenewalById(message.getTransactionId());

@@ -343,11 +343,20 @@ public class PaymentGatewayManager
     }
 
     @Override
-    public AbstractPreDebitNotificationResponse notify(PreDebitNotificationMessage message) {
-        log.info(PaymentLoggingMarker.PRE_DEBIT_NOTIFICATION_QUEUE, "processing PreDebitNotificationMessage for transactionId {}", message.getTransactionId());
-        Transaction transaction = transactionManager.get(message.getTransactionId());
-        AbstractPreDebitNotificationResponse preDebitResponse = BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), IPreDebitNotificationService.class).notify(message);
+    public AbstractPreDebitNotificationResponse notify(PreDebitRequest request) {
+        AbstractPreDebitNotificationResponse preDebitResponse = BeanLocatorFactory.getBean(request.getPaymentCode(), IPreDebitNotificationService.class).notify(request);
         if(Objects.nonNull(preDebitResponse)) {
+            if(preDebitResponse.getTransactionStatus() == TransactionStatus.SUCCESS) {
+                Calendar calendar = Calendar.getInstance();
+                int day = calendar.get(Calendar.DAY_OF_MONTH);
+                int hour = calendar.get(Calendar.HOUR_OF_DAY);
+                calendar.add(Calendar.DAY_OF_MONTH, 2);
+                int twoDays = calendar.get(Calendar.DAY_OF_MONTH);
+                int twoHour = calendar.get(Calendar.HOUR_OF_DAY);
+                if(request.getDay() < twoDays) {
+
+                }
+            }
             AnalyticService.update(ApsConstant.PRE_DEBIT_SI, gson.toJson(preDebitResponse));
         }
         return preDebitResponse;

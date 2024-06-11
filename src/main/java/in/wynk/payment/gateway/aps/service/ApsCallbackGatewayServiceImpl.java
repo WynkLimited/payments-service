@@ -105,6 +105,10 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
 
     @SneakyThrows
     private boolean validate (ApsOrderStatusCallBackPayload payload) {
+        //This is temporary change. Need to ask APS for adding hash and lob for redirection flow of cards
+        if(Objects.isNull(payload.getHash())) {
+            return true;
+        }
         final String generatedString = payload.getOrderId() + PIPE_SEPARATOR + payload.getOrderInfo().getOrderStatus() + PIPE_SEPARATOR + payload.getOrderInfo().getRequester() + PIPE_SEPARATOR +
                 payload.getPaymentDetails()[0].getPgId() + PIPE_SEPARATOR + payload.getPaymentDetails()[0].getPaymentStatus() + PIPE_SEPARATOR + payload.getFulfilmentInfo()[0].getFulfilmentId() +
                 PIPE_SEPARATOR + payload.getFulfilmentInfo()[0].getStatus() + PIPE_SEPARATOR + salt;

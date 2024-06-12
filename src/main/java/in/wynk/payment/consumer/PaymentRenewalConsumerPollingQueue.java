@@ -121,7 +121,7 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
             long furtherDefer = renewalPlanEligibilityResponse.getDeferredUntil() - today;
             if (subscriptionServiceManager.isDeferred(transaction.getPaymentChannel().getCode(), furtherDefer)) {
                 if (Objects.equals(transaction.getPaymentChannel().getCode(), ApsConstant.AIRTEL_PAY_STACK)) {
-                    furtherDefer = furtherDefer - ((long) 2 * 24 * 60 * 60 * 1000) + ((long) 60 * 60 * 1000);
+                    furtherDefer = furtherDefer - ((long) 2 * 24 * 60 * 60 * 1000);
                 }
                 recurringPaymentManagerService.unScheduleRecurringPayment(transaction, PaymentEvent.DEFERRED, today, furtherDefer);
                 return false;

@@ -77,6 +77,7 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     /**
      * Common Renewal Marker
      **/
+    Marker RENEWAL_SCHEDULE_ERROR = MarkerFactory.getMarker("RENEWAL_SCHEDULE_ERROR");
     Marker RENEWAL_STATUS_ERROR = MarkerFactory.getMarker("RENEWAL_STATUS_ERROR");
     Marker RENEWAL_API_FAILURE = MarkerFactory.getMarker("RENEWAL_API_FAILURE");
     Marker STOP_RENEWAL_FAILURE = MarkerFactory.getMarker("STOP_RENEWAL_FAILURE");

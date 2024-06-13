@@ -159,8 +159,10 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY800("Fetching Plan page Url failure", "Unable to get the plan page for DTP", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.BEST_VALUE_PLAN_API_ERROR),
     ATB01("ATB Charging API Failure", "Could Not process transaction on addToBill", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.ADDTOBILL_API_FAILURE),
     ATB02("ATB Status API Failure", "Transaction is still pending from addToBill side", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.ADDTOBILL_CHARGING_STATUS_VERIFICATION),
-    ATB03("ATB Status API Failure", "No matching status found at addToBill side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.ADDTOBILL_CHARGING_STATUS_VERIFICATION);
+    ATB03("ATB Status API Failure", "No matching status found at addToBill side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.ADDTOBILL_CHARGING_STATUS_VERIFICATION),
     /*Add to bill errorCodes end*/
+
+    PAY099("Renewal Schedule Failure", "Error occurred while scheduling renewal", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.RENEWAL_SCHEDULE_ERROR);
 
     /**
      * The error title.

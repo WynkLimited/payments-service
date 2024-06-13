@@ -82,7 +82,7 @@ public class PayUPreDebitGatewayServiceImpl implements IPreDebitNotificationServ
                 SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
                 orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, merchantTransaction.getExternalTransactionId());
                 orderedMap.put(PAYU_REQUEST_ID, UUIDs.timeBased());
-                orderedMap.put(PAYU_DEBIT_DATE, format.format(request.getDay().getTime()));
+                orderedMap.put(PAYU_DEBIT_DATE, format.format(request.getRenewalDay().getTime()));
                 if(CardConstants.CREDIT_CARD.equals(mode) || CardConstants.DEBIT_CARD.equals(mode) || CardConstants.SI.equals(mode)) {
                     orderedMap.put(PAYU_INVOICE_DISPLAY_NUMBER, request.getTransactionId());
                 }
@@ -107,7 +107,7 @@ public class PayUPreDebitGatewayServiceImpl implements IPreDebitNotificationServ
                             if(request.getRenewalDay().compareTo(calendar) < 0) {
                                 int day = calendar.get(Calendar.DAY_OF_MONTH);
                                 int hour = calendar.get(Calendar.HOUR_OF_DAY);
-                                recurringPaymentManagerService.updateRenewalSchedule();
+                                recurringPaymentManagerService.updateRenewalSchedule(request.getClientAlias(),request.getTransactionId(), request.getRenewalDay(), request.getRenewalHour() );
                             }
 
                     return PayUPreDebitNotification.builder().tid(request.getTransactionId()).transactionStatus(TransactionStatus.SUCCESS).build();

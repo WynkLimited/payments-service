@@ -71,7 +71,7 @@ public class PreDebitNotificationConsumerPollingQueue extends AbstractSQSMessage
         Transaction transaction = TransactionContext.get();
         PreDebitRequest request = PreDebitRequest.builder().planId(transaction.getPlanId()).transactionId(transaction.getIdStr()).renewalDay(message.getRenewalDay()).renewalHour(message.getRenewalHour())
                 .initialTransactionId(message.getInitialTransactionId()).lastSuccessTransactionId(message.getLastSuccessTransactionId()).uid(transaction.getUid())
-                .paymentCode(transaction.getPaymentChannel().getCode()).build();
+                .paymentCode(transaction.getPaymentChannel().getCode()).clientAlias(message.getClientAlias()).build();
         AnalyticService.update(request);
         manager.notify(request);
     }

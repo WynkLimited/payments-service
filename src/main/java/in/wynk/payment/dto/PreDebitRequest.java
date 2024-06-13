@@ -17,7 +17,6 @@ import java.util.Date;
 @Getter
 @Builder
 @AnalysedEntity
-@NoArgsConstructor
 public class PreDebitRequest {
     @Analysed
     private String transactionId;
@@ -27,9 +26,6 @@ public class PreDebitRequest {
 
     @Analysed
     private String lastSuccessTransactionId;
-
-    @Analysed
-    private String date;
 
     @Analysed
     private String uid;
@@ -47,4 +43,7 @@ public class PreDebitRequest {
     @Temporal(TemporalType.TIME)
     @Analysed
     private Date renewalHour;
+
+    @Analysed
+    private String clientAlias;
 }

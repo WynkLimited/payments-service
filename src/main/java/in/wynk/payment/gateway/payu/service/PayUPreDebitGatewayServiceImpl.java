@@ -11,7 +11,6 @@ import in.wynk.payment.constant.CardConstants;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.dto.PreDebitNotificationMessage;
 import in.wynk.payment.dto.PreDebitRequest;
 import in.wynk.payment.dto.common.AbstractPreDebitNotificationResponse;
 import in.wynk.payment.dto.payu.PayUChargingTransactionDetails;
@@ -27,6 +26,7 @@ import in.wynk.payment.utils.RecurringTransactionUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.MultiValueMap;
 
+import java.text.SimpleDateFormat;
 import java.util.LinkedHashMap;
 
 import static in.wynk.payment.core.constant.PaymentErrorType.PAYU007;
@@ -60,29 +60,30 @@ public class PayUPreDebitGatewayServiceImpl implements IPreDebitNotificationServ
     }
 
     @Override
-    public AbstractPreDebitNotificationResponse notify (PreDebitRequest message) {
+    public AbstractPreDebitNotificationResponse notify (PreDebitRequest request) {
 
         LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
-        PaymentRenewal lastRenewal = recurringPaymentManagerService.getRenewalById(message.getTransactionId());
-        String txnId = payUCommonGateway.getUpdatedTransactionId(message.getTransactionId(), lastRenewal);
+        PaymentRenewal lastRenewal = recurringPaymentManagerService.getRenewalById(request.getTransactionId());
+        String txnId = payUCommonGateway.getUpdatedTransactionId(request.getTransactionId(), lastRenewal);
         MerchantTransaction merchantTransaction = payUCommonGateway.getMerchantData(txnId);
         if (merchantTransaction == null) {
             throw new WynkRuntimeException("Merchant data is null");
         }
-        Transaction transaction = transactionManagerService.get(message.getTransactionId());
+        Transaction transaction = transactionManagerService.get(request.getTransactionId());
         // check eligibility for renewal
         if (recurringTransactionUtils.isEligibleForRenewal(transaction, true)) {
             PayUChargingTransactionDetails payUChargingTransactionDetails =
-                    objectMapper.convertValue(merchantTransaction.getResponse(), PayURenewalResponse.class).getTransactionDetails().get(message.getTransactionId());
+                    objectMapper.convertValue(merchantTransaction.getResponse(), PayURenewalResponse.class).getTransactionDetails().get(request.getTransactionId());
             String mode = payUChargingTransactionDetails.getMode();
             // check mandate status
             boolean isMandateActive = payUCommonGateway.validateMandateStatus(transaction, payUChargingTransactionDetails, mode,false);
             if (isMandateActive) {
+                SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
                 orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, merchantTransaction.getExternalTransactionId());
                 orderedMap.put(PAYU_REQUEST_ID, UUIDs.timeBased());
-                orderedMap.put(PAYU_DEBIT_DATE, message.getDate());
+                orderedMap.put(PAYU_DEBIT_DATE, format.format(request.getDay().getTime()));
                 if(CardConstants.CREDIT_CARD.equals(mode) || CardConstants.DEBIT_CARD.equals(mode) || CardConstants.SI.equals(mode)) {
-                    orderedMap.put(PAYU_INVOICE_DISPLAY_NUMBER, message.getTransactionId());
+                    orderedMap.put(PAYU_INVOICE_DISPLAY_NUMBER, request.getTransactionId());
                 }
                 orderedMap.put(PAYU_TRANSACTION_AMOUNT, paymentCachingService.getPlan(transaction.getPlanId()).getFinalPrice());
                 String variable = gson.toJson(orderedMap);
@@ -95,7 +96,7 @@ public class PayUPreDebitGatewayServiceImpl implements IPreDebitNotificationServ
                     } else {
                         throw new WynkRuntimeException(PAYU007, response.getMessage());
                     }
-                    return PayUPreDebitNotification.builder().tid(message.getTransactionId()).transactionStatus(TransactionStatus.SUCCESS).build();
+                    return PayUPreDebitNotification.builder().tid(request.getTransactionId()).transactionStatus(TransactionStatus.SUCCESS).build();
                 } catch (Exception e) {
                     log.error(PAYU_PRE_DEBIT_NOTIFICATION_ERROR, e.getMessage());
                     if (e instanceof WynkRuntimeException) {

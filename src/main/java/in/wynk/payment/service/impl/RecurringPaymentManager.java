@@ -325,4 +325,14 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
         return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).findById(txnId)
                 .orElse(null);
     }
+
+    @Override
+    @Transactional(transactionManager = "#clientAlias", source = "payments")
+    public void updateRenewalSchedule (String clientAlias, String transactionId, Calendar day, Date hour) {
+        final IPaymentRenewalDao paymentRenewalDao = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class);
+        paymentRenewalDao.findById(transactionId).ifPresent(recurringPayment -> {
+            recurringPayment.setDay(day);
+            recurringPayment.setHour(hour);
+        });
+    }
 }

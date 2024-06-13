@@ -10,7 +10,6 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PreDebitNotificationMessage;
 import in.wynk.payment.dto.PreDebitRequest;
 import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.aps.request.predebit.PreDebitNotificationRequest;
 import in.wynk.payment.service.PaymentGatewayManager;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
@@ -70,7 +69,7 @@ public class PreDebitNotificationConsumerPollingQueue extends AbstractSQSMessage
     @TransactionAware(txnId = "#message.transactionId")
     public void consume(PreDebitNotificationMessage message) {
         Transaction transaction = TransactionContext.get();
-        PreDebitRequest request = PreDebitRequest.builder().planId(transaction.getPlanId()).transactionId(transaction.getIdStr()).day(message.getDay()).hour(message.getHour())
+        PreDebitRequest request = PreDebitRequest.builder().planId(transaction.getPlanId()).transactionId(transaction.getIdStr()).renewalDay(message.getRenewalDay()).renewalHour(message.getRenewalHour())
                 .initialTransactionId(message.getInitialTransactionId()).lastSuccessTransactionId(message.getLastSuccessTransactionId()).uid(transaction.getUid())
                 .paymentCode(transaction.getPaymentChannel().getCode()).build();
         AnalyticService.update(request);

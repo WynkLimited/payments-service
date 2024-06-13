@@ -11,7 +11,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import javax.persistence.Column;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import java.util.Calendar;
@@ -33,16 +32,13 @@ public class PreDebitNotificationMessage {
     @Builder.Default
     private String clientAlias = ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT);
 
+    @Temporal(TemporalType.DATE)
     @Analysed
     private Calendar renewalDay;
 
-    @Temporal(TemporalType.DATE)
-    @Analysed
-    private Calendar day;
-
     @Temporal(TemporalType.TIME)
     @Analysed
-    private Date hour;
+    private Date renewalHour;
 
     @Analysed
     private String transactionId;

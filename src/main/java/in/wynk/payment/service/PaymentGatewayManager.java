@@ -18,7 +18,6 @@ import in.wynk.payment.aspect.advice.FraudAware;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -345,20 +344,7 @@ public class PaymentGatewayManager
     @Override
     public AbstractPreDebitNotificationResponse notify(PreDebitRequest request) {
         AbstractPreDebitNotificationResponse preDebitResponse = BeanLocatorFactory.getBean(request.getPaymentCode(), IPreDebitNotificationService.class).notify(request);
-        if(Objects.nonNull(preDebitResponse)) {
-            if(preDebitResponse.getTransactionStatus() == TransactionStatus.SUCCESS) {
-                Calendar calendar = Calendar.getInstance();
-                int day = calendar.get(Calendar.DAY_OF_MONTH);
-                int hour = calendar.get(Calendar.HOUR_OF_DAY);
-                calendar.add(Calendar.DAY_OF_MONTH, 2);
-                int twoDays = calendar.get(Calendar.DAY_OF_MONTH);
-                int twoHour = calendar.get(Calendar.HOUR_OF_DAY);
-                if(request.getDay() < twoDays) {
-
-                }
-            }
-            AnalyticService.update(ApsConstant.PRE_DEBIT_SI, gson.toJson(preDebitResponse));
-        }
+        AnalyticService.update(ApsConstant.PRE_DEBIT_SI, gson.toJson(preDebitResponse));
         return preDebitResponse;
     }
 

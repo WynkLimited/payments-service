@@ -28,8 +28,8 @@ public class PreDebitRequest {
     @Analysed
     private String lastSuccessTransactionId;
 
-    /*@Analysed
-    private String date;*/
+    @Analysed
+    private String date;
 
     @Analysed
     private String uid;
@@ -42,9 +42,9 @@ public class PreDebitRequest {
 
     @Temporal(TemporalType.DATE)
     @Analysed
-    private Calendar day;
+    private Calendar renewalDay;
 
     @Temporal(TemporalType.TIME)
     @Analysed
-    private Date hour;
+    private Date renewalHour;
 }

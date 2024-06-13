@@ -27,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.MultiValueMap;
 
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.LinkedHashMap;
 
 import static in.wynk.payment.core.constant.PaymentErrorType.PAYU007;
@@ -96,6 +97,19 @@ public class PayUPreDebitGatewayServiceImpl implements IPreDebitNotificationServ
                     } else {
                         throw new WynkRuntimeException(PAYU007, response.getMessage());
                     }
+
+
+                            Calendar calendar = Calendar.getInstance();
+                           // int day = calendar.get(Calendar.DAY_OF_MONTH);
+                           // int hour = calendar.get(Calendar.HOUR_OF_DAY);
+                            calendar.add(Calendar.DAY_OF_MONTH, 2);
+
+                            if(request.getRenewalDay().compareTo(calendar) < 0) {
+                                int day = calendar.get(Calendar.DAY_OF_MONTH);
+                                int hour = calendar.get(Calendar.HOUR_OF_DAY);
+                                recurringPaymentManagerService.updateRenewalSchedule();
+                            }
+
                     return PayUPreDebitNotification.builder().tid(request.getTransactionId()).transactionStatus(TransactionStatus.SUCCESS).build();
                 } catch (Exception e) {
                     log.error(PAYU_PRE_DEBIT_NOTIFICATION_ERROR, e.getMessage());

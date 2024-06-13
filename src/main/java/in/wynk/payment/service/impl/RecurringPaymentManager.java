@@ -1,6 +1,7 @@
 package in.wynk.payment.service.impl;
 
 import com.github.annotation.analytic.core.service.AnalyticService;
+import com.mchange.v2.cfg.PropertiesConfigSource;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.data.aspect.advice.Transactional;
@@ -38,6 +39,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -307,7 +310,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
                 }
             });
         } catch (Exception e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY045, e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY099, e);
         }
     }
 
@@ -329,10 +332,10 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     @Override
     @Transactional(transactionManager = "#clientAlias", source = "payments")
     public void updateRenewalSchedule (String clientAlias, String transactionId, Calendar day, Date hour) {
-        final IPaymentRenewalDao paymentRenewalDao = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class);
-        paymentRenewalDao.findById(transactionId).ifPresent(recurringPayment -> {
-            recurringPayment.setDay(day);
-            recurringPayment.setHour(hour);
-        });
+            final IPaymentRenewalDao paymentRenewalDao = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class);
+            paymentRenewalDao.findById(transactionId).ifPresent(recurringPayment -> {
+                recurringPayment.setDay(day);
+                recurringPayment.setHour(hour);
+            });
     }
 }

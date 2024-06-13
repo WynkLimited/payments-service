@@ -36,9 +36,8 @@ public class PreDebitRequest {
     @Analysed
     private String paymentCode;
 
-    @Temporal(TemporalType.DATE)
     @Analysed
-    private Calendar renewalDay;
+    private String renewalDay;
 
     @Temporal(TemporalType.TIME)
     @Analysed

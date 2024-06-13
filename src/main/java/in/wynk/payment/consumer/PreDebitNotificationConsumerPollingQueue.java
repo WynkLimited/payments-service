@@ -16,6 +16,7 @@ import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 
+import java.text.SimpleDateFormat;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -69,7 +70,8 @@ public class PreDebitNotificationConsumerPollingQueue extends AbstractSQSMessage
     @TransactionAware(txnId = "#message.transactionId")
     public void consume(PreDebitNotificationMessage message) {
         Transaction transaction = TransactionContext.get();
-        PreDebitRequest request = PreDebitRequest.builder().planId(transaction.getPlanId()).transactionId(transaction.getIdStr()).renewalDay(message.getRenewalDay()).renewalHour(message.getRenewalHour())
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+        PreDebitRequest request = PreDebitRequest.builder().planId(transaction.getPlanId()).transactionId(transaction.getIdStr()).renewalDay(format.format(message.getRenewalDay().getTime())).renewalHour(message.getRenewalHour())
                 .initialTransactionId(message.getInitialTransactionId()).lastSuccessTransactionId(message.getLastSuccessTransactionId()).uid(transaction.getUid())
                 .paymentCode(transaction.getPaymentChannel().getCode()).clientAlias(message.getClientAlias()).build();
         AnalyticService.update(request);

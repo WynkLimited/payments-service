@@ -12,6 +12,7 @@ import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PreDebitRequest;
+import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.common.AbstractPreDebitNotificationResponse;
 import in.wynk.payment.dto.payu.PayUChargingTransactionDetails;
 import in.wynk.payment.dto.payu.PayUCommand;
@@ -20,12 +21,12 @@ import in.wynk.payment.dto.response.payu.PayUPreDebitNotificationResponse;
 import in.wynk.payment.dto.response.payu.PayURenewalResponse;
 import in.wynk.payment.service.IPreDebitNotificationService;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
-import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.RecurringTransactionUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.MultiValueMap;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.LinkedHashMap;
@@ -44,18 +45,16 @@ public class PayUPreDebitGatewayServiceImpl implements IPreDebitNotificationServ
     private final ObjectMapper objectMapper;
     private final PaymentCachingService paymentCachingService;
     private final PayUCommonGateway payUCommonGateway;
-    private final ITransactionManagerService transactionManagerService;
     private final IRecurringPaymentManagerService recurringPaymentManagerService;
     private final RecurringTransactionUtils recurringTransactionUtils;
 
     public PayUPreDebitGatewayServiceImpl (Gson gson, ObjectMapper objectMapper, PaymentCachingService paymentCachingService, PayUCommonGateway payUCommonGateway,
-                                           ITransactionManagerService transactionManagerService, IRecurringPaymentManagerService recurringPaymentManagerService,
+                                           IRecurringPaymentManagerService recurringPaymentManagerService,
                                            RecurringTransactionUtils recurringTransactionUtils) {
         this.gson = gson;
         this.objectMapper = objectMapper;
         this.paymentCachingService = paymentCachingService;
         this.payUCommonGateway = payUCommonGateway;
-        this.transactionManagerService = transactionManagerService;
         this.recurringPaymentManagerService = recurringPaymentManagerService;
         this.recurringTransactionUtils = recurringTransactionUtils;
     }
@@ -70,20 +69,20 @@ public class PayUPreDebitGatewayServiceImpl implements IPreDebitNotificationServ
         if (merchantTransaction == null) {
             throw new WynkRuntimeException("Merchant data is null");
         }
-        Transaction transaction = transactionManagerService.get(request.getTransactionId());
+        Transaction transaction = TransactionContext.get();
         // check eligibility for renewal
         if (recurringTransactionUtils.isEligibleForRenewal(transaction, true)) {
             PayUChargingTransactionDetails payUChargingTransactionDetails =
                     objectMapper.convertValue(merchantTransaction.getResponse(), PayURenewalResponse.class).getTransactionDetails().get(request.getTransactionId());
             String mode = payUChargingTransactionDetails.getMode();
             // check mandate status
-            boolean isMandateActive = payUCommonGateway.validateMandateStatus(transaction, payUChargingTransactionDetails, mode,false);
+            boolean isMandateActive = payUCommonGateway.validateMandateStatus(transaction, payUChargingTransactionDetails, mode, false);
             if (isMandateActive) {
-                SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+
                 orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, merchantTransaction.getExternalTransactionId());
                 orderedMap.put(PAYU_REQUEST_ID, UUIDs.timeBased());
-                orderedMap.put(PAYU_DEBIT_DATE, format.format(request.getRenewalDay().getTime()));
-                if(CardConstants.CREDIT_CARD.equals(mode) || CardConstants.DEBIT_CARD.equals(mode) || CardConstants.SI.equals(mode)) {
+                orderedMap.put(PAYU_DEBIT_DATE, request.getRenewalDay());
+                if (CardConstants.CREDIT_CARD.equals(mode) || CardConstants.DEBIT_CARD.equals(mode) || CardConstants.SI.equals(mode)) {
                     orderedMap.put(PAYU_INVOICE_DISPLAY_NUMBER, request.getTransactionId());
                 }
                 orderedMap.put(PAYU_TRANSACTION_AMOUNT, paymentCachingService.getPlan(transaction.getPlanId()).getFinalPrice());
@@ -97,20 +96,17 @@ public class PayUPreDebitGatewayServiceImpl implements IPreDebitNotificationServ
                     } else {
                         throw new WynkRuntimeException(PAYU007, response.getMessage());
                     }
-
-
-                            Calendar calendar = Calendar.getInstance();
-                           // int day = calendar.get(Calendar.DAY_OF_MONTH);
-                           // int hour = calendar.get(Calendar.HOUR_OF_DAY);
-                            calendar.add(Calendar.DAY_OF_MONTH, 2);
-
-                            if(request.getRenewalDay().compareTo(calendar) < 0) {
-                                int day = calendar.get(Calendar.DAY_OF_MONTH);
-                                int hour = calendar.get(Calendar.HOUR_OF_DAY);
-                                recurringPaymentManagerService.updateRenewalSchedule(request.getClientAlias(),request.getTransactionId(), request.getRenewalDay(), request.getRenewalHour() );
-                            }
+                    Calendar calendar = Calendar.getInstance();
+                    Calendar cal = Calendar.getInstance();
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                    cal.setTime(sdf.parse(request.getRenewalDay()));
+                    if (cal.compareTo(calendar) < 0) {
+                        recurringPaymentManagerService.updateRenewalSchedule(request.getClientAlias(), request.getTransactionId(), calendar, calendar.getTime());
+                    }
 
                     return PayUPreDebitNotification.builder().tid(request.getTransactionId()).transactionStatus(TransactionStatus.SUCCESS).build();
+                }catch (ParseException ex){
+                    throw new WynkRuntimeException(PAYU007);
                 } catch (Exception e) {
                     log.error(PAYU_PRE_DEBIT_NOTIFICATION_ERROR, e.getMessage());
                     if (e instanceof WynkRuntimeException) {

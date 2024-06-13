@@ -15,5 +15,7 @@ public class AmazonLatestReceiptResponse extends LatestReceiptResponse {
     private final String amazonUserId;
     @Analysed
     private final AmazonIapReceiptResponse amazonIapReceiptResponse;
+    @Analysed
+    private final String service;
 
 }

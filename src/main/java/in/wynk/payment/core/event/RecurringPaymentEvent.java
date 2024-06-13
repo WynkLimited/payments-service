@@ -6,6 +6,7 @@ import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.enums.PaymentEvent;
+import in.wynk.payment.core.dao.entity.Transaction;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -18,8 +19,8 @@ public class RecurringPaymentEvent {
 
     @Builder.Default
     private String clientAlias = ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT);
-    @Analysed(name = BaseConstants.TRANSACTION_ID)
-    private final String transactionId;
+
+    private final Transaction transaction;
     @Analysed
     private final PaymentEvent paymentEvent;
 

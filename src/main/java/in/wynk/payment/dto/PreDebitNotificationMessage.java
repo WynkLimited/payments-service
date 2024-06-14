@@ -25,7 +25,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 @NoArgsConstructor
 @AllArgsConstructor
 @WynkQueue(queueName = "${payment.pooling.queue.preDebitNotification.name}", producerType = ProducerType.QUARTZ_MESSAGE_PRODUCER,
-        quartz = @WynkQueue.QuartzConfiguration(expression = "T(java.util.Arrays).asList(20, 2100, 2100, 2700, 28800, 36000, 36000, 43200).get(#n)", publishUntil = 2,
+        quartz = @WynkQueue.QuartzConfiguration(expression = "T(java.util.Arrays).asList(20, 1800, 2100, 2700, 28800, 36000, 36000, 43200).get(#n)", publishUntil = 2,
                 publishUntilUnit = TimeUnit.DAYS))
 public class PreDebitNotificationMessage {
 

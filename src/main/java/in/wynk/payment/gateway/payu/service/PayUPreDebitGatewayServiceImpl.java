@@ -78,35 +78,31 @@ public class PayUPreDebitGatewayServiceImpl implements IPreDebitNotificationServ
             // check mandate status
             boolean isMandateActive = payUCommonGateway.validateMandateStatus(transaction, payUChargingTransactionDetails, mode, false);
             if (isMandateActive) {
-
-                orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, merchantTransaction.getExternalTransactionId());
-                orderedMap.put(PAYU_REQUEST_ID, UUIDs.timeBased());
-                orderedMap.put(PAYU_DEBIT_DATE, request.getRenewalDay());
-                if (CardConstants.CREDIT_CARD.equals(mode) || CardConstants.DEBIT_CARD.equals(mode) || CardConstants.SI.equals(mode)) {
-                    orderedMap.put(PAYU_INVOICE_DISPLAY_NUMBER, request.getTransactionId());
-                }
-                orderedMap.put(PAYU_TRANSACTION_AMOUNT, paymentCachingService.getPlan(transaction.getPlanId()).getFinalPrice());
-                String variable = gson.toJson(orderedMap);
-                MultiValueMap<String, String> requestMap = payUCommonGateway.buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.PRE_DEBIT_SI.getCode(), variable);
                 try {
+                    Calendar cal = Calendar.getInstance();
+                    boolean renewalUpdateRequired = findRenewalRequiredAndUpdateTime(cal, request);
+                    if (CardConstants.CREDIT_CARD.equals(mode) || CardConstants.DEBIT_CARD.equals(mode) || CardConstants.SI.equals(mode)) {
+                        orderedMap.put(PAYU_INVOICE_DISPLAY_NUMBER, request.getTransactionId());
+                    }
+                    orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, merchantTransaction.getExternalTransactionId());
+                    orderedMap.put(PAYU_REQUEST_ID, UUIDs.timeBased());
+                    orderedMap.put(PAYU_DEBIT_DATE, new SimpleDateFormat("yyyy-MM-dd").format(cal.getTime()));
+                    orderedMap.put(PAYU_TRANSACTION_AMOUNT, paymentCachingService.getPlan(transaction.getPlanId()).getFinalPrice());
+                    String variable = gson.toJson(orderedMap);
+                    MultiValueMap<String, String> requestMap = payUCommonGateway.buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.PRE_DEBIT_SI.getCode(), variable);
+
                     PayUPreDebitNotificationResponse response = payUCommonGateway.exchange(payUCommonGateway.INFO_API, requestMap, new TypeReference<PayUPreDebitNotificationResponse>() {
                     });
                     if (response.getStatus().equalsIgnoreCase(INTEGER_VALUE)) {
-                        log.info(PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS, "invoiceId: " + response.getInvoiceId() + " invoiceStatus: " + response.getInvoiceStatus());
+                        AnalyticService.update(PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS.toString(), String.valueOf(request));
                     } else {
                         throw new WynkRuntimeException(PAYU007, response.getMessage());
                     }
-                    Calendar calendar = Calendar.getInstance();
-                    Calendar cal = Calendar.getInstance();
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-                    cal.setTime(sdf.parse(request.getRenewalDay()));
-                    if (cal.compareTo(calendar) < 0) {
-                        recurringPaymentManagerService.updateRenewalSchedule(request.getClientAlias(), request.getTransactionId(), calendar, calendar.getTime());
+                    if (renewalUpdateRequired) {
+                        recurringPaymentManagerService.updateRenewalSchedule(request.getClientAlias(), request.getTransactionId(), cal, cal.getTime());
                     }
 
                     return PayUPreDebitNotification.builder().tid(request.getTransactionId()).transactionStatus(TransactionStatus.SUCCESS).build();
-                }catch (ParseException ex){
-                    throw new WynkRuntimeException(PAYU007);
                 } catch (Exception e) {
                     log.error(PAYU_PRE_DEBIT_NOTIFICATION_ERROR, e.getMessage());
                     if (e instanceof WynkRuntimeException) {
@@ -118,5 +114,27 @@ public class PayUPreDebitGatewayServiceImpl implements IPreDebitNotificationServ
             AnalyticService.update("mandateStatus", "INACTIVE");
         }
         return null;
+    }
+
+    private boolean findRenewalRequiredAndUpdateTime (Calendar cal, PreDebitRequest request) {
+        boolean renewalUpdateRequired = false;
+        try {
+            cal.setTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(request.getRenewalDay() + " " + request.getRenewalHour()));
+            Calendar date = Calendar.getInstance();
+            date.add(Calendar.DAY_OF_MONTH, 1);
+            long diffInMillies = date.getTimeInMillis() - cal.getTimeInMillis();
+            //if date in database id more than 24 hours from now, no update in db required
+            if (diffInMillies < 0) {
+                return false;
+            }
+            double diffInHours = diffInMillies / 3600000.0;
+            int requiredHours = ((int) Math.ceil(diffInHours)) + 1;
+            cal.add(Calendar.HOUR_OF_DAY, requiredHours);
+            renewalUpdateRequired = true;
+
+        } catch (ParseException e) {
+            log.error("Exception occurred while parsing the date", e);
+        }
+        return renewalUpdateRequired;
     }
 }

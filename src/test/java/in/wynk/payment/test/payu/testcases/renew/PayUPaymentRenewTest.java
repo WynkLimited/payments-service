@@ -3,10 +3,13 @@ package in.wynk.payment.test.payu.testcases.renew;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.PaymentApplication;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
+import in.wynk.payment.gateway.payu.service.PayURenewalGatewayImpl;
 import in.wynk.payment.scheduler.PaymentRenewalsScheduler;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
+import in.wynk.payment.service.PaymentGatewayManager;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.payment.service.impl.PayUMerchantPaymentService;
 import in.wynk.payment.service.impl.SubscriptionServiceManagerImpl;
@@ -46,6 +49,9 @@ public class PayUPaymentRenewTest {
     @Autowired
     private PayUMerchantPaymentService payUMerchantPaymentService;
 
+    @Autowired
+    private PaymentGatewayManager manager;
+
     @MockBean(name = BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE)
     private RestTemplate restTemplate;
 
@@ -62,24 +68,23 @@ public class PayUPaymentRenewTest {
     private SubscriptionServiceManagerImpl subscriptionServiceManager;
 
     @Before
-    public void setup() {
+    public void setup () {
         Mockito.when(recurringPaymentManagerService.getCurrentDueRecurringPayments("airtelXstream")).thenReturn(PayUTestData.buildPaymentRenewalTestData());
         Mockito.when(restTemplate.postForObject(anyString(), anyMap(), eq(String.class))).thenReturn(PayUTestData.buildSuccessRecurringPayUTransactionStatusResponse());
     }
 
     @Test
-    public void paymentRenewalsSchedulerTest() {
+    public void paymentRenewalsSchedulerTest () {
         // This test case is run in debugger mode and seen that whether only 2 paymentRenewal messages are pushed into queue or not?
         // And this test case passes successfully
         paymentRenewalsScheduler.paymentRenew("requestId", "");
     }
 
     @Test
-    public void paymentManagerDoRenewalTest() {
+    public void paymentManagerDoRenewalTest () {
         PaymentRenewalChargingRequest paymentRenewalChargingRequest = PayUTestData.buildPaymentRenewalChargingRequest();
-        //TransactionContext.set(PayUTestData.initRecurringPaymentTransaction());
-       //payUMerchantPaymentService.doRenewal(paymentRenewalChargingRequest);
-       // Assert.assertEquals(TransactionContext.get().getStatus(), TransactionStatus.SUCCESS);
+        manager.renew(paymentRenewalChargingRequest);
+        Assert.assertEquals(TransactionContext.get().getStatus(), TransactionStatus.SUCCESS);
     }
 
 }

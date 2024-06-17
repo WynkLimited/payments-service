@@ -76,6 +76,7 @@ service:
         allPartners: ${service.subscription.api.root}/wynk/s2s/v1/data/allPartners
         allItems: ${service.subscription.api.root}/wynk/s2s/v1/data/allItems
         subscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/plan/subscribe
+        subscribePlanAdditive: ${service.subscription.api.root}/wynk/s2s/v1/plan/subscribe/additive
         personalisedPlan: ${service.subscription.api.root}/wynk/s2s/v1/plan/personalised
 
         unSubscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/plan/unsubscribe

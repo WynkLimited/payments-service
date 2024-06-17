@@ -21,7 +21,7 @@ public interface ISubscriptionServiceManager {
         if (SubscribePlanSyncRequest.class.isAssignableFrom(request.getClass())) {
             subscribePlanSync((SubscribePlanSyncRequest) request);
         } else {
-            validateAndSubscribePlanAsync((SubscribePlanAsyncRequest) request);
+            subscribePlanAsync((SubscribePlanAsyncRequest) request);
         }
     }
 
@@ -41,7 +41,7 @@ public interface ISubscriptionServiceManager {
 
     void subscribePlanSync (SubscribePlanSyncRequest request);
 
-    void validateAndSubscribePlanAsync(SubscribePlanAsyncRequest request);
+    void subscribePlanAsync (SubscribePlanAsyncRequest request);
 
     void unSubscribePlanSync (UnSubscribePlanSyncRequest request);
 

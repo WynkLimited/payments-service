@@ -95,13 +95,12 @@ public class PayUPreDebitGatewayServiceImpl implements IPreDebitNotificationServ
                     });
                     if (response.getStatus().equalsIgnoreCase(INTEGER_VALUE)) {
                         AnalyticService.update(PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS.toString(), String.valueOf(request));
+                        if (renewalUpdateRequired) {
+                            recurringPaymentManagerService.updateRenewalSchedule(request.getClientAlias(), request.getTransactionId(), cal, cal.getTime());
+                        }
                     } else {
                         throw new WynkRuntimeException(PAYU007, response.getMessage());
                     }
-                    if (renewalUpdateRequired) {
-                        recurringPaymentManagerService.updateRenewalSchedule(request.getClientAlias(), request.getTransactionId(), cal, cal.getTime());
-                    }
-
                     return PayUPreDebitNotification.builder().tid(request.getTransactionId()).transactionStatus(TransactionStatus.SUCCESS).build();
                 } catch (Exception e) {
                     log.error(PAYU_PRE_DEBIT_NOTIFICATION_ERROR, e.getMessage());

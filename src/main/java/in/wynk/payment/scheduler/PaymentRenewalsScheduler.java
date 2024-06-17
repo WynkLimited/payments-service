@@ -74,7 +74,7 @@ public class PaymentRenewalsScheduler {
                 .collect(Collectors.toList());
         AnalyticService.update("transactionsPickedSize", paymentRenewals.size());
         paymentRenewals.forEach(paymentRenewal -> publishPreDebitNotificationMessage(
-                PreDebitNotificationMessageManager.builder().transactionId(paymentRenewal.getTransactionId()).renewalDay(paymentRenewal.getDay()).renewalHour(paymentRenewal.getHour())
+                PreDebitNotificationMessageManager.builder().clientAlias(clientAlias).transactionId(paymentRenewal.getTransactionId()).renewalDay(paymentRenewal.getDay()).renewalHour(paymentRenewal.getHour())
                         .initialTransactionId(paymentRenewal.getInitialTransactionId()).lastSuccessTransactionId(paymentRenewal.getLastSuccessTransactionId()).build()));
         AnalyticService.update("renewNotificationsCompleted", true);
     }

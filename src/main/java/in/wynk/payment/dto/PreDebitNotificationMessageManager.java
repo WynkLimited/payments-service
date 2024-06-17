@@ -32,9 +32,6 @@ public class PreDebitNotificationMessageManager extends AbstractPreDebitNotifica
 
     @Override
     public PreDebitNotificationMessageThresholdEvent map () {
-        return PreDebitNotificationMessageThresholdEvent.builder().transactionId(getTransactionId()).initialTransactionId(getInitialTransactionId())
-                .lastSuccessTransactionId(this.getLastSuccessTransactionId())
-                .renewalDay(getRenewalDay()).renewalHour(getRenewalHour())
-                .build();
+        return PreDebitNotificationMessageThresholdEvent.builder().transactionId(getTransactionId()).build();
     }
 }

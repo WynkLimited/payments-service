@@ -5,6 +5,7 @@ import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.TransactionAware;
+import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
@@ -152,7 +153,10 @@ public class RecurringTransactionUtils {
             long today = System.currentTimeMillis();
             long furtherDefer = renewalPlanEligibilityResponse.getDeferredUntil() - today;
             if (subscriptionServiceManager.isDeferred(transaction.getPaymentChannel().getCode(), furtherDefer, isPreDebitFlow)) {
-                recurringPaymentManagerService.unScheduleRecurringPayment(transaction.getIdStr(), PaymentEvent.DEFERRED, today, furtherDefer);
+                if (Objects.equals(transaction.getPaymentChannel().getCode(), BeanConstant.AIRTEL_PAY_STACK)) {
+                    furtherDefer = furtherDefer - ((long) 2 * 24 * 60 * 60 * 1000);
+                }
+                recurringPaymentManagerService.unScheduleRecurringPayment(transaction, PaymentEvent.DEFERRED, today, furtherDefer);
                 return false;
             }
         }

@@ -119,6 +119,8 @@ public class PaymentEventListener {
     private String waPayStateRespEventTopic;
     @Value("${wynk.multi.kafka.templates.item.topic}")
     private String itemTopic;
+    @Value("${payment.cancelMandate.unsupported}")
+    private List<String> cancelMandatePG;
 
     public PaymentEventListener (TaxUtils taxUtils, ObjectMapper mapper, RetryRegistry retryRegistry, PaymentManager paymentManager,
                                  PaymentGatewayManager paymentGatewayManager, ITaskScheduler<TaskDefinition<?>> taskScheduler,
@@ -198,20 +200,20 @@ public class PaymentEventListener {
     @AnalyseTransaction(name = "recurringPaymentEvent")
     public void onRecurringPaymentEvent (RecurringPaymentEvent event) {
         AnalyticService.update(event);
-        cancelMandateFromPG(event);
+        Transaction transaction = event.getTransaction();
+        if ((!cancelMandatePG.contains(transaction.getPaymentChannel().getId())) && (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.UNSUBSCRIBE) &&
+                event.getPaymentEvent() == PaymentEvent.UNSUBSCRIBE) {
+            cancelMandateFromPG(transaction.getPaymentChannel().getId(), transaction.getPaymentChannel().getCode(), transaction.getIdStr(), event.getClientAlias());
+        }
     }
 
-    @ClientAware(clientAlias = "#event.clientAlias")
+    @ClientAware(clientAlias = "#clientAlias")
     @AnalyseTransaction(name = "cancelMandateFromPGEvent")
-    private void cancelMandateFromPG (RecurringPaymentEvent event) {
+    private void cancelMandateFromPG (String paymentCode, String paymentMethod, String txnId, String clientAlias) {
         try {
-            Transaction transaction = transactionManagerService.get(event.getTransactionId());
-            AnalyticService.update("paymentCode", transaction.getPaymentChannel().getId());
-            if ((transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.UNSUBSCRIBE) && event.getPaymentEvent() == PaymentEvent.UNSUBSCRIBE) {
-                BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), ICancellingRecurringService.class)
-                        .cancelRecurring(event.getTransactionId());
-                AnalyticService.update("isMandateCancelled", true);
-            }
+            AnalyticService.update("paymentCode", paymentCode);
+            AnalyticService.update("txnId", txnId);
+            BeanLocatorFactory.getBean(paymentMethod, ICancellingRecurringService.class).cancelRecurring(txnId);
         } catch (Exception e) {
             AnalyticService.update("isMandateCancelled", false);
             log.error(PaymentLoggingMarker.MANDATE_REVOKE_ERROR, e.getMessage(), e);

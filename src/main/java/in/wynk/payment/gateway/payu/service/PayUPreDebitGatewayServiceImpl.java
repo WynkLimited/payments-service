@@ -33,7 +33,6 @@ import java.util.LinkedHashMap;
 
 import static in.wynk.payment.core.constant.PaymentErrorType.PAYU007;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_PRE_DEBIT_NOTIFICATION_ERROR;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 /**
@@ -71,7 +70,7 @@ public class PayUPreDebitGatewayServiceImpl implements IPreDebitNotificationServ
         }
         Transaction transaction = TransactionContext.get();
         // check eligibility for renewal
-        if (/*recurringTransactionUtils.isEligibleForRenewal(transaction, true)*/ true) {
+        if (recurringTransactionUtils.isEligibleForRenewal(transaction, true)) {
             PayUChargingTransactionDetails payUChargingTransactionDetails =
                     objectMapper.convertValue(merchantTransaction.getResponse(), PayURenewalResponse.class).getTransactionDetails().get(request.getTransactionId());
             String mode = payUChargingTransactionDetails.getMode();
@@ -94,7 +93,7 @@ public class PayUPreDebitGatewayServiceImpl implements IPreDebitNotificationServ
                     PayUPreDebitNotificationResponse response = payUCommonGateway.exchange(payUCommonGateway.INFO_API, requestMap, new TypeReference<PayUPreDebitNotificationResponse>() {
                     });
                     if (response.getStatus().equalsIgnoreCase(INTEGER_VALUE)) {
-                        AnalyticService.update(PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS.toString(), String.valueOf(request));
+                        AnalyticService.update("PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS", String.valueOf(response));
                         if (renewalUpdateRequired) {
                             recurringPaymentManagerService.updateRenewalSchedule(request.getClientAlias(), request.getTransactionId(), cal, cal.getTime());
                         }

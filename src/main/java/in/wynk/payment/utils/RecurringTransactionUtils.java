@@ -1,8 +1,5 @@
 package in.wynk.payment.utils;
 
-import in.wynk.auth.dao.entity.Client;
-import in.wynk.client.context.ClientContext;
-import in.wynk.client.data.utils.RepositoryUtils;
 import in.wynk.common.dto.WynkResponse;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
@@ -13,7 +10,6 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.dao.repository.ITransactionDao;
 import in.wynk.payment.core.event.MandateStatusEvent;
 import in.wynk.payment.core.event.UnScheduleRecurringPaymentEvent;
 import in.wynk.payment.dto.request.AbstractUnSubscribePlanRequest;
@@ -35,7 +31,6 @@ import java.util.Objects;
 
 import static in.wynk.common.enums.PaymentEvent.RENEW;
 import static in.wynk.payment.core.constant.PaymentConstants.ERROR_REASONS;
-import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 
 /**
  * @author Nishesh Pandey

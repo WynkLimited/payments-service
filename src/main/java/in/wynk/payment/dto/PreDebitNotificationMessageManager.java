@@ -11,13 +11,14 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.util.concurrent.TimeUnit;
 
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 
 @Getter
-@Builder
+@SuperBuilder
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor

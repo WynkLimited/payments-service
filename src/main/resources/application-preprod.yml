@@ -108,7 +108,7 @@ payment:
   pooling:
     queue:
       preDebitNotification:
-        enabled: false
+        enabled: true
         name: wcf-preprod-mandate-notification-sqs
         sqs:
           messages:

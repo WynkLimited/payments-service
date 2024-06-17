@@ -67,11 +67,12 @@ public class PaymentRenewalsScheduler {
         MDC.put(REQUEST_ID, requestId);
         AnalyticService.update(REQUEST_ID, requestId);
         AnalyticService.update("class", this.getClass().getSimpleName());
-        AnalyticService.update("renewNotificationsInit", true);
+        AnalyticService.update("clientAlias", clientAlias);
         List<PaymentRenewal> paymentRenewals = recurringPaymentManager.getCurrentDueNotifications(clientAlias)
                 .filter(paymentRenewal -> checkPreDebitEligibility(paymentRenewal.getTransactionId()) &&
                         (paymentRenewal.getTransactionEvent() == RENEW || paymentRenewal.getTransactionEvent() == SUBSCRIBE || paymentRenewal.getTransactionEvent() == DEFERRED))
                 .collect(Collectors.toList());
+        AnalyticService.update("transactionsPickedSize", paymentRenewals.size());
         paymentRenewals.forEach(paymentRenewal -> publishPreDebitNotificationMessage(
                 PreDebitNotificationMessage.builder().transactionId(paymentRenewal.getTransactionId()).renewalDay(paymentRenewal.getDay()).renewalHour(paymentRenewal.getHour())
                         .initialTransactionId(paymentRenewal.getInitialTransactionId()).lastSuccessTransactionId(paymentRenewal.getLastSuccessTransactionId()).build()));

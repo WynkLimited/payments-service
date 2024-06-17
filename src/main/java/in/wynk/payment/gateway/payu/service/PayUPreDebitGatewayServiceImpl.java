@@ -71,7 +71,7 @@ public class PayUPreDebitGatewayServiceImpl implements IPreDebitNotificationServ
         }
         Transaction transaction = TransactionContext.get();
         // check eligibility for renewal
-        if (recurringTransactionUtils.isEligibleForRenewal(transaction, true)) {
+        if (/*recurringTransactionUtils.isEligibleForRenewal(transaction, true)*/ true) {
             PayUChargingTransactionDetails payUChargingTransactionDetails =
                     objectMapper.convertValue(merchantTransaction.getResponse(), PayURenewalResponse.class).getTransactionDetails().get(request.getTransactionId());
             String mode = payUChargingTransactionDetails.getMode();

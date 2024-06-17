@@ -48,7 +48,7 @@ public class PaymentRenewalsScheduler {
     @ClientAware(clientAlias = "#clientAlias")
     @AnalyseTransaction(name = "paymentRenewals")
     @Transactional(transactionManager = "#clientAlias", source = "payments")
-    public void paymentRenew(String requestId, String clientAlias) {
+    public void paymentRenew (String requestId, String clientAlias) {
         MDC.put(REQUEST_ID, requestId);
         AnalyticService.update(REQUEST_ID, requestId);
         AnalyticService.update("class", this.getClass().getSimpleName());
@@ -63,7 +63,7 @@ public class PaymentRenewalsScheduler {
     @ClientAware(clientAlias = "#clientAlias")
     @AnalyseTransaction(name = "renewNotifications")
     @Transactional(transactionManager = "#clientAlias", source = "payments")
-    public void sendNotifications(String requestId, String clientAlias) {
+    public void sendNotifications (String requestId, String clientAlias) {
         MDC.put(REQUEST_ID, requestId);
         AnalyticService.update(REQUEST_ID, requestId);
         AnalyticService.update("class", this.getClass().getSimpleName());
@@ -73,13 +73,13 @@ public class PaymentRenewalsScheduler {
                         (paymentRenewal.getTransactionEvent() == RENEW || paymentRenewal.getTransactionEvent() == SUBSCRIBE || paymentRenewal.getTransactionEvent() == DEFERRED))
                 .collect(Collectors.toList());
         AnalyticService.update("transactionsPickedSize", paymentRenewals.size());
+        ;
         paymentRenewals.forEach(paymentRenewal -> publishPreDebitNotificationMessage(
-                PreDebitNotificationMessageManager.builder().clientAlias(clientAlias).transactionId(paymentRenewal.getTransactionId()).renewalDay(paymentRenewal.getDay()).renewalHour(paymentRenewal.getHour())
-                        .initialTransactionId(paymentRenewal.getInitialTransactionId()).lastSuccessTransactionId(paymentRenewal.getLastSuccessTransactionId()).build()));
+                PreDebitNotificationMessageManager.builder().clientAlias(clientAlias).transactionId(paymentRenewal.getTransactionId()).build()));
         AnalyticService.update("renewNotificationsCompleted", true);
     }
 
-    private void sendToRenewalQueue(List<PaymentRenewal> paymentRenewals) {
+    private void sendToRenewalQueue (List<PaymentRenewal> paymentRenewals) {
         for (PaymentRenewal paymentRenewal : paymentRenewals) {
             publishRenewalMessage(PaymentRenewalMessage.builder()
                     .attemptSequence(paymentRenewal.getAttemptSequence())
@@ -98,7 +98,7 @@ public class PaymentRenewalsScheduler {
     }
 
     @AnalyseTransaction(name = "schedulePreDebitNotificationMessage")
-    private void publishPreDebitNotificationMessage(PreDebitNotificationMessageManager message) {
+    private void publishPreDebitNotificationMessage (PreDebitNotificationMessageManager message) {
         AnalyticService.update(message);
         sqsManagerService.publishSQSMessage(message);
     }
@@ -109,7 +109,7 @@ public class PaymentRenewalsScheduler {
 
     @ClientAware(clientId = "#clientId")
     @AnalyseTransaction(name = "sePaymentRenewals")
-    public void startSeRenewals(String requestId, String clientId) {
+    public void startSeRenewals (String requestId, String clientId) {
         MDC.put(REQUEST_ID, requestId);
         AnalyticService.update(REQUEST_ID, requestId);
         AnalyticService.update("class", this.getClass().getSimpleName());

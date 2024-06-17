@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.payment.consumer.*;
 import in.wynk.payment.extractor.*;
 import in.wynk.payment.service.*;
+import in.wynk.payment.service.impl.RecurringPaymentManager;
 import in.wynk.payment.utils.RecurringTransactionUtils;
 import in.wynk.queue.constant.BeanConstant;
 import in.wynk.queue.service.ISqsManagerService;
@@ -84,14 +85,14 @@ public class PaymentQueuesConfig {
     public PreDebitNotificationConsumerPollingQueue preDebitNotificationConsumerPollingQueue (@Value("${payment.pooling.queue.preDebitNotification.name}") String queueName,
                                                                                               @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
                                                                                               ObjectMapper objectMapper,
-                                                                                              PaymentGatewayManager manager,
+                                                                                              PaymentGatewayManager manager, RecurringPaymentManager recurringPaymentManager,
                                                                                               PreDebitNotificationSQSMessageExtractor preDebitNotificationSQSMessageExtractor) {
         return new PreDebitNotificationConsumerPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
                 preDebitNotificationSQSMessageExtractor,
                 threadPoolExecutor(2),
-                scheduledThreadPoolExecutor(), manager);
+                scheduledThreadPoolExecutor(), manager, recurringPaymentManager);
     }
 
     @Bean

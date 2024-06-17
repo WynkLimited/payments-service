@@ -6,7 +6,7 @@ import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.client.data.aspect.advice.Transactional;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.dto.PaymentRenewalMessage;
-import in.wynk.payment.dto.PreDebitNotificationMessage;
+import in.wynk.payment.dto.PreDebitNotificationMessageManager;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.utils.RecurringTransactionUtils;
@@ -74,7 +74,7 @@ public class PaymentRenewalsScheduler {
                 .collect(Collectors.toList());
         AnalyticService.update("transactionsPickedSize", paymentRenewals.size());
         paymentRenewals.forEach(paymentRenewal -> publishPreDebitNotificationMessage(
-                PreDebitNotificationMessage.builder().transactionId(paymentRenewal.getTransactionId()).renewalDay(paymentRenewal.getDay()).renewalHour(paymentRenewal.getHour())
+                PreDebitNotificationMessageManager.builder().transactionId(paymentRenewal.getTransactionId()).renewalDay(paymentRenewal.getDay()).renewalHour(paymentRenewal.getHour())
                         .initialTransactionId(paymentRenewal.getInitialTransactionId()).lastSuccessTransactionId(paymentRenewal.getLastSuccessTransactionId()).build()));
         AnalyticService.update("renewNotificationsCompleted", true);
     }
@@ -98,7 +98,7 @@ public class PaymentRenewalsScheduler {
     }
 
     @AnalyseTransaction(name = "schedulePreDebitNotificationMessage")
-    private void publishPreDebitNotificationMessage(PreDebitNotificationMessage message) {
+    private void publishPreDebitNotificationMessage(PreDebitNotificationMessageManager message) {
         AnalyticService.update(message);
         sqsManagerService.publishSQSMessage(message);
     }

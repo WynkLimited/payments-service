@@ -7,7 +7,7 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.dto.PreDebitNotificationMessage;
+import in.wynk.payment.dto.PreDebitNotificationMessageManager;
 import in.wynk.payment.dto.PreDebitRequest;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.service.PaymentGatewayManager;
@@ -22,7 +22,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-public class PreDebitNotificationConsumerPollingQueue extends AbstractSQSMessageConsumerPollingQueue<PreDebitNotificationMessage> {
+public class PreDebitNotificationConsumerPollingQueue extends AbstractSQSMessageConsumerPollingQueue<PreDebitNotificationMessageManager> {
 
     private final ExecutorService messageHandlerThreadPool;
     private final ScheduledExecutorService pollingThreadPool;
@@ -68,7 +68,7 @@ public class PreDebitNotificationConsumerPollingQueue extends AbstractSQSMessage
     @ClientAware(clientAlias = "#message.clientAlias")
     @AnalyseTransaction(name = "preDebitNotificationMessage")
     @TransactionAware(txnId = "#message.transactionId")
-    public void consume(PreDebitNotificationMessage message) {
+    public void consume(PreDebitNotificationMessageManager message) {
         Transaction transaction = TransactionContext.get();
         SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
         PreDebitRequest request = PreDebitRequest.builder().planId(transaction.getPlanId()).transactionId(transaction.getIdStr()).renewalDay(format.format(message.getRenewalDay().getTime())).renewalHour(message.getRenewalHour())
@@ -79,8 +79,8 @@ public class PreDebitNotificationConsumerPollingQueue extends AbstractSQSMessage
     }
 
     @Override
-    public Class<PreDebitNotificationMessage> messageType() {
-        return PreDebitNotificationMessage.class;
+    public Class<PreDebitNotificationMessageManager> messageType() {
+        return PreDebitNotificationMessageManager.class;
     }
 
 }

@@ -5,13 +5,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
+import in.wynk.payment.aspect.advice.TransactionAware;
+import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PreDebitNotificationMessage;
+import in.wynk.payment.dto.PreDebitRequest;
+import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.service.PaymentGatewayManager;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 
+import java.text.SimpleDateFormat;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -62,9 +67,15 @@ public class PreDebitNotificationConsumerPollingQueue extends AbstractSQSMessage
     @Override
     @ClientAware(clientAlias = "#message.clientAlias")
     @AnalyseTransaction(name = "preDebitNotificationMessage")
+    @TransactionAware(txnId = "#message.transactionId")
     public void consume(PreDebitNotificationMessage message) {
-        AnalyticService.update(message);
-        manager.notify(message);
+        Transaction transaction = TransactionContext.get();
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+        PreDebitRequest request = PreDebitRequest.builder().planId(transaction.getPlanId()).transactionId(transaction.getIdStr()).renewalDay(format.format(message.getRenewalDay().getTime())).renewalHour(message.getRenewalHour())
+                .initialTransactionId(message.getInitialTransactionId()).lastSuccessTransactionId(message.getLastSuccessTransactionId()).uid(transaction.getUid())
+                .paymentCode(transaction.getPaymentChannel().getCode()).clientAlias(message.getClientAlias()).build();
+        AnalyticService.update(request);
+        manager.notify(request);
     }
 
     @Override

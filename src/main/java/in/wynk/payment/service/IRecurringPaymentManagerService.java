@@ -23,7 +23,7 @@ public interface IRecurringPaymentManagerService {
 
     void unScheduleRecurringPayment (String clientAlias, String transactionId, PaymentEvent paymentEvent);
 
-    void unScheduleRecurringPayment (String transactionId, PaymentEvent paymentEvent, long validUntil, long deferredUntil);
+    void unScheduleRecurringPayment (Transaction transaction, PaymentEvent paymentEvent, long validUntil, long deferredUntil);
 
     void upsert (PaymentRenewal paymentRenewal);
 

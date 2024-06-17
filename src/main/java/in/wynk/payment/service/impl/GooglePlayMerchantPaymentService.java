@@ -212,15 +212,15 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                 //if free trial plan applied, perform events on that plan
                 if (isFreeTrial) {
                     if (planDTO.getLinkedFreePlanId() != -1) {
-                        return builder.planId(planDTO.getLinkedFreePlanId()).build();
+                        return builder.planId(planDTO.getLinkedFreePlanId()).service(planDTO.getService()).build();
                     } else {
                         log.error("No Free Trial mapping present for planId {}", planDTO.getId());
                         throw new WynkRuntimeException(PaymentErrorType.PAY033);
                     }
                 }
-                return builder.planId(planDTO.getId()).build();
+                return builder.planId(planDTO.getId()).service(planDTO.getService()).build();
             }
-            return builder.itemId(receiptDetails.getItemId()).build();
+            return builder.itemId(receiptDetails.getItemId()).service(receiptDetails.getService()).build();
         }
         return null;
     }

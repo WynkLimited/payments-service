@@ -12,6 +12,7 @@ import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.dto.PaymentRenewalMessage;
+import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.ITransactionManagerService;
@@ -24,6 +25,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -117,7 +120,10 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
             long today = System.currentTimeMillis();
             long furtherDefer = renewalPlanEligibilityResponse.getDeferredUntil() - today;
             if (subscriptionServiceManager.isDeferred(transaction.getPaymentChannel().getCode(), furtherDefer)) {
-                recurringPaymentManagerService.unScheduleRecurringPayment(transaction.getIdStr(), PaymentEvent.DEFERRED, today, furtherDefer);
+                if (Objects.equals(transaction.getPaymentChannel().getCode(), ApsConstant.AIRTEL_PAY_STACK)) {
+                    furtherDefer = furtherDefer - ((long) 2 * 24 * 60 * 60 * 1000);
+                }
+                recurringPaymentManagerService.unScheduleRecurringPayment(transaction, PaymentEvent.DEFERRED, today, furtherDefer);
                 return false;
             }
         }

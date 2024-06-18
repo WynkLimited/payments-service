@@ -349,6 +349,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     }
 
     private void additiveDaysSubscribe(AbstractSubscribePlanRequest request) {
+        AnalyticService.update("AdditiveValidity", request.toString());
         try {
             if (ApsConstant.APS_V2.equalsIgnoreCase(request.getPaymentGateway().getId())) {
                 PlanProvisioningRequest planProvisioningRequest = SinglePlanProvisionRequest.builder()
@@ -364,6 +365,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
                                                                                             .triggerDataRequest(request.getTriggerDataRequest())
                                                                                             .build();
                 RequestEntity<PlanProvisioningRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(subscribePlanAdditiveEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), planProvisioningRequest, HttpMethod.POST);
+                AnalyticService.update("AdditiveValidity", requestEntity.toString());
                 restTemplate.exchange(requestEntity,
                                       new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<PlanProvisioningResponse>>() {
                                       });

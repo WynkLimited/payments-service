@@ -10,12 +10,14 @@ import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.subscription.common.request.TriggerDataRequest;
 import lombok.Getter;
+import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 import java.util.Optional;
 
 @Getter
 @SuperBuilder
+@ToString
 public class AbstractSubscribePlanRequest implements IObjectMapper {
 
     private final int planId;

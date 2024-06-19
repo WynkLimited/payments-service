@@ -246,7 +246,11 @@ public class PaymentGatewayManager
                 if (event != PaymentEvent.RENEW) {
                     String paymentTransactionId = receiptDetailService.getIdAndUpdateReceiptDetails(wrapper);
                     Transaction transaction = transactionManager.get(paymentTransactionId);
-                    recurringTransactionUtils.cancelRenewalBasedOnRealtimeMandateForIAP("PaymentEvent Unsubscribed", transaction);
+                    if(event == PaymentEvent.UNSUBSCRIBE) {
+                        recurringTransactionUtils.cancelRenewalBasedOnRealtimeMandateForIAP("PaymentEvent Unsubscribed", transaction, event);
+                    } else {
+                        recurringTransactionUtils.cancelRenewalBasedOnRealtimeMandateForIAP("PaymentEvent Cancelled", transaction, event);
+                    }
                 } else {
                     final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
                             PlanRenewalRequest.builder().txnId(mapping.getLinkedTransactionId()).planId(mapping.getPlanId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentGateway(request.getPaymentGateway())

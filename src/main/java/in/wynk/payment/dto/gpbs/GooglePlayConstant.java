@@ -14,6 +14,7 @@ public class GooglePlayConstant {
     public static final String TOKEN = "/tokens/";
     public static final String ACKNOWLEDGE = ":acknowledge";
     public static final String CONSUME = ":consume";
+    public static final String CANCEL = ":cancel";
 
     public static final Integer PURCHASE_NOTIFICATION_TYPE = 4;
     public static final String GOOGLE_PLAY_RECEIPT = "googlePlayReceipt";

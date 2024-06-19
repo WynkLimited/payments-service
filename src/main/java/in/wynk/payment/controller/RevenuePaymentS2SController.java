@@ -156,6 +156,14 @@ public class RevenuePaymentS2SController {
         return getResponseEntity(StringUtils.isNotBlank(request.getSessionDetails().getSessionId()) ? request : dummySessionGenerator.initSession(request));
     }
 
+    @PostMapping("/v3/cancel/subscription/{uid}/{transactionId}")
+    @AnalyseTransaction(name = "receiptVerification")
+    @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"RECEIPT_VERIFICATION_WRITE\")")
+    @ApiOperation("Cancels the subscription for IAP")
+    public ResponseEntity<?> cancelSubscription(@PathVariable String uid, @PathVariable String transactionId) {
+        return paymentManager.;
+    }
+
     @ManageSession(sessionId = "#request.sid")
     private ResponseEntity<?> getResponseEntity(IapVerificationRequest request) {
         LoadClientUtils.loadClient(true);

@@ -255,7 +255,7 @@
     </logger>
 
     <logger name="iapSubscriptionCancellation" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
     <logger name="applyCoupon" additivity="false" level="INFO">

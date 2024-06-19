@@ -23,7 +23,6 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.*;
-import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.core.service.GSTStateCodesCachingService;
@@ -96,7 +95,8 @@ import static in.wynk.payment.dto.gpbs.GooglePlayConstant.*;
 public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentStatusService
         implements IMerchantIapSubscriptionAcknowledgementService, IMerchantIapPaymentPreVerificationService, IMerchantIapPaymentVerificationService,
         IPaymentNotificationService<Pair<GooglePlayLatestReceiptResponse, ReceiptDetails>>,
-        IReceiptDetailService<Pair<GooglePlayLatestReceiptResponse, ReceiptDetails>, GooglePlayCallbackRequest>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> {
+        IReceiptDetailService<Pair<GooglePlayLatestReceiptResponse, ReceiptDetails>, GooglePlayCallbackRequest>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>,
+        IMerchantIapSubscriptionCancellationService {
     @Value("${payment.googlePlay.baseUrl}")
     private String baseUrl;
     @Value("${payment.googlePlay.purchaseUrl.subscription}")
@@ -429,8 +429,10 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     @Override
     public LatestReceiptResponse getLatestReceiptResponse (IapVerificationRequestV2 iapVerificationRequest) {
         final GooglePlayVerificationRequest request = (GooglePlayVerificationRequest) iapVerificationRequest;
-        String productType = (Objects.nonNull(request.getProductDetails().getType()) && (Objects.equals(request.getProductDetails().getType(), BaseConstants.POINT))) ? BaseConstants.POINT : BaseConstants.PLAN;
-        if (Objects.isNull(request.getPaymentDetails()) || Objects.isNull(request.getProductDetails()) || Objects.isNull(request.getAppDetails()) || (productType.equals(BaseConstants.POINT) && StringUtils.isEmpty(request.getProductDetails().getItemId()))) {
+        String productType =
+                (Objects.nonNull(request.getProductDetails().getType()) && (Objects.equals(request.getProductDetails().getType(), BaseConstants.POINT))) ? BaseConstants.POINT : BaseConstants.PLAN;
+        if (Objects.isNull(request.getPaymentDetails()) || Objects.isNull(request.getProductDetails()) || Objects.isNull(request.getAppDetails()) ||
+                (productType.equals(BaseConstants.POINT) && StringUtils.isEmpty(request.getProductDetails().getItemId()))) {
             throw new WynkRuntimeException(PaymentErrorType.PAY501);
         }
         AbstractGooglePlayReceiptVerificationResponse abstractGooglePlayReceiptVerificationResponse =
@@ -522,7 +524,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                 .concat(TOKEN).concat(request.getPaymentDetails().getPurchaseToken()).concat(ACKNOWLEDGE).concat(API_KEY_PARAM)
                 .concat(getApiKey(request.getAppDetails().getService()));
         GooglePlayAcknowledgeRequest body = GooglePlayAcknowledgeRequest.builder().developerPayload(request.getDeveloperPayload()).build();
-        callGoogleApi(url, request, body);
+        callGoogleApi(url, request, body, request.getAppDetails().getService());
     }
 
     // this acknowledgement is used for non-consumable products
@@ -534,7 +536,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                 .concat(ACKNOWLEDGE).concat(API_KEY_PARAM)
                 .concat(getApiKey(request.getAppDetails().getService()));
         GooglePlayAcknowledgeRequest body = GooglePlayAcknowledgeRequest.builder().developerPayload(request.getDeveloperPayload()).build();
-        callGoogleApi(url, request, body);
+        callGoogleApi(url, request, body, request.getAppDetails().getService());
     }
 
     @AnalyseTransaction(name = "productConsumption")
@@ -543,7 +545,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                 .concat(request.getPaymentDetails().getPurchaseToken())
                 .concat(CONSUME).concat(API_KEY_PARAM)
                 .concat(getApiKey(request.getAppDetails().getService()));
-        callGoogleApi(url, request, null);
+        callGoogleApi(url, request, null, request.getAppDetails().getService());
         AnalyticService.update("txnId", request.getTxnId());
         AnalyticService.update("consumptionStatus", true);
     }
@@ -607,8 +609,8 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         }
     }
 
-    private void callGoogleApi (String url, AbstractAcknowledgement request, GooglePlayAcknowledgeRequest body) {
-        HttpHeaders headers = getHeaders(request.getAppDetails().getService());
+    private void callGoogleApi (String url, AbstractAcknowledgement request, GooglePlayAcknowledgeRequest body, String service) {
+        HttpHeaders headers = getHeaders(service);
         try {
             restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(body, headers), String.class);
             log.info("Google api called successfully for the purchase with Purchase Token {}", request.getPaymentDetails().getPurchaseToken());
@@ -803,5 +805,22 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     @Override
     public boolean supportsRenewalReconciliation () {
         return false;
+    }
+
+    @Override
+    public void cancelSubscription (String uid, String transactionId) {
+        List<ReceiptDetails> receiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
+                .findByUid(uid);
+        Optional<ReceiptDetails> filteredReceipt = receiptDetails.stream().filter(receiptDetails1 -> receiptDetails1.getPaymentTransactionId().equals(transactionId)).findAny();
+        GooglePlayReceiptDetails gPlayReceipt = filteredReceipt.map(details -> (GooglePlayReceiptDetails) details).orElseGet(() -> (GooglePlayReceiptDetails) receiptDetails.get(0));
+        String url = baseUrl.concat(gPlayReceipt.getPackageName()).concat(subscriptionPurchase).concat(gPlayReceipt.getSkuId())
+                .concat(TOKEN).concat(gPlayReceipt.getId()).concat(CANCEL).concat(API_KEY_PARAM)
+                .concat(getApiKey(gPlayReceipt.getService()));
+        HttpHeaders headers = getHeaders(gPlayReceipt.getService());
+        try {
+            restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(null, headers), String.class);
+        } catch (Exception ex) {
+            throw new WynkRuntimeException("Exception occurred while calling google api for subscription Cancellation", ex);
+        }
     }
 }

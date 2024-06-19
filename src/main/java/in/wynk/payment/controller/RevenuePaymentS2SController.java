@@ -160,8 +160,8 @@ public class RevenuePaymentS2SController {
     @AnalyseTransaction(name = "receiptVerification")
     @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"RECEIPT_VERIFICATION_WRITE\")")
     @ApiOperation("Cancels the subscription for IAP")
-    public ResponseEntity<?> cancelSubscription(@PathVariable String uid, @PathVariable String transactionId) {
-        return paymentManager.;
+    public void cancelSubscription (@PathVariable String uid, @PathVariable String transactionId) {
+        manager.cancelSubscription(uid, transactionId);
     }
 
     @ManageSession(sessionId = "#request.sid")

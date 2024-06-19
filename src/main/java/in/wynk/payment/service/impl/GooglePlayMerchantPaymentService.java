@@ -813,14 +813,13 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                 .findByUid(uid);
         Optional<ReceiptDetails> filteredReceipt = receiptDetails.stream().filter(receiptDetails1 -> receiptDetails1.getPaymentTransactionId().equals(transactionId)).findAny();
         GooglePlayReceiptDetails gPlayReceipt = filteredReceipt.map(details -> (GooglePlayReceiptDetails) details).orElseGet(() -> (GooglePlayReceiptDetails) receiptDetails.get(0));
-        String url = baseUrl.concat(gPlayReceipt.getPackageName()).concat(subscriptionPurchase).concat(gPlayReceipt.getSkuId())
-                .concat(TOKEN).concat(gPlayReceipt.getId()).concat(CANCEL).concat(API_KEY_PARAM)
-                .concat(getApiKey(gPlayReceipt.getService()));
+        String url =
+                baseUrl + gPlayReceipt.getPackageName() + subscriptionPurchase + gPlayReceipt.getSkuId() + TOKEN + gPlayReceipt.getId() + CANCEL + API_KEY_PARAM + getApiKey(gPlayReceipt.getService());
         HttpHeaders headers = getHeaders(gPlayReceipt.getService());
         try {
             restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(null, headers), String.class);
         } catch (Exception ex) {
-            throw new WynkRuntimeException("Exception occurred while calling google api for subscription Cancellation", ex);
+            throw new WynkRuntimeException(PaymentErrorType.PLAY006, ex);
         }
     }
 }

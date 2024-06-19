@@ -95,6 +95,7 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker AMAZON_IAP_RENEWAL_ERROR= MarkerFactory.getMarker("AMAZON_IAP_RENEWAL_ERROR");
 
     Marker GOOGLE_PLAY_RENEWAL_FAILURE = MarkerFactory.getMarker("GOOGLE_PLAY_RENEWAL_FAILURE");
+    Marker GOOGLE_PLAY_SUBSCRIPTION_CANCELLATION_FAILURE = MarkerFactory.getMarker("GOOGLE_PLAY_SUBSCRIPTION_CANCELLATION_FAILURE");
 
     Marker AMAZON_IAP_VERIFICATION_FAILURE = MarkerFactory.getMarker("AMAZON_IAP_VERIFICATION_FAILURE");
 

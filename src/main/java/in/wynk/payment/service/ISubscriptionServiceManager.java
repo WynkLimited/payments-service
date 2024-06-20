@@ -64,4 +64,6 @@ public interface ISubscriptionServiceManager {
     Integer getUpdatedPlanId (Integer planId, PaymentEvent paymentEvent);
 
     BestValuePlanResponse getBestValuePlan (BestValuePlanPurchaseRequest request, Map<String, String> requestParam);
+
+    ThanksPlanResponse getThanksPlanForAdditiveDays(String msisdn);
 }

@@ -41,6 +41,7 @@ import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.ProductDTO;
 import in.wynk.subscription.common.dto.RenewalPlanEligibilityRequest;
 import in.wynk.subscription.common.dto.RenewalPlanEligibilityResponse;
+import in.wynk.subscription.common.dto.ThanksPlanResponse;
 import in.wynk.subscription.common.enums.ProvisionState;
 import in.wynk.subscription.common.message.SubscriptionProvisioningMessage;
 import in.wynk.subscription.common.request.PlanProvisioningRequest;
@@ -130,6 +131,9 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     @Value("${service.subscription.api.endpoint.bestValue}")
     private String subscriptionBestValueEndpoint;
+
+    @Value("${service.subscription.api.endpoint.thanksPlan}")
+    private String thanksPlanEndPoint;
 
     @Autowired
     @Qualifier(SUBSCRIPTION_SERVICE_S2S_TEMPLATE)
@@ -462,5 +466,17 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         String pg = additionalParam.get(BaseConstants.DEEPLINK_PACK_GROUP);
         int validity = Validity.getValidity(additionalParam.get(BaseConstants.VALIDITY));
         return !StringUtils.isEmpty(pg) && validity != -1;
+    }
+
+    @Override
+    public ThanksPlanResponse getThanksPlanForAdditiveDays(String msisdn) {
+        String endpoint = thanksPlanEndPoint + "?msisdn=" + msisdn;
+        RequestEntity<Void> requestEntity =
+            ChecksumUtils.buildEntityWithAuthHeaders(endpoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
+        ResponseEntity<WynkResponse.WynkResponseWrapper<ThanksPlanResponse>> response =
+            restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<ThanksPlanResponse>>() {
+            });
+
+        return response.getBody().getData();
     }
 }

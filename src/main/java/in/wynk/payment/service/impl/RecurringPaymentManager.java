@@ -1,6 +1,7 @@
 package in.wynk.payment.service.impl;
 
 import com.github.annotation.analytic.core.service.AnalyticService;
+import com.mchange.v2.cfg.PropertiesConfigSource;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.data.aspect.advice.Transactional;
@@ -38,6 +39,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -66,7 +69,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     private int duePreDebitNotificationOffsetTime;
 
     private final Map<String, Integer> CODE_TO_RENEW_OFFSET = new HashMap<String, Integer>() {{
-        put(ApsConstant.AIRTEL_PAY_STACK, -2);
+        put(BeanConstant.AIRTEL_PAY_STACK, -2);
     }};
 
     @Override
@@ -138,10 +141,12 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     @Override
     @Transactional(transactionManager = "#clientAlias", source = "payments")
     public void unScheduleRecurringPayment (String clientAlias, String transactionId, PaymentEvent paymentEvent) {
+        Calendar nextRecurringDateTime = Calendar.getInstance();
         final IPaymentRenewalDao paymentRenewalDao = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class);
         paymentRenewalDao.findById(transactionId).ifPresent(recurringPayment -> {
             recurringPayment.setTransactionEvent(paymentEvent.name());
-            recurringPayment.setUpdatedTimestamp(Calendar.getInstance());
+            recurringPayment.setUpdatedTimestamp(nextRecurringDateTime);
+            recurringPayment.setDay(nextRecurringDateTime);
             paymentRenewalDao.save(recurringPayment);
         });
     }
@@ -274,38 +279,52 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     }
 
     @Override
-    public void unScheduleRecurringPayment (String transactionId, PaymentEvent paymentEvent, long validUntil, long deferredUntil) {
+    public void unScheduleRecurringPayment (Transaction transaction, PaymentEvent paymentEvent, long validUntil, long deferredUntil) {
+        String transactionId = transaction.getIdStr();
         try {
             final IPaymentRenewalDao paymentRenewalDao = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class);
             paymentRenewalDao.findById(transactionId).ifPresent(recurringPayment -> {
-                final Calendar hour = Calendar.getInstance();
-                final Calendar day = recurringPayment.getDay();
-
-                hour.setTime(recurringPayment.getHour());
-                day.set(Calendar.SECOND, hour.get(Calendar.SECOND));
-                day.set(Calendar.MINUTE, hour.get(Calendar.MINUTE));
-                day.set(Calendar.HOUR_OF_DAY, hour.get(Calendar.HOUR_OF_DAY));
-
-                final long deferredUntilNow = day.getTimeInMillis() - validUntil;
-                final long furtherDeferUntil = deferredUntil - deferredUntilNow;
-
-                if (furtherDeferUntil > 0) {
-                    day.setTimeInMillis(recurringPayment.getDay().getTimeInMillis() + furtherDeferUntil);
+                boolean publishDeferredEvent = true;
+                if (PaymentEvent.UNSUBSCRIBE == paymentEvent) {
+                    recurringPayment.setTransactionEvent(paymentEvent.name());
+                } else {
+                    final Calendar hour = Calendar.getInstance();
+                    final Calendar day = recurringPayment.getDay();
+                    hour.setTime(recurringPayment.getHour());
+                    day.set(Calendar.SECOND, hour.get(Calendar.SECOND));
+                    day.set(Calendar.MINUTE, hour.get(Calendar.MINUTE));
+                    day.set(Calendar.HOUR_OF_DAY, hour.get(Calendar.HOUR_OF_DAY));
+                    if (PaymentEvent.DEFERRED == paymentEvent) {
+                        final long deferredUntilNow = day.getTimeInMillis() - validUntil;
+                        final long furtherDeferUntil = deferredUntil - deferredUntilNow;
+                        long maxIgnoreEventDuration = Calendar.getInstance().getTimeInMillis() + ((long) 3 * 24 * 60 * 60 * 1000);
+                        long deferredTime = recurringPayment.getDay().getTimeInMillis() + furtherDeferUntil;
+                        if (deferredTime < maxIgnoreEventDuration) {
+                            publishDeferredEvent = false;
+                        }
+                        if (furtherDeferUntil > 0) {
+                            day.setTimeInMillis(recurringPayment.getDay().getTimeInMillis() + furtherDeferUntil);
+                        } else {
+                            log.info("recurring can not be deferred further for transaction id {}, since offset {} is less than zero", transactionId, furtherDeferUntil);
+                            return;
+                        }
+                    } else if (PaymentEvent.CANCELLED == paymentEvent) {
+                        day.setTimeInMillis(recurringPayment.getDay().getTimeInMillis());
+                    }
                     hour.setTime(day.getTime());
-
                     recurringPayment.setDay(day);
                     recurringPayment.setHour(hour.getTime());
                     recurringPayment.setUpdatedTimestamp(Calendar.getInstance());
                     recurringPayment.setTransactionEvent(paymentEvent.name());
-
-                    paymentRenewalDao.save(recurringPayment);
-                    eventPublisher.publishEvent(RecurringPaymentEvent.builder().transactionId(transactionId).paymentEvent(paymentEvent).build());
-                } else {
-                    log.info("recurring can not be deferred further for transaction id {}, since offset {} is less than zero", transactionId, furtherDeferUntil);
+                }
+                paymentRenewalDao.save(recurringPayment);
+                // if renewal dare is more than 3 days then only publish deferred eventif
+                if (publishDeferredEvent) {
+                    eventPublisher.publishEvent(RecurringPaymentEvent.builder().transaction(transaction).paymentEvent(paymentEvent).build());
                 }
             });
         } catch (Exception e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY045, e);
+            throw new WynkRuntimeException(PaymentErrorType.PAY099, e);
         }
     }
 
@@ -322,5 +341,15 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     public PaymentRenewal getRenewalById (String txnId) {
         return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).findById(txnId)
                 .orElse(null);
+    }
+
+    @Override
+    @Transactional(transactionManager = "#clientAlias", source = "payments")
+    public void updateRenewalSchedule (String clientAlias, String transactionId, Calendar day, Date hour) {
+            final IPaymentRenewalDao paymentRenewalDao = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class);
+            paymentRenewalDao.findById(transactionId).ifPresent(recurringPayment -> {
+                recurringPayment.setDay(day);
+                recurringPayment.setHour(hour);
+            });
     }
 }

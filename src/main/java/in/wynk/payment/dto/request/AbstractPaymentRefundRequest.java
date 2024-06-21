@@ -16,6 +16,7 @@ import static in.wynk.payment.constant.WalletConstants.PAYTM_WALLET;
 import static in.wynk.payment.constant.WalletConstants.PHONEPE_WALLET;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYU;
 import static in.wynk.payment.dto.aps.common.ApsConstant.APS;
+import static in.wynk.payment.dto.aps.common.ApsConstant.APS_V2;
 
 @Getter
 @SuperBuilder
@@ -36,6 +37,7 @@ public abstract class AbstractPaymentRefundRequest {
             case PHONEPE_WALLET:
                 return PhonePePaymentRefundRequest.from(originalTransaction, externalReferenceId, reason);
             case APS:
+            case APS_V2:
                 return ApsPaymentRefundRequest.from(originalTransaction, externalReferenceId, reason);
             default:
                 throw new WynkRuntimeException("Invalid Payment Channel Id");

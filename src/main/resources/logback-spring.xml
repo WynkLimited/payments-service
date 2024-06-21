@@ -117,6 +117,10 @@
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 
+    <logger name="paymentRecurringUnSchedulingMessage" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
+    </logger>
+
     <logger name="paymentStatus" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
@@ -247,6 +251,10 @@
     </logger>
 
     <logger name="receiptVerification" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
+    </logger>
+
+    <logger name="iapSubscriptionCancellation" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
     </logger>
 

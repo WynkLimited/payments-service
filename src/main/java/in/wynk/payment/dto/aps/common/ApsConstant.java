@@ -1,13 +1,13 @@
 package in.wynk.payment.dto.aps.common;
 
-public interface ApsConstant {
+import in.wynk.payment.core.constant.PaymentConstants;
+
+public interface ApsConstant extends PaymentConstants {
     String SIGNATURE = "signature";
     String CHANNEL_ID = "channel-id";
     String AUTH_TYPE_WEB_UNAUTH = "WEB_UNAUTH";
     String CONTENT_TYPE = "Content-Type";
     String APPLICATION_JSON = "application/json";
-    String AIRTEL_PAY_STACK = "aps";
-    String AIRTEL_PAY_STACK_V2 = "aps_v2";
     String APS = "APS";
     String APS_V2 = "APS_V2";
     String PAYMENT_TIMER_KEY = "payment_timer";
@@ -19,7 +19,6 @@ public interface ApsConstant {
     String PG_STATUS_FAILED = "PG_FAILED";
     String PRE_DEBIT_SI = "pre_debit_SI";
     String APS_CARD_TYPE = "cardType";
-    String UPI_MANDATE_REVOKE = "upi_mandate_revoke";
     String PAY_DIGI = "paydigi";
     String INT_PAY = "intpay";
 }

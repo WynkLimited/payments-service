@@ -34,7 +34,7 @@ public enum ItunesStatusCodes {
     /* APPLE_21015 */
     APPLE_21015("Latest receipt is expired", 21015),
     /* APPLE_21016 */
-    APPLE_21016("Already have subscription for the corresponding iTunes id on another account", 21016),
+    APPLE_21016("Already have subscription for the corresponding iTunes id", 21016),
     /* APPLE_21017 */
     APPLE_21017("Itunes transaction Id not found", 21017),
     /* APPLE_21018 */

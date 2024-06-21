@@ -440,7 +440,7 @@ subscription:
 sms:
   notification:
     queue:
-      name: wcf-staging-notification
+      name: wcf-preprod-notification
       delayInSecond: 0
 
 ####### Http Client Props #######

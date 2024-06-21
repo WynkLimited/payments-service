@@ -8,7 +8,6 @@ import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.ApsPaymentRefundRequest;
 import in.wynk.payment.dto.ApsPaymentRefundResponse;
 import in.wynk.payment.dto.BaseTDRResponse;
-import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
 import in.wynk.payment.dto.common.AbstractPaymentInstrumentsProxy;
 import in.wynk.payment.dto.common.response.AbstractPaymentAccountDeletionResponse;
@@ -26,6 +25,7 @@ import in.wynk.payment.gateway.aps.service.*;
 import in.wynk.payment.service.*;
 import in.wynk.payment.utils.RecurringTransactionUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -35,9 +35,10 @@ import org.springframework.web.client.RestTemplate;
 import java.util.Map;
 
 import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
+import static in.wynk.payment.core.constant.BeanConstant.AIRTEL_PAY_STACK;
 
 @Slf4j
-@Service(ApsConstant.AIRTEL_PAY_STACK)
+@Service(AIRTEL_PAY_STACK)
 public class ApsGateway implements
         IExternalPaymentEligibilityService,
         IPaymentRenewal<PaymentRenewalChargingRequest>,
@@ -51,46 +52,60 @@ public class ApsGateway implements
         IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest>,
         ICancellingRecurringService, IMerchantTDRService {
 
-    private final IExternalPaymentEligibilityService eligibilityGateway;
-    private final IPaymentRenewal<PaymentRenewalChargingRequest> renewalGateway;
-    private final ICancellingRecurringService mandateCancellationGateway;
-    private final IPaymentRefund<ApsPaymentRefundResponse, ApsPaymentRefundRequest> refundGateway;
-    private final IPaymentInstrumentsProxy<PaymentOptionsEligibilityRequest> payOptionsGateway;
-    private final IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> callbackGateway;
-    private final IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> statusGateway;
-    private final IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest> chargeGateway;
-    private final IPaymentAccountVerification<AbstractVerificationResponse, AbstractVerificationRequest> verificationGateway;
-    private final IPaymentSettlement<DefaultPaymentSettlementResponse, ApsGatewaySettlementRequest> settlementGateway;
-    private final IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest> deleteGateway;
-    private final IMerchantTDRService iMerchantTDRService;
+    protected final IExternalPaymentEligibilityService eligibilityGateway;
+    protected final IPaymentRenewal<PaymentRenewalChargingRequest> renewalGateway;
+    protected final ICancellingRecurringService mandateCancellationGateway;
+    protected final IPaymentRefund<ApsPaymentRefundResponse, ApsPaymentRefundRequest> refundGateway;
+    protected final IPaymentInstrumentsProxy<PaymentOptionsEligibilityRequest> payOptionsGateway;
+    protected final IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> callbackGateway;
+    protected final IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> statusGateway;
+    protected final IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest> chargeGateway;
+    protected final IPaymentAccountVerification<AbstractVerificationResponse, AbstractVerificationRequest> verificationGateway;
+    protected final IPaymentSettlement<DefaultPaymentSettlementResponse, ApsGatewaySettlementRequest> settlementGateway;
+    protected final IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest> deleteGateway;
+    protected final IMerchantTDRService iMerchantTDRService;
 
-    public ApsGateway(@Value("${payment.merchant.aps.salt}") String salt,
-                      @Value("${payment.merchant.aps.secret}") String secret,
-                      @Value("${aps.payment.renewal.api}") String siPaymentApi,
-                      @Value("${aps.payment.option.api}") String payOptionEndpoint,
-                      @Value("${aps.payment.delete.vpa}") String deleteVpaEndpoint,
-                      @Value("${aps.payment.init.refund.api}") String refundEndpoint,
-                      @Value("${aps.payment.delete.card}") String deleteCardEndpoint,
-                      @Value("${aps.payment.verify.vpa.api}") String vpaVerifyEndpoint,
-                      @Value("${aps.payment.verify.bin.api}") String binVerifyEndpoint,
-                      @Value("${aps.payment.init.charge.api}") String chargeEndpoint,
-                      @Value("${aps.payment.init.charge.paydigi.api}") String payDigiChargeEndpoint,
-                      @Value("${aps.payment.init.charge.upi.api}") String upiChargeEndpoint,
-                      @Value("${aps.payment.init.charge.upi.paydigi.api}") String upiPayDigiChargeEndpoint,
-                      @Value("${aps.payment.init.settlement.api}") String settlementEndpoint,
-                      @Value("${aps.payment.cancel.mandate.api}") String cancelMandateEndpoint,
-                      @Value("${aps.payment.tdr.api}") String tdrEndPoint,
-                      Gson gson,
-                      ObjectMapper mapper,
-                      ApsCommonGatewayService commonGateway,
-                      PaymentCachingService paymentCachingService,
-                      PaymentMethodCachingService paymentMethodCachingService,
-                      ApplicationEventPublisher eventPublisher,
-                      ITransactionManagerService transactionManager,
-                      IMerchantTransactionService merchantTransactionService,
-                      IRecurringPaymentManagerService recurringPaymentManagerService,
-                      RecurringTransactionUtils recurringTransactionUtils,
-                      @Qualifier("apsHttpTemplate") RestTemplate httpTemplate) {
+    @Value("${payment.merchant.aps.salt}") String salt;
+    @Value("${payment.merchant.aps.secret}") String secret;
+    @Value("${aps.payment.renewal.api}") String siPaymentApi;
+    @Value("${aps.payment.option.api}") String payOptionEndpoint;
+    @Value("${aps.payment.delete.vpa}") String deleteVpaEndpoint;
+    @Value("${aps.payment.init.refund.api}") String refundEndpoint;
+    @Value("${aps.payment.delete.card}") String deleteCardEndpoint;
+    @Value("${aps.payment.verify.vpa.api}") String vpaVerifyEndpoint;
+    @Value("${aps.payment.verify.bin.api}") String binVerifyEndpoint;
+    @Value("${aps.payment.init.charge.api}") String chargeEndpoint;
+    @Value("${aps.payment.init.charge.paydigi.api}") String payDigiChargeEndpoint;
+    @Value("${aps.payment.init.charge.upi.api}") String upiChargeEndpoint;
+    @Value("${aps.payment.init.charge.upi.paydigi.api}") String upiPayDigiChargeEndpoint;
+    @Value("${aps.payment.init.settlement.api}") String settlementEndpoint;
+    @Value("${aps.payment.cancel.mandate.api}") String cancelMandateEndpoint;
+    @Value("${aps.payment.tdr.api}") String tdrEndPoint;
+
+    @Qualifier("apsHttpTemplate") RestTemplate httpTemplate;
+
+    @Autowired
+    protected Gson gson;
+    @Autowired
+    protected ObjectMapper mapper;
+    @Autowired
+    protected ApsCommonGatewayService commonGateway;
+    @Autowired
+    protected PaymentCachingService paymentCachingService;
+    @Autowired
+    protected PaymentMethodCachingService paymentMethodCachingService;
+    @Autowired
+    protected ApplicationEventPublisher eventPublisher;
+    @Autowired
+    protected ITransactionManagerService transactionManager;
+    @Autowired
+    protected IMerchantTransactionService merchantTransactionService;
+    @Autowired
+    protected IRecurringPaymentManagerService recurringPaymentManagerService;
+    @Autowired
+    protected RecurringTransactionUtils recurringTransactionUtils;
+
+    public ApsGateway() {
         this.eligibilityGateway = new ApsEligibilityGatewayServiceImpl();
         this.statusGateway = new ApsStatusGatewayServiceImpl(commonGateway);
         this.payOptionsGateway = new ApsPaymentOptionsServiceImpl(payOptionEndpoint, commonGateway);

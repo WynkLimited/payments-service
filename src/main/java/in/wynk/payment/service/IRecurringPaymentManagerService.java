@@ -7,6 +7,7 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.request.AbstractTransactionRevisionRequest;
 
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -23,7 +24,7 @@ public interface IRecurringPaymentManagerService {
 
     void unScheduleRecurringPayment (String clientAlias, String transactionId, PaymentEvent paymentEvent);
 
-    void unScheduleRecurringPayment (String transactionId, PaymentEvent paymentEvent, long validUntil, long deferredUntil);
+    void unScheduleRecurringPayment (Transaction transaction, PaymentEvent paymentEvent, long validUntil, long deferredUntil);
 
     void upsert (PaymentRenewal paymentRenewal);
 
@@ -32,4 +33,6 @@ public interface IRecurringPaymentManagerService {
     void scheduleAtbTask (Transaction transaction, Calendar nextRecurringDateTime);
 
     PaymentRenewal getLatestRecurringPaymentByInitialTxnId (String txnId);
+
+    void updateRenewalSchedule (String clientAlias, String transactionId, Calendar day, Date hour);
 }

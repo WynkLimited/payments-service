@@ -10,7 +10,6 @@ import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PaymentRefundInitMessage;
 import in.wynk.payment.dto.PaymentRefundInitRequest;
-import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.response.AbstractPaymentRefundResponse;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentGatewayManager;
@@ -24,6 +23,8 @@ import java.util.EnumSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import static in.wynk.payment.core.constant.BeanConstant.AIRTEL_PAY_STACK;
 
 @Slf4j
 public class PaymentRefundConsumerPollingQueue extends AbstractSQSMessageConsumerPollingQueue<PaymentRefundInitMessage> {
@@ -80,7 +81,7 @@ public class PaymentRefundConsumerPollingQueue extends AbstractSQSMessageConsume
         AnalyticService.update(message);
         Transaction transaction = transactionManagerService.get(message.getOriginalTransactionId());
 
-        if (ApsConstant.AIRTEL_PAY_STACK.equalsIgnoreCase(transaction.getPaymentChannel().getCode())) {
+        if (AIRTEL_PAY_STACK.equalsIgnoreCase(transaction.getPaymentChannel().getCode())) {
             if (!EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION, PaymentEvent.MANDATE).contains(transaction.getType())) {
                 AbstractPaymentRefundResponse response =
                         paymentGatewayManager.doRefund(PaymentRefundInitRequest.builder().originalTransactionId(message.getOriginalTransactionId()).reason(message.getReason()).build());

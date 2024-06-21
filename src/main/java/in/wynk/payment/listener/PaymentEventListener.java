@@ -77,7 +77,6 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static in.wynk.common.constant.BaseConstants.*;
-import static in.wynk.exception.WynkErrorType.UT025;
 import static in.wynk.exception.WynkErrorType.UT999;
 import static in.wynk.payment.core.constant.PaymentConstants.AIRTEL_TV;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_CODE;
@@ -122,6 +121,8 @@ public class PaymentEventListener {
     private String waPayStateRespEventTopic;
     @Value("${wynk.multi.kafka.templates.item.topic}")
     private String itemTopic;
+    @Value("${payment.cancelMandate.unsupported}")
+    private List<String> cancelMandatePG;
 
     public PaymentEventListener (TaxUtils taxUtils, ObjectMapper mapper, RetryRegistry retryRegistry, PaymentManager paymentManager,
                                  PaymentGatewayManager paymentGatewayManager, ITaskScheduler<TaskDefinition<?>> taskScheduler,
@@ -202,20 +203,20 @@ public class PaymentEventListener {
     @AnalyseTransaction(name = "recurringPaymentEvent")
     public void onRecurringPaymentEvent (RecurringPaymentEvent event) {
         AnalyticService.update(event);
-        cancelMandateFromPG(event);
+        Transaction transaction = event.getTransaction();
+        if ((!cancelMandatePG.contains(transaction.getPaymentChannel().getId())) && (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.UNSUBSCRIBE) &&
+                event.getPaymentEvent() == PaymentEvent.UNSUBSCRIBE) {
+            cancelMandateFromPG(transaction.getPaymentChannel().getId(), transaction.getPaymentChannel().getCode(), transaction.getIdStr(), event.getClientAlias());
+        }
     }
 
-    @ClientAware(clientAlias = "#event.clientAlias")
+    @ClientAware(clientAlias = "#clientAlias")
     @AnalyseTransaction(name = "cancelMandateFromPGEvent")
-    private void cancelMandateFromPG (RecurringPaymentEvent event) {
+    private void cancelMandateFromPG (String paymentCode, String paymentMethod, String txnId, String clientAlias) {
         try {
-            Transaction transaction = transactionManagerService.get(event.getTransactionId());
-            AnalyticService.update("paymentCode", transaction.getPaymentChannel().getId());
-            if ((transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.UNSUBSCRIBE) && event.getPaymentEvent() == PaymentEvent.UNSUBSCRIBE) {
-                BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), ICancellingRecurringService.class)
-                        .cancelRecurring(event.getTransactionId());
-                AnalyticService.update("isMandateCancelled", true);
-            }
+            AnalyticService.update("paymentCode", paymentCode);
+            AnalyticService.update("txnId", txnId);
+            BeanLocatorFactory.getBean(paymentMethod, ICancellingRecurringService.class).cancelRecurring(txnId);
         } catch (Exception e) {
             AnalyticService.update("isMandateCancelled", false);
             log.error(PaymentLoggingMarker.MANDATE_REVOKE_ERROR, e.getMessage(), e);
@@ -494,7 +495,7 @@ public class PaymentEventListener {
             }
             final String tinyUrl = quickPayLinkGenerator.generate(event.getTransactionId(), event.getClientAlias(), event.getSid(), event.getAppDetails(), event.getProductDetails());
             AnalyticService.update(WINBACK_NOTIFICATION_URL, tinyUrl);
-            sendNotificationToUser(event.getProductDetails(), tinyUrl, event.getMsisdn(), lastTransaction.getStatus());
+            sendNotificationToUser(event.getProductDetails(), tinyUrl, event.getMsisdn(), lastTransaction);
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.PAYMENT_DROP_OUT_NOTIFICATION_FAILURE, "Unable to trigger the drop out notification due to {}", e.getMessage(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY047, e);
@@ -510,7 +511,7 @@ public class PaymentEventListener {
             final String tinyUrl = quickPayLinkGenerator.generate(event.getTransaction().getIdStr(), event.getClientAlias(), event.getPurchaseDetails().getAppDetails(),
                     event.getPurchaseDetails().getProductDetails());
             AnalyticService.update(WINBACK_NOTIFICATION_URL, tinyUrl);
-            sendNotificationToUser(event.getPurchaseDetails().getProductDetails(), tinyUrl, event.getTransaction().getMsisdn(), event.getTransaction().getStatus());
+            sendNotificationToUser(event.getPurchaseDetails().getProductDetails(), tinyUrl, event.getTransaction().getMsisdn(), event.getTransaction());
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.PAYMENT_AUTO_REFUND_NOTIFICATION_FAILURE, "Unable to trigger the payment auto refund notification due to {}", e.getMessage(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY048, e);
@@ -560,11 +561,16 @@ public class PaymentEventListener {
         AnalyticService.update(event);
     }
 
-    private void sendNotificationToUser (IProductDetails productDetails, String tinyUrl, String msisdn, TransactionStatus txnStatus) {
+    private void sendNotificationToUser (IProductDetails productDetails, String tinyUrl, String msisdn, Transaction transaction) {
         final PlanDTO plan = cachingService.getPlan(productDetails.getId());
         final String service = productDetails.getType().equalsIgnoreCase(PLAN) ? plan.getService() : cachingService.getItem(productDetails.getId()).getService();
         final WynkService wynkService = WynkServiceUtils.fromServiceId(service);
-        final Message message = wynkService.getMessages().get(PaymentConstants.USER_WINBACK).get(txnStatus.getValue());
+        final TransactionStatus txnStatus= transaction.getStatus();
+        final Message message = Optional.ofNullable(wynkService.getMessages().get(USER_WINBACK))
+                .map(userwinback -> userwinback.getOrDefault(transaction.getPaymentChannel().getCode().toUpperCase(), userwinback.get("DEFAULT")))
+                .map(config -> config.get(txnStatus.getValue()))
+                .orElse(null);
+
         if ((Objects.nonNull(message)) && message.isEnabled()) {
             Map<String, Object> contextMap = new HashMap<String, Object>() {{
                 put(PLAN, plan);

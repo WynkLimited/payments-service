@@ -4,6 +4,8 @@ import static in.wynk.payment.core.constant.BeanConstant.SUBSCRIPTION_SERVICE_S2
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY105;
 
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.cache.aspect.advice.CachePut;
+import in.wynk.cache.constant.BeanConstant;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.context.WynkApplicationContext;
 import in.wynk.common.dto.WynkResponse;
@@ -460,15 +462,23 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         return !StringUtils.isEmpty(pg) && validity != -1;
     }
 
+    @CachePut(cacheName = "additiveDays", cacheKey = "#msisdn + ':' + #planId", l2CacheTtl = 3600, cacheManager = BeanConstant.L2CACHE_MANAGER)
     @Override
+    public int cacheAdditiveDays(String msisdn, String planId) {
+        try {
+            ThanksPlanResponse thanksPlanResponse = getThanksPlanForAdditiveDays(msisdn);
+            AnalyticService.update("ActiveThanksPlan", thanksPlanResponse.toString());
+            return thanksPlanResponse.getData().getDaysTillExpiry();
+        } catch (Exception e) {
+            log.error("Error in subscriptionServiceManager.getThanksPlanForAdditiveDays", e);
+        }
+        return 0;
+    }
+
     public ThanksPlanResponse getThanksPlanForAdditiveDays(String msisdn) {
         String endpoint = thanksPlanEndPoint + "?msisdn=" + msisdn;
-        RequestEntity<Void> requestEntity =
-            ChecksumUtils.buildEntityWithAuthHeaders(endpoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
-        ResponseEntity<WynkResponse.WynkResponseWrapper<ThanksPlanResponse>> response =
-            restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<ThanksPlanResponse>>() {
-            });
-
-        return response.getBody().getData();
+        RequestEntity<Void> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(endpoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
+        ResponseEntity<ThanksPlanResponse> response = restTemplate.exchange(requestEntity, new ParameterizedTypeReference<ThanksPlanResponse>(){});
+        return response.getBody();
     }
 }

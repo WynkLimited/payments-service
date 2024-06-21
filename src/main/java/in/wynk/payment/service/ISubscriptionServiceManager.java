@@ -65,5 +65,5 @@ public interface ISubscriptionServiceManager {
 
     BestValuePlanResponse getBestValuePlan (BestValuePlanPurchaseRequest request, Map<String, String> requestParam);
 
-    ThanksPlanResponse getThanksPlanForAdditiveDays(String msisdn);
+    int cacheAdditiveDays(String msisdn, String planId);
 }

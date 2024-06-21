@@ -37,7 +37,6 @@ import in.wynk.payment.gateway.aps.service.*;
 import in.wynk.payment.service.IExternalPaymentEligibilityService;
 import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
-import in.wynk.subscription.common.dto.ThanksPlanResponse;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -100,7 +99,7 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
     @Override
     public AbstractPaymentChargingResponse charge(AbstractPaymentChargingRequest request) {
         Executor executor = Executors.newSingleThreadExecutor();
-        executor.execute(() -> cacheAdditiveDays(request.getUserDetails().getMsisdn(), request.getProductDetails().getId()));
+        executor.execute(() -> subscriptionServiceManager.cacheAdditiveDays(request.getUserDetails().getMsisdn(), request.getProductDetails().getId()));
 
         RechargeOrderResponse orderResponse = (RechargeOrderResponse) orderGateway.order(RechargeOrderRequest.builder().build());
         request.setOrderId(orderResponse.getOrderId());
@@ -111,17 +110,6 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
         AbstractPaymentChargingResponse chargeResponse = chargingService.charge(request);
         publishMerchantTransactionEvent(orderResponse);
         return chargeResponse;
-    }
-
-    @CachePut(cacheName = "additiveDays", cacheKey = "#msisdn + ':' + #planId", l2CacheTtl = 3600, cacheManager = BeanConstant.L2CACHE_MANAGER)
-    public int cacheAdditiveDays(String msisdn, String planId) {
-        try {
-            ThanksPlanResponse thanksPlanResponse = subscriptionServiceManager.getThanksPlanForAdditiveDays(msisdn);
-            return thanksPlanResponse.getData().getDaysTillExpiry();
-        } catch (Exception e) {
-            log.error("Error in subscriptionServiceManager.getThanksPlanForAdditiveDays", e);
-        }
-        return 0;
     }
 
     private void publishMerchantTransactionEvent(RechargeOrderResponse orderResponse) {

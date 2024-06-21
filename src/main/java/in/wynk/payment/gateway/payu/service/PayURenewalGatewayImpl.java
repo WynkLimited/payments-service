@@ -6,6 +6,7 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.constant.CardConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
@@ -32,6 +33,7 @@ import org.springframework.web.client.RestClientException;
 
 import java.net.SocketTimeoutException;
 import java.util.LinkedHashMap;
+import java.util.Objects;
 import java.util.Optional;
 
 import static in.wynk.common.constant.BaseConstants.ONE_DAY_IN_MILLI;
@@ -75,14 +77,15 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
         PayUVerificationResponse<PayUChargingTransactionDetails> currentStatus =
                 (merchantTransaction == null) ? payUCommonGateway.syncChargingTransactionFromSource(transactionManager.get(txnId), Optional.empty()) : null;
         try {
-            PayURenewalResponse payURenewalResponse = (merchantTransaction == null) ? objectMapper.convertValue(currentStatus, PayURenewalResponse.class) :
+            PayURenewalResponse oldPayURenewalResponse = (merchantTransaction == null) ? objectMapper.convertValue(currentStatus, PayURenewalResponse.class) :
                     objectMapper.convertValue(merchantTransaction.getResponse(), PayURenewalResponse.class);
-            PayUChargingTransactionDetails payUChargingTransactionDetails = payURenewalResponse.getTransactionDetails().get(txnId);
-
-            if (payUCommonGateway.validateMandateStatus(transaction, transaction.getIdStr(), payUChargingTransactionDetails, true)) {
-                String externalTransactionId = (merchantTransaction != null) ? merchantTransaction.getExternalTransactionId() : currentStatus.getTransactionDetails(txnId).getPayUExternalTxnId();
-                payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest, externalTransactionId, lastRenewal.getLastSuccessTransactionId());
-                payUChargingTransactionDetails = payURenewalResponse.getTransactionDetails().get(transaction.getIdStr());
+            PayUChargingTransactionDetails oldPayUChargingTransactionDetails = oldPayURenewalResponse.getTransactionDetails().get(txnId);
+            String mode = oldPayUChargingTransactionDetails.getMode();
+            if (payUCommonGateway.validateMandateStatus(transaction, oldPayUChargingTransactionDetails, mode, true)) {
+                String invoiceDisplayNumber = (Objects.nonNull(lastRenewal) && Objects.nonNull(lastRenewal.getLastSuccessTransactionId())) ? lastRenewal.getLastSuccessTransactionId() :
+                        paymentRenewalChargingRequest.getId();
+                PayURenewalResponse payURenewalResponse = doChargingForRenewal(paymentRenewalChargingRequest, oldPayUChargingTransactionDetails, invoiceDisplayNumber);
+                PayUChargingTransactionDetails payUChargingTransactionDetails = payURenewalResponse.getTransactionDetails().get(transaction.getIdStr());
 
                 if (payURenewalResponse.getStatus() == 1) {
                     int retryInterval = planPeriodDTO.getRetryInterval();
@@ -112,7 +115,7 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
                 }
             }
         } catch (WynkRuntimeException e) {
-            if (e.getErrorCode().equals(PaymentErrorType.PAY009.getErrorCode()) || e.getErrorCode().equals(PaymentErrorType.PAY002.getErrorCode())) {
+            if (e.getErrorCode().equals(PaymentErrorType.PAYU009.getErrorCode())) {
                 transaction.setStatus(TransactionStatus.FAILURE.getValue());
             }
             throw e;
@@ -120,15 +123,20 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
     }
 
 
-    private PayURenewalResponse doChargingForRenewal (PaymentRenewalChargingRequest paymentRenewalChargingRequest, String mihpayid, String lastSuccessTxnId) {
+    private PayURenewalResponse doChargingForRenewal (PaymentRenewalChargingRequest paymentRenewalChargingRequest, PayUChargingTransactionDetails oldPayUChargingTransactionDetails,
+                                                      String invoiceDisplayNumber) {
         Transaction transaction = TransactionContext.get();
         LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
         String uid = paymentRenewalChargingRequest.getUid();
         String msisdn = paymentRenewalChargingRequest.getMsisdn();
         double amount = cachingService.getPlan(transaction.getPlanId()).getFinalPrice();
+        String mihpayid = oldPayUChargingTransactionDetails.getPayUExternalTxnId();
+        String mode = oldPayUChargingTransactionDetails.getMode();
         final String email = uid + BASE_USER_EMAIL;
         orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID_SMALL, mihpayid);
-        orderedMap.put(PAYU_INVOICE_DISPLAY_NUMBER, lastSuccessTxnId);
+        if (CardConstants.CREDIT_CARD.equals(mode) || CardConstants.DEBIT_CARD.equals(mode) || CardConstants.SI.equals(mode)) {
+            orderedMap.put(PAYU_INVOICE_DISPLAY_NUMBER, invoiceDisplayNumber);
+        }
         orderedMap.put(PAYU_TRANSACTION_AMOUNT, amount);
         orderedMap.put(PAYU_REQUEST_TRANSACTION_ID, transaction.getIdStr());
         orderedMap.put(PAYU_CUSTOMER_MSISDN, msisdn);
@@ -148,21 +156,21 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
             if (e.getRootCause() != null) {
                 if (e.getRootCause() instanceof SocketTimeoutException || e.getRootCause() instanceof ConnectTimeoutException) {
                     log.error(PAYU_RENEWAL_STATUS_ERROR, "Socket timeout but valid for reconciliation for request : {} due to {}", requestMap, e.getMessage(), e);
-                    errorEventBuilder.code(PaymentErrorType.PAY014.getErrorCode());
-                    errorEventBuilder.description(PaymentErrorType.PAY014.getErrorMessage());
+                    errorEventBuilder.code(PaymentErrorType.PAYU008.getErrorCode());
+                    errorEventBuilder.description(PaymentErrorType.PAYU008.getErrorMessage());
                     eventPublisher.publishEvent(errorEventBuilder.build());
-                    throw new WynkRuntimeException(PaymentErrorType.PAY014);
+                    throw new WynkRuntimeException(PaymentErrorType.PAYU008);
                 } else {
-                    errorEventBuilder.code(PaymentErrorType.PAY009.getErrorCode());
-                    errorEventBuilder.description(PaymentErrorType.PAY009.getErrorMessage());
+                    errorEventBuilder.code(PaymentErrorType.PAYU009.getErrorCode());
+                    errorEventBuilder.description(PaymentErrorType.PAYU009.getErrorMessage());
                     eventPublisher.publishEvent(errorEventBuilder.build());
-                    throw new WynkRuntimeException(PaymentErrorType.PAY009, e);
+                    throw new WynkRuntimeException(PaymentErrorType.PAYU009, e);
                 }
             } else {
-                errorEventBuilder.code(PaymentErrorType.PAY009.getErrorCode());
-                errorEventBuilder.description(PaymentErrorType.PAY009.getErrorMessage());
+                errorEventBuilder.code(PaymentErrorType.PAYU009.getErrorCode());
+                errorEventBuilder.description(PaymentErrorType.PAYU009.getErrorMessage());
                 eventPublisher.publishEvent(errorEventBuilder.build());
-                throw new WynkRuntimeException(PaymentErrorType.PAY009, e);
+                throw new WynkRuntimeException(PaymentErrorType.PAYU009, e);
             }
         }
     }

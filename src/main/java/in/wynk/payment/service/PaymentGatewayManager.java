@@ -18,7 +18,6 @@ import in.wynk.payment.aspect.advice.FraudAware;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -77,7 +76,7 @@ public class PaymentGatewayManager
         IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>,
         IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest>,
         IPaymentCallback<CallbackResponseWrapper<? extends AbstractPaymentCallbackResponse>, CallbackRequestWrapperV2<?>>,
-        ICancellingRecurringService, IMerchantTDRService {
+        ICancellingRecurringService, IMerchantTDRService, IMerchantIapSubscriptionCancellationService {
 
     private final ICouponManager couponManager;
     private final ApplicationEventPublisher eventPublisher;
@@ -343,10 +342,8 @@ public class PaymentGatewayManager
     }
 
     @Override
-    public AbstractPreDebitNotificationResponse notify(PreDebitNotificationMessage message) {
-        log.info(PaymentLoggingMarker.PRE_DEBIT_NOTIFICATION_QUEUE, "processing PreDebitNotificationMessage for transactionId {}", message.getTransactionId());
-        Transaction transaction = transactionManager.get(message.getTransactionId());
-        AbstractPreDebitNotificationResponse preDebitResponse = BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), IPreDebitNotificationService.class).notify(message);
+    public AbstractPreDebitNotificationResponse notify(PreDebitRequest request) {
+        AbstractPreDebitNotificationResponse preDebitResponse = BeanLocatorFactory.getBean(request.getPaymentCode(), IPreDebitNotificationService.class).notify(request);
         AnalyticService.update(ApsConstant.PRE_DEBIT_SI, gson.toJson(preDebitResponse));
         return preDebitResponse;
     }
@@ -363,6 +360,12 @@ public class PaymentGatewayManager
     public BaseTDRResponse getTDR(String transactionId) {
         final Transaction transaction = TransactionContext.get();
         return BeanLocatorFactory.getBeanOrDefault(transaction.getPaymentChannel().getCode(), IMerchantTDRService.class, nope -> BaseTDRResponse.from(-1)).getTDR(transactionId);
+    }
+
+    @Override
+    @TransactionAware(txnId = "#transactionId", lock = false)
+    public void cancelSubscription (String uid, String transactionId) {
+        BeanLocatorFactory.getBean(TransactionContext.get().getPaymentChannel().getCode(), IMerchantIapSubscriptionCancellationService.class).cancelSubscription(uid, transactionId);
     }
 
     private static class ChargingTransactionStatusService implements IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {

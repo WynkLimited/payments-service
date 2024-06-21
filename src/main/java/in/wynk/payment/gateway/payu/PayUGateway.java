@@ -5,7 +5,7 @@ import com.google.gson.Gson;
 import in.wynk.error.codes.core.service.IErrorCodesCacheService;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.BaseTDRResponse;
-import in.wynk.payment.dto.PreDebitNotificationMessage;
+import in.wynk.payment.dto.PreDebitRequest;
 import in.wynk.payment.dto.common.AbstractPreDebitNotificationResponse;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
@@ -78,7 +78,7 @@ public class PayUGateway extends PayUMerchantPaymentService implements
         this.chargeGateway = new PayUChargingGatewayImpl(commonGateway, cache, paymentApi);
         this.renewalGateway = new PayURenewalGatewayImpl(commonGateway, gson, mapper, payCache, eventPublisher, transactionManagerService, recurringPaymentManagerService, recurringTransactionUtils);
         this.iMerchantTDRService = new PayUTdrGatewayServiceImpl(payuInfoApi, commonGateway, merchantTransactionService);
-        this.preDebitGatewayService = new PayUPreDebitGatewayServiceImpl(gson, mapper, payCache, commonGateway, transactionManagerService, recurringPaymentManagerService);
+        this.preDebitGatewayService = new PayUPreDebitGatewayServiceImpl(gson,mapper, payCache, commonGateway, recurringPaymentManagerService, recurringTransactionUtils);
     }
 
     @Override
@@ -122,7 +122,7 @@ public class PayUGateway extends PayUMerchantPaymentService implements
     }
 
     @Override
-    public AbstractPreDebitNotificationResponse notify (PreDebitNotificationMessage request) {
+    public AbstractPreDebitNotificationResponse notify (PreDebitRequest request) {
         return preDebitGatewayService.notify(request);
     }
 }

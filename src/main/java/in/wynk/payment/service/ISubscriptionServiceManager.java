@@ -21,13 +21,13 @@ public interface ISubscriptionServiceManager {
         if (SubscribePlanSyncRequest.class.isAssignableFrom(request.getClass())) {
             subscribePlanSync((SubscribePlanSyncRequest) request);
         } else {
-            subscribePlanAsync((SubscribePlanAsyncRequest) request);
+            validateAndSubscribePlanAsync((SubscribePlanAsyncRequest) request);
         }
     }
 
     ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> renewalPlanEligibilityResponse (int planId, String uid);
 
-    boolean isDeferred (String paymentMethod, long furtherDefer);
+    boolean isDeferred (String paymentMethod, long furtherDefer, boolean isPreDebitFlow);
 
     default void unSubscribePlan (AbstractUnSubscribePlanRequest request) {
         if (UnSubscribePlanSyncRequest.class.isAssignableFrom(request.getClass())) {
@@ -41,7 +41,7 @@ public interface ISubscriptionServiceManager {
 
     void subscribePlanSync (SubscribePlanSyncRequest request);
 
-    void subscribePlanAsync (SubscribePlanAsyncRequest request);
+    void validateAndSubscribePlanAsync(SubscribePlanAsyncRequest request);
 
     void unSubscribePlanSync (UnSubscribePlanSyncRequest request);
 
@@ -64,4 +64,6 @@ public interface ISubscriptionServiceManager {
     Integer getUpdatedPlanId (Integer planId, PaymentEvent paymentEvent);
 
     BestValuePlanResponse getBestValuePlan (BestValuePlanPurchaseRequest request, Map<String, String> requestParam);
+
+    ThanksPlanResponse getThanksPlanForAdditiveDays(String msisdn);
 }

@@ -5,29 +5,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
-import in.wynk.common.dto.WynkResponse;
-import in.wynk.common.enums.PaymentEvent;
-import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.dto.PaymentRenewalMessage;
-import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.payment.utils.RecurringTransactionUtils;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
 import in.wynk.queue.service.ISqsManagerService;
-import in.wynk.subscription.common.dto.RenewalPlanEligibilityResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -42,6 +34,7 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
     private final ITransactionManagerService transactionManager;
     private final ISubscriptionServiceManager subscriptionServiceManager;
     private final IRecurringPaymentManagerService recurringPaymentManagerService;
+    private RecurringTransactionUtils recurringTransactionUtils;
     private PaymentCachingService cachingService;
     @Value("${payment.pooling.queue.renewal.enabled}")
     private boolean renewalPollingEnabled;
@@ -58,7 +51,7 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
                                                ScheduledExecutorService pollingThreadPool,
                                                ISqsManagerService sqsManagerService,
                                                ITransactionManagerService transactionManager, ISubscriptionServiceManager subscriptionServiceManager,
-                                               IRecurringPaymentManagerService recurringPaymentManagerService, PaymentCachingService cachingService) {
+                                               IRecurringPaymentManagerService recurringPaymentManagerService, PaymentCachingService cachingService, RecurringTransactionUtils recurringTransactionUtils) {
         super(queueName, sqs, objectMapper, messagesExtractor, messageHandlerThreadPool);
         this.objectMapper = objectMapper;
         this.pollingThreadPool = pollingThreadPool;
@@ -68,6 +61,7 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
         this.subscriptionServiceManager = subscriptionServiceManager;
         this.recurringPaymentManagerService = recurringPaymentManagerService;
         this.cachingService = cachingService;
+        this.recurringTransactionUtils = recurringTransactionUtils;
     }
 
     @Override
@@ -99,7 +93,7 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
         AnalyticService.update(message);
         log.info(PaymentLoggingMarker.PAYMENT_RENEWAL_QUEUE, "processing PaymentRenewalMessage for transactionId {}", message.getTransactionId());
         Transaction transaction = transactionManager.get(message.getTransactionId());
-        if (isEligibleForRenewal(transaction)) {
+        if (recurringTransactionUtils.isEligibleForRenewal(transaction, false)) {
             sqsManagerService.publishSQSMessage(PaymentRenewalChargingMessage.builder()
                     .uid(transaction.getUid())
                     .id(transaction.getIdStr())
@@ -112,23 +106,7 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
         }
     }
 
-    private boolean isEligibleForRenewal (Transaction transaction) {
-        ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> response =
-                subscriptionServiceManager.renewalPlanEligibilityResponse(transaction.getPlanId(), transaction.getUid());
-        if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {
-            RenewalPlanEligibilityResponse renewalPlanEligibilityResponse = response.getBody().getData();
-            long today = System.currentTimeMillis();
-            long furtherDefer = renewalPlanEligibilityResponse.getDeferredUntil() - today;
-            if (subscriptionServiceManager.isDeferred(transaction.getPaymentChannel().getCode(), furtherDefer)) {
-                if (Objects.equals(transaction.getPaymentChannel().getCode(), ApsConstant.AIRTEL_PAY_STACK)) {
-                    furtherDefer = furtherDefer - ((long) 2 * 24 * 60 * 60 * 1000) + ((long) 60 * 60 * 1000);
-                }
-                recurringPaymentManagerService.unScheduleRecurringPayment(transaction, PaymentEvent.DEFERRED, today, furtherDefer);
-                return false;
-            }
-        }
-        return true;
-    }
+
 
     @Override
     public Class<PaymentRenewalMessage> messageType() {

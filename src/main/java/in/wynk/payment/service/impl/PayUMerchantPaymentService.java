@@ -906,7 +906,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         } catch (Exception e) {
             log.error(PAYU_TDR_ERROR, e.getMessage());
         }
-        return BaseTDRResponse.from(-2);
+        return null;
     }
 
     private class DelegatePayUCallbackHandler implements IMerchantPaymentCallbackService<AbstractCallbackResponse, PayUCallbackRequestPayload> {

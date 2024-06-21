@@ -3,8 +3,6 @@ package in.wynk.payment.gateway.aps;
 import static in.wynk.payment.dto.aps.common.ApsConstant.AIRTEL_PAY_STACK;
 import static in.wynk.payment.dto.aps.common.ApsConstant.AIRTEL_PAY_STACK_V2;
 
-import in.wynk.cache.aspect.advice.CachePut;
-import in.wynk.cache.constant.BeanConstant;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -47,11 +45,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
-import java.util.Map;
-
-import static in.wynk.payment.dto.aps.common.ApsConstant.AIRTEL_PAY_STACK;
-import static in.wynk.payment.dto.aps.common.ApsConstant.AIRTEL_PAY_STACK_V2;
 
 /**
  * @author Nishesh Pandey

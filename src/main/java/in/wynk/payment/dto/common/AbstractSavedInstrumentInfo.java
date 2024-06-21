@@ -1,7 +1,10 @@
 package in.wynk.payment.dto.common;
 
 import lombok.Getter;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
+
+import java.util.Map;
 
 @Getter
 @SuperBuilder
@@ -21,4 +24,6 @@ public abstract class AbstractSavedInstrumentInfo {
     private boolean recommended;
     private boolean autoPayEnabled;
     private boolean expressCheckout;
+    @Setter
+    private Map<String, String> eligibleAliasToIds;
 }

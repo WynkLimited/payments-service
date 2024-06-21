@@ -2,6 +2,7 @@ package in.wynk.payment.controller;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.IPresentation;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.dto.WynkResponse;
@@ -154,6 +155,16 @@ public class RevenuePaymentS2SController {
         request.setOriginalSid();
         AnalyticService.update(ORIGINAL_SID, request.getSessionDetails().getSessionId());
         return getResponseEntity(StringUtils.isNotBlank(request.getSessionDetails().getSessionId()) ? request : dummySessionGenerator.initSession(request));
+    }
+
+    @PostMapping("/v3/cancel/subscription/{uid}/{transactionId}")
+    @AnalyseTransaction(name = "iapSubscriptionCancellation")
+    @PreAuthorize(PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"RECEIPT_VERIFICATION_WRITE\")")
+    @ApiOperation("Cancels the subscription for IAP")
+    public void cancelSubscription (@PathVariable String uid, @PathVariable String transactionId) {
+        AnalyticService.update(BaseConstants.UID, uid);
+        AnalyticService.update(BaseConstants.TRANSACTION_ID_FULL, transactionId);
+        manager.cancelSubscription(uid, transactionId);
     }
 
     @ManageSession(sessionId = "#request.sid")

@@ -225,7 +225,8 @@ public class PaymentManager
             if (finalStatus == TransactionStatus.SUCCESS) {
                 //unsubscribe existing transaction plan id/transaction id
                 ItunesReceiptDetails receiptDetails = (ItunesReceiptDetails) mapping.getMessage();
-                eventPublisher.publishEvent(RecurringPaymentEvent.builder().transactionId(receiptDetails.getPaymentTransactionId()).paymentEvent(PaymentEvent.UNSUBSCRIBE).build());
+                Transaction  receiptTransaction = transactionManager.get(receiptDetails.getPaymentTransactionId());
+                eventPublisher.publishEvent(RecurringPaymentEvent.builder().transaction(receiptTransaction).paymentEvent(PaymentEvent.UNSUBSCRIBE).build());
             }
         }
     }
@@ -424,7 +425,8 @@ public class PaymentManager
             transactionManager.revision(AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus)
                     .attemptSequence(request.getAttemptSequence()).originalTransactionId(request.getId()).lastSuccessTransactionId(transaction.getIdStr()).build());
             if (PaymentConstants.IAP_PAYMENT_METHODS.contains(transaction.getPaymentChannel().getId())) {
-                eventPublisher.publishEvent(RecurringPaymentEvent.builder().transactionId(request.getId()).paymentEvent(PaymentEvent.UNSUBSCRIBE).build());
+                Transaction oldTransaction = transactionManager.get(request.getId());
+                eventPublisher.publishEvent(RecurringPaymentEvent.builder().transaction(oldTransaction).paymentEvent(PaymentEvent.UNSUBSCRIBE).build());
             }
         }
     }

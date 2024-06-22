@@ -20,7 +20,6 @@ public class GooglePlayReceiptDetails extends ReceiptDetails {
     private String packageName;
     @Field("sku_id")
     private String skuId;
-    private String service;
     @Field("notification_type")
     private Integer notificationType;
     private boolean renew;

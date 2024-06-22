@@ -4,6 +4,8 @@ import static in.wynk.payment.core.constant.BeanConstant.SUBSCRIPTION_SERVICE_S2
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY105;
 
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.cache.aspect.advice.CachePut;
+import in.wynk.cache.constant.BeanConstant;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.context.WynkApplicationContext;
 import in.wynk.common.dto.WynkResponse;
@@ -41,6 +43,7 @@ import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.ProductDTO;
 import in.wynk.subscription.common.dto.RenewalPlanEligibilityRequest;
 import in.wynk.subscription.common.dto.RenewalPlanEligibilityResponse;
+import in.wynk.subscription.common.dto.ThanksPlanResponse;
 import in.wynk.subscription.common.enums.ProvisionState;
 import in.wynk.subscription.common.message.SubscriptionProvisioningMessage;
 import in.wynk.subscription.common.request.PlanProvisioningRequest;
@@ -122,6 +125,9 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
     @Value("${service.subscription.api.endpoint.bestValue}")
     private String subscriptionBestValueEndpoint;
+
+    @Value("${service.subscription.api.endpoint.thanksPlan}")
+    private String thanksPlanEndPoint;
 
     @Autowired
     @Qualifier(SUBSCRIPTION_SERVICE_S2S_TEMPLATE)
@@ -349,6 +355,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     }
 
     private void additiveDaysSubscribe(AbstractSubscribePlanRequest request) {
+        AnalyticService.update("AdditiveValidity", request.toString());
         try {
             if (ApsConstant.APS_V2.equalsIgnoreCase(request.getPaymentGateway().getId())) {
                 PlanProvisioningRequest planProvisioningRequest = SinglePlanProvisionRequest.builder()
@@ -364,6 +371,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
                                                                                             .triggerDataRequest(request.getTriggerDataRequest())
                                                                                             .build();
                 RequestEntity<PlanProvisioningRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(subscribePlanAdditiveEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), planProvisioningRequest, HttpMethod.POST);
+                AnalyticService.update("AdditiveValidity", requestEntity.toString());
                 restTemplate.exchange(requestEntity,
                                       new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<PlanProvisioningResponse>>() {
                                       });
@@ -452,5 +460,25 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         String pg = additionalParam.get(BaseConstants.DEEPLINK_PACK_GROUP);
         int validity = Validity.getValidity(additionalParam.get(BaseConstants.VALIDITY));
         return !StringUtils.isEmpty(pg) && validity != -1;
+    }
+
+    @CachePut(cacheName = "additiveDays", cacheKey = "#msisdn + ':' + #planId", l2CacheTtl = 3600, cacheManager = BeanConstant.L2CACHE_MANAGER)
+    @Override
+    public int cacheAdditiveDays(String msisdn, String planId) {
+        try {
+            ThanksPlanResponse thanksPlanResponse = getThanksPlanForAdditiveDays(msisdn);
+            AnalyticService.update("ActiveThanksPlan", thanksPlanResponse.toString());
+            return thanksPlanResponse.getData().getDaysTillExpiry();
+        } catch (Exception e) {
+            log.error("Error in subscriptionServiceManager.getThanksPlanForAdditiveDays", e);
+        }
+        return 0;
+    }
+
+    public ThanksPlanResponse getThanksPlanForAdditiveDays(String msisdn) {
+        String endpoint = thanksPlanEndPoint + "?msisdn=" + msisdn;
+        RequestEntity<Void> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(endpoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
+        ResponseEntity<ThanksPlanResponse> response = restTemplate.exchange(requestEntity, new ParameterizedTypeReference<ThanksPlanResponse>(){});
+        return response.getBody();
     }
 }

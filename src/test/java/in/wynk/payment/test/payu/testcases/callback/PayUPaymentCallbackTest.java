@@ -71,6 +71,8 @@ public class PayUPaymentCallbackTest {
         Mockito.doNothing().when(recurringPaymentManager).scheduleRecurringPayment(any(SyncTransactionRevisionRequest.class));
         Mockito.doNothing().when(recurringPaymentManager).unScheduleRecurringPayment(eq(PayUDataConstant.RECURRING_TRANSACTION_ID).toString(), Mockito.any(PaymentEvent.class), Mockito.anyLong(), Mockito.anyLong());
         Mockito.doNothing().when(subscriptionManager).validateAndSubscribePlanAsync(any(SubscribePlanAsyncRequest.class));
+        Mockito.doNothing().when(recurringPaymentManager).unScheduleRecurringPayment(transactionManager.get(PayUDataConstant.RECURRING_TRANSACTION_ID.toString()), Mockito.any(PaymentEvent.class), Mockito.anyLong(), Mockito.anyLong());
+        Mockito.doNothing().when(subscriptionManager).validateAndSubscribePlanAsync(any(SubscribePlanAsyncRequest.class));
         Mockito.doNothing().when(subscriptionManager).unSubscribePlanAsync(any(UnSubscribePlanAsyncRequest.class));
 
         Mockito.when(paymentCachingService.getPlan(eq(PayUDataConstant.RECURRING_PLAN_ID))).thenReturn(PayUTestData.getPlanOfType(PayUDataConstant.RECURRING_PLAN_ID, PlanType.SUBSCRIPTION));

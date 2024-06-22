@@ -88,6 +88,7 @@ service:
         selectivePlanComputationV2: ${service.subscription.api.root}/wynk/s2s/v2/plans/selective/eligible
         status: ${service.subscription.api.root}/wynk/s2s/v1/subscription/status/{uid}/{service}
         bestValue: ${service.subscription.api.root}/wynk/s2s/v1/plans/bestValue
+        thanksPlan: ${service.subscription.api.root}/wynk/v1/plan/active/thanks
     webView:
       root: ${webview.host}/#/
 
@@ -238,6 +239,8 @@ payment:
     unsupported: ITUNES, AMAZON_IAP, GOOGLE_IAP, ADD_TO_BILL, APS
   renewal:
     unsupported: ADD_TO_BILL
+  cancelMandate:
+    unsupported: ITUNES, AMAZON_IAP, GOOGLE_IAP
 cors:
   maxAge: 3600
   allowed:

@@ -4,7 +4,9 @@ import static in.wynk.payment.core.constant.BeanConstant.SUBSCRIPTION_SERVICE_S2
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY105;
 
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.cache.aspect.advice.CacheEvict;
 import in.wynk.cache.aspect.advice.CachePut;
+import in.wynk.cache.aspect.advice.Cacheable;
 import in.wynk.cache.constant.BeanConstant;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.context.WynkApplicationContext;
@@ -50,6 +52,7 @@ import in.wynk.subscription.common.request.PlanProvisioningRequest;
 import in.wynk.subscription.common.request.PlanUnProvisioningRequest;
 import in.wynk.subscription.common.request.SelectivePlansComputationRequest;
 import in.wynk.subscription.common.request.SessionRequest;
+import in.wynk.subscription.common.request.SinglePlanAdditiveProvisionRequest;
 import in.wynk.subscription.common.request.SinglePlanProvisionRequest;
 import in.wynk.subscription.common.request.UserPersonalisedPlanRequest;
 import in.wynk.subscription.common.response.AllItemsResponse;
@@ -358,27 +361,53 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         AnalyticService.update("AdditiveValidity", request.toString());
         try {
             if (ApsConstant.APS_V2.equalsIgnoreCase(request.getPaymentGateway().getId())) {
-                PlanProvisioningRequest planProvisioningRequest = SinglePlanProvisionRequest.builder()
-                                                                                            .uid(request.getUid())
-                                                                                            .msisdn(request.getMsisdn())
-                                                                                            .subscriberId(request.getSubscriberId())
-                                                                                            .paymentCode(request.getPaymentGateway().getCode())
-                                                                                            .referenceId(request.getTransactionId())
-                                                                                            .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent()))
-                                                                                            .paymentPartner(BaseConstants.WYNK.toLowerCase())
-                                                                                            .eventType(request.getPaymentEvent())
-                                                                                            .externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired())
-                                                                                            .triggerDataRequest(request.getTriggerDataRequest())
-                                                                                            .build();
+                Integer additiveDays = getAdditiveDays(request.getMsisdn(), request.getPlanId());
+                AnalyticService.update("AdditiveValidity", additiveDays);
+                PlanProvisioningRequest planProvisioningRequest = SinglePlanAdditiveProvisionRequest.builder()
+                                                                                                    .uid(request.getUid())
+                                                                                                    .msisdn(request.getMsisdn())
+                                                                                                    .subscriberId(request.getSubscriberId())
+                                                                                                    .paymentCode(request.getPaymentGateway().getCode())
+                                                                                                    .referenceId(request.getTransactionId())
+                                                                                                    .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent()))
+                                                                                                    .paymentPartner(BaseConstants.WYNK.toLowerCase())
+                                                                                                    .eventType(request.getPaymentEvent())
+                                                                                                    .externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired())
+                                                                                                    .triggerDataRequest(request.getTriggerDataRequest())
+                                                                                                    .validityInDays(additiveDays)
+                                                                                                    .build();
                 RequestEntity<PlanProvisioningRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(subscribePlanAdditiveEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), planProvisioningRequest, HttpMethod.POST);
                 AnalyticService.update("AdditiveValidity", requestEntity.toString());
                 restTemplate.exchange(requestEntity,
                                       new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<PlanProvisioningResponse>>() {
                                       });
+                removeFromCache(request.getMsisdn(), request.getPlanId());
             }
         } catch (Exception e) {
             log.error("Error in Subscribe Plan Additive request", e);
         }
+    }
+
+    @CachePut(cacheName = "additiveDays", cacheKey = "#msisdn + ':' + #planId", l2CacheTtl = 3600, cacheManager = BeanConstant.L2CACHE_MANAGER)
+    @Override
+    public int cacheAdditiveDays(String msisdn, String planId) {
+        try {
+            ThanksPlanResponse thanksPlanResponse = getThanksPlanForAdditiveDays(msisdn);
+            AnalyticService.update("ActiveThanksPlan", thanksPlanResponse.toString());
+            return thanksPlanResponse.getData().getDaysTillExpiry();
+        } catch (Exception e) {
+            log.error("Error in subscriptionServiceManager.getThanksPlanForAdditiveDays", e);
+        }
+        return 0;
+    }
+
+    @Cacheable(cacheName = "additiveDays", cacheKey = "#msisdn + ':' + #planId", l2CacheTtl = 3600, cacheManager = BeanConstant.L2CACHE_MANAGER)
+    public Integer getAdditiveDays(String msisdn, Integer planId) {
+        return null;
+    }
+
+    @CacheEvict(cacheName = "additiveDays", cacheKey = "#msisdn + ':' + #planId", cacheManager = BeanConstant.L2CACHE_MANAGER)
+    public void removeFromCache(String msisdn, Integer planId) {
     }
 
     @Override
@@ -460,19 +489,6 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         String pg = additionalParam.get(BaseConstants.DEEPLINK_PACK_GROUP);
         int validity = Validity.getValidity(additionalParam.get(BaseConstants.VALIDITY));
         return !StringUtils.isEmpty(pg) && validity != -1;
-    }
-
-    @CachePut(cacheName = "additiveDays", cacheKey = "#msisdn + ':' + #planId", l2CacheTtl = 3600, cacheManager = BeanConstant.L2CACHE_MANAGER)
-    @Override
-    public int cacheAdditiveDays(String msisdn, String planId) {
-        try {
-            ThanksPlanResponse thanksPlanResponse = getThanksPlanForAdditiveDays(msisdn);
-            AnalyticService.update("ActiveThanksPlan", thanksPlanResponse.toString());
-            return thanksPlanResponse.getData().getDaysTillExpiry();
-        } catch (Exception e) {
-            log.error("Error in subscriptionServiceManager.getThanksPlanForAdditiveDays", e);
-        }
-        return 0;
     }
 
     public ThanksPlanResponse getThanksPlanForAdditiveDays(String msisdn) {

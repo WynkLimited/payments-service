@@ -54,6 +54,7 @@ import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
 import in.wynk.payment.dto.response.gpbs.GooglePlayBillingResponse;
+import in.wynk.payment.gateway.IPaymentRefund;
 import in.wynk.payment.service.*;
 import in.wynk.payment.utils.MerchantServiceUtil;
 import in.wynk.queue.service.ISqsManagerService;
@@ -96,7 +97,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         implements IMerchantIapSubscriptionAcknowledgementService, IMerchantIapPaymentPreVerificationService, IMerchantIapPaymentVerificationService,
         IPaymentNotificationService<Pair<GooglePlayLatestReceiptResponse, ReceiptDetails>>,
         IReceiptDetailService<Pair<GooglePlayLatestReceiptResponse, ReceiptDetails>, GooglePlayCallbackRequest>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>,
-        IMerchantIapSubscriptionCancellationService {
+        IMerchantIapSubscriptionCancellationService, IPaymentRefund<GooglePlayPaymentRefundResponse, GooglePlayPaymentRefundRequest> {
     @Value("${payment.googlePlay.baseUrl}")
     private String baseUrl;
     @Value("${payment.googlePlay.purchaseUrl.subscription}")
@@ -809,17 +810,34 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
 
     @Override
     public void cancelSubscription (String uid, String transactionId) {
+        fetchDetailsAndUpdateGooglePlaySubscriptionOnConsole(uid, transactionId, CANCEL);
+    }
+
+    @Override
+    public GooglePlayPaymentRefundResponse doRefund (GooglePlayPaymentRefundRequest request) {
+        final Transaction originalTransaction = TransactionContext.get();
+        fetchDetailsAndUpdateGooglePlaySubscriptionOnConsole(originalTransaction.getUid(), originalTransaction.getIdStr(), GooglePlayConstant.REFUND);
+        return GooglePlayPaymentRefundResponse.builder().transactionId(originalTransaction.getIdStr()).uid(originalTransaction.getUid()).planId(originalTransaction.getPlanId())
+                .itemId(originalTransaction.getItemId()).clientAlias(originalTransaction.getClientAlias()).amount(originalTransaction.getAmount()).msisdn(originalTransaction.getMsisdn())
+                .paymentEvent(originalTransaction.getType()).transactionStatus(TransactionStatus.SUCCESS).build();
+    }
+
+    private void fetchDetailsAndUpdateGooglePlaySubscriptionOnConsole (String uid, String transactionId, String action) {
         List<ReceiptDetails> receiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
                 .findByUid(uid);
         Optional<ReceiptDetails> filteredReceipt = receiptDetails.stream().filter(receiptDetails1 -> receiptDetails1.getPaymentTransactionId().equals(transactionId)).findAny();
         GooglePlayReceiptDetails gPlayReceipt = filteredReceipt.map(details -> (GooglePlayReceiptDetails) details).orElseGet(() -> (GooglePlayReceiptDetails) receiptDetails.get(0));
         String url =
-                baseUrl + gPlayReceipt.getPackageName() + subscriptionPurchase + gPlayReceipt.getSkuId() + TOKEN + gPlayReceipt.getId() + CANCEL + API_KEY_PARAM + getApiKey(gPlayReceipt.getService());
+                baseUrl + gPlayReceipt.getPackageName() + subscriptionPurchase + gPlayReceipt.getSkuId() + TOKEN + gPlayReceipt.getId() + action + API_KEY_PARAM + getApiKey(gPlayReceipt.getService());
         HttpHeaders headers = getHeaders(gPlayReceipt.getService());
         try {
             restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(null, headers), String.class);
         } catch (Exception ex) {
-            throw new WynkRuntimeException(PaymentErrorType.PLAY006, ex);
+            if (action.equalsIgnoreCase(CANCEL)) {
+                throw new WynkRuntimeException(PaymentErrorType.PLAY006, ex);
+            } else {
+                throw new WynkRuntimeException(PaymentErrorType.PLAY007, ex);
+            }
         }
     }
 }

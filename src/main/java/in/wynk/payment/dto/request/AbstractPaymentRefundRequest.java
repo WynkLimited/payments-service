@@ -3,7 +3,9 @@ package in.wynk.payment.dto.request;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.ApsPaymentRefundRequest;
 import in.wynk.payment.dto.GooglePlayPaymentRefundRequest;
 import in.wynk.payment.dto.paytm.PaytmPaymentRefundRequest;
@@ -41,6 +43,7 @@ public abstract class AbstractPaymentRefundRequest {
             case APS:
                 return ApsPaymentRefundRequest.from(originalTransaction, externalReferenceId, reason);
             case BeanConstant.GOOGLE_PLAY:
+            case PaymentConstants.GOOGLE_IAP:
                 return GooglePlayPaymentRefundRequest.from(originalTransaction, externalReferenceId, reason);
             case APS_V2:
                 throw new WynkRuntimeException("Refunds not supported on recharges");

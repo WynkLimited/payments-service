@@ -815,11 +815,11 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
 
     @Override
     public GooglePlayPaymentRefundResponse doRefund (GooglePlayPaymentRefundRequest request) {
-        final Transaction originalTransaction = TransactionContext.get();
-        fetchDetailsAndUpdateGooglePlaySubscriptionOnConsole(originalTransaction.getUid(), originalTransaction.getIdStr(), GooglePlayConstant.REFUND);
-        return GooglePlayPaymentRefundResponse.builder().transactionId(originalTransaction.getIdStr()).uid(originalTransaction.getUid()).planId(originalTransaction.getPlanId())
-                .itemId(originalTransaction.getItemId()).clientAlias(originalTransaction.getClientAlias()).amount(originalTransaction.getAmount()).msisdn(originalTransaction.getMsisdn())
-                .paymentEvent(originalTransaction.getType()).transactionStatus(TransactionStatus.SUCCESS).build();
+        final Transaction refundTransaction = TransactionContext.get();
+        fetchDetailsAndUpdateGooglePlaySubscriptionOnConsole(refundTransaction.getUid(), refundTransaction.getIdStr(), GooglePlayConstant.REFUND);
+        return GooglePlayPaymentRefundResponse.builder().transactionId(refundTransaction.getIdStr()).uid(refundTransaction.getUid()).planId(refundTransaction.getPlanId())
+                .itemId(refundTransaction.getItemId()).clientAlias(refundTransaction.getClientAlias()).amount(refundTransaction.getAmount()).msisdn(refundTransaction.getMsisdn())
+                .paymentEvent(refundTransaction.getType()).transactionStatus(TransactionStatus.SUCCESS).build();
     }
 
     private void fetchDetailsAndUpdateGooglePlaySubscriptionOnConsole (String uid, String transactionId, String action) {

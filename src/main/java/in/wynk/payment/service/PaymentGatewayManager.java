@@ -413,33 +413,36 @@ public class PaymentGatewayManager
     }
 
     @Override
-    @TransactionAware(txnId = "#request.originalTransactionId")
     public AbstractPaymentRefundResponse doRefund(PaymentRefundInitRequest request) {
-        final Transaction originalTransaction = TransactionContext.get();
+        final Transaction originalTransaction = transactionManager.get(request.getOriginalTransactionId());
+        final String externalReferenceId = merchantTransactionService.getPartnerReferenceId(request.getOriginalTransactionId());
+        final Transaction refundTransaction =
+                transactionManager.init(DefaultTransactionInitRequestMapper.from(
+                        RefundTransactionRequestWrapper.builder().request(request).txnId(originalTransaction.getIdStr()).originalTransaction(originalTransaction).build()));
+        final TransactionStatus initialStatus = refundTransaction.getStatus();
+        final AbstractPaymentRefundRequest refundRequest = AbstractPaymentRefundRequest.from(originalTransaction, externalReferenceId, request.getReason());
+        IPaymentRefund<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest> refundService = BeanLocatorFactory.getBean(refundTransaction.getPaymentChannel().getCode(),
+                new ParameterizedTypeReference<IPaymentRefund<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest>>() {
+                });
+        AbstractPaymentRefundResponse refundInitResponse = null;
         try {
-            final String externalReferenceId = merchantTransactionService.getPartnerReferenceId(request.getOriginalTransactionId());
-            final Transaction refundTransaction =
-                    transactionManager.init(DefaultTransactionInitRequestMapper.from(
-                            RefundTransactionRequestWrapper.builder().request(request).txnId(originalTransaction.getIdStr()).originalTransaction(originalTransaction).build()));
-            final AbstractPaymentRefundRequest refundRequest = AbstractPaymentRefundRequest.from(originalTransaction, externalReferenceId, request.getReason());
-            final AbstractPaymentRefundResponse refundInitResponse = BeanLocatorFactory.getBean(refundTransaction.getPaymentChannel().getCode(),
-                    new ParameterizedTypeReference<IPaymentRefund<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest>>() {
-                    }).doRefund(refundRequest);
-            if (Objects.nonNull(refundInitResponse)) {
-                if ((refundInitResponse.getTransactionStatus() != TransactionStatus.FAILURE) && (ApsConstant.AIRTEL_PAY_STACK.equalsIgnoreCase(originalTransaction.getPaymentChannel().getCode()) ||
-                        BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE.equalsIgnoreCase(originalTransaction.getPaymentChannel().getCode()))) {
-                    sqsManagerService.publishSQSMessage(
-                            PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transactionManager.get(request.getOriginalTransactionId())))
-                                    .paymentCode(refundTransaction.getPaymentChannel().getId()).extTxnId(refundInitResponse.getExternalReferenceId())
-                                    .transactionId(refundTransaction.getIdStr()).paymentEvent(refundTransaction.getType()).itemId(refundTransaction.getItemId()).planId(refundTransaction.getPlanId())
-                                    .msisdn(refundTransaction.getMsisdn()).uid(refundTransaction.getUid()).build());
-                }
-            }
+            refundInitResponse = refundService.doRefund(refundRequest);
             return refundInitResponse;
         } catch (WynkRuntimeException e) {
             throw e;
         } catch (Exception e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY020, e);
+        } finally {
+            assert refundInitResponse != null;
+            if (ApsConstant.AIRTEL_PAY_STACK.equalsIgnoreCase(originalTransaction.getPaymentChannel().getCode()) ||
+                    BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE.equalsIgnoreCase(originalTransaction.getPaymentChannel().getCode()) &&
+                            refundInitResponse.getTransactionStatus() != TransactionStatus.FAILURE) {
+                sqsManagerService.publishSQSMessage(
+                        PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transactionManager.get(request.getOriginalTransactionId())))
+                                .paymentCode(refundTransaction.getPaymentChannel().getId()).extTxnId(refundInitResponse.getExternalReferenceId())
+                                .transactionId(refundTransaction.getIdStr()).paymentEvent(refundTransaction.getType()).itemId(refundTransaction.getItemId()).planId(refundTransaction.getPlanId())
+                                .msisdn(refundTransaction.getMsisdn()).uid(refundTransaction.getUid()).build());
+            }
         }
     }
 

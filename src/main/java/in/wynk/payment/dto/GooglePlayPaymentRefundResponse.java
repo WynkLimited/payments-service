@@ -2,6 +2,7 @@ package in.wynk.payment.dto;
 
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.response.AbstractPaymentRefundResponse;
@@ -18,7 +19,7 @@ import lombok.experimental.SuperBuilder;
 public class GooglePlayPaymentRefundResponse extends AbstractPaymentRefundResponse {
     @Override
     public PaymentGateway getPaymentGateway () {
-        return PaymentCodeCachingService.getFromPaymentCode(BeanConstant.GOOGLE_PLAY);
+        return PaymentCodeCachingService.getFromPaymentCode(PaymentConstants.GOOGLE_IAP);
     }
 
     // This id will always be null for Google Play as google return empty body if refund was success

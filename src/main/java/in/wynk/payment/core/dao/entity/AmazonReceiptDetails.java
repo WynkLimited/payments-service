@@ -15,6 +15,8 @@ public class AmazonReceiptDetails extends ReceiptDetails {
 
     @Field("amazon_user_id")
     private String amazonUserId;
+    @Field("renewalDate")
+    private Long renewalDate;
 
     @Override
     public Integer getNotificationType () {

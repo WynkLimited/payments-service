@@ -1,7 +1,7 @@
 pipeline {
     agent {
         node {
-            label "jenkins-nprd"
+            label "jenkins-prd"
         }
     }
     options {
@@ -12,16 +12,16 @@ pipeline {
     }
     environment {
         region = 'asia-south1-docker.pkg.dev'
-        projet_name = 'prj-wynk-stg-wcf-svc-01'
-        repo_name = 'stg-wcf-payment-starter'
+        projet_name = 'prj-wynk-pre-wcf-svc-01'
+        repo_name = 'pre-wcf-payment-starter'
         working_dir = 'infra'
-        env_e  = 'dev'
+        env_e  = 'preprod'
         git_url = "https://github.com/WynkLimited/revenue-backend.git"
         jar_name = "payments-0.0.1.jar"
         // Argo Deploy specific var's
         service_name = "payment-starter"
-        app_env = "stag"
-        build_job = "wcf-cmn-deployment"
+        app_env = "pre-prod"
+        build_job = "wcf-preprod-cmn-deployment"
         image_repo = "${region}\\/${projet_name}\\/${repo_name}\\/${repo_name}"
         
     }
@@ -41,7 +41,7 @@ pipeline {
                 export PATH=/opt/JavaVersions/jdk1.8.0_202/bin:$PATH
                 PATH=$PATH:/opt/MavenVersions/apache-maven-3.3.9/bin/
                 echo $PATH
-                /opt/MavenVersions/apache-maven-3.3.9/bin/mvn -Denv=dev -s /opt/ConfigWCF/settings.xml clean install -P revenue-payment
+                /opt/MavenVersions/apache-maven-3.3.9/bin/mvn -Denv=preprod -s /opt/ConfigWCF/settings.xml clean install -P revenue-payment
                 """
             }
         }

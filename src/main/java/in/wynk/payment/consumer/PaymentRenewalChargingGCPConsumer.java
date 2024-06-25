@@ -18,6 +18,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import static in.wynk.payment.core.constant.BeanConstant.AIRTEL_PAY_STACK;
+import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
+
 @Slf4j
 public class PaymentRenewalChargingGCPConsumer extends AbstractPubSubMessagePolling<PaymentRenewalChargingMessage> {
 
@@ -46,7 +49,7 @@ public class PaymentRenewalChargingGCPConsumer extends AbstractPubSubMessagePoll
         AnalyticService.update(message);
         log.info(PaymentLoggingMarker.PAYMENT_CHARGING_QUEUE, "processing PaymentChargingMessage for transaction {}", message);
         //TODO: move payu also to new version after testing and remove check
-        if (ApsConstant.AIRTEL_PAY_STACK.equalsIgnoreCase(message.getPaymentCode())) {
+        if (AIRTEL_PAY_STACK.equalsIgnoreCase(message.getPaymentCode()) || PAYU_MERCHANT_PAYMENT_SERVICE.equals(message.getPaymentCode())) {
             manager.renew(PaymentRenewalChargingRequest.builder()
                     .id(message.getId())
                     .uid(message.getUid())

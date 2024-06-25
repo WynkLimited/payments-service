@@ -15,9 +15,11 @@ import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.payment.utils.RecurringTransactionUtils;
 import in.wynk.pubsub.extractor.IPubSubMessageExtractor;
 import in.wynk.pubsub.poller.AbstractPubSubMessagePolling;
 import in.wynk.pubsub.service.IPubSubManagerService;
+import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.subscription.common.dto.RenewalPlanEligibilityResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,6 +40,7 @@ public class PaymentRenewalGCPConsumer extends AbstractPubSubMessagePolling<Paym
     private final ITransactionManagerService transactionManager;
     private final ISubscriptionServiceManager subscriptionServiceManager;
     private final IRecurringPaymentManagerService recurringPaymentManagerService;
+    private RecurringTransactionUtils recurringTransactionUtils;
     private PaymentCachingService cachingService;
     @Value("${payments.pooling.pubSub.renewal.enabled}")
     private boolean renewalPollingEnabled;
@@ -46,7 +49,7 @@ public class PaymentRenewalGCPConsumer extends AbstractPubSubMessagePolling<Paym
     @Value("${payments.pooling.pubSub.renewal.consumer.delayTimeUnit}")
     private TimeUnit renewalPoolingDelayTimeUnit;
 
-    public PaymentRenewalGCPConsumer(String projectName, String topicName, String subscriptionName, ObjectMapper objectMapper, IPubSubMessageExtractor pubSubMessageExtractor, IPubSubManagerService pubSubManagerService, ExecutorService messageHandlerThreadPool, ScheduledExecutorService pollingThreadPool, ITransactionManagerService transactionManager, ISubscriptionServiceManager subscriptionServiceManager, IRecurringPaymentManagerService recurringPaymentManagerService, PaymentCachingService cachingService) {
+    public PaymentRenewalGCPConsumer(String projectName, String topicName, String subscriptionName, ObjectMapper objectMapper, IPubSubMessageExtractor pubSubMessageExtractor, IPubSubManagerService pubSubManagerService, ExecutorService messageHandlerThreadPool, ScheduledExecutorService pollingThreadPool, ITransactionManagerService transactionManager, ISubscriptionServiceManager subscriptionServiceManager, IRecurringPaymentManagerService recurringPaymentManagerService, PaymentCachingService cachingService, RecurringTransactionUtils recurringTransactionUtils) {
         super(projectName, topicName, subscriptionName, messageHandlerThreadPool , objectMapper, pubSubMessageExtractor);
         this.objectMapper = objectMapper;
         this.pubSubManagerService = pubSubManagerService;
@@ -56,6 +59,7 @@ public class PaymentRenewalGCPConsumer extends AbstractPubSubMessagePolling<Paym
         this.subscriptionServiceManager = subscriptionServiceManager;
         this.recurringPaymentManagerService = recurringPaymentManagerService;
         this.cachingService= cachingService;
+        this.recurringTransactionUtils = recurringTransactionUtils;
     }
 
     @Override
@@ -65,7 +69,7 @@ public class PaymentRenewalGCPConsumer extends AbstractPubSubMessagePolling<Paym
         AnalyticService.update(message);
         log.info(PaymentLoggingMarker.PAYMENT_RENEWAL_QUEUE, "processing PaymentRenewalMessage for transactionId {}", message.getTransactionId());
         Transaction transaction = transactionManager.get(message.getTransactionId());
-        if (isEligibleForRenewal(transaction, message.getAttemptSequence())) {
+        if (recurringTransactionUtils.isEligibleForRenewal(transaction, false)) {
             pubSubManagerService.publishPubSubMessage(PaymentRenewalChargingMessage.builder()
                     .uid(transaction.getUid())
                     .id(transaction.getIdStr())
@@ -75,27 +79,6 @@ public class PaymentRenewalGCPConsumer extends AbstractPubSubMessagePolling<Paym
                     .attemptSequence(message.getAttemptSequence())
                     .paymentCode(transaction.getPaymentChannel().getId())
                     .build());
-        }
-
-    }
-
-    private boolean isEligibleForRenewal (Transaction transaction, int attemptSequence) {
-        if (attemptSequence < PaymentConstants.MAXIMUM_RENEWAL_RETRY_ALLOWED) {
-            ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> response =
-                    subscriptionServiceManager.renewalPlanEligibilityResponse(transaction.getPlanId(), transaction.getUid());
-            if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {
-                RenewalPlanEligibilityResponse renewalPlanEligibilityResponse = response.getBody().getData();
-                long today = System.currentTimeMillis();
-                long furtherDefer = renewalPlanEligibilityResponse.getDeferredUntil() - today;
-                if (subscriptionServiceManager.isDeferred(transaction.getPaymentChannel().getCode(), furtherDefer)) {
-                    recurringPaymentManagerService.unScheduleRecurringPayment(transaction.getIdStr(), PaymentEvent.DEFERRED, today, furtherDefer);
-                    return false;
-                }
-            }
-            return true;
-        } else {
-            log.error("Need to break the chain in Payment Renewal as maximum attempts are already exceeded");
-            return false;
         }
     }
 

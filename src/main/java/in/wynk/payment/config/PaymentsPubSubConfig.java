@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.payment.consumer.*;
 import in.wynk.payment.extractor.*;
 import in.wynk.payment.service.*;
+import in.wynk.payment.service.impl.RecurringPaymentManager;
+import in.wynk.payment.utils.RecurringTransactionUtils;
 import in.wynk.pubsub.service.IPubSubManagerService;
 import in.wynk.wynkservice.core.dao.entity.App;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -89,14 +91,14 @@ public class PaymentsPubSubConfig {
                                                             @Value("${payments.pooling.pubSub.renewal.bufferInterval}") String bufferInterval,
                                                             ObjectMapper objectMapper, ITransactionManagerService transactionManager, ISubscriptionServiceManager subscriptionServiceManager,
                                                             IPubSubManagerService pubSubManagerService,
-                                                            IRecurringPaymentManagerService recurringPaymentManagerService, PaymentCachingService cachingService) {
+                                                            IRecurringPaymentManagerService recurringPaymentManagerService, PaymentCachingService cachingService, RecurringTransactionUtils recurringTransactionUtils) {
         return new PaymentRenewalGCPConsumer(
                 projectName, topicName, subscriptionName,
                 objectMapper,
                 new PaymentRenewalPubSubMessageExtractor(projectName, subscriptionName, bufferInterval),
                 pubSubManagerService,
                 threadPoolExecutor(2),
-                scheduledThreadPoolExecutor(), transactionManager, subscriptionServiceManager, recurringPaymentManagerService, cachingService);
+                scheduledThreadPoolExecutor(), transactionManager, subscriptionServiceManager, recurringPaymentManagerService, cachingService, recurringTransactionUtils);
     }
 
     @Bean
@@ -178,13 +180,13 @@ public class PaymentsPubSubConfig {
                                                                                        @Value("${payments.pooling.pubSub.preDebitNotification.topicName}") String topicName,
                                                                                        @Value("${payments.pooling.pubSub.preDebitNotification.subscriptionName}") String subscriptionName,
                                                                                        @Value("${payments.pooling.pubSub.preDebitNotification.bufferInterval}") String bufferInterval,
-                                                                                       ObjectMapper objectMapper, PaymentGatewayManager manager) {
+                                                                                       ObjectMapper objectMapper, PaymentGatewayManager manager, RecurringPaymentManager recurringPaymentManager) {
         return new PreDebitNotificationGCPConsumer(
                 projectName, topicName, subscriptionName,
                 objectMapper,
                 new PreDebitNotificationPubSubMessageExtractor(projectName, subscriptionName, bufferInterval),
                 threadPoolExecutor(2),
-                scheduledThreadPoolExecutor(), manager);
+                scheduledThreadPoolExecutor(), manager, recurringPaymentManager);
     }
 
     @Bean

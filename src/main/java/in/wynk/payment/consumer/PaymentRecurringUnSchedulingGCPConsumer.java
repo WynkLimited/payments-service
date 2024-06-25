@@ -1,6 +1,7 @@
 package in.wynk.payment.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.payment.common.messages.PaymentRecurringUnSchedulingMessage;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
@@ -47,12 +48,12 @@ public class PaymentRecurringUnSchedulingGCPConsumer extends AbstractPubSubMessa
     @Override
     @ClientAware(clientAlias = "#message.clientAlias")
     public void consume(PaymentRecurringUnSchedulingMessage message) {
-        log.info(PaymentLoggingMarker.PAYMENT_RECONCILIATION_QUEUE, "processing PaymentRecurringUnSchedulingMessage for uid {} and transactionId {}", message.getUid(), message.getTransactionId());
+        AnalyticService.update(message);
         final Transaction transaction = transactionManagerService.get(message.getTransactionId());
         if (Objects.nonNull(transaction) && transaction.getPaymentChannel().getId().equalsIgnoreCase(ADD_TO_BILL)) {
-            eventPublisher.publishEvent(RecurringPaymentEvent.builder().transactionId(message.getTransactionId()).paymentEvent(message.getPaymentEvent()).build());
+            eventPublisher.publishEvent(RecurringPaymentEvent.builder().transaction(transaction).paymentEvent(message.getPaymentEvent()).build());
         } else {
-            recurringPaymentManager.unScheduleRecurringPayment(message.getTransactionId(), message.getPaymentEvent(), message.getValidUntil(), message.getDeferredUntil());
+            recurringPaymentManager.unScheduleRecurringPayment(transaction, message.getPaymentEvent(), message.getValidUntil(), message.getDeferredUntil());
         }
     }
 

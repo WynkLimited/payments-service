@@ -39,7 +39,7 @@ session:
     enableJmx: true
     jmxPrefix: session-store:preprod
     cluster:
-      nodes: wcf-redis-cluster.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+      nodes: 10.168.88.2:6379
     connection:
       timeout: 1000
       maxTotal: 200
@@ -571,7 +571,9 @@ webview:
 wynk:
   kafka:
     enabled: true
-    nodes: 10.40.12.120:9092,10.40.12.157:9092,10.40.12.18:9092
+    nodes: 10.168.88.20:9092
+    username: admin
+    password: fr8qQGObqgkAMKB
     producers:
       invoice:
         generate:
@@ -596,7 +598,9 @@ wynk:
             factoryDetails:
               autoCommitInterval: 100
               autoOffsetConfig: earliest
-              bootstrapServers: 10.40.12.120:9092,10.40.12.157:9092,10.40.12.18:9092
+              bootstrapServers: 10.168.88.20:9092
+              username: admin
+              password: fr8qQGObqgkAMKB
               enableAutoCommit: true
               groupId: group1
               keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -611,7 +615,9 @@ wynk:
             factoryDetails:
               autoCommitInterval: 100
               autoOffsetConfig: earliest
-              bootstrapServers: 10.40.12.120:9092,10.40.12.157:9092,10.40.12.18:9092
+              bootstrapServers: 10.168.88.20:9092
+              username: admin
+              password: fr8qQGObqgkAMKB
               enableAutoCommit: true
               groupId: group1
               keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -628,7 +634,9 @@ wynk:
               factoryDetails:
                 autoCommitInterval: 100
                 autoOffsetConfig: earliest
-                bootstrapServers: 10.40.12.120:9092,10.40.12.157:9092,10.40.12.18:9092
+                bootstrapServers: 10.168.88.20:9092
+                username: admin
+                password: fr8qQGObqgkAMKB
                 enableAutoCommit: true
                 groupId: group1
                 keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -643,7 +651,9 @@ wynk:
               factoryDetails:
                 autoCommitInterval: 100
                 autoOffsetConfig: earliest
-                bootstrapServers: 10.40.12.120:9092,10.40.12.157:9092,10.40.12.18:9092
+                bootstrapServers: 10.168.88.20:9092
+                username: admin
+                password: fr8qQGObqgkAMKB
                 enableAutoCommit: true
                 groupId: group1
                 keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -667,7 +677,7 @@ wynk:
     sources:
       payment:
         appName: payment
-        nodes: 10.80.0.128,10.80.0.240
+        nodes: 10.168.88.13,10.168.88.14
         username: user_payments_preprod
         password: t2KXcR8dnW
         database: payments_preprod
@@ -685,7 +695,7 @@ wynk:
         replicaSet: wcf
       coupons:
         appName: coupon
-        nodes: 10.80.0.128,10.80.0.240
+        nodes: 10.168.88.13,10.168.88.14
         username: user_coupons_preprod
         password: yC3weM5K2Q
         database: coupons_preprod
@@ -715,7 +725,7 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 appName: payment
-                nodes: 10.80.0.128,10.80.0.240
+                nodes: 10.168.88.13,10.168.88.14
                 username: user_payments_preprod
                 password: t2KXcR8dnW
                 database: payments_preprod
@@ -737,7 +747,7 @@ wynk:
                 basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
-                nodes: 10.80.0.128,10.80.0.240
+                nodes: 10.168.88.13,10.168.88.14
                 username: user_coupons_preprod
                 password: yC3weM5K2Q
                 database: coupons_preprod
@@ -762,7 +772,7 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 appName: payment
-                nodes: 10.80.0.128,10.80.0.240
+                nodes: 10.168.88.13,10.168.88.14
                 username: user_payments_preprod
                 password: t2KXcR8dnW
                 database: payments_preprod
@@ -784,7 +794,7 @@ wynk:
                 basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
-                nodes: 10.80.0.128,10.80.0.240
+                nodes: 10.168.88.13,10.168.88.14
                 username: user_coupons_preprod
                 password: yC3weM5K2Q
                 database: coupons_preprod
@@ -809,7 +819,7 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 appName: payment
-                nodes: 10.80.0.128,10.80.0.240
+                nodes: 10.168.88.13,10.168.88.14
                 username: user_payments_preprod
                 password: t2KXcR8dnW
                 database: payments_preprod
@@ -831,7 +841,7 @@ wynk:
                 basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
-                nodes: 10.80.0.128,10.80.0.240
+                nodes: 10.168.88.13,10.168.88.14
                 username: user_coupons_preprod
                 password: yC3weM5K2Q
                 database: coupons_preprod
@@ -856,7 +866,7 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 appName: payment
-                nodes: 10.80.0.128,10.80.0.240
+                nodes: 10.168.88.13,10.168.88.14
                 username: user_payments_iqvideo
                 password: 53411B8BEBE9E8ABC5F1B21
                 database: payments_iqvideo_preprod
@@ -878,7 +888,7 @@ wynk:
                 basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
-                nodes: 10.80.0.128,10.80.0.240
+                nodes: 10.168.88.13,10.168.88.14
                 username: user_coupons_iqvideo
                 password: 53411B8BEBE9E8ABC5F1B21
                 database: coupon_iqvideo_preprod
@@ -903,7 +913,7 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 appName: payment
-                nodes: 10.80.0.128,10.80.0.240
+                nodes: 10.168.88.13,10.168.88.14
                 username: user_payments_rajtv_preprod
                 password: 91F306FC2BE75E699D74014
                 database: payments_rajtv_preprod
@@ -925,7 +935,7 @@ wynk:
                 basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
-                nodes: 10.80.0.128,10.80.0.240
+                nodes: 10.168.88.13,10.168.88.14
                 username: user_coupon_rajtv_preprod
                 password: BE75084154378ED34520AFC887A70E
                 database: coupon_rajtv_preprod
@@ -950,7 +960,7 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 appName: payment
-                nodes: 10.80.0.128,10.80.0.240
+                nodes: 10.168.88.13,10.168.88.14
                 username: user_payments_enterr10_preprod
                 password: 91F306FC2BE75E699D74014
                 database: payments_enterr10_preprod
@@ -972,7 +982,7 @@ wynk:
                 basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
-                nodes: 10.80.0.128,10.80.0.240
+                nodes: 10.168.88.13,10.168.88.14
                 username: user_coupon_enterr10_preprod
                 password: BE75084154378ED34520AFC887A70E
                 database: coupon_enterr10_preprod
@@ -1242,6 +1252,9 @@ cache:
   enabled: true
   mode: composite
   redis:
+    refreshTokenDuration: 60
+    refreshTokenLifetime: 3600
+    accountName: projects/-/serviceAccounts/gke-wynk-pre-wcf-app-sa@prj-wynk-pre-wcf-svc-01.iam.gserviceaccount.com
     cache:
       cacheNullValues: false
       keyPrefix: PREPROD
@@ -1249,7 +1262,7 @@ cache:
       ttl: 15
       usePrefix: false
     cluster:
-      nodes: wcf-redis-cluster.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+      nodes: 10.168.88.2:6379
     connection:
       maxIdle: 50
       maxTotal: 60
@@ -1278,12 +1291,16 @@ lock:
     enableJmx: true
     jmxPrefix: session-store:preprod
     cluster:
-      nodes: wcf-redis-cluster.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+      nodes: 10.168.88.2:6379
     connection:
       timeout: 1000
       maxTotal: 200
       minIdle: 50
       maxIdle: 100
+  refreshTokenDuration: 60
+  refreshTokenLifetime: 3600
+  accountName: projects/-/serviceAccounts/gke-wynk-pre-wcf-app-sa@prj-wynk-pre-wcf-svc-01.iam.gserviceaccount.com
+
 
 ######## lib-auth props #######
 security:
@@ -1296,3 +1313,99 @@ event:
 
 api.get.endPoint: https://subscription-preprod.wynk.in
 
+########## PUBSUB CONFIGS ###########
+
+payments:
+  pooling:
+    pubSub:
+      reconciliation:
+        projectName: prj-wynk-pre-wcf-svc-01
+        topicName: wcf-preprod-payment-reconciliation
+        subscriptionName: wcf-preprod-payment-reconciliation-sub
+        bufferInterval: 0
+        enabled: true
+        consumer:
+          delay: 20
+          delayTimeUnit: SECONDS
+      acknowledgement:
+        projectName: prj-wynk-pre-wcf-svc-01
+        topicName: wcf-payment-receipt-ack-preprod-sqs
+        subscriptionName: wcf-payment-receipt-ack-preprod-sqs-sub
+        bufferInterval: 0
+        enabled: true
+        consumer:
+          delay: 20
+          delayTimeUnit: SECONDS
+      externalTransaction:
+        report:
+          projectName: prj-wynk-pre-wcf-svc-01
+          topicName: wcf-payment-transaction-ack-preprod-sqs
+          subscriptionName: wcf-payment-transaction-ack-preprod-sqs-sub
+          bufferInterval: 0
+          enabled: true
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+      renewal:
+        projectName: prj-wynk-pre-wcf-svc-01
+        topicName: wcf-preprod-payment-renewal
+        subscriptionName: wcf-preprod-payment-renewal-sub
+        bufferInterval: 180
+        enabled: true
+        consumer:
+          delay: 20
+          delayTimeUnit: SECONDS
+      charging:
+        projectName: prj-wynk-pre-wcf-svc-01
+        topicName: wcf-preprod-payment-charging.fifo
+        subscriptionName: wcf-preprod-payment-charging.fifo-sub
+        bufferInterval: 180
+        enabled: true
+        consumer:
+          delay: 20
+          delayTimeUnit: SECONDS
+      schedule:
+        projectName: prj-wynk-pre-wcf-svc-01
+        topicName: wcf-preprod-subscription-payment
+        subscriptionName: wcf-preprod-subscription-payment-sub
+        bufferInterval: 180
+        enabled: true
+        consumer:
+          delay: 20
+          delayTimeUnit: SECONDS
+      unschedule:
+        projectName: prj-wynk-pre-wcf-svc-01
+        topicName:  wcf-preprod-payment-recurring
+        subscriptionName:  wcf-preprod-payment-recurring-sub
+        bufferInterval: 180
+        enabled: true
+        consumer:
+          delay: 20
+          delayTimeUnit: SECONDS
+      preDebitNotification:
+        projectName: prj-wynk-pre-wcf-svc-01
+        topicName: wcf-preprod-mandate-notification-sqs
+        subscriptionName: wcf-preprod-mandate-notification-sqs-sub
+        bufferInterval: 180
+        enabled: true
+        consumer:
+          delay: 20
+          delayTimeUnit: SECONDS
+      refund:
+        projectName: prj-wynk-pre-wcf-svc-01
+        topicName: wcf-preprod-payment-refund
+        subscriptionName: wcf-preprod-payment-refund-sub
+        bufferInterval: 180
+        enabled: true
+        consumer:
+          delay: 20
+          delayTimeUnit: SECONDS
+      userDeactivation:
+        projectName: prj-wynk-pre-wcf-svc-01
+        topicName: wcf-preprod-payment-user-deactivation
+        subscriptionName: wcf-preprod-payment-user-deactivation-sub
+        bufferInterval: 180
+        enabled: true
+        consumer:
+          delay: 20
+          delayTimeUnit: SECONDS

@@ -63,6 +63,8 @@ resilience:
 amazon:
   sdk:
     regions: ap-south-1
+  accessKey: AKIAXZU3MGXVOIXNKDTW
+  secretKey: 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
 
 
 ###### Subscription Service End Point #######

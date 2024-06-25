@@ -586,7 +586,9 @@ webview:
 wynk:
   kafka:
     enabled: true
-    nodes: 10.40.12.120:9092,10.40.12.157:9092,10.40.12.18:9092
+    nodes: 10.168.88.20:9092
+    username: admin
+    password: fr8qQGObqgkAMKB
     producers:
       invoice:
         generate:
@@ -614,7 +616,9 @@ wynk:
             factoryDetails:
               autoCommitInterval: 100
               autoOffsetConfig: earliest
-              bootstrapServers: 10.40.12.120:9092,10.40.12.157:9092,10.40.12.18:9092
+              bootstrapServers: 10.168.88.20:9092
+              username: admin
+              password: fr8qQGObqgkAMKB
               enableAutoCommit: true
               groupId: group1
               keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -629,7 +633,9 @@ wynk:
             factoryDetails:
               autoCommitInterval: 100
               autoOffsetConfig: earliest
-              bootstrapServers: 10.40.12.120:9092,10.40.12.157:9092,10.40.12.18:9092
+              bootstrapServers: 10.168.88.20:9092
+              username: admin
+              password: fr8qQGObqgkAMKB
               enableAutoCommit: true
               groupId: group1
               keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -646,7 +652,9 @@ wynk:
               factoryDetails:
                 autoCommitInterval: 100
                 autoOffsetConfig: earliest
-                bootstrapServers: 10.40.12.120:9092,10.40.12.157:9092,10.40.12.18:9092
+                bootstrapServers: 10.168.88.20:9092
+                username: admin
+                password: fr8qQGObqgkAMKB
                 enableAutoCommit: true
                 groupId: group1
                 keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -661,7 +669,9 @@ wynk:
               factoryDetails:
                 autoCommitInterval: 100
                 autoOffsetConfig: earliest
-                bootstrapServers: 10.40.12.120:9092,10.40.12.157:9092,10.40.12.18:9092
+                bootstrapServers: 10.168.88.20:9092
+                username: admin
+                password: fr8qQGObqgkAMKB
                 enableAutoCommit: true
                 groupId: group1
                 keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -853,53 +863,6 @@ wynk:
                 username: user_coupons
                 password: Sk6kzU8GU5
                 database: coupons
-                ########### Mongo Pool Config ###########
-                connectionSettings:
-                  minConnectionsPerHost: 1
-                  maxConnectionsPerHost: 5
-                  threadsAllowedToBlockForConnectionMultiplier: 2
-                timeOutSettings:
-                  serverSelectionTimeoutMs: 10000
-                  maxWaitTime: 1000
-                  connectTimeout: 1000
-                  socketTimeout: 2000
-                readPreference: secondaryPreferred
-                replicaSet: wcf
-        iqvideo:
-          enabled: true
-          sources:
-            payment:
-              enabled: true
-              repoConfig:
-                basePackages: in.wynk.payment.core.dao
-              source:
-                appName: payment
-                nodes: 10.80.0.128,10.80.0.240
-                username: user_payments_iqvideo
-                password: 53411B8BEBE9E8ABC6F1B11
-                database: payments_iqvideo
-                ########### Mongo Pool Config ###########
-                connectionSettings:
-                  minConnectionsPerHost: 1
-                  maxConnectionsPerHost: 5
-                  threadsAllowedToBlockForConnectionMultiplier: 2
-                timeOutSettings:
-                  serverSelectionTimeoutMs: 10000
-                  maxWaitTime: 1000
-                  connectTimeout: 1000
-                  socketTimeout: 2000
-                readPreference: secondaryPreferred
-                replicaSet: wcf
-            coupons:
-              enabled: true
-              repoConfig:
-                basePackages: in.wynk.coupon.core.dao
-              source:
-                appName: coupon
-                nodes: 10.80.0.128,10.80.0.240
-                username: user_coupon_iqvideo
-                password: 53411B8BEBE9E8ABZ5F1Z21
-                database: coupon_iqvideo
                 ########### Mongo Pool Config ###########
                 connectionSettings:
                   minConnectionsPerHost: 1
@@ -1128,45 +1091,6 @@ wynk:
                     hibernate.jdbc.time_zone: Asia/Kolkata
                     hibernate.enable_lazy_load_no_trans: true
                     hibernate.types.print.banner: false
-                hibernate:
-                  ddl-auto: validate
-                  naming:
-                    physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
-                    implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
-        iqvideo:
-          enabled: true
-          sources:
-            payments:
-              enabled: true
-              repoConfig:
-                basePackages: in.wynk.payment.core.dao
-              source:
-                hikari:
-                  jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments_iqvideo
-                  username: admin
-                  password: o7QZ?!n=eu
-                  driver-class-name: com.mysql.cj.jdbc.Driver
-                  registerMbeans: true
-                  auto-commit: false
-                  connectionTimeout: 2000
-                  idleTimeout: 10000
-                  maxLifetime: 30000
-                  poolName: payment-datasource-pool-dev
-                  minimum-idle: 10
-                  maximumPoolSize: 100
-                jpa:
-                  database-platform: org.hibernate.dialect.MySQL8Dialect
-                  show-sql: false
-                  open-in-view: false
-                  properties:
-                    hibernate.format_sql: false
-                    hibernate.id.new_generator_mappings: true
-                    hibernate.connection.provider_disables_autocommit: true
-                    hibernate.cache.use_second_level_cache: false
-                    hibernate.cache.use_query_cache: false
-                    hibernate.generate_statistics: false
-                    hibernate.hbm2ddl.auto: validate
-                    hibernate.jdbc.time_zone: Asia/Kolkata
                 hibernate:
                   ddl-auto: validate
                   naming:

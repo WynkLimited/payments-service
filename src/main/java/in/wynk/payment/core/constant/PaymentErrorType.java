@@ -74,6 +74,8 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAYU007("Pre Debit Notification Failure", "Pre Debit Notification Failed at PayU side.", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYU_PRE_DEBIT_NOTIFICATION_ERROR),
     PAYU008("Payment Renewal Timeout", "Timeout occurred while making SI payment on payU", HttpStatus.REQUEST_TIMEOUT, PaymentLoggingMarker.PAYU_RENEWAL_TIMEOUT_ERROR),
     PAYU009("Payment Renewal Failure", "An Error occurred while making SI payment on payU", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYU_RENEWAL_STATUS_ERROR),
+    PAY014("Payment Renewal Timeout", "Timeout occurred while making SI payment on payU", HttpStatus.REQUEST_TIMEOUT, PaymentLoggingMarker.PAYU_RENEWAL_TIMEOUT_ERROR),
+    PAY045("Payment Renewal Failure", "Unable to renew amazon iap subscription", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.AMAZON_IAP_RENEWAL_ERROR),
     /*PAYU Specific errorCodes end*/
 
     /*Notification Specific errorCodes start*/

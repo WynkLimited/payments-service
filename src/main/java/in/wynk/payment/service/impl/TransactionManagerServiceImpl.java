@@ -305,6 +305,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             }
             if (!(request.getExistingTransactionStatus() == TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.FAILURE)) {
                 this.upsert(request.getTransaction());
+                recurringPaymentManagerService.unScheduleRecurringPayment(request.getTransaction().getClientAlias(), request.getTransaction().getId().toString().equals(request.getLastSuccessTransactionId().toString()) ? request.getOriginalTransactionId() : request.getLastSuccessTransactionId(), PaymentEvent.CANCELLED);
             }
         }
     }

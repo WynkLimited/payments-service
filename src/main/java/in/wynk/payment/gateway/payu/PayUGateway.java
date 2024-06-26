@@ -3,8 +3,8 @@ package in.wynk.payment.gateway.payu;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import in.wynk.error.codes.core.service.IErrorCodesCacheService;
+import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
-import in.wynk.payment.dto.BaseTDRResponse;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
@@ -113,7 +113,7 @@ public class PayUGateway extends PayUMerchantPaymentService implements
     }
 
     @Override
-    public BaseTDRResponse getTDR (String transactionId) {
-        return iMerchantTDRService.getTDR(transactionId);
+    public Double getTDR (Transaction transaction) {
+        return iMerchantTDRService.getTDR(transaction);
     }
 }

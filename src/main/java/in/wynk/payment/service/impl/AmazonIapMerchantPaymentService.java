@@ -221,6 +221,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
                 .autoRenewal(autoRenewal)
                 .amazonIapReceiptResponse(amazonIapReceiptResponse)
                 .planId(cachingService.getPlanFromSku(skuId).getId())
+                .service(iapVerificationRequest.getService())
                 .extTxnId(amazonIapVerificationRequest.getReceipt().getReceiptId())
                 .amazonUserId(amazonIapVerificationRequest.getUserData().getUserId())
                 .build();
@@ -250,7 +251,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         Optional<ReceiptDetails> mapping = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(amazonLatestReceiptResponse.getExtTxnId());
         try {
             if ((!mapping.isPresent() || mapping.get().getState() != State.ACTIVE) & EnumSet.of(TransactionStatus.INPROGRESS).contains(transaction.getStatus())) {
-                saveReceipt(transaction.getUid(), transaction.getMsisdn(), transaction.getPlanId(), amazonLatestReceiptResponse.getExtTxnId(), amazonLatestReceiptResponse.getAmazonUserId(), transaction.getIdStr(), amazonLatestReceiptResponse.getAmazonIapReceiptResponse().getRenewalDate());
+                saveReceipt(transaction.getUid(), transaction.getMsisdn(), transaction.getPlanId(), amazonLatestReceiptResponse.getExtTxnId(), amazonLatestReceiptResponse.getAmazonUserId(), transaction.getIdStr(), amazonLatestReceiptResponse.getService(), amazonLatestReceiptResponse.getAmazonIapReceiptResponse().getRenewalDate());
                 AmazonIapReceiptResponse amazonIapReceipt = amazonLatestReceiptResponse.getAmazonIapReceiptResponse();
                 if (amazonIapReceipt != null) {
                     if (amazonIapReceipt.getCancelDate() == null) {
@@ -283,8 +284,8 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         }
     }
 
-    private void saveReceipt(String uid, String msisdn, int planId, String receiptId, String amzUserId, String transactionId, Long renewalDate) {
-        final AmazonReceiptDetails amazonReceiptDetails = AmazonReceiptDetails.builder().paymentTransactionId(transactionId).receiptTransactionId(receiptId).amazonUserId(amzUserId).msisdn(msisdn).planId(planId).id(receiptId).uid(uid).renewalDate(renewalDate).build();
+    private void saveReceipt(String uid, String msisdn, int planId, String receiptId, String amzUserId, String transactionId, String service, Long renewalDate) {
+        final AmazonReceiptDetails amazonReceiptDetails = AmazonReceiptDetails.builder().paymentTransactionId(transactionId).receiptTransactionId(receiptId).amazonUserId(amzUserId).msisdn(msisdn).planId(planId).id(receiptId).uid(uid).service(service).renewalDate(renewalDate).build();
         auditingListener.onBeforeSave(amazonReceiptDetails);
         RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).save(amazonReceiptDetails);
     }
@@ -344,11 +345,11 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         if (optionalReceiptDetails.isPresent()) {
             final ReceiptDetails details = optionalReceiptDetails.get();
             builder.uid(details.getUid()).msisdn(details.getMsisdn()).linkedTransactionId(details.getPaymentTransactionId());
-            return builder.build();
+            return builder.service(planDTO.getService()).build();
         }
         WynkUserExtUserMapping mapping = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), WynkUserExtUserDao.class)
                 .findByExternalUserId(message.getAppUserId());
-        return builder.uid(mapping.getId()).msisdn(mapping.getMsisdn()).build();
+        return builder.uid(mapping.getId()).msisdn(mapping.getMsisdn()).service(planDTO.getService()).build();
     }
 
     @Override
@@ -408,7 +409,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     @Override
     public void handleNotification(Transaction transaction, UserPlanMapping<AmazonIapReceiptResponse> mapping) {
         final AmazonIapReceiptResponseWrapper wrapper = (AmazonIapReceiptResponseWrapper) mapping.getMessage();
-        saveReceipt(mapping.getUid(), mapping.getMsisdn(), transaction.getPlanId(), wrapper.getReceiptID(), wrapper.getAppUserId(), transaction.getIdStr(), wrapper.getDecodedResponse().getRenewalDate());
+        saveReceipt(mapping.getUid(), mapping.getMsisdn(), transaction.getPlanId(), wrapper.getReceiptID(), wrapper.getAppUserId(), transaction.getIdStr(), mapping.getService(), wrapper.getDecodedResponse().getRenewalDate());
         TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
         AmazonIapReceiptResponse amazonIapReceipt = mapping.getMessage();
         if (amazonIapReceipt.getCancelDate() == null || transaction.getType() == PaymentEvent.CANCELLED) {
@@ -458,7 +459,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
             throw new WynkRuntimeException(PaymentErrorType.PAY045, e);
         } finally {
             transaction.setStatus(status.getValue());
-            saveReceipt(transaction.getUid(), transaction.getMsisdn(), transaction.getPlanId(), receipt.getId(), receipt.getAmazonUserId(), transaction.getIdStr(), response.getRenewalDate());
+            saveReceipt(transaction.getUid(), transaction.getMsisdn(), transaction.getPlanId(), receipt.getId(), receipt.getAmazonUserId(), transaction.getIdStr(), receipt.getService(), response.getRenewalDate());
         }
     }
 

@@ -1,6 +1,13 @@
 package in.wynk.payment.service.impl;
 
+import static in.wynk.payment.core.constant.BeanConstant.SUBSCRIPTION_SERVICE_S2S_TEMPLATE;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY105;
+
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.cache.aspect.advice.CacheEvict;
+import in.wynk.cache.aspect.advice.CachePut;
+import in.wynk.cache.aspect.advice.Cacheable;
+import in.wynk.cache.constant.BeanConstant;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.context.WynkApplicationContext;
 import in.wynk.common.dto.WynkResponse;
@@ -20,20 +27,45 @@ import in.wynk.payment.dto.BestValuePlanPurchaseRequest;
 import in.wynk.payment.dto.BestValuePlanResponse;
 import in.wynk.payment.dto.SubscriptionStatus;
 import in.wynk.payment.dto.aps.common.ApsConstant;
-import in.wynk.payment.dto.request.*;
+import in.wynk.payment.dto.request.AbstractSubscribePlanRequest;
+import in.wynk.payment.dto.request.SelectivePlanEligibilityRequest;
+import in.wynk.payment.dto.request.SubscribePlanAsyncRequest;
+import in.wynk.payment.dto.request.SubscribePlanSyncRequest;
+import in.wynk.payment.dto.request.UnSubscribePlanAsyncRequest;
+import in.wynk.payment.dto.request.UnSubscribePlanSyncRequest;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.CurrencyCountryUtils;
 import in.wynk.queue.constant.QueueErrorType;
 import in.wynk.queue.service.ISqsManagerService;
-import in.wynk.subscription.common.dto.*;
+import in.wynk.subscription.common.dto.ItemDTO;
+import in.wynk.subscription.common.dto.OfferDTO;
+import in.wynk.subscription.common.dto.PartnerDTO;
+import in.wynk.subscription.common.dto.PlanDTO;
+import in.wynk.subscription.common.dto.ProductDTO;
+import in.wynk.subscription.common.dto.RenewalPlanEligibilityRequest;
+import in.wynk.subscription.common.dto.RenewalPlanEligibilityResponse;
+import in.wynk.subscription.common.dto.ThanksPlanResponse;
 import in.wynk.subscription.common.enums.ProvisionState;
 import in.wynk.subscription.common.message.SubscriptionProvisioningMessage;
-import in.wynk.subscription.common.request.*;
+import in.wynk.subscription.common.request.PlanProvisioningRequest;
+import in.wynk.subscription.common.request.PlanUnProvisioningRequest;
+import in.wynk.subscription.common.request.SelectivePlansComputationRequest;
+import in.wynk.subscription.common.request.SessionRequest;
+import in.wynk.subscription.common.request.SinglePlanAdditiveProvisionRequest;
+import in.wynk.subscription.common.request.SinglePlanProvisionRequest;
+import in.wynk.subscription.common.request.UserPersonalisedPlanRequest;
 import in.wynk.subscription.common.response.AllItemsResponse;
 import in.wynk.subscription.common.response.AllPlansResponse;
 import in.wynk.subscription.common.response.PlanProvisioningResponse;
 import in.wynk.subscription.common.response.SelectivePlansComputationResponse;
+import java.net.URI;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,13 +79,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
-
-import java.net.URI;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static in.wynk.payment.core.constant.BeanConstant.SUBSCRIPTION_SERVICE_S2S_TEMPLATE;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY105;
 
 @Service
 @Slf4j
@@ -83,6 +108,9 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Value("${service.subscription.api.endpoint.subscribePlan}")
     private String subscribePlanEndPoint;
 
+    @Value("${service.subscription.api.endpoint.subscribePlanAdditive}")
+    private String subscribePlanAdditiveEndPoint;
+
     @Value("${service.subscription.api.endpoint.selectivePlanComputation}")
     private String selectivePlanComputeEndPoint;
 
@@ -101,6 +129,9 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Value("${service.subscription.api.endpoint.bestValue}")
     private String subscriptionBestValueEndpoint;
 
+    @Value("${service.subscription.api.endpoint.thanksPlan}")
+    private String thanksPlanEndPoint;
+
     @Autowired
     @Qualifier(SUBSCRIPTION_SERVICE_S2S_TEMPLATE)
     private RestTemplate restTemplate;
@@ -116,63 +147,63 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     private PaymentCachingService cachingService;
 
     @Override
-    public List<PlanDTO> getPlans () {
+    public List<PlanDTO> getPlans() {
         RequestEntity<Void> allPlanRequest =
-                ChecksumUtils.buildEntityWithAuthHeaders(allPlanApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
+            ChecksumUtils.buildEntityWithAuthHeaders(allPlanApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
         return Objects.requireNonNull(restTemplate.exchange(allPlanRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<AllPlansResponse>>() {
         }).getBody()).getData().getPlans();
     }
 
     @Override
-    public List<PartnerDTO> getPartners () {
+    public List<PartnerDTO> getPartners() {
         RequestEntity<Void> allPlanRequest =
-                ChecksumUtils.buildEntityWithAuthHeaders(allPartnerApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
+            ChecksumUtils.buildEntityWithAuthHeaders(allPartnerApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
         return Objects.requireNonNull(restTemplate.exchange(allPlanRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<Map<String, Collection<PartnerDTO>>>>() {
         }).getBody()).getData().get("allPartners").stream().collect(Collectors.toList());
     }
 
     @Override
-    public List<OfferDTO> getOffers () {
+    public List<OfferDTO> getOffers() {
         RequestEntity<Void> allPlanRequest =
-                ChecksumUtils.buildEntityWithAuthHeaders(allOfferApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
+            ChecksumUtils.buildEntityWithAuthHeaders(allOfferApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
         return Objects.requireNonNull(restTemplate.exchange(allPlanRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<Map<String, Collection<OfferDTO>>>>() {
         }).getBody()).getData().get("allOffers").stream().collect(Collectors.toList());
     }
 
 
     @Override
-    public Collection<ItemDTO> getItems () {
+    public Collection<ItemDTO> getItems() {
         RequestEntity<Void> allItemRequest =
-                ChecksumUtils.buildEntityWithAuthHeaders(allItemApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
+            ChecksumUtils.buildEntityWithAuthHeaders(allItemApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
         return Objects.requireNonNull(restTemplate.exchange(allItemRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<AllItemsResponse>>() {
         }).getBody()).getData().getItems();
     }
 
     @Override
-    public List<ProductDTO> getProducts () {
+    public List<ProductDTO> getProducts() {
         RequestEntity<Void> allProductRequest =
-                ChecksumUtils.buildEntityWithAuthHeaders(allProductApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
+            ChecksumUtils.buildEntityWithAuthHeaders(allProductApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
         return Objects.requireNonNull(restTemplate.exchange(allProductRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<Map<String, Collection<ProductDTO>>>>() {
         }).getBody()).getData().get("allProducts").stream().collect(Collectors.toList());
     }
 
-    public List<SubscriptionStatus> getSubscriptionStatus (String uid, String service) {
+    public List<SubscriptionStatus> getSubscriptionStatus(String uid, String service) {
         final URI uri = restTemplate.getUriTemplateHandler().expand(subscriptionStatusEndpoint, uid, service);
         RequestEntity<Void> subscriptionStatusRequest =
-                ChecksumUtils.buildEntityWithAuthHeaders(uri.toString(), myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
+            ChecksumUtils.buildEntityWithAuthHeaders(uri.toString(), myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
         return restTemplate.exchange(subscriptionStatusRequest, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<List<SubscriptionStatus>>>() {
         }).getBody().getData();
     }
 
 
     @Override
-    public PlanDTO getUserPersonalisedPlanOrDefault (UserPersonalisedPlanRequest request, PlanDTO defaultPlan) {
+    public PlanDTO getUserPersonalisedPlanOrDefault(UserPersonalisedPlanRequest request, PlanDTO defaultPlan) {
         if (!defaultPlan.isPersonalize()) {
             return defaultPlan;
         }
         try {
             RequestEntity<UserPersonalisedPlanRequest> requestEntity =
-                    ChecksumUtils.buildEntityWithAuthHeaders(personalisedPlanApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), request, HttpMethod.POST);
+                ChecksumUtils.buildEntityWithAuthHeaders(personalisedPlanApiEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), request, HttpMethod.POST);
             return Objects.requireNonNull(restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<PlanDTO>>() {
             }).getBody()).getData();
         } catch (Exception e) {
@@ -183,72 +214,82 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
 
     @Override
-    public ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> renewalPlanEligibilityResponse (int planId, String uid) {
+    public ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> renewalPlanEligibilityResponse(int planId, String uid) {
         try {
             RenewalPlanEligibilityRequest renewalPlanEligibilityRequest =
-                    RenewalPlanEligibilityRequest.builder().uid(uid).planId(planId).countryCode(CurrencyCountryUtils.findCountryCodeByPlanId(planId)).build();
+                RenewalPlanEligibilityRequest.builder().uid(uid).planId(planId).countryCode(CurrencyCountryUtils.findCountryCodeByPlanId(planId)).build();
             RequestEntity<RenewalPlanEligibilityRequest> requestEntity =
-                    ChecksumUtils.buildEntityWithAuthHeaders(renewalPlanEligibilityEndpoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), renewalPlanEligibilityRequest,
-                            HttpMethod.POST);
+                ChecksumUtils.buildEntityWithAuthHeaders(renewalPlanEligibilityEndpoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), renewalPlanEligibilityRequest,
+                                                         HttpMethod.POST);
             ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> response =
-                    restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>>() {
-                    });
+                restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>>() {
+                });
             return response;
         } catch (Exception e) {
             throw new WynkRuntimeException(PAY105);
         }
     }
 
-    public boolean isDeferred (String paymentMethod, long furtherDefer) {
+    public boolean isDeferred(String paymentMethod, long furtherDefer) {
         long oneHourWindow = (long) hour * 60 * 60 * 1000;
         long twoDayPlusOneHourWindow = ((long) 2 * 24 * 60 * 60 * 1000) + oneHourWindow;
         return Objects.equals(paymentMethod, ApsConstant.AIRTEL_PAY_STACK) ? (furtherDefer > twoDayPlusOneHourWindow) : (furtherDefer > oneHourWindow);
     }
 
     @Override
-    public void subscribePlanAsync (SubscribePlanAsyncRequest request) {
+    public void validateAndSubscribePlanAsync(SubscribePlanAsyncRequest request) {
         if (isExternallyProvisionablePlan(request.getPlanId()) &&
-                (request.getPaymentGateway().getId().equalsIgnoreCase(PaymentConstants.ADD_TO_BILL) || request.getPaymentGateway().getId().equalsIgnoreCase(ApsConstant.APS_V2))) {
+            (request.getPaymentGateway().getId().equalsIgnoreCase(PaymentConstants.ADD_TO_BILL) || request.getPaymentGateway().getId().equalsIgnoreCase(ApsConstant.APS_V2))) {
             log.info("plan {} has to be provision externally for uid {}, stopping subscribePlanAsync flow", request.getPlanId(), request.getUid());
+            additiveDaysSubscribe(request);
             return;
         }
         try {
-            this.publishAsync(SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId())
-                    .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentCode(request.getPaymentGateway().getCode()).paymentPartner(BaseConstants.WYNK.toLowerCase())
-                    .referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent()).transactionStatus(request.getTransactionStatus())
-                    .externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired()).os(request.getTriggerDataRequest().getOs())
-                    .appVersion(request.getTriggerDataRequest().getAppVersion()).build());
+            this.publishAsync(SubscriptionProvisioningMessage.builder()
+                                                             .uid(request.getUid())
+                                                             .msisdn(request.getMsisdn())
+                                                             .subscriberId(request.getSubscriberId())
+                                                             .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent()))
+                                                             .paymentCode(request.getPaymentGateway().getCode())
+                                                             .paymentPartner(BaseConstants.WYNK.toLowerCase())
+                                                             .referenceId(request.getTransactionId())
+                                                             .paymentEvent(request.getPaymentEvent())
+                                                             .transactionStatus(request.getTransactionStatus())
+                                                             .externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired())
+                                                             .os(request.getTriggerDataRequest().getOs())
+                                                             .appVersion(request.getTriggerDataRequest().getAppVersion())
+                                                             .build());
         } catch (Exception e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY013, e);
         }
     }
 
     @Override
-    public void unSubscribePlanAsync (UnSubscribePlanAsyncRequest request) {
+    public void unSubscribePlanAsync(UnSubscribePlanAsyncRequest request) {
         this.publishAsync(
-                SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).referenceId(request.getTransactionId()).transactionStatus(request.getTransactionStatus())
-                        .paymentEvent(request.getPaymentEvent()).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentPartner(BaseConstants.WYNK.toLowerCase())
-                        .appVersion(request.getTriggerDataRequest().getAppVersion()).os(request.getTriggerDataRequest().getOs()).build());
+            SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).referenceId(request.getTransactionId()).transactionStatus(request.getTransactionStatus())
+                                           .paymentEvent(request.getPaymentEvent()).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentPartner(BaseConstants.WYNK.toLowerCase())
+                                           .appVersion(request.getTriggerDataRequest().getAppVersion()).os(request.getTriggerDataRequest().getOs()).build());
     }
 
     @Override
-    public SelectivePlansComputationResponse compute (SelectivePlanEligibilityRequest request) {
+    public SelectivePlansComputationResponse compute(SelectivePlanEligibilityRequest request) {
         try {
             final IAppDetails appDetails = request.getAppDetails();
             final IUserDetails userDetails = request.getUserDetails();
             final SelectivePlansComputationRequest selectivePlansComputationRequest =
-                    SelectivePlansComputationRequest.builder().planIds(Collections.singletonList(request.getPlanId())).msisdn(userDetails.getMsisdn())
-                            .uid(IdentityUtils.getUidFromUserName(userDetails.getMsisdn(), request.getService())).service(request.getService()).appId(appDetails.getAppId())
-                            .appVersion(appDetails.getAppVersion()).os(appDetails.getOs()).buildNo(appDetails.getBuildNo()).deviceId(appDetails.getDeviceId()).deviceType(appDetails.getDeviceType())
-                            .createdTimestamp(System.currentTimeMillis()).countryCode(userDetails.getCountryCode()).build();
+                SelectivePlansComputationRequest.builder().planIds(Collections.singletonList(request.getPlanId())).msisdn(userDetails.getMsisdn())
+                                                .uid(IdentityUtils.getUidFromUserName(userDetails.getMsisdn(), request.getService())).service(request.getService()).appId(appDetails.getAppId())
+                                                .appVersion(appDetails.getAppVersion()).os(appDetails.getOs()).buildNo(appDetails.getBuildNo()).deviceId(appDetails.getDeviceId()).deviceType(appDetails.getDeviceType())
+                                                .createdTimestamp(System.currentTimeMillis()).countryCode(userDetails.getCountryCode()).build();
             final RequestEntity<SelectivePlansComputationRequest> requestEntity = BeanLocatorFactory.getBean(PaymentCachingService.class).isV2SubscriptionJourney(request.getPlanId()) ?
-                    ChecksumUtils.buildEntityWithAuthHeaders(selectivePlanComputeEndPointV2, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(),
-                            selectivePlansComputationRequest, HttpMethod.POST) :
-                    ChecksumUtils.buildEntityWithAuthHeaders(selectivePlanComputeEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), selectivePlansComputationRequest,
-                            HttpMethod.POST);
+                ChecksumUtils.buildEntityWithAuthHeaders(selectivePlanComputeEndPointV2, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(),
+                                                         selectivePlansComputationRequest, HttpMethod.POST) :
+                ChecksumUtils.buildEntityWithAuthHeaders(selectivePlanComputeEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), selectivePlansComputationRequest,
+                                                         HttpMethod.POST);
             final ResponseEntity<WynkResponse.WynkResponseWrapper<SelectivePlansComputationResponse>> response =
-                    restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<SelectivePlansComputationResponse>>() {
-                    });
+                restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<SelectivePlansComputationResponse>>() {
+                });
             return response.getBody().getData();
         } catch (HttpStatusCodeException e) {
             throw new WynkRuntimeException(PaymentErrorType.PAY107, e, e.getResponseBodyAsString());
@@ -259,67 +300,129 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     }
 
     @Override
-    public void subscribePlanSync (SubscribePlanSyncRequest request) {
+    public void subscribePlanSync(SubscribePlanSyncRequest request) {
         if (isExternallyProvisionablePlan(request.getPlanId()) &&
-                (request.getPaymentGateway().getId().equalsIgnoreCase(PaymentConstants.ADD_TO_BILL) || request.getPaymentGateway().getId().equalsIgnoreCase(ApsConstant.APS_V2))) {
+            (request.getPaymentGateway().getId().equalsIgnoreCase(PaymentConstants.ADD_TO_BILL) || request.getPaymentGateway().getId().equalsIgnoreCase(ApsConstant.APS_V2))) {
             log.info("plan {} has to be provision externally for uid {}, stopping subscribePlanSync flow", request.getPlanId(), request.getUid());
+            additiveDaysSubscribe(request);
             return;
         }
         try {
             PlanProvisioningRequest planProvisioningRequest =
-                    SinglePlanProvisionRequest.builder().uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId()).paymentCode(request.getPaymentGateway().getCode())
-                            .referenceId(request.getTransactionId()).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentPartner(BaseConstants.WYNK.toLowerCase())
-                            .eventType(request.getPaymentEvent()).externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired())
-                            .triggerDataRequest(request.getTriggerDataRequest()).build();
+                SinglePlanProvisionRequest.builder()
+                                          .uid(request.getUid())
+                                          .msisdn(request.getMsisdn())
+                                          .subscriberId(request.getSubscriberId())
+                                          .paymentCode(request.getPaymentGateway().getCode())
+                                          .referenceId(request.getTransactionId())
+                                          .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent()))
+                                          .paymentPartner(BaseConstants.WYNK.toLowerCase())
+                                          .eventType(request.getPaymentEvent())
+                                          .externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired())
+                                          .triggerDataRequest(request.getTriggerDataRequest())
+                                          .build();
             RequestEntity<PlanProvisioningRequest> requestEntity =
-                    ChecksumUtils.buildEntityWithAuthHeaders(subscribePlanEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), planProvisioningRequest,
-                            HttpMethod.POST);
+                ChecksumUtils.buildEntityWithAuthHeaders(subscribePlanEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), planProvisioningRequest,
+                                                         HttpMethod.POST);
             ResponseEntity<WynkResponse.WynkResponseWrapper<PlanProvisioningResponse>> response =
-                    restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<PlanProvisioningResponse>>() {
-                    });
+                restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<PlanProvisioningResponse>>() {
+                });
             if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {
                 PlanProvisioningResponse provisioningResponse = response.getBody().getData();
                 //TODO: remove deferred state check post IAP fixes.
                 if (provisioningResponse.getState() != ProvisionState.SUBSCRIBED && provisioningResponse.getState() != ProvisionState.DEFERRED) {
                     this.publishAsync(SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId())
-                            .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentCode(request.getPaymentGateway().getCode())
-                            .paymentPartner(BaseConstants.WYNK.toLowerCase()).referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent())
-                            .transactionStatus(request.getTransactionStatus()).externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired())
-                            .os(request.getTriggerDataRequest().getOs()).appVersion(request.getTriggerDataRequest().getAppVersion()).build());
+                                                                     .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentCode(request.getPaymentGateway().getCode())
+                                                                     .paymentPartner(BaseConstants.WYNK.toLowerCase()).referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent())
+                                                                     .transactionStatus(request.getTransactionStatus()).externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired())
+                                                                     .os(request.getTriggerDataRequest().getOs()).appVersion(request.getTriggerDataRequest().getAppVersion()).build());
                     throw new WynkRuntimeException(PaymentErrorType.PAY013);
                 }
             }
         } catch (HttpStatusCodeException e) {
             this.publishAsync(SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId())
-                    .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentCode(request.getPaymentGateway().getCode()).paymentPartner(BaseConstants.WYNK.toLowerCase())
-                    .referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent()).transactionStatus(request.getTransactionStatus())
-                    .externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired()).os(request.getTriggerDataRequest().getOs())
-                    .appVersion(request.getTriggerDataRequest().getAppVersion()).build());
+                                                             .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentCode(request.getPaymentGateway().getCode()).paymentPartner(BaseConstants.WYNK.toLowerCase())
+                                                             .referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent()).transactionStatus(request.getTransactionStatus())
+                                                             .externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired()).os(request.getTriggerDataRequest().getOs())
+                                                             .appVersion(request.getTriggerDataRequest().getAppVersion()).build());
             throw new WynkRuntimeException(PaymentErrorType.PAY013, e, e.getResponseBodyAsString());
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.PAYMENT_ERROR, "Error occurred while subscribing {}", e.getMessage(), e);
             this.publishAsync(SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId())
-                    .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentCode(request.getPaymentGateway().getCode()).paymentPartner(BaseConstants.WYNK.toLowerCase())
-                    .referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent()).transactionStatus(request.getTransactionStatus())
-                    .externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired()).os(request.getTriggerDataRequest().getOs())
-                    .appVersion(request.getTriggerDataRequest().getAppVersion()).build());
+                                                             .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentCode(request.getPaymentGateway().getCode()).paymentPartner(BaseConstants.WYNK.toLowerCase())
+                                                             .referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent()).transactionStatus(request.getTransactionStatus())
+                                                             .externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired()).os(request.getTriggerDataRequest().getOs())
+                                                             .appVersion(request.getTriggerDataRequest().getAppVersion()).build());
             throw new WynkRuntimeException(PaymentErrorType.PAY013, e);
         }
     }
 
+    private void additiveDaysSubscribe(AbstractSubscribePlanRequest request) {
+        AnalyticService.update("AdditiveValidity", request.toString());
+        try {
+            if (ApsConstant.APS_V2.equalsIgnoreCase(request.getPaymentGateway().getId())) {
+                Integer additiveDays = getAdditiveDays(request.getMsisdn(), request.getPlanId());
+                AnalyticService.update("AdditiveValidity", additiveDays);
+                PlanProvisioningRequest planProvisioningRequest = SinglePlanAdditiveProvisionRequest.builder()
+                                                                                                    .uid(request.getUid())
+                                                                                                    .msisdn(request.getMsisdn())
+                                                                                                    .subscriberId(request.getSubscriberId())
+                                                                                                    .paymentCode(request.getPaymentGateway().getCode())
+                                                                                                    .referenceId(request.getTransactionId())
+                                                                                                    .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent()))
+                                                                                                    .paymentPartner(BaseConstants.WYNK.toLowerCase())
+                                                                                                    .eventType(request.getPaymentEvent())
+                                                                                                    .externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired())
+                                                                                                    .triggerDataRequest(request.getTriggerDataRequest())
+                                                                                                    .validityInDays(additiveDays)
+                                                                                                    .build();
+                RequestEntity<PlanProvisioningRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(subscribePlanAdditiveEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), planProvisioningRequest, HttpMethod.POST);
+                AnalyticService.update("AdditiveValidity", requestEntity.toString());
+                restTemplate.exchange(requestEntity,
+                                      new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<PlanProvisioningResponse>>() {
+                                      });
+                removeFromCache(request.getMsisdn(), request.getPlanId());
+            }
+        } catch (Exception e) {
+            log.error("Error in Subscribe Plan Additive request", e);
+        }
+    }
+
+    @CachePut(cacheName = "additiveDays", cacheKey = "#msisdn + ':' + #planId", l2CacheTtl = 3600, cacheManager = BeanConstant.L2CACHE_MANAGER)
     @Override
-    public void unSubscribePlanSync (UnSubscribePlanSyncRequest request) {
+    public int cacheAdditiveDays(String msisdn, String planId) {
+        try {
+            ThanksPlanResponse thanksPlanResponse = getThanksPlanForAdditiveDays(msisdn);
+            AnalyticService.update("ActiveThanksPlan", thanksPlanResponse.toString());
+            return thanksPlanResponse.getData().getDaysTillExpiry();
+        } catch (Exception e) {
+            log.error("Error in subscriptionServiceManager.getThanksPlanForAdditiveDays", e);
+        }
+        return 0;
+    }
+
+    @Cacheable(cacheName = "additiveDays", cacheKey = "#msisdn + ':' + #planId", l2CacheTtl = 3600, cacheManager = BeanConstant.L2CACHE_MANAGER)
+    public Integer getAdditiveDays(String msisdn, Integer planId) {
+        return null;
+    }
+
+    @CacheEvict(cacheName = "additiveDays", cacheKey = "#msisdn + ':' + #planId", cacheManager = BeanConstant.L2CACHE_MANAGER)
+    public void removeFromCache(String msisdn, Integer planId) {
+    }
+
+    @Override
+    public void unSubscribePlanSync(UnSubscribePlanSyncRequest request) {
         try {
             PlanUnProvisioningRequest unProvisioningRequest =
-                    PlanUnProvisioningRequest.builder().msisdn(request.getMsisdn()).uid(request.getUid()).referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent())
-                            .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentPartner(BaseConstants.WYNK.toLowerCase())
-                            .triggerDataRequest(request.getTriggerDataRequest()).build();
+                PlanUnProvisioningRequest.builder().msisdn(request.getMsisdn()).uid(request.getUid()).referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent())
+                                         .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentPartner(BaseConstants.WYNK.toLowerCase())
+                                         .triggerDataRequest(request.getTriggerDataRequest()).build();
             RequestEntity<PlanUnProvisioningRequest> requestEntity =
-                    ChecksumUtils.buildEntityWithAuthHeaders(unSubscribePlanEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), unProvisioningRequest,
-                            HttpMethod.POST);
+                ChecksumUtils.buildEntityWithAuthHeaders(unSubscribePlanEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), unProvisioningRequest,
+                                                         HttpMethod.POST);
             ResponseEntity<WynkResponse.WynkResponseWrapper<PlanProvisioningResponse>> response =
-                    restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<PlanProvisioningResponse>>() {
-                    });
+                restTemplate.exchange(requestEntity, new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<PlanProvisioningResponse>>() {
+                });
             if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {
                 PlanProvisioningResponse provisioningResponse = response.getBody().getData();
                 if (provisioningResponse.getState() != ProvisionState.UNSUBSCRIBED) {
@@ -333,7 +436,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         }
     }
 
-    private void publishAsync (SubscriptionProvisioningMessage message) {
+    private void publishAsync(SubscriptionProvisioningMessage message) {
         try {
             sqsMessagePublisher.publishSQSMessage(message);
         } catch (Exception e) {
@@ -341,19 +444,18 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         }
     }
 
-    public Integer getUpdatedPlanId (Integer planId, PaymentEvent paymentEvent) {
+    public Integer getUpdatedPlanId(Integer planId, PaymentEvent paymentEvent) {
         return paymentEvent == PaymentEvent.TRIAL_SUBSCRIPTION ? BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(planId).getLinkedFreePlanId() : planId;
     }
 
-    private boolean isExternallyProvisionablePlan (int planId) {
+    private boolean isExternallyProvisionablePlan(int planId) {
         return BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(planId).isProvisionNotRequired();
     }
 
     @Override
-    public BestValuePlanResponse getBestValuePlan (final BestValuePlanPurchaseRequest request, final Map<String, String> additionalParam) {
+    public BestValuePlanResponse getBestValuePlan(final BestValuePlanPurchaseRequest request, final Map<String, String> additionalParam) {
         String planId = null;
         try {
-
 
             if (request.getProductDetails() != null && StringUtils.isNotEmpty(request.getProductDetails().getId())) {
                 AnalyticService.update(BaseConstants.REQUEST_PLAN_ID, request.getProductDetails().getId());
@@ -366,13 +468,13 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
             final SessionRequest sessionRequestWithAdditionalParam = request.toSessionWithAdditionalParam(additionalParam);
             AnalyticService.update(sessionRequestWithAdditionalParam);
             final RequestEntity<SessionRequest> sessionRequest = ChecksumUtils.buildEntityWithAuthHeaders(subscriptionBestValueEndpoint,
-                    myApplicationContext.getClientId(),
-                    myApplicationContext.getClientSecret(),
-                    sessionRequestWithAdditionalParam,
-                    HttpMethod.POST);
+                                                                                                          myApplicationContext.getClientId(),
+                                                                                                          myApplicationContext.getClientSecret(),
+                                                                                                          sessionRequestWithAdditionalParam,
+                                                                                                          HttpMethod.POST);
             final WynkResponseWrapper<in.wynk.common.dto.BestValuePlanResponse> body = restTemplate.exchange(sessionRequest,
-                    new ParameterizedTypeReference<WynkResponseWrapper<in.wynk.common.dto.BestValuePlanResponse>>() {
-                    }).getBody();
+                                                                                                             new ParameterizedTypeReference<WynkResponseWrapper<in.wynk.common.dto.BestValuePlanResponse>>() {
+                                                                                                             }).getBody();
             if (Objects.nonNull(body) && Objects.nonNull(body.getData()) && StringUtils.isNotEmpty(body.getData().getPlanId())) {
                 planId = body.getData().getPlanId();
                 AnalyticService.update(BaseConstants.BEST_VALUE_PLAN, planId);
@@ -383,9 +485,16 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         return BestValuePlanResponse.builder().bestValuePlanPurchaseRequest(request).planId(planId).build();
     }
 
-    private boolean validateMandatoryParam (final Map<String, String> additionalParam) {
+    private boolean validateMandatoryParam(final Map<String, String> additionalParam) {
         String pg = additionalParam.get(BaseConstants.DEEPLINK_PACK_GROUP);
         int validity = Validity.getValidity(additionalParam.get(BaseConstants.VALIDITY));
         return !StringUtils.isEmpty(pg) && validity != -1;
+    }
+
+    public ThanksPlanResponse getThanksPlanForAdditiveDays(String msisdn) {
+        String endpoint = thanksPlanEndPoint + "?msisdn=" + msisdn;
+        RequestEntity<Void> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(endpoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), null, HttpMethod.GET);
+        ResponseEntity<ThanksPlanResponse> response = restTemplate.exchange(requestEntity, new ParameterizedTypeReference<ThanksPlanResponse>(){});
+        return response.getBody();
     }
 }

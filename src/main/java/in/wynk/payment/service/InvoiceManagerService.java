@@ -20,6 +20,7 @@ import in.wynk.payment.core.event.InvoiceRetryEvent;
 import in.wynk.payment.core.service.GSTStateCodesCachingService;
 import in.wynk.payment.core.service.InvoiceDetailsCachingService;
 import in.wynk.payment.dto.PointDetails;
+import in.wynk.payment.dto.gpbs.request.GooglePlayProductDetails;
 import in.wynk.payment.dto.invoice.*;
 import in.wynk.stream.producer.IKafkaEventPublisher;
 import in.wynk.subscription.common.dto.OfferDTO;
@@ -165,9 +166,15 @@ public class InvoiceManagerService implements InvoiceManager {
             double amount;
             if (request.getTransaction().getType() == PaymentEvent.POINT_PURCHASE) {
                 final IPurchaseDetails purchaseDetails = purchaseDetailsManager.get(request.getTransaction());
-                PointDetails pointDetails = (PointDetails) purchaseDetails.getProductDetails();
-                planTitle = pointDetails.getTitle();
-                offerTitle = pointDetails.getTitle();
+                if (purchaseDetails.getProductDetails() instanceof GooglePlayProductDetails) {
+                    GooglePlayProductDetails pointDetails = (GooglePlayProductDetails) purchaseDetails.getProductDetails();
+                    planTitle = pointDetails.getTitle();
+                    offerTitle = pointDetails.getTitle();
+                } else {
+                    PointDetails pointDetails = (PointDetails) purchaseDetails.getProductDetails();
+                    planTitle = pointDetails.getTitle();
+                    offerTitle = pointDetails.getTitle();
+                }
                 amount = request.getTransaction().getAmount();
             } else {
                 final PlanDTO plan = cachingService.getPlan(request.getTransaction().getPlanId());

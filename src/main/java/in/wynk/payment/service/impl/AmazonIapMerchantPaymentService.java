@@ -444,13 +444,9 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         try {
             if (Objects.nonNull(response)) {
                 boolean isEligible = isNotificationEligibleForRenewal(response, receipt);
-                if (isEligible) {
-                    if (Objects.isNull(response.getCancelDate())) {
-                        if (response.getRenewalDate() > System.currentTimeMillis()) {
-                            status = TransactionStatus.SUCCESS;
-                            return WynkResponseEntity.<Void>builder().build();
-                        }
-                    }
+                if (isEligible && Objects.isNull(response.getCancelDate()) && response.getRenewalDate() > System.currentTimeMillis()) {
+                    status = TransactionStatus.SUCCESS;
+                    return WynkResponseEntity.<Void>builder().build();
                 }
                 if (Objects.nonNull(response.getCancelDate())) {
                     eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PaymentErrorType.APS012.name()).description(CANCELLATION_REASON.get(response.getCancelReason())).build());
@@ -467,10 +463,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     }
 
     private boolean isNotificationEligibleForRenewal(AmazonIapReceiptResponse response, AmazonReceiptDetails receipt) {
-        if (Objects.isNull(receipt.getRenewalDate())) {
-            return true;
-        }
-        if (response.getRenewalDate() > receipt.getRenewalDate()) {
+        if (Objects.isNull(receipt.getRenewalDate()) || response.getRenewalDate() > receipt.getRenewalDate()) {
             return true;
         }
         return false;

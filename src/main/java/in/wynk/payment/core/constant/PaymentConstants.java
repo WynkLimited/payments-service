@@ -9,6 +9,7 @@ import java.util.List;
 public interface PaymentConstants extends BaseConstants {
 
     String SKU_ID = "skuId";
+    String SHOW_GPB = "showGPB";
     String SAVED = "SAVED";
     String PAYU = "PAYU";
     String TXN_ID = "tid";
@@ -100,6 +101,7 @@ public interface PaymentConstants extends BaseConstants {
     String AIRTEL_TV = "airteltv";
     Double MANDATE_FLOW_AMOUNT = 1.0;
     String PAYMENT_FLOW_MANDATE = "MANDATE";
+    String MANDATE_REVOKE_RESPONSE = "MANDATE_REVOKE_RESPONSE";
     String PAYMENT_FLOW_TRIAL_OPTED = "TRIALOPTED";
     String PAYMENT_FLOW_AUTO_RENEW = "AUTORENEW";
     String ADD_TO_BILL_USER_SUBSCRIPTION_STATUS_TASK = "AddToBillUserSubscriptionStatusTask";

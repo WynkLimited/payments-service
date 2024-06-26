@@ -6,9 +6,7 @@ import in.wynk.payment.dto.ProductDetailsDto;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.Getter;
 import lombok.Setter;
-
 import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import java.util.Objects;
 
 /**

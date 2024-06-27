@@ -91,8 +91,7 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
 
     @Override
     public AbstractPaymentChargingResponse charge(AbstractPaymentChargingRequest request) {
-        Executor executor = Executors.newSingleThreadExecutor();
-        executor.execute(() -> subscriptionServiceManager.cacheAdditiveDays(request.getUserDetails().getMsisdn(), request.getProductDetails().getId()));
+        subscriptionServiceManager.cacheAdditiveDays(request.getUserDetails().getMsisdn(), request.getProductDetails().getId());
 
         RechargeOrderResponse orderResponse = (RechargeOrderResponse) orderGateway.order(RechargeOrderRequest.builder().build());
         request.setOrderId(orderResponse.getOrderId());

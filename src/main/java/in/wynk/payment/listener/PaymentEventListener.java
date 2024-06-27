@@ -44,6 +44,7 @@ import in.wynk.payment.service.*;
 import in.wynk.payment.utils.TaxUtils;
 import in.wynk.queue.constant.QueueConstant;
 import in.wynk.queue.dto.MessageThresholdExceedEvent;
+import in.wynk.queue.dto.Payment;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.scheduler.task.dto.TaskDefinition;
 import in.wynk.scheduler.task.service.ITaskScheduler;
@@ -706,12 +707,16 @@ public class PaymentEventListener {
         AnalyticService.update(TRANSACTION_STATUS, event.getTransaction().getStatus().getValue());
         AnalyticService.update(PAYMENT_METHOD, event.getTransaction().getPaymentChannel().getCode());
         if (event.getTransaction().getStatus() == TransactionStatus.SUCCESS) {
-            final BaseTDRResponse tdr = paymentGatewayManager.getTDR(event.getTransaction().getIdStr());
-            AnalyticService.update(TDR, tdr.getTdr());
+            Double tdr = paymentGatewayManager.getTDR(event.getTransaction());
+            if (Objects.nonNull(tdr)) {
+                AnalyticService.update(TDR, tdr);
+            }
             //Invoice should not be generated for Trial or mandate subscription WCF-4350
             if ((PaymentEvent.MANDATE != event.getTransaction().getType() && PaymentEvent.TRIAL_SUBSCRIPTION != event.getTransaction().getType()) &&
                     event.getTransaction().getPaymentChannel().isInvoiceSupported()) {
-                if (PaymentEvent.REFUND != event.getTransaction().getType() || (PaymentEvent.REFUND == event.getTransaction().getType() && event.getTransaction().getAmount() != MANDATE_FLOW_AMOUNT)) {
+                if (!(EnumSet.of(PaymentEvent.UNSUBSCRIBE, PaymentEvent.CANCELLED, PaymentEvent.RESUMED, PaymentEvent.SUSPENDED, PaymentEvent.PROMOTION, PaymentEvent.FREE)
+                        .contains(event.getTransaction().getType())) && (PaymentEvent.REFUND != event.getTransaction().getType() ||
+                        (PaymentEvent.REFUND == event.getTransaction().getType() && event.getTransaction().getAmount() != MANDATE_FLOW_AMOUNT))) {
                     eventPublisher.publishEvent(GenerateInvoiceEvent.builder()
                             .msisdn(event.getTransaction().getMsisdn())
                             .txnId(event.getTransaction().getIdStr())

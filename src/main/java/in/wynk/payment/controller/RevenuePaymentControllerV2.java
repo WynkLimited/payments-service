@@ -23,6 +23,7 @@ import in.wynk.payment.presentation.dto.charge.PaymentChargingResponse;
 import in.wynk.payment.presentation.dto.status.PaymentStatusResponse;
 import in.wynk.payment.service.IMerchantVerificationService;
 import in.wynk.payment.service.PaymentGatewayManager;
+import in.wynk.payment.service.impl.SubscriptionServiceManagerImpl;
 import in.wynk.payment.utils.LoadClientUtils;
 import in.wynk.session.aspect.advice.ManageSession;
 import in.wynk.session.context.SessionContextHolder;
@@ -54,6 +55,7 @@ public class RevenuePaymentControllerV2 {
     private final Gson gson;
     private final PaymentGatewayManager manager;
     private final PaymentMethodCachingService paymentMethodCachingService;
+    private final SubscriptionServiceManagerImpl subscriptionServiceManager;
 
     @PostMapping("/verify/{sid}")
     @ManageSession(sessionId = "#sid")
@@ -156,6 +158,11 @@ public class RevenuePaymentControllerV2 {
                 }).transform(() -> Pair.of(request, manager.charge(request)));
         AnalyticService.update(responseEntity);
         return responseEntity;
+    }
+
+    @PostMapping("/test/cache")
+    public void test(@RequestParam String msisdn, @RequestParam String planId) {
+        subscriptionServiceManager.cacheAdditiveDays(msisdn, planId);
     }
 
     @GetMapping("/status/{sid}")

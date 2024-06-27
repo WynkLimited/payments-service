@@ -30,14 +30,23 @@ import in.wynk.payment.dto.response.RechargeOrderResponse;
 import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsItemEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
-import in.wynk.payment.gateway.*;
-import in.wynk.payment.gateway.aps.service.*;
+import in.wynk.payment.gateway.IPaymentAccountVerification;
+import in.wynk.payment.gateway.IPaymentCallback;
+import in.wynk.payment.gateway.IPaymentCharging;
+import in.wynk.payment.gateway.IPaymentInstrumentsProxy;
+import in.wynk.payment.gateway.IPaymentRefund;
+import in.wynk.payment.gateway.IPaymentStatus;
+import in.wynk.payment.gateway.IRechargeOrder;
+import in.wynk.payment.gateway.aps.service.ApsCommonGatewayService;
+import in.wynk.payment.gateway.aps.service.ApsEligibilityGatewayServiceImpl;
+import in.wynk.payment.gateway.aps.service.ApsOrderGatewayServiceImpl;
+import in.wynk.payment.gateway.aps.service.ApsPaymentOptionsServiceImpl;
+import in.wynk.payment.gateway.aps.service.ApsRefundGatewayServiceImpl;
+import in.wynk.payment.gateway.aps.service.ApsVerificationGatewayImpl;
 import in.wynk.payment.service.IExternalPaymentEligibilityService;
 import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -91,8 +100,7 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
 
     @Override
     public AbstractPaymentChargingResponse charge(AbstractPaymentChargingRequest request) {
-        Executor executor = Executors.newSingleThreadExecutor();
-        executor.execute(() -> subscriptionServiceManager.cacheAdditiveDays(request.getUserDetails().getMsisdn(), request.getProductDetails().getId()));
+        subscriptionServiceManager.cacheAdditiveDays(request.getUserDetails().getMsisdn(), request.getProductDetails().getId());
 
         RechargeOrderResponse orderResponse = (RechargeOrderResponse) orderGateway.order(RechargeOrderRequest.builder().build());
         request.setOrderId(orderResponse.getOrderId());

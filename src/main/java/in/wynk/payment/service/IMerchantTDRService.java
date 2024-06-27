@@ -1,7 +1,6 @@
 package in.wynk.payment.service;
 
-import in.wynk.payment.core.dao.entity.Transaction;
-
+import in.wynk.payment.dto.BaseTDRResponse;
 public interface IMerchantTDRService {
-    Double getTDR (Transaction transaction);
+    BaseTDRResponse getTDR(String transactionId);
 }

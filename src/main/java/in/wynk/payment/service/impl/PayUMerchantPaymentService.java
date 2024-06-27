@@ -24,6 +24,7 @@ import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
+import in.wynk.payment.dto.BaseTDRResponse;
 import in.wynk.payment.dto.PreDebitNotificationMessage;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.common.AbstractPreDebitNotificationResponse;
@@ -894,19 +895,20 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     }
 
     @Override
-    public Double getTDR (Transaction transaction) {
+    public BaseTDRResponse getTDR (String transactionId) {
         try {
-            final MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(transaction.getIdStr());
+            final Transaction transaction = TransactionContext.get();
+            final MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(transactionId);
             final String midPayId = merchantTransaction.getExternalTransactionId();
             final MultiValueMap<String, String> requestMap = buildPayUInfoRequest(transaction.getClientAlias(), PAYU_GETTDR.getCode(), midPayId);
             final PayUTdrResponse response = this.getInfoFromPayU(requestMap, new TypeReference<PayUTdrResponse>() {
             });
             AnalyticService.update("Tdr response from payu", String.valueOf(response));
-            return response.getMessage().getTdr();
+            return BaseTDRResponse.from(response.getMessage().getTdr());
         } catch (Exception e) {
             log.error(PAYU_TDR_ERROR, e.getMessage());
         }
-        return null;
+        return BaseTDRResponse.from(-2);
     }
 
     private class DelegatePayUCallbackHandler implements IMerchantPaymentCallbackService<AbstractCallbackResponse, PayUCallbackRequestPayload> {

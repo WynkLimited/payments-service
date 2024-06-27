@@ -23,15 +23,13 @@ public class GooglePlayProductDetails extends ProductDetailsDto {
 
     public String getTitle () {
         if (Objects.isNull(title)) {
-            SessionDTO sessionDto = SessionContextHolder.getBody();
-            return sessionDto.get("title");
+            return ((SessionDTO)SessionContextHolder.getBody()).get("title");
         }
         return title;
     }
     public void setTitle (String title) {
         if (Objects.isNull(title)) {
-            SessionDTO sessionDto = SessionContextHolder.getBody();
-            this.title = sessionDto.get("title");
+            this.title = ((SessionDTO)SessionContextHolder.getBody()).get("title");
         } else {
             this.title = title;
         }

@@ -21,4 +21,5 @@ public interface ApsConstant {
     String APS_CARD_TYPE = "cardType";
     String PAY_DIGI = "paydigi";
     String INT_PAY = "intpay";
+    String APS_RECHARGE_REDIRECTION_URL = "https://www.airtel.in/pay/status?omv=v2";
 }

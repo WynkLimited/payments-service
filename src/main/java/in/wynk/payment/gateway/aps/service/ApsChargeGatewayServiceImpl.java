@@ -146,8 +146,8 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                 @Override
                 public UpiCollectInAppChargingResponse charge (AbstractPaymentChargingRequest request) {
                     final Transaction transaction = TransactionContext.get();
-                    final String redirectUrl = request.getCallbackDetails().getCallbackUrl();
                     boolean isRecharge = transaction.getPaymentChannel().getCode().equals(ApsConstant.AIRTEL_PAY_STACK_V2);
+                    final String redirectUrl = isRecharge ? ApsConstant.APS_RECHARGE_REDIRECTION_URL : request.getCallbackDetails().getCallbackUrl();
                     final AbstractUserInfo userInfo = isRecharge ? OrderUserInfo.builder().serviceInstance(common.getLoginId(request.getUserDetails().getMsisdn())).build() :
                             ChargeUserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
                     final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
@@ -156,9 +156,10 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                                     .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build());
                     boolean isMandateFlow = paymentDetails.isMandate() || request.getPaymentDetails().isTrialOpted();
                     CollectUpiPaymentInfo.CollectUpiPaymentInfoBuilder<?, ?> paymentInfoBuilder =
-                            CollectUpiPaymentInfo.builder().lob(isRecharge ? LOB.PREPAID.toString() : LOB.WYNK.toString()).vpa(paymentDetails.getUpiDetails().getVpa()).paymentAmount(isMandateFlow ? PaymentConstants.MANDATE_FLOW_AMOUNT : transaction.getAmount());
+                            CollectUpiPaymentInfo.builder().lob(isRecharge ? LOB.PREPAID.toString() : LOB.WYNK.toString()).vpa(paymentDetails.getUpiDetails().getVpa())
+                                    .paymentAmount(isMandateFlow ? PaymentConstants.MANDATE_FLOW_AMOUNT : transaction.getAmount());
                     //if auto-renew true means user's mandate should be registered. Update fields in request for autoRenew
-                    if (paymentDetails.isAutoRenew() || isMandateFlow ) {
+                    if (paymentDetails.isAutoRenew() || isMandateFlow) {
                         Calendar cal = Calendar.getInstance();
                         Date today = cal.getTime();
                         cal.add(Calendar.YEAR, 10); // 10 yrs from now
@@ -359,7 +360,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                         abstractCardPaymentInfoBuilder =
                                 SavedCardPaymentInfo.builder().lob(lob).savedCardDetails(encCardInfo).paymentAmount(transaction.getAmount()).paymentMode(paymentMode);
                     }
-                    final String redirectUrl = request.getCallbackDetails().getCallbackUrl();
+                    final String redirectUrl = isRecharge ? ApsConstant.APS_RECHARGE_REDIRECTION_URL : request.getCallbackDetails().getCallbackUrl();
                     ExternalChargingRequest<?> payRequest =
                             ExternalChargingRequest.builder().userInfo(userInfo).orderId(isRecharge ? request.getOrderId() : transaction.getIdStr()).paymentInfo(abstractCardPaymentInfoBuilder.build())
                                     .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();
@@ -396,9 +397,10 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                 boolean isRecharge = transaction.getPaymentChannel().getCode().equals(ApsConstant.AIRTEL_PAY_STACK_V2);
                 final AbstractUserInfo userInfo = isRecharge ? OrderUserInfo.builder().serviceInstance(common.getLoginId(request.getUserDetails().getMsisdn())).build() :
                         ChargeUserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
-                final String redirectUrl = request.getCallbackDetails().getCallbackUrl();
+                final String redirectUrl = isRecharge ? ApsConstant.APS_RECHARGE_REDIRECTION_URL : request.getCallbackDetails().getCallbackUrl();
                 final NetBankingPaymentInfo netBankingInfo =
-                        NetBankingPaymentInfo.builder().lob(isRecharge ? LOB.PREPAID.toString() : LOB.WYNK.toString()).bankCode((String) method.getMeta().get(PaymentConstants.BANK_CODE)).paymentAmount(transaction.getAmount())
+                        NetBankingPaymentInfo.builder().lob(isRecharge ? LOB.PREPAID.toString() : LOB.WYNK.toString()).bankCode((String) method.getMeta().get(PaymentConstants.BANK_CODE))
+                                .paymentAmount(transaction.getAmount())
                                 .paymentMode(NetBankingConstants.NET_BANKING).build();
                 final ExternalChargingRequest<NetBankingPaymentInfo> payRequest =
                         ExternalChargingRequest.<NetBankingPaymentInfo>builder().userInfo(userInfo).orderId(isRecharge ? request.getOrderId() : transaction.getIdStr()).paymentInfo(netBankingInfo)

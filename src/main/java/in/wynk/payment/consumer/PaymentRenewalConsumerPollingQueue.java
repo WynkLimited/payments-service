@@ -4,13 +4,18 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.aspect.advice.ClientAware;
+import in.wynk.client.context.ClientContext;
+import in.wynk.client.data.utils.RepositoryUtils;
 import in.wynk.common.dto.WynkResponse;
 import in.wynk.common.enums.PaymentEvent;
-import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
+import in.wynk.payment.core.dao.entity.PaymentRenewalDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.dao.repository.PaymentRenewalDetailsDao;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.dto.PaymentRenewalMessage;
@@ -24,21 +29,17 @@ import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.RenewalPlanEligibilityResponse;
-import in.wynk.wynkservice.api.utils.WynkServiceUtils;
-import in.wynk.wynkservice.core.dao.entity.WynkService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.ResponseEntity;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
 import static in.wynk.payment.core.constant.PaymentConstants.RENEWALS_INELIGIBLE_PLANS;
-import static in.wynk.payment.core.constant.PaymentErrorType.*;
-
 @Slf4j
 public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsumerPollingQueue<PaymentRenewalMessage> {
 
@@ -135,8 +136,8 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
                     recurringPaymentManagerService.unScheduleRecurringPayment(transaction, PaymentEvent.DEFERRED, today, furtherDefer);
                     return false;
                 }
+                return true;
             }
-            return true;
         }
         return false;
     }
@@ -144,20 +145,19 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
     private boolean isPlanDeprecated(Transaction transaction) {
         try {
             final PlanDTO planDTO = cachingService.getPlan(transaction.getPlanId());
-            final WynkService wynkService = WynkServiceUtils.fromServiceId(planDTO.getService());
-            if (wynkService.get(RENEWALS_INELIGIBLE_PLANS).isPresent()) {
-                final List<Integer> renewalsDeprecatedPlans = (List<Integer>) wynkService.getMeta().get("renewalsIneligiblePlans");
+            Optional<PaymentRenewalDetails> mapping = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), PaymentRenewalDetailsDao.class).findById(planDTO.getService());
+            if (mapping.isPresent() && mapping.get().get(RENEWALS_INELIGIBLE_PLANS).isPresent()) {
+                final List<Integer> renewalsDeprecatedPlans = (List<Integer>) mapping.get().getMeta().get("renewalsIneligiblePlans");
                 if (renewalsDeprecatedPlans.contains(transaction.getPlanId())) {
                     return true;
                 }
             }
-            return false;
         } catch (Exception e) {
             PaymentErrorEvent.Builder errorEventBuilder = PaymentErrorEvent.builder(transaction.getIdStr());
             errorEventBuilder.code(PaymentErrorType.PAY108.getErrorCode()).description(PaymentErrorType.PAY108.getErrorMessage());
             eventPublisher.publishEvent(errorEventBuilder.build());
-            throw new WynkRuntimeException(PAY108, e);
         }
+        return false;
     }
 
     @Override

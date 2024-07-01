@@ -136,8 +136,8 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
                     recurringPaymentManagerService.unScheduleRecurringPayment(transaction, PaymentEvent.DEFERRED, today, furtherDefer);
                     return false;
                 }
-                return true;
             }
+            return true;
         }
         return false;
     }
@@ -147,15 +147,13 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
             final PlanDTO planDTO = cachingService.getPlan(transaction.getPlanId());
             Optional<PaymentRenewalDetails> mapping = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), PaymentRenewalDetailsDao.class).findById(planDTO.getService());
             if (mapping.isPresent() && mapping.get().get(RENEWALS_INELIGIBLE_PLANS).isPresent()) {
-                final List<Integer> renewalsDeprecatedPlans = (List<Integer>) mapping.get().getMeta().get("renewalsIneligiblePlans");
+                final List<Integer> renewalsDeprecatedPlans = (List<Integer>) mapping.get().getMeta().get(RENEWALS_INELIGIBLE_PLANS);
                 if (renewalsDeprecatedPlans.contains(transaction.getPlanId())) {
                     return true;
                 }
             }
         } catch (Exception e) {
-            PaymentErrorEvent.Builder errorEventBuilder = PaymentErrorEvent.builder(transaction.getIdStr());
-            errorEventBuilder.code(PaymentErrorType.PAY108.getErrorCode()).description(PaymentErrorType.PAY108.getErrorMessage());
-            eventPublisher.publishEvent(errorEventBuilder.build());
+            return false;
         }
         return false;
     }

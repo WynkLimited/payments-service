@@ -147,7 +147,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                 public UpiCollectInAppChargingResponse charge (AbstractPaymentChargingRequest request) {
                     final Transaction transaction = TransactionContext.get();
                     boolean isRecharge = transaction.getPaymentChannel().getCode().equals(ApsConstant.AIRTEL_PAY_STACK_V2);
-                    final String redirectUrl = isRecharge ? ApsConstant.APS_RECHARGE_REDIRECTION_URL : request.getCallbackDetails().getCallbackUrl();
+                    final String redirectUrl =/* isRecharge ? ApsConstant.APS_RECHARGE_REDIRECTION_URL :*/ request.getCallbackDetails().getCallbackUrl();
                     final AbstractUserInfo userInfo = isRecharge ? OrderUserInfo.builder().serviceInstance(common.getLoginId(request.getUserDetails().getMsisdn())).build() :
                             ChargeUserInfo.builder().loginId(request.getUserDetails().getMsisdn()).build();
                     final UpiPaymentDetails paymentDetails = (UpiPaymentDetails) request.getPaymentDetails();
@@ -360,7 +360,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                         abstractCardPaymentInfoBuilder =
                                 SavedCardPaymentInfo.builder().lob(lob).savedCardDetails(encCardInfo).paymentAmount(transaction.getAmount()).paymentMode(paymentMode);
                     }
-                    final String redirectUrl = isRecharge ? ApsConstant.APS_RECHARGE_REDIRECTION_URL : request.getCallbackDetails().getCallbackUrl();
+                    final String redirectUrl = /*isRecharge ? ApsConstant.APS_RECHARGE_REDIRECTION_URL :*/ request.getCallbackDetails().getCallbackUrl();
                     ExternalChargingRequest<?> payRequest =
                             ExternalChargingRequest.builder().userInfo(userInfo).orderId(isRecharge ? request.getOrderId() : transaction.getIdStr()).paymentInfo(abstractCardPaymentInfoBuilder.build())
                                     .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build()).build();

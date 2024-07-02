@@ -392,6 +392,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Override
     public int cacheAdditiveDays(String msisdn, String planId) {
         try {
+            log.info("testAsync inside");
             ThanksPlanResponse thanksPlanResponse = getThanksPlanForAdditiveDays(msisdn);
             AnalyticService.update("ActiveThanksPlan", thanksPlanResponse.toString());
             return thanksPlanResponse.getData().getDaysTillExpiry();

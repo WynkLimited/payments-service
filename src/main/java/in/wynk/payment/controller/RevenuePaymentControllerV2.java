@@ -16,6 +16,7 @@ import in.wynk.payment.dto.manager.CallbackResponseWrapper;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractPaymentChargingResponse;
 import in.wynk.payment.dto.response.IVerificationResponse;
+import in.wynk.payment.gateway.aps.ApsOrderGateway;
 import in.wynk.payment.presentation.IPaymentPresentation;
 import in.wynk.payment.presentation.IPaymentPresentationV2;
 import in.wynk.payment.presentation.dto.callback.PaymentCallbackResponse;
@@ -54,6 +55,7 @@ public class RevenuePaymentControllerV2 {
     private final Gson gson;
     private final PaymentGatewayManager manager;
     private final PaymentMethodCachingService paymentMethodCachingService;
+    private final ApsOrderGateway apsOrderGateway;
 
     @PostMapping("/verify/{sid}")
     @ManageSession(sessionId = "#sid")
@@ -156,6 +158,11 @@ public class RevenuePaymentControllerV2 {
                 }).transform(() -> Pair.of(request, manager.charge(request)));
         AnalyticService.update(responseEntity);
         return responseEntity;
+    }
+
+    @GetMapping("/test/cache")
+    public void testCache(@RequestParam String msisdn, @RequestParam String planId) {
+        apsOrderGateway.testAsync(msisdn, planId);
     }
 
     @GetMapping("/status/{sid}")

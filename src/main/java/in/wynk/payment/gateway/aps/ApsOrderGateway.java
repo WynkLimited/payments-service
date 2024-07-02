@@ -36,8 +36,7 @@ import in.wynk.payment.service.IExternalPaymentEligibilityService;
 import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
+import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -91,7 +90,7 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
 
     @Override
     public AbstractPaymentChargingResponse charge(AbstractPaymentChargingRequest request) {
-        subscriptionServiceManager.cacheAdditiveDays(request.getUserDetails().getMsisdn(), request.getProductDetails().getId());
+        CompletableFuture.runAsync(() -> subscriptionServiceManager.cacheAdditiveDays(request.getUserDetails().getMsisdn(), request.getProductDetails().getId()));
 
         RechargeOrderResponse orderResponse = (RechargeOrderResponse) orderGateway.order(RechargeOrderRequest.builder().build());
         request.setOrderId(orderResponse.getOrderId());
@@ -102,6 +101,13 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
         AbstractPaymentChargingResponse chargeResponse = chargingService.charge(request);
         publishMerchantTransactionEvent(orderResponse);
         return chargeResponse;
+    }
+
+    public void testAsync(String msisdn, String planId) {
+        log.info("testAsync started");
+        CompletableFuture.runAsync(() -> subscriptionServiceManager.cacheAdditiveDays(msisdn, planId));
+        log.info("testAsync completed");
+        System.out.println("msisdn: " + msisdn + "planId: " + planId);
     }
 
     private void publishMerchantTransactionEvent(RechargeOrderResponse orderResponse) {

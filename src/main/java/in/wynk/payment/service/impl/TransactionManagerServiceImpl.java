@@ -306,7 +306,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             }
             if (!(request.getExistingTransactionStatus() == TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.FAILURE)) {
                 this.upsert(request.getTransaction());
-                if (request.getTransaction().getPaymentChannel().getCode().equals(AMAZON_IAP) || request.getTransaction().getPaymentChannel().getCode().equals(GOOGLE_IAP) || request.getTransaction().getPaymentChannel().getCode().equals(PaymentConstants.ITUNES)) {
+                if (request.getTransaction().getPaymentChannel().getId().equals(AMAZON_IAP) || request.getTransaction().getPaymentChannel().getId().equals(GOOGLE_IAP) || request.getTransaction().getPaymentChannel().getId().equals(PaymentConstants.ITUNES)) {
                     recurringPaymentManagerService.unScheduleRecurringPayment(request.getTransaction().getClientAlias(), request.getTransaction().getId().toString().equals(request.getLastSuccessTransactionId().toString()) ? request.getOriginalTransactionId() : request.getLastSuccessTransactionId(), PaymentEvent.CANCELLED);
                 }
             }

@@ -508,8 +508,9 @@ public class PaymentManager
 
     @Override
     @TransactionAware(txnId = "#transactionId", lock = false)
-    public Double getTDR (Transaction transaction) {
-        return BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), IMerchantTDRService.class).getTDR(transaction);
+    public BaseTDRResponse getTDR (String transactionId) {
+        final Transaction transaction = TransactionContext.get();
+        return BeanLocatorFactory.getBeanOrDefault(transaction.getPaymentChannel().getCode(), IMerchantTDRService.class, nope -> BaseTDRResponse.from(-1)).getTDR(transactionId);
     }
 
 

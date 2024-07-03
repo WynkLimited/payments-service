@@ -4,10 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import in.wynk.cache.aspect.advice.CacheEvict;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
-import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.ApsPaymentRefundRequest;
 import in.wynk.payment.dto.ApsPaymentRefundResponse;
+import in.wynk.payment.dto.BaseTDRResponse;
 import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
 import in.wynk.payment.dto.common.AbstractPaymentInstrumentsProxy;
@@ -173,7 +173,7 @@ public class ApsGateway implements
     }
 
     @Override
-    public Double getTDR (Transaction transaction) {
-        return iMerchantTDRService.getTDR(transaction);
+    public BaseTDRResponse getTDR (String transactionId) {
+        return iMerchantTDRService.getTDR(transactionId);
     }
 }

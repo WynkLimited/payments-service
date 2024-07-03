@@ -707,9 +707,9 @@ public class PaymentEventListener {
         AnalyticService.update(TRANSACTION_STATUS, event.getTransaction().getStatus().getValue());
         AnalyticService.update(PAYMENT_METHOD, event.getTransaction().getPaymentChannel().getCode());
         if (event.getTransaction().getStatus() == TransactionStatus.SUCCESS) {
-            Double tdr = paymentGatewayManager.getTDR(event.getTransaction());
-            if (Objects.nonNull(tdr)) {
-                AnalyticService.update(TDR, tdr);
+            final BaseTDRResponse tdr = paymentGatewayManager.getTDR(event.getTransaction().getIdStr());
+            if ((tdr.getTdr() != -1) && (tdr.getTdr() != -2)) {
+                AnalyticService.update(TDR, tdr.getTdr());
             }
             //Invoice should not be generated for Trial or mandate subscription WCF-4350
             if ((PaymentEvent.MANDATE != event.getTransaction().getType() && PaymentEvent.TRIAL_SUBSCRIPTION != event.getTransaction().getType()) &&

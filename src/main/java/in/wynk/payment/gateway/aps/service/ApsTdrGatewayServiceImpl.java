@@ -2,6 +2,8 @@ package in.wynk.payment.gateway.aps.service;
 
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.dto.BaseTDRResponse;
+import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.response.tdr.ApsTdrResponse;
 import in.wynk.payment.service.IMerchantTDRService;
 import in.wynk.payment.service.IMerchantTransactionService;
@@ -34,16 +36,17 @@ public class ApsTdrGatewayServiceImpl implements IMerchantTDRService {
     }
 
     @Override
-    public Double getTDR (Transaction transaction) {
+    public BaseTDRResponse getTDR (String transactionId) {
         try {
-            final MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(transaction.getIdStr());
+            final Transaction transaction = TransactionContext.get();
+            final MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(transactionId);
             final String pgId = merchantTransaction.getExternalTransactionId();
             final URI uri = httpTemplate.getUriTemplateHandler().expand(TDR_ENDPOINT, pgId);
             ApsTdrResponse apsTdrResponse = common.exchange(transaction.getClientAlias(), uri.toString(), HttpMethod.GET, transaction.getMsisdn(), null, ApsTdrResponse.class);
-            return apsTdrResponse.getTdrAmount();
+            return BaseTDRResponse.from(apsTdrResponse.getTdrAmount());
         } catch (Exception e) {
             log.error(APS_TDR_ERROR, e.getMessage());
         }
-        return null;
+        return BaseTDRResponse.from(-2);
     }
 }

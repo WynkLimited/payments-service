@@ -4,7 +4,10 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.payment.consumer.*;
 import in.wynk.payment.extractor.*;
-import in.wynk.payment.service.*;
+import in.wynk.payment.service.IRecurringPaymentManagerService;
+import in.wynk.payment.service.ITransactionManagerService;
+import in.wynk.payment.service.PaymentGatewayManager;
+import in.wynk.payment.service.PaymentManager;
 import in.wynk.payment.service.impl.RecurringPaymentManager;
 import in.wynk.payment.utils.RecurringTransactionUtils;
 import in.wynk.queue.constant.BeanConstant;
@@ -67,9 +70,7 @@ public class PaymentQueuesConfig {
                                                                                   ObjectMapper objectMapper,
                                                                                   PaymentRenewalSQSMessageExtractor paymentRenewalSQSMessageExtractor,
                                                                                   ISqsManagerService sqsManagerService,
-                                                                                  ITransactionManagerService transactionManager,
-                                                                                  ISubscriptionServiceManager subscriptionServiceManager,
-                                                                                  IRecurringPaymentManagerService recurringPaymentManagerService, PaymentCachingService cachingService, RecurringTransactionUtils recurringTransactionUtils) {
+                                                                                  ITransactionManagerService transactionManager, RecurringTransactionUtils recurringTransactionUtils) {
         return new PaymentRenewalConsumerPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
@@ -77,8 +78,7 @@ public class PaymentQueuesConfig {
                 threadPoolExecutor(2),
                 scheduledThreadPoolExecutor(),
                 sqsManagerService,
-                transactionManager,
-                subscriptionServiceManager, recurringPaymentManagerService, cachingService, recurringTransactionUtils);
+                transactionManager, recurringTransactionUtils);
     }
 
     @Bean

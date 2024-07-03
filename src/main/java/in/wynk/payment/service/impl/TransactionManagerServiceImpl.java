@@ -33,6 +33,7 @@ import in.wynk.payment.dto.PointDetails;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.TransactionDetails;
 import in.wynk.payment.dto.aps.common.ApsConstant;
+import in.wynk.payment.dto.gpbs.request.GooglePlayProductDetails;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.service.*;
 import in.wynk.session.context.SessionContextHolder;
@@ -73,9 +74,6 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     @Override
     public Transaction upsert (Transaction transaction) {
         Transaction persistedEntity = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).save(transaction);
-        final TransactionSnapshotEvent.TransactionSnapshotEventBuilder builder = TransactionSnapshotEvent.builder().transaction(transaction);
-        Optional.ofNullable(purchaseDetailsManger.get(transaction)).ifPresent(builder::purchaseDetails);
-        applicationEventPublisher.publishEvent(builder.build());
         publishAnalytics(persistedEntity);
         return persistedEntity;
     }
@@ -166,15 +164,24 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     }
 
     private Transaction initTransaction (Transaction txn, String originalTransactionId) {
-        Transaction transaction = upsert(txn);
-        Session<String, SessionDTO> session = SessionContextHolder.get();
-        if (Objects.nonNull(session) && Objects.nonNull(session.getBody())) {
-            SessionDTO sessionDTO = session.getBody();
-            sessionDTO.put(TRANSACTION_ID, transaction.getIdStr());
-            sessionDTO.put(PAYMENT_CODE, transaction.getPaymentChannel().getCode());
+        Transaction transaction = null;
+        try {
+            transaction = upsert(txn);
+            Session<String, SessionDTO> session = SessionContextHolder.get();
+            if (Objects.nonNull(session) && Objects.nonNull(session.getBody())) {
+                SessionDTO sessionDTO = session.getBody();
+                sessionDTO.put(TRANSACTION_ID, transaction.getIdStr());
+                sessionDTO.put(PAYMENT_CODE, transaction.getPaymentChannel().getCode());
+            }
+            // WCF-5228: Update transaction in renewal table for renewal event when updating in renewal table in the transaction table
+            addEntryInRenewalTable(txn, originalTransactionId);
+        } catch (Exception ex) {
+            throw new WynkRuntimeException("Exception occurred while initiating the transaction", ex);
+        } finally {
+            if (Objects.nonNull(transaction)) {
+                publishTransactionSnapShotEvent(transaction);
+            }
         }
-        // WCF-5228: Update transaction in renewal table for renewal event when updating in renewal table in the transaction table
-        addEntryInRenewalTable(txn, originalTransactionId);
         return transaction;
     }
 
@@ -229,6 +236,10 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             return transaction;
         } else if (PointTransactionInitRequest.class.isAssignableFrom(transactionInitRequest.getClass())) {
             final Transaction transaction = initPointTransaction((PointTransactionInitRequest) transactionInitRequest);
+            if(purchaseDetails.getProductDetails() instanceof GooglePlayProductDetails) {
+                GooglePlayProductDetails googlePlayProductDetails = ((GooglePlayProductDetails) purchaseDetails.getProductDetails());
+                googlePlayProductDetails.setTitle(null);
+            }
             purchaseDetailsManger.save(transaction, purchaseDetails);
             TransactionContext.set(TransactionDetails.builder().transaction(transaction).purchaseDetails(purchaseDetails).build());
             return transaction;
@@ -306,7 +317,16 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             if (!(request.getExistingTransactionStatus() == TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.FAILURE)) {
                 this.upsert(request.getTransaction());
             }
+            if ((request.getExistingTransactionStatus() != request.getFinalTransactionStatus())) {
+                publishTransactionSnapShotEvent(request.getTransaction());
+            }
         }
+    }
+
+    private void publishTransactionSnapShotEvent (Transaction transaction) {
+        final TransactionSnapshotEvent.TransactionSnapshotEventBuilder builder = TransactionSnapshotEvent.builder().transaction(transaction);
+        Optional.ofNullable(purchaseDetailsManger.get(transaction)).ifPresent(builder::purchaseDetails);
+        applicationEventPublisher.publishEvent(builder.build());
     }
 
     private void initiateTransactionReportToMerchant (Transaction transaction) {

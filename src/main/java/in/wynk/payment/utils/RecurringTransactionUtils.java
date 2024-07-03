@@ -1,5 +1,8 @@
 package in.wynk.payment.utils;
 
+import in.wynk.auth.dao.entity.Client;
+import in.wynk.client.context.ClientContext;
+import in.wynk.client.data.utils.RepositoryUtils;
 import in.wynk.common.dto.WynkResponse;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
@@ -10,7 +13,9 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
+import in.wynk.payment.core.dao.entity.PaymentRenewalDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.dao.repository.PaymentRenewalDetailsDao;
 import in.wynk.payment.core.event.MandateStatusEvent;
 import in.wynk.payment.core.event.UnScheduleRecurringPaymentEvent;
 import in.wynk.payment.dto.request.AbstractUnSubscribePlanRequest;
@@ -18,6 +23,8 @@ import in.wynk.payment.dto.request.AsyncTransactionRevisionRequest;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.ITransactionManagerService;
+import in.wynk.payment.service.PaymentCachingService;
+import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.RenewalPlanEligibilityResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +36,7 @@ import org.springframework.stereotype.Component;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import static in.wynk.common.enums.PaymentEvent.RENEW;
 import static in.wynk.payment.core.constant.PaymentConstants.ERROR_REASONS;
@@ -46,6 +54,8 @@ public class RecurringTransactionUtils {
     private final ApplicationEventPublisher eventPublisher;
     private final ISubscriptionServiceManager subscriptionServiceManager;
     private final ITransactionManagerService transactionManagerService;
+    private final PaymentCachingService cachingService;
+
     @Value("${payment.renewal.unsupported}")
     private List<String> renewalUnSupportedPG;
     @Value("${payment.recurring.offset.hour}")
@@ -146,20 +156,40 @@ public class RecurringTransactionUtils {
     }
 
     public boolean isEligibleForRenewal (Transaction transaction, boolean isPreDebitFlow) {
-        ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> response =
-                subscriptionServiceManager.renewalPlanEligibilityResponse(transaction.getPlanId(), transaction.getUid());
-        if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {
-            RenewalPlanEligibilityResponse renewalPlanEligibilityResponse = response.getBody().getData();
-            long today = System.currentTimeMillis();
-            long furtherDefer = renewalPlanEligibilityResponse.getDeferredUntil() - today;
-            if (subscriptionServiceManager.isDeferred(transaction.getPaymentChannel().getCode(), furtherDefer, isPreDebitFlow)) {
-                if (Objects.equals(transaction.getPaymentChannel().getCode(), BeanConstant.AIRTEL_PAY_STACK)) {
-                    furtherDefer = furtherDefer - ((long) 2 * 24 * 60 * 60 * 1000);
+        if (!isPlanDeprecated(transaction)) {
+            ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> response =
+                    subscriptionServiceManager.renewalPlanEligibilityResponse(transaction.getPlanId(), transaction.getUid());
+            if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {
+                RenewalPlanEligibilityResponse renewalPlanEligibilityResponse = response.getBody().getData();
+                long today = System.currentTimeMillis();
+                long furtherDefer = renewalPlanEligibilityResponse.getDeferredUntil() - today;
+                if (subscriptionServiceManager.isDeferred(transaction.getPaymentChannel().getCode(), furtherDefer, isPreDebitFlow)) {
+                    if (Objects.equals(transaction.getPaymentChannel().getCode(), BeanConstant.AIRTEL_PAY_STACK)) {
+                        furtherDefer = furtherDefer - ((long) 2 * 24 * 60 * 60 * 1000);
+                    }
+                    recurringPaymentManagerService.unScheduleRecurringPayment(transaction, PaymentEvent.DEFERRED, today, furtherDefer);
+                    return false;
                 }
-                recurringPaymentManagerService.unScheduleRecurringPayment(transaction, PaymentEvent.DEFERRED, today, furtherDefer);
-                return false;
             }
+            return true;
         }
-        return true;
+        return false;
+    }
+
+    private boolean isPlanDeprecated (Transaction transaction) {
+        try {
+            final PlanDTO planDTO = cachingService.getPlan(transaction.getPlanId());
+            Optional<PaymentRenewalDetails>
+                    mapping = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), PaymentRenewalDetailsDao.class).findById(planDTO.getService());
+            if (mapping.isPresent() && mapping.get().get(PaymentConstants.RENEWALS_INELIGIBLE_PLANS).isPresent()) {
+                final List<Integer> renewalsDeprecatedPlans = (List<Integer>) mapping.get().getMeta().get(PaymentConstants.RENEWALS_INELIGIBLE_PLANS);
+                if (renewalsDeprecatedPlans.contains(transaction.getPlanId())) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            return false;
+        }
+        return false;
     }
 }

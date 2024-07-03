@@ -160,11 +160,6 @@ public class RevenuePaymentControllerV2 {
         return responseEntity;
     }
 
-    @GetMapping("/test/cache")
-    public void testCache(@RequestParam String msisdn, @RequestParam String planId) {
-        apsOrderGateway.testAsync(msisdn, planId);
-    }
-
     @GetMapping("/status/{sid}")
     @ManageSession(sessionId = "#sid")
     @AnalyseTransaction(name = "paymentStatus")

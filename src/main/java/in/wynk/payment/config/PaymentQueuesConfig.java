@@ -4,7 +4,12 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.payment.consumer.*;
 import in.wynk.payment.extractor.*;
-import in.wynk.payment.service.*;
+import in.wynk.payment.service.IRecurringPaymentManagerService;
+import in.wynk.payment.service.ITransactionManagerService;
+import in.wynk.payment.service.PaymentGatewayManager;
+import in.wynk.payment.service.PaymentManager;
+import in.wynk.payment.service.impl.RecurringPaymentManager;
+import in.wynk.payment.utils.RecurringTransactionUtils;
 import in.wynk.queue.constant.BeanConstant;
 import in.wynk.queue.service.ISqsManagerService;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -65,9 +70,7 @@ public class PaymentQueuesConfig {
                                                                                   ObjectMapper objectMapper,
                                                                                   PaymentRenewalSQSMessageExtractor paymentRenewalSQSMessageExtractor,
                                                                                   ISqsManagerService sqsManagerService,
-                                                                                  ITransactionManagerService transactionManager,
-                                                                                  ISubscriptionServiceManager subscriptionServiceManager,
-                                                                                  IRecurringPaymentManagerService recurringPaymentManagerService, PaymentCachingService cachingService) {
+                                                                                  ITransactionManagerService transactionManager, RecurringTransactionUtils recurringTransactionUtils) {
         return new PaymentRenewalConsumerPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
@@ -75,22 +78,21 @@ public class PaymentQueuesConfig {
                 threadPoolExecutor(2),
                 scheduledThreadPoolExecutor(),
                 sqsManagerService,
-                transactionManager,
-                subscriptionServiceManager, recurringPaymentManagerService, cachingService);
+                transactionManager, recurringTransactionUtils);
     }
 
     @Bean
     public PreDebitNotificationConsumerPollingQueue preDebitNotificationConsumerPollingQueue (@Value("${payment.pooling.queue.preDebitNotification.name}") String queueName,
                                                                                               @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
                                                                                               ObjectMapper objectMapper,
-                                                                                              PaymentGatewayManager manager,
+                                                                                              PaymentGatewayManager manager, RecurringPaymentManager recurringPaymentManager,
                                                                                               PreDebitNotificationSQSMessageExtractor preDebitNotificationSQSMessageExtractor) {
         return new PreDebitNotificationConsumerPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
                 preDebitNotificationSQSMessageExtractor,
                 threadPoolExecutor(2),
-                scheduledThreadPoolExecutor(), manager);
+                scheduledThreadPoolExecutor(), manager, recurringPaymentManager);
     }
 
     @Bean

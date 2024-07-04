@@ -16,7 +16,7 @@ import java.io.Serializable;
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "action", defaultImpl = PayUCallbackRequestPayload.class, visible = true)
-@JsonSubTypes(@JsonSubTypes.Type(value = PayUAutoRefundCallbackRequestPayload.class, name = PayUConstants.REFUND_CALLBACK_ACTION))
+@JsonSubTypes({@JsonSubTypes.Type(value = PayUAutoRefundCallbackRequestPayload.class, name = PayUConstants.REFUND_CALLBACK_ACTION),  @JsonSubTypes.Type(value = PayuRealtimeMandate.class, name = PayUConstants.REALTIME_MANDATE_CALLBACK_ACTION)})
 public class PayUCallbackRequestPayload extends CallbackRequest implements Serializable {
 
     private String mode;

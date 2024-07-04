@@ -8,6 +8,7 @@ public interface PayUConstants {
 
     String GENERIC_CALLBACK_ACTION = "generic";
     String REFUND_CALLBACK_ACTION = "refund";
+    String REALTIME_MANDATE_CALLBACK_ACTION = "rtMandate";
     String PAYU_PG = "pg";
     String PAYU_SI = "SI";
     String PAYU_UPI = "UPI";

@@ -10,6 +10,7 @@ import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.aps.common.WebhookConfigType;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.gateway.callback.DefaultPaymentCallbackResponse;
 import in.wynk.payment.dto.payu.*;
@@ -87,8 +88,18 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
         @Override
         public PayUCallbackRequestPayload parse(Map<String, Object> payload) {
             try {
+                Object notificationType = payload.get("notificationType");
+                Object action = payload.get("mandateAction");
+                Class<? extends PayUCallbackRequestPayload> requestPayLoad;
+                if (Objects.nonNull(notificationType) && Objects.nonNull(action)) {
+                    requestPayLoad = PayuRealtimeMandate.class;
+                    // load transaction id from payuAuthId
+
+                } else {
+                    requestPayLoad = PayUCallbackRequestPayload.class;
+                }
                 final String json = objectMapper.writeValueAsString(payload);
-                return objectMapper.readValue(json, PayUCallbackRequestPayload.class);
+                return objectMapper.readValue(json, requestPayLoad);
             } catch (Exception e) {
                 log.error(CALLBACK_PAYLOAD_PARSING_FAILURE, "Unable to parse callback payload due to {}", e.getMessage(), e);
                 throw new WynkRuntimeException(PAY006, e);
@@ -144,7 +155,24 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
         final String transactionId = transaction.getIdStr();
         final String payUMerchantKey = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_ID);
         final String payUMerchantSecret = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_SECRET);
+        if(callbackRequest instanceof  PayuRealtimeMandate) {
+            PayuRealtimeMandate payuRealtimeMandate= (PayuRealtimeMandate)callbackRequest;
+            // Card mandate status
+            if(Objects.nonNull(payuRealtimeMandate.getNotificationType())){
+//status|authpayuId|notificationType|billingAmount|paymentStartDate|paymentEndDate|message|eventDate|key|udf1|udf2|udf3|udf4|udf5|salt
+                return validateCallbackChecksumForRealtimeMandate(payUMerchantKey, payUMerchantSecret, callbackRequest.getStatus(), callbackRequest.getUdf(), callbackRequest.getEmail(), callbackRequest.getFirstName(), ((transaction.getType()== PaymentEvent.POINT_PURCHASE) ? transaction.getItemId(): String.valueOf(transaction.getPlanId())), transaction.getAmount(), callbackRequest.getResponseHash());
+            } else {
+                // upi mandate status
+                // status|action|authpayuid|dateTime|amount|endDate|salt
+            }
+
+        }
+
+
         return validateCallbackChecksum(payUMerchantKey, payUMerchantSecret, transactionId, callbackRequest.getStatus(), callbackRequest.getUdf(), callbackRequest.getEmail(), callbackRequest.getFirstName(), ((transaction.getType()== PaymentEvent.POINT_PURCHASE) ? transaction.getItemId(): String.valueOf(transaction.getPlanId())), transaction.getAmount(), callbackRequest.getResponseHash());
+    }
+
+    private boolean validateCallbackChecksumForRealtimeMandate (String payUMerchantKey, String payUMerchantSecret, String transactionId, String status, String udf, String email, String firstName, String s, double amount, String responseHash) {
     }
 
     @SneakyThrows

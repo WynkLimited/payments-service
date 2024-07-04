@@ -8,15 +8,16 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
+import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.aps.common.WebhookConfigType;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.gateway.callback.DefaultPaymentCallbackResponse;
 import in.wynk.payment.dto.payu.*;
 import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.gateway.IPaymentCallback;
+import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -38,36 +39,36 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
     private final PayUCommonGateway common;
     private final ObjectMapper objectMapper;
     private final IPaymentCallback<AbstractPaymentCallbackResponse, PayUCallbackRequestPayload> callbackHandler;
-    private final ApplicationEventPublisher eventPublisher;
+    private final IMerchantTransactionService merchantTransactionService;
 
-    public PayUCallbackGatewayImpl (PayUCommonGateway common, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher) {
+    public PayUCallbackGatewayImpl (PayUCommonGateway common, ObjectMapper objectMapper, IMerchantTransactionService merchantTransactionService) {
         this.common = common;
         this.objectMapper = objectMapper;
         this.callbackHandler = new DelegatePayUCallbackHandler();
-        this.eventPublisher = eventPublisher;
+        this.merchantTransactionService = merchantTransactionService;
     }
 
     @Override
-    public AbstractPaymentCallbackResponse handle(PayUCallbackRequestPayload request) {
+    public AbstractPaymentCallbackResponse handle (PayUCallbackRequestPayload request) {
         return callbackHandler.handle(request);
     }
 
     @Override
-    public PayUCallbackRequestPayload parse(Map<String, Object> payload) {
+    public PayUCallbackRequestPayload parse (Map<String, Object> payload) {
         return callbackHandler.parse(payload);
     }
 
     private class DelegatePayUCallbackHandler implements IPaymentCallback<AbstractPaymentCallbackResponse, PayUCallbackRequestPayload> {
 
-        private final Map<String, IPaymentCallback<?,?>> delegator = new HashMap<>();
+        private final Map<String, IPaymentCallback<?, ?>> delegator = new HashMap<>();
 
-        public DelegatePayUCallbackHandler() {
+        public DelegatePayUCallbackHandler () {
             this.delegator.put(PayUConstants.GENERIC_CALLBACK_ACTION, new GenericPayUCallbackHandler());
             this.delegator.put(PayUConstants.REFUND_CALLBACK_ACTION, new RefundPayUCallBackHandler());
         }
 
         @Override
-        public AbstractPaymentCallbackResponse handle(PayUCallbackRequestPayload request) {
+        public AbstractPaymentCallbackResponse handle (PayUCallbackRequestPayload request) {
             final Transaction transaction = TransactionContext.get();
             final String transactionId = transaction.getIdStr();
             try {
@@ -77,7 +78,9 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
                 if (validate(request)) {
                     return callbackService.handle(request);
                 } else {
-                    log.error(PAYU_CHARGING_CALLBACK_FAILURE, "Invalid checksum found with transactionStatus: {}, Wynk transactionId: {}, PayU transactionId: {}, Reason: error code: {}, error message: {} for uid: {}", request.getStatus(), transactionId, request.getExternalTransactionId(), errorCode, errorMessage, transaction.getUid());
+                    log.error(PAYU_CHARGING_CALLBACK_FAILURE,
+                            "Invalid checksum found with transactionStatus: {}, Wynk transactionId: {}, PayU transactionId: {}, Reason: error code: {}, error message: {} for uid: {}",
+                            request.getStatus(), transactionId, request.getExternalTransactionId(), errorCode, errorMessage, transaction.getUid());
                     throw new PaymentRuntimeException(PaymentErrorType.PAY302, "Invalid checksum found with transaction id:" + transactionId);
                 }
             } catch (Exception e) {
@@ -86,15 +89,15 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
         }
 
         @Override
-        public PayUCallbackRequestPayload parse(Map<String, Object> payload) {
+        public PayUCallbackRequestPayload parse (Map<String, Object> payload) {
             try {
                 Object notificationType = payload.get("notificationType");
                 Object action = payload.get("mandateAction");
                 Class<? extends PayUCallbackRequestPayload> requestPayLoad;
                 if (Objects.nonNull(notificationType) && Objects.nonNull(action)) {
                     requestPayLoad = PayuRealtimeMandate.class;
-                    // load transaction id from payuAuthId
-
+                    String txnId = merchantTransactionService.getPartnerReferenceId((String)payload.get("authpayuid"));
+                    payload.put("transactionId", txnId);
                 } else {
                     requestPayLoad = PayUCallbackRequestPayload.class;
                 }
@@ -109,16 +112,18 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
         private class GenericPayUCallbackHandler implements IPaymentCallback<AbstractPaymentCallbackResponse, PayUCallbackRequestPayload> {
 
             @Override
-            public AbstractPaymentCallbackResponse handle(PayUCallbackRequestPayload request) {
+            public AbstractPaymentCallbackResponse handle (PayUCallbackRequestPayload request) {
                 final Transaction transaction = TransactionContext.get();
-                common.syncTransactionWithSourceResponse(transaction, PayUVerificationResponse.<PayUChargingTransactionDetails>builder().status(1).transactionDetails(Collections.singletonMap(transaction.getIdStr(), AbstractPayUTransactionDetails.from(request))).build());
+                common.syncTransactionWithSourceResponse(transaction, PayUVerificationResponse.<PayUChargingTransactionDetails>builder().status(1)
+                        .transactionDetails(Collections.singletonMap(transaction.getIdStr(), AbstractPayUTransactionDetails.from(request))).build());
                 if (!EnumSet.of(PaymentEvent.RENEW, PaymentEvent.REFUND).contains(transaction.getType())) {
                     Optional<IPurchaseDetails> optionalDetails = TransactionContext.getPurchaseDetails();
                     if (optionalDetails.isPresent()) {
                         final String redirectionUrl;
                         IChargingDetails chargingDetails = (IChargingDetails) optionalDetails.get();
                         if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
-                            log.warn(PAYU_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
+                            log.warn(PAYU_CHARGING_STATUS_VERIFICATION, "Transaction is still pending at payU end for uid {} and transactionId {}", transaction.getUid(),
+                                    transaction.getId().toString());
                             redirectionUrl = chargingDetails.getPageUrlDetails().getPendingPageUrl();
                         } else if (transaction.getStatus() == TransactionStatus.UNKNOWN) {
                             log.warn(PAYU_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
@@ -138,11 +143,13 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
         private class RefundPayUCallBackHandler implements IPaymentCallback<AbstractPaymentCallbackResponse, PayUAutoRefundCallbackRequestPayload> {
 
             @Override
-            public AbstractPaymentCallbackResponse handle(PayUAutoRefundCallbackRequestPayload request) {
+            public AbstractPaymentCallbackResponse handle (PayUAutoRefundCallbackRequestPayload request) {
                 final Transaction transaction = TransactionContext.get();
-                common.syncTransactionWithSourceResponse(transaction, PayUVerificationResponse.<PayUChargingTransactionDetails>builder().status(1).transactionDetails(Collections.singletonMap(transaction.getIdStr(), AbstractPayUTransactionDetails.from(request))).build());
-                if (transaction.getStatus() == TransactionStatus.SUCCESS)
+                common.syncTransactionWithSourceResponse(transaction, PayUVerificationResponse.<PayUChargingTransactionDetails>builder().status(1)
+                        .transactionDetails(Collections.singletonMap(transaction.getIdStr(), AbstractPayUTransactionDetails.from(request))).build());
+                if (transaction.getStatus() == TransactionStatus.SUCCESS) {
                     transaction.setStatus(TransactionStatus.AUTO_REFUND.getValue());
+                }
                 return DefaultPaymentCallbackResponse.builder().transactionStatus(transaction.getStatus()).build();
             }
 
@@ -150,35 +157,50 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
         }
     }
 
-    private boolean validate(PayUCallbackRequestPayload callbackRequest) {
+    private boolean validate (PayUCallbackRequestPayload callbackRequest) {
         final Transaction transaction = TransactionContext.get();
         final String transactionId = transaction.getIdStr();
         final String payUMerchantKey = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_ID);
         final String payUMerchantSecret = PropertyResolverUtils.resolve(transaction.getClientAlias(), PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_SECRET);
-        if(callbackRequest instanceof  PayuRealtimeMandate) {
-            PayuRealtimeMandate payuRealtimeMandate= (PayuRealtimeMandate)callbackRequest;
-            // Card mandate status
-            if(Objects.nonNull(payuRealtimeMandate.getNotificationType())){
-//status|authpayuId|notificationType|billingAmount|paymentStartDate|paymentEndDate|message|eventDate|key|udf1|udf2|udf3|udf4|udf5|salt
-                return validateCallbackChecksumForRealtimeMandate(payUMerchantKey, payUMerchantSecret, callbackRequest.getStatus(), callbackRequest.getUdf(), callbackRequest.getEmail(), callbackRequest.getFirstName(), ((transaction.getType()== PaymentEvent.POINT_PURCHASE) ? transaction.getItemId(): String.valueOf(transaction.getPlanId())), transaction.getAmount(), callbackRequest.getResponseHash());
+        if (callbackRequest instanceof PayuRealtimeMandate) {
+            PayuRealtimeMandate request = (PayuRealtimeMandate) callbackRequest;
+            if (Objects.nonNull(request.getNotificationType())) {
+                final String generatedString =
+                        request.getStatus() + PIPE_SEPARATOR + request.getAuthPayuId() + PIPE_SEPARATOR + request.getNotificationType().toString() + PIPE_SEPARATOR +
+                                request.getSiDetails().getBillingAmount() +
+                                PIPE_SEPARATOR + request.getSiDetails().getPaymentStartDate() + PIPE_SEPARATOR + request.getSiDetails().getPaymentEndDate() + PIPE_SEPARATOR + request.getMessage() +
+                                PIPE_SEPARATOR + request.getEventDate() + PIPE_SEPARATOR + request.getKey() + PIPE_SEPARATOR + request.getUdf1() + PIPE_SEPARATOR + request.getUdf2() + PIPE_SEPARATOR +
+                                request.getUdf3() + PIPE_SEPARATOR + request.getUdf4() + PIPE_SEPARATOR + request.getUdf5() + PIPE_SEPARATOR + payUMerchantSecret;
+                return validateHashEquality(generatedString, request.getResponseHash());
             } else {
-                // upi mandate status
-                // status|action|authpayuid|dateTime|amount|endDate|salt
+                final String generatedString =
+                        request.getStatus() + PIPE_SEPARATOR + request.getMandateAction() + PIPE_SEPARATOR + request.getAuthPayuId() + PIPE_SEPARATOR + request.getDateTime() + PIPE_SEPARATOR +
+                                request.getAmount() + PIPE_SEPARATOR + request.getEndDate() + payUMerchantSecret;
+                return validateHashEquality(generatedString, request.getResponseHash());
             }
 
         }
-
-
-        return validateCallbackChecksum(payUMerchantKey, payUMerchantSecret, transactionId, callbackRequest.getStatus(), callbackRequest.getUdf(), callbackRequest.getEmail(), callbackRequest.getFirstName(), ((transaction.getType()== PaymentEvent.POINT_PURCHASE) ? transaction.getItemId(): String.valueOf(transaction.getPlanId())), transaction.getAmount(), callbackRequest.getResponseHash());
+        return validateCallbackChecksum(payUMerchantKey, payUMerchantSecret, transactionId, callbackRequest.getStatus(), callbackRequest.getUdf(), callbackRequest.getEmail(),
+                callbackRequest.getFirstName(), ((transaction.getType() == PaymentEvent.POINT_PURCHASE) ? transaction.getItemId() : String.valueOf(transaction.getPlanId())), transaction.getAmount(),
+                callbackRequest.getResponseHash());
     }
 
-    private boolean validateCallbackChecksumForRealtimeMandate (String payUMerchantKey, String payUMerchantSecret, String transactionId, String status, String udf, String email, String firstName, String s, double amount, String responseHash) {
+    private boolean validateCallbackChecksumForRealtimeMandate (String payUMerchantKey, String payUMerchantSecret, PayuRealtimeMandate request) {
+        return false;
     }
 
     @SneakyThrows
-    private boolean validateCallbackChecksum(String payUMerchantKey, String payUSalt, String transactionId, String transactionStatus, String udf1, String email, String firstName, String planTitle, double amount, String payUResponseHash) {
+    private boolean validateCallbackChecksum (String payUMerchantKey, String payUSalt, String transactionId, String transactionStatus, String udf1, String email, String firstName, String planTitle,
+                                              double amount, String payUResponseHash) {
         final DecimalFormat df = new DecimalFormat("#0.00");
-        final String generatedString = payUSalt + PIPE_SEPARATOR + transactionStatus + "||||||" + udf1 + PIPE_SEPARATOR + URLDecoder.decode(email, String.valueOf(StandardCharsets.UTF_8)) + PIPE_SEPARATOR + firstName + PIPE_SEPARATOR + planTitle + PIPE_SEPARATOR + df.format(amount) + PIPE_SEPARATOR + transactionId + PIPE_SEPARATOR + payUMerchantKey;
+        final String generatedString =
+                payUSalt + PIPE_SEPARATOR + transactionStatus + "||||||" + udf1 + PIPE_SEPARATOR + URLDecoder.decode(email, String.valueOf(StandardCharsets.UTF_8)) + PIPE_SEPARATOR + firstName +
+                        PIPE_SEPARATOR + planTitle + PIPE_SEPARATOR + df.format(amount) + PIPE_SEPARATOR + transactionId + PIPE_SEPARATOR + payUMerchantKey;
+        return validateHashEquality(generatedString, payUResponseHash);
+
+    }
+
+    private boolean validateHashEquality (String generatedString, String payUResponseHash) {
         final String generatedHash = EncryptionUtils.generateSHA512Hash(generatedString);
         assert generatedHash != null;
         return generatedHash.equals(payUResponseHash);

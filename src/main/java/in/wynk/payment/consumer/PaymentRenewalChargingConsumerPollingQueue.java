@@ -80,7 +80,7 @@ public class PaymentRenewalChargingConsumerPollingQueue extends AbstractSQSMessa
     @AnalyseTransaction(name = "paymentRenewalChargingMessage")
     public void consume(PaymentRenewalChargingMessage message) {
         AnalyticService.update(message);
-        log.info(PaymentLoggingMarker.PAYMENT_CHARGING_QUEUE, "processing PaymentChargingMessage for transaction {}", message);
+        log.info(PaymentLoggingMarker.PAYMENT_CHARGING_QUEUE, "processing PaymentChargingMessage for transaction {}", message.getId());
         //TODO: move payu also to new version after testing and remove check
         if (AIRTEL_PAY_STACK.equalsIgnoreCase(message.getPaymentCode()) || PAYU_MERCHANT_PAYMENT_SERVICE.equals(message.getPaymentCode())) {
             manager.renew(PaymentRenewalChargingRequest.builder()

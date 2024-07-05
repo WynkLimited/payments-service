@@ -317,18 +317,18 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         }
         try {
             PlanProvisioningRequest planProvisioningRequest =
-                SinglePlanProvisionRequest.builder()
-                                          .uid(request.getUid())
-                                          .msisdn(request.getMsisdn())
-                                          .subscriberId(request.getSubscriberId())
-                                          .paymentCode(request.getPaymentGateway().getCode())
-                                          .referenceId(request.getTransactionId())
-                                          .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent()))
-                                          .paymentPartner(BaseConstants.WYNK.toLowerCase())
-                                          .eventType(request.getPaymentEvent())
-                                          .externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired())
-                                          .triggerDataRequest(request.getTriggerDataRequest())
-                                          .build();
+                SinglePlanAdditiveProvisionRequest.builder()
+                                                  .uid(request.getUid())
+                                                  .msisdn(request.getMsisdn())
+                                                  .subscriberId(request.getSubscriberId())
+                                                  .paymentCode(request.getPaymentGateway().getCode())
+                                                  .referenceId(request.getTransactionId())
+                                                  .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent()))
+                                                  .paymentPartner(BaseConstants.WYNK.toLowerCase())
+                                                  .eventType(request.getPaymentEvent())
+                                                  .externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired())
+                                                  .triggerDataRequest(request.getTriggerDataRequest())
+                                                  .build();
             RequestEntity<PlanProvisioningRequest> requestEntity =
                 ChecksumUtils.buildEntityWithAuthHeaders(subscribePlanEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), planProvisioningRequest,
                                                          HttpMethod.POST);

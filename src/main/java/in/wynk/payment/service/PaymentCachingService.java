@@ -1,5 +1,9 @@
 package in.wynk.payment.service;
 
+import static in.wynk.common.constant.BaseConstants.SLASH;
+import static in.wynk.logging.BaseLoggingMarkers.APPLICATION_ERROR;
+import static in.wynk.payment.core.constant.BeanConstant.SUBSCRIPTION_SERVICE_S2S_TEMPLATE;
+
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.context.WynkApplicationContext;
@@ -12,10 +16,29 @@ import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.service.GroupedPaymentMethodCachingService;
 import in.wynk.payment.core.service.PaymentGroupCachingService;
 import in.wynk.payment.core.service.SkuToSkuCachingService;
-import in.wynk.payment.dto.aps.response.option.PaymentOptionsResponse;
-import in.wynk.subscription.common.dto.*;
-import in.wynk.subscription.common.enums.Category;
 import in.wynk.payment.dto.SubscriptionStatus;
+import in.wynk.payment.dto.aps.response.option.PaymentOptionsResponse;
+import in.wynk.subscription.common.dto.ItemDTO;
+import in.wynk.subscription.common.dto.OfferDTO;
+import in.wynk.subscription.common.dto.PartnerDTO;
+import in.wynk.subscription.common.dto.PlanDTO;
+import in.wynk.subscription.common.dto.ProductDTO;
+import in.wynk.subscription.common.enums.Category;
+import java.net.URI;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import javax.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -33,21 +56,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import javax.annotation.PostConstruct;
-import java.net.URI;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static in.wynk.common.constant.BaseConstants.*;
-import static in.wynk.logging.BaseLoggingMarkers.APPLICATION_ERROR;
-import static in.wynk.payment.core.constant.BeanConstant.SUBSCRIPTION_SERVICE_S2S_TEMPLATE;
-
 @Slf4j
 @Getter
 @Service
@@ -61,7 +69,6 @@ public class PaymentCachingService {
     private final Map<String, PlanDTO> skuToPlan = new ConcurrentHashMap<>();
     private final Map<String, PartnerDTO> partners = new ConcurrentHashMap<>();
     private final Map<String, ProductDTO> products = new ConcurrentHashMap<>();
-    private final Map<Integer, PlanDTO> dataPlanMap = new ConcurrentHashMap<>();
 
     private final Map<String, PaymentOptionsResponse> savedOptions = new ConcurrentHashMap<>();
 
@@ -92,7 +99,6 @@ public class PaymentCachingService {
         AnalyticService.update("cacheLoadInit", true);
         loadProducts();
         loadPlans();
-        loadDataPlans();
         loadOffers();
         loadPartners();
         AnalyticService.update("cacheLoadCompleted", true);
@@ -138,15 +144,6 @@ public class PaymentCachingService {
                 writeLock.unlock();
             }
         }
-    }
-
-    private void loadDataPlans() {
-        Collection<PlanDTO> planList = planDtoCachingService.getAll();
-        Map<Integer, PlanDTO> planMap =  planList.stream()
-                .filter(plan -> MapUtils.isNotEmpty(plan.getMeta()) && plan.getMeta().containsKey("airtelPlan"))
-                .collect(Collectors.toMap(PlanDTO::getId, Function.identity()));
-        dataPlanMap.clear();
-        dataPlanMap.putAll(planMap);
     }
 
     private void loadOffers() {

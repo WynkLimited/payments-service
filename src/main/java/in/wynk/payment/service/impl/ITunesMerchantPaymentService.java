@@ -413,7 +413,8 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             log.error(PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE, "Exception while posting data to iTunes: {}", e.getResponseBodyAsString());
             throw new WynkRuntimeException(PAY011, e);
         } catch (Exception e) {
-            log.error(PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE, "failed to execute getReceiptObjForUser due to ", e);
+            log.error(e.getLocalizedMessage());
+            log.error(PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE, "failed to execute getReceiptObjForUser due to " + e.getMessage(), e);
             throw new WynkRuntimeException(WynkErrorType.UT999, e);
         }
     }

@@ -90,7 +90,7 @@ spring:
 payment:
   se:
     s3:
-      bucket: wcf-logs
+      bucket: wynk-framework-dev-ap-south-1
   encKey: BSB$PORTAL@2014#
   recurring:
     offset:
@@ -324,7 +324,7 @@ payment:
         secret: 2:ZkyH7bPlE7oS-7Ak2YQd98DpZOMJIi4AtXYoC4NctXAqcNFTBH86SNO0kCD2722nnQ_WXT10zaWm3UQ1W1FG7Q==:fnW_5qS9s0YMsK-bVEcL7g==
       secret: 2:IJfTI-o1TsAxo1MRxwTUlOprySfH_G5qDlZXvlenFE_MSxEkckfQ70hwHwKC7cbB:3ot0eUrg4XOyFFQdKv5L4Q==
       status:
-        ##baseUrl: http://rvssandbox.wynk.in/RVSSandbox/version/1.0/verifyReceiptId/developer/
+        #baseUrl: http://rvssandbox.wynk.in/RVSSandbox/version/1.0/verifyReceiptId/developer/
         baseUrl: https://appstore-sdk.amazon.com/version/1.0/verifyReceiptId/developer/
     #### PhonePe props ######
     phonepe:
@@ -335,6 +335,9 @@ payment:
         id: WYNK
         secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
       rajtv:
+        id: WYNK
+        secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
+      iqvideo:
         id: WYNK
         secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
       enterr10:
@@ -355,6 +358,9 @@ payment:
       rajtv:
         id: WYNK
         secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
+      iqvideo:
+        id: WYNK
+        secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
       enterr10:
         id: WYNK
         secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
@@ -363,6 +369,9 @@ payment:
         id: 180704
         secret: d41d8cd98f00a
       music:
+        id: 180704
+        secret: d41d8cd98f00a
+      iqvideo:
         id: 180704
         secret: d41d8cd98f00a
       rajtv:
@@ -383,6 +392,8 @@ payment:
         token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
       music:
         token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
+      iqvideo:
+        token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
       rajtv:
         token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
       enterr10:
@@ -394,6 +405,11 @@ payment:
         token: 653fe766-5864-4e16-a288-68ebcccffbd0
         clientId: merchant-wynk-staging
       music:
+        id: WYNKLI36809118294255
+        secret: 6UePBAcq7LTfdGJI
+        token: 653fe766-5864-4e16-a288-68ebcccffbd0
+        clientId: merchant-wynk-staging
+      iqvideo:
         id: WYNKLI36809118294255
         secret: 6UePBAcq7LTfdGJI
         token: 653fe766-5864-4e16-a288-68ebcccffbd0
@@ -451,16 +467,16 @@ http:
         connection:
           max: 20
           maxPerHost: 5
-          timeout: 2000
+          timeout: 10000
           defaultKeepAliveTime: 500
           closeIdleWaitTime: 500
           validateAfterInActivity: 100
           socket:
-            timeout: 2500
+            timeout: 10000
             factory:
               type: both
           request:
-            timeout: 1000
+            timeout: 10000
     apbPaytmHttpTemplate:
       pool:
         connection:
@@ -831,6 +847,53 @@ wynk:
                   socketTimeout: 2000
                 readPreference: secondaryPreferred
                 replicaSet: wcf
+        iqvideo:
+          enabled: true
+          sources:
+            payment:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                appName: payment
+                nodes: 10.80.0.128,10.80.0.240
+                username: user_payments_iqvideo
+                password: 53411B8BEBE9E8ABC5F1B21
+                database: payments_iqvideo_preprod
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+            coupons:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.coupon.core.dao
+              source:
+                appName: coupon
+                nodes: 10.80.0.128,10.80.0.240
+                username: user_coupons_iqvideo
+                password: 53411B8BEBE9E8ABC5F1B21
+                database: coupon_iqvideo_preprod
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
         rajtv:
           enabled: true
           sources:
@@ -878,6 +941,53 @@ wynk:
                   socketTimeout: 2000
                 readPreference: secondaryPreferred
                 replicaSet: wcf
+        enterr10:
+          enabled: true
+          sources:
+            payment:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                appName: payment
+                nodes: 10.80.0.128,10.80.0.240
+                username: user_payments_enterr10_preprod
+                password: 91F306FC2BE75E699D74014
+                database: payments_enterr10_preprod
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
+            coupons:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.coupon.core.dao
+              source:
+                appName: coupon
+                nodes: 10.80.0.128,10.80.0.240
+                username: user_coupon_enterr10_preprod
+                password: BE75084154378ED34520AFC887A70E
+                database: coupon_enterr10_preprod
+                ########### Mongo Pool Config ###########
+                connectionSettings:
+                  minConnectionsPerHost: 1
+                  maxConnectionsPerHost: 5
+                  threadsAllowedToBlockForConnectionMultiplier: 2
+                timeOutSettings:
+                  serverSelectionTimeoutMs: 10000
+                  maxWaitTime: 1000
+                  connectTimeout: 1000
+                  socketTimeout: 2000
+                readPreference: secondaryPreferred
+                replicaSet: wcf
     sql:
       enabled: true
       clients:
@@ -900,8 +1010,8 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-dev
-                  minimum-idle: 10
-                  maximumPoolSize: 100
+                  minimum-idle: 5
+                  maximumPoolSize: 20
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: false
@@ -939,8 +1049,8 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-dev
-                  minimum-idle: 10
-                  maximumPoolSize: 100
+                  minimum-idle: 5
+                  maximumPoolSize: 20
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: false
@@ -978,8 +1088,47 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-dev
-                  minimum-idle: 10
-                  maximumPoolSize: 100
+                  minimum-idle: 5
+                  maximumPoolSize: 20
+                jpa:
+                  database-platform: org.hibernate.dialect.MySQL8Dialect
+                  show-sql: false
+                  open-in-view: false
+                  properties:
+                    hibernate.format_sql: false
+                    hibernate.id.new_generator_mappings: true
+                    hibernate.connection.provider_disables_autocommit: true
+                    hibernate.cache.use_second_level_cache: false
+                    hibernate.cache.use_query_cache: false
+                    hibernate.generate_statistics: false
+                    hibernate.hbm2ddl.auto: validate
+                    hibernate.jdbc.time_zone: Asia/Kolkata
+                hibernate:
+                  ddl-auto: validate
+                  naming:
+                    physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+                    implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+        iqvideo:
+          enabled: true
+          sources:
+            payments:
+              enabled: true
+              repoConfig:
+                basePackages: in.wynk.payment.core.dao
+              source:
+                hikari:
+                  jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments_preprod_iqvideo
+                  username: admin
+                  password: o7QZ?!n=eu
+                  driver-class-name: com.mysql.cj.jdbc.Driver
+                  registerMbeans: true
+                  auto-commit: false
+                  connectionTimeout: 2000
+                  idleTimeout: 10000
+                  maxLifetime: 30000
+                  poolName: payment-datasource-pool-dev
+                  minimum-idle: 5
+                  maximumPoolSize: 20
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: false
@@ -1017,8 +1166,8 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-dev
-                  minimum-idle: 10
-                  maximumPoolSize: 100
+                  minimum-idle: 5
+                  maximumPoolSize: 20
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: false

@@ -40,9 +40,9 @@ public class PaymentQueuesConfig {
 
     @Bean
     public PurchaseAcknowledgementConsumerPollingQueue purchaseAcknowledgementConsumerPollingQueue(@Value("${payment.pooling.queue.acknowledgement.name}") String queueName,
-                                                                                                       @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
-                                                                                                       ObjectMapper objectMapper,
-                                                                                                       PurchaseAcknowledgementSQSMessageExtractor purchaseAcknowledgementSQSMessageExtractor) {
+                                                                                                   @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
+                                                                                                   ObjectMapper objectMapper,
+                                                                                                   PurchaseAcknowledgementSQSMessageExtractor purchaseAcknowledgementSQSMessageExtractor) {
         return new PurchaseAcknowledgementConsumerPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
@@ -129,7 +129,7 @@ public class PaymentQueuesConfig {
                                                                                               ObjectMapper objectMapper,
                                                                                               PaymentRecurringUnSchedulingSQSMessageExtractor paymentRecurringUnSchedulingSQSMessageExtractor,
                                                                                               @Qualifier(in.wynk.payment.core.constant.BeanConstant.RECURRING_PAYMENT_RENEWAL_SERVICE)
-                                                                                                      IRecurringPaymentManagerService recurringPaymentManager,
+                                                                                              IRecurringPaymentManagerService recurringPaymentManager,
                                                                                               ITransactionManagerService transactionManagerService, ApplicationEventPublisher eventPublisher) {
         return new PaymentRecurringUnSchedulingPollingQueue(queueName,
                 sqsClient,
@@ -156,10 +156,10 @@ public class PaymentQueuesConfig {
 
     @Bean
     public PaymentRefundConsumerPollingQueue paymentRefundConsumerPollingQueue(@Value("${payment.pooling.queue.refund.name}") String queueName,
-                                                                                    @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
-                                                                                    ObjectMapper objectMapper,
-                                                                                    PaymentRefundSQSMessageExtractor paymentRefundSQSMessageExtractor,
-                                                                                    PaymentManager paymentManager, ITransactionManagerService transactionManagerService,
+                                                                               @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
+                                                                               ObjectMapper objectMapper,
+                                                                               PaymentRefundSQSMessageExtractor paymentRefundSQSMessageExtractor,
+                                                                               PaymentManager paymentManager, ITransactionManagerService transactionManagerService,
                                                                                PaymentGatewayManager paymentGatewayManager) {
         return new PaymentRefundConsumerPollingQueue(queueName,
                 sqsClient,
@@ -226,7 +226,7 @@ public class PaymentQueuesConfig {
 
     @Bean
     public PaymentRefundSQSMessageExtractor paymentRefundSQSMessageExtractor(@Value("${payment.pooling.queue.refund.name}") String queueName,
-                                                                                                           @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClients) {
+                                                                             @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClients) {
         return new PaymentRefundSQSMessageExtractor(queueName, sqsClients);
     }
 

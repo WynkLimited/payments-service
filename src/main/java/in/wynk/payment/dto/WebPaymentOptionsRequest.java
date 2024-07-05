@@ -61,16 +61,16 @@ public class WebPaymentOptionsRequest implements IPaymentOptionsRequest {
     }
 
     @Override
-    public IPaymentDetails getPaymentDetails() {
-        return this.paymentDetails;
-    }
-
-    @Override
     public IGeoLocation getGeoLocation() {
         SessionDTO session = SessionContextHolder.getBody();
         GeoLocation geoLocation = session.get(GEO_LOCATION);
         return Objects.isNull(geoLocation) ? GeoLocation.builder().build() :
                 GeoLocation.builder().accessCountryCode(geoLocation.getAccessCountryCode()).stateCode(geoLocation.getStateCode()).ip(geoLocation.getIp()).build();
+    }
+
+    @Override
+    public IPaymentDetails getPaymentDetails () {
+        return this.paymentDetails;
     }
 
     @Override

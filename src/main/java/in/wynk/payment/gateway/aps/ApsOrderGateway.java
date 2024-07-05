@@ -39,8 +39,6 @@ import in.wynk.payment.service.IExternalPaymentEligibilityService;
 import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;

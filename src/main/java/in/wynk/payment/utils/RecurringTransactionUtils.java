@@ -108,18 +108,12 @@ public class RecurringTransactionUtils {
                     }
 
                     subscriptionServiceManager.unSubscribePlan(AbstractUnSubscribePlanRequest.from(request));
-                    updateTransaction(request.getTransaction());
                 }
             }
         } catch (Exception e) {
             log.error("Unable to update renewal table for cancellation and mandate status event could not be generated", e);
         }
 
-    }
-
-    private void updateTransaction (Transaction transaction) {
-        transaction.setStatus(TransactionStatus.CANCELLED.getValue());
-        transactionManagerService.upsert(transaction);
     }
 
     public void cancelRenewalBasedOnRealtimeMandate (String description, Transaction firstTransaction) {

@@ -116,7 +116,9 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             final Transaction transaction = TransactionContext.get();
             final ItunesLatestReceiptResponse response = (ItunesLatestReceiptResponse) latestReceiptResponse;
 
-            fetchAndUpdateFromReceipt(transaction, response, null);
+            if(!EnumSet.of(TransactionStatus.SUCCESS).contains(transaction.getStatus())) {
+                fetchAndUpdateFromReceipt(transaction, response, null);
+            }
             final String clientPagePlaceHolder = PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER.replace("%c", ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT));
             if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
 

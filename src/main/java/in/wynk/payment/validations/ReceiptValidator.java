@@ -4,6 +4,7 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.client.data.utils.RepositoryUtils;
+import in.wynk.common.dto.SessionDTO;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.validations.BaseHandler;
 import in.wynk.exception.WynkRuntimeException;
@@ -21,6 +22,7 @@ import in.wynk.payment.dto.gpbs.response.receipt.GooglePlaySubscriptionReceiptRe
 import in.wynk.payment.dto.itune.ItunesLatestReceiptResponse;
 import in.wynk.payment.dto.itune.LatestReceiptInfo;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
+import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 
@@ -61,6 +63,7 @@ public class ReceiptValidator extends BaseHandler<IReceiptValidatorRequest<Lates
                             .findById(String.valueOf(originalTransactionId));
             if (receiptDetailsOptional.isPresent() && verifyIfPreviousTransactionSuccess(receiptDetailsOptional.get()) &&
                     receiptTransactionId.equalsIgnoreCase(receiptDetailsOptional.get().getReceiptTransactionId())) {
+                SessionContextHolder.<SessionDTO>getBody().put(TXN_ID, receiptDetailsOptional.get().getPaymentTransactionId());
                 throw new WynkRuntimeException(PaymentErrorType.PAY701);
             }
             super.handle(request);

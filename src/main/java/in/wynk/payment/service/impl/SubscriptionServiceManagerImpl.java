@@ -359,7 +359,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     }
 
     private void additiveDaysSubscribe(AbstractSubscribePlanRequest request) {
-        AnalyticService.update("AdditiveValidity", request.toString());
+        log.info("AdditiveValidity request: {}", request);
         try {
             if (ApsConstant.APS_V2.equalsIgnoreCase(request.getPaymentGateway().getId())) {
                 return;
@@ -367,7 +367,8 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
 
             PlanDTO planDTO = cachingService.getPlan(request.getPlanId());
             if (Boolean.FALSE.equals(MapUtils.getBoolean(planDTO.getMeta(), "additiveValidityEnabled", false))) {
-                AnalyticService.update("AdditiveValidity", "Additive validity not enabled for plan id: " + request.getPlanId());
+                log.info("Additive validity not enabled for plan id: {}", request.getPlanId());
+                AnalyticService.update("AdditiveValidity", 0);
                 return;
             }
 
@@ -387,7 +388,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
                                                                                                 .validityInDays(additiveDays)
                                                                                                 .build();
             RequestEntity<PlanProvisioningRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(subscribePlanAdditiveEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), planProvisioningRequest, HttpMethod.POST);
-            AnalyticService.update("AdditiveValidity", requestEntity.toString());
+            log.info("AdditiveValidity requestEntity: {}", requestEntity);
             restTemplate.exchange(requestEntity,
                                   new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<PlanProvisioningResponse>>() {
                                   });

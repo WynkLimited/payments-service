@@ -311,26 +311,6 @@ public class PaymentManager
         final LatestReceiptResponse latestReceiptResponse = verificationService.getLatestReceiptResponse(request);
         try{
             BeanLocatorFactory.getBean(VERIFY_IAP_FRAUD_DETECTION_CHAIN, IHandler.class).handle(new IapVerificationWrapperRequest(latestReceiptResponse, request, null));
-            final AbstractTransactionInitRequest transactionInitRequest =
-                    DefaultTransactionInitRequestMapper.from(IapVerificationRequestWrapper.builder().clientId(clientId).verificationRequest(request).receiptResponse(latestReceiptResponse).build());
-            final Transaction transaction = transactionManager.init(transactionInitRequest, request.getPurchaseDetails());
-            sqsManagerService.publishSQSMessage(
-                    PaymentReconciliationMessage.builder().extTxnId(latestReceiptResponse.getExtTxnId()).paymentCode(transaction.getPaymentChannel().getId()).transactionId(transaction.getIdStr())
-                            .paymentEvent(transaction.getType()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
-            final TransactionStatus initialStatus = transaction.getStatus();
-            SessionContextHolder.<SessionDTO>getBody().put(TXN_ID, transaction.getId());
-            try {
-                return verificationService.verifyReceipt(latestReceiptResponse);
-            } catch (WynkRuntimeException e) {
-                eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(e.getErrorCode())).description(e.getErrorTitle()).build());
-                throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
-            } finally {
-                final TransactionStatus finalStatus = transaction.getStatus();
-                String lastSuccessTransactionId = getLastSuccessTransactionId(transaction);
-                transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(initialStatus)
-                        .finalTransactionStatus(finalStatus).build());
-                exhaustCouponIfApplicable(initialStatus, finalStatus, transaction);
-            }
         } catch(WynkRuntimeException e){
             if(e.getErrorCode().equalsIgnoreCase(PaymentErrorType.PAY701.getErrorCode())){
                 //means receipt is already processed, no need for subscription provision again
@@ -339,6 +319,26 @@ public class PaymentManager
                 return verificationService.verifyReceipt(latestReceiptResponse);
             }
             throw e;
+        }
+        final AbstractTransactionInitRequest transactionInitRequest =
+                DefaultTransactionInitRequestMapper.from(IapVerificationRequestWrapper.builder().clientId(clientId).verificationRequest(request).receiptResponse(latestReceiptResponse).build());
+        final Transaction transaction = transactionManager.init(transactionInitRequest, request.getPurchaseDetails());
+        sqsManagerService.publishSQSMessage(
+                PaymentReconciliationMessage.builder().extTxnId(latestReceiptResponse.getExtTxnId()).paymentCode(transaction.getPaymentChannel().getId()).transactionId(transaction.getIdStr())
+                        .paymentEvent(transaction.getType()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
+        final TransactionStatus initialStatus = transaction.getStatus();
+        SessionContextHolder.<SessionDTO>getBody().put(TXN_ID, transaction.getId());
+        try {
+            return verificationService.verifyReceipt(latestReceiptResponse);
+        } catch (WynkRuntimeException e) {
+            eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(e.getErrorCode())).description(e.getErrorTitle()).build());
+            throw new PaymentRuntimeException(PaymentErrorType.PAY302, e);
+        } finally {
+            final TransactionStatus finalStatus = transaction.getStatus();
+            String lastSuccessTransactionId = getLastSuccessTransactionId(transaction);
+            transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(initialStatus)
+                    .finalTransactionStatus(finalStatus).build());
+            exhaustCouponIfApplicable(initialStatus, finalStatus, transaction);
         }
     }
 

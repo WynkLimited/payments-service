@@ -404,8 +404,8 @@ public class PaymentManager
 
     @Override
     public WynkResponseEntity<Void> doRenewal (PaymentRenewalChargingRequest request) {
-        Optional<Transaction> oldTransaction1 = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).findById(request.getId());
-        if (!oldTransaction1.get().getStatus().getValue().equalsIgnoreCase(SUCCESS) && !isEligibleForRenewal(oldTransaction1.get()) && (request.getPaymentGateway().getId().equals(ITUNES) || request.getPaymentGateway().getId().equals(AMAZON_IAP) || request.getPaymentGateway().getId().equals(GOOGLE_IAP))) {
+        Optional<Transaction> originalTransaction = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).findById(request.getId());
+        if (!originalTransaction.get().getStatus().getValue().equalsIgnoreCase(SUCCESS) && !isEligibleForRenewal(originalTransaction.get()) && (request.getPaymentGateway().getId().equals(ITUNES) || request.getPaymentGateway().getId().equals(AMAZON_IAP) || request.getPaymentGateway().getId().equals(GOOGLE_IAP))) {
             return null;
         }
         final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(

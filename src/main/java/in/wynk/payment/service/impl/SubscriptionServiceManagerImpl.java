@@ -361,7 +361,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     private void additiveDaysSubscribe(AbstractSubscribePlanRequest request) {
         log.info("AdditiveValidity request: {}", request);
         try {
-            if (ApsConstant.APS_V2.equalsIgnoreCase(request.getPaymentGateway().getId())) {
+            if (!ApsConstant.APS_V2.equalsIgnoreCase(request.getPaymentGateway().getId())) {
                 return;
             }
 

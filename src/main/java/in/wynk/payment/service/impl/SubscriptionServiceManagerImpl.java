@@ -67,6 +67,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -358,31 +359,41 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     }
 
     private void additiveDaysSubscribe(AbstractSubscribePlanRequest request) {
-        AnalyticService.update("AdditiveValidity", request.toString());
+        log.info("AdditiveValidity request: {}", request);
         try {
-            if (ApsConstant.APS_V2.equalsIgnoreCase(request.getPaymentGateway().getId())) {
-                Integer additiveDays = getAdditiveDays(request.getMsisdn(), request.getPlanId());
-                AnalyticService.update("AdditiveValidity", additiveDays);
-                PlanProvisioningRequest planProvisioningRequest = SinglePlanAdditiveProvisionRequest.builder()
-                                                                                                    .uid(request.getUid())
-                                                                                                    .msisdn(request.getMsisdn())
-                                                                                                    .subscriberId(request.getSubscriberId())
-                                                                                                    .paymentCode(request.getPaymentGateway().getCode())
-                                                                                                    .referenceId(request.getTransactionId())
-                                                                                                    .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent()))
-                                                                                                    .paymentPartner(BaseConstants.WYNK.toLowerCase())
-                                                                                                    .eventType(request.getPaymentEvent())
-                                                                                                    .externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired())
-                                                                                                    .triggerDataRequest(request.getTriggerDataRequest())
-                                                                                                    .validityInDays(additiveDays)
-                                                                                                    .build();
-                RequestEntity<PlanProvisioningRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(subscribePlanAdditiveEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), planProvisioningRequest, HttpMethod.POST);
-                AnalyticService.update("AdditiveValidity", requestEntity.toString());
-                restTemplate.exchange(requestEntity,
-                                      new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<PlanProvisioningResponse>>() {
-                                      });
-                removeFromCache(request.getMsisdn(), request.getPlanId());
+            if (!ApsConstant.APS_V2.equalsIgnoreCase(request.getPaymentGateway().getId())) {
+                return;
             }
+
+            PlanDTO planDTO = cachingService.getPlan(request.getPlanId());
+            if (Boolean.FALSE.equals(MapUtils.getBoolean(planDTO.getMeta(), "additiveValidityEnabled", false))) {
+                log.info("Additive validity not enabled for plan id: {}", request.getPlanId());
+                AnalyticService.update("AdditiveValidity", 0);
+                return;
+            }
+
+            Integer additiveDays = getAdditiveDays(request.getMsisdn(), request.getPlanId());
+            AnalyticService.update("AdditiveValidity", additiveDays);
+            PlanProvisioningRequest planProvisioningRequest = SinglePlanAdditiveProvisionRequest.builder()
+                                                                                                .uid(request.getUid())
+                                                                                                .msisdn(request.getMsisdn())
+                                                                                                .subscriberId(request.getSubscriberId())
+                                                                                                .paymentCode(request.getPaymentGateway().getCode())
+                                                                                                .referenceId(request.getTransactionId())
+                                                                                                .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent()))
+                                                                                                .paymentPartner(BaseConstants.WYNK.toLowerCase())
+                                                                                                .eventType(request.getPaymentEvent())
+                                                                                                .externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired())
+                                                                                                .triggerDataRequest(request.getTriggerDataRequest())
+                                                                                                .validityInDays(additiveDays)
+                                                                                                .build();
+            RequestEntity<PlanProvisioningRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(subscribePlanAdditiveEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), planProvisioningRequest, HttpMethod.POST);
+            log.info("AdditiveValidity requestEntity: {}", requestEntity);
+            restTemplate.exchange(requestEntity,
+                                  new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<PlanProvisioningResponse>>() {
+                                  });
+
+            removeFromCache(request.getMsisdn(), request.getPlanId());
         } catch (Exception e) {
             log.error("Error in Subscribe Plan Additive request", e);
         }

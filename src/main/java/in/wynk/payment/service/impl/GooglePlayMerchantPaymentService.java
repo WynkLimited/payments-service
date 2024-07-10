@@ -84,6 +84,7 @@ import java.util.concurrent.locks.Lock;
 import static in.wynk.common.constant.BaseConstants.DEFAULT_ACCESS_STATE_CODE;
 import static in.wynk.common.enums.PaymentEvent.*;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
+import static in.wynk.payment.core.constant.PaymentErrorType.PLAY008;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE;
 import static in.wynk.payment.dto.gpbs.GooglePlayConstant.*;
 
@@ -792,6 +793,9 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                 return WynkResponseEntity.<Void>builder().success(true).build();
             }
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            if (Objects.isNull(receiptDetails)) {
+                throw new WynkRuntimeException(PLAY008);
+            }
             return WynkResponseEntity.<Void>builder().success(false).build();
         } catch (Exception e) {
             if (WynkRuntimeException.class.isAssignableFrom(e.getClass())) {

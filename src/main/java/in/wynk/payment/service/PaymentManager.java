@@ -407,7 +407,7 @@ public class PaymentManager
                     .txnId(txnId)
                     .build();
         }
-       throw new WynkRuntimeException("Exception occurred as type is missing");
+        throw new WynkRuntimeException("Exception occurred as type is missing");
     }
 
     @Override

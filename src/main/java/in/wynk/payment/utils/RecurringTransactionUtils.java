@@ -1,8 +1,5 @@
 package in.wynk.payment.utils;
 
-import in.wynk.auth.dao.entity.Client;
-import in.wynk.client.context.ClientContext;
-import in.wynk.client.data.utils.RepositoryUtils;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
@@ -11,7 +8,6 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.core.dao.repository.ITransactionDao;
 import in.wynk.payment.core.event.MandateStatusEvent;
 import in.wynk.payment.core.event.UnScheduleRecurringPaymentEvent;
 import in.wynk.payment.dto.request.AbstractUnSubscribePlanRequest;
@@ -28,7 +24,6 @@ import java.util.EnumSet;
 import java.util.Objects;
 
 import static in.wynk.payment.core.constant.PaymentConstants.ERROR_REASONS;
-import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 
 /**
  * @author Nishesh Pandey
@@ -91,18 +86,12 @@ public class RecurringTransactionUtils {
                     }
 
                     subscriptionServiceManager.unSubscribePlan(AbstractUnSubscribePlanRequest.from(request));
-                    updateTransaction(request.getTransaction());
                 }
             }
         } catch (Exception e) {
             log.error("Unable to update renewal table for cancellation and mandate status event could not be generated", e);
         }
 
-    }
-
-    private void updateTransaction (Transaction transaction) {
-        transaction.setStatus(TransactionStatus.CANCELLED.getValue());
-        transactionManagerService.upsert(transaction);
     }
 
     public void cancelRenewalBasedOnRealtimeMandate (String description, Transaction firstTransaction) {

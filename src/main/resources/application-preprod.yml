@@ -572,8 +572,8 @@ wynk:
   kafka:
     enabled: true
     nodes: 10.168.88.20:9092
-    username: admin
-    password: fr8qQGObqgkAMKB
+    username: appuser
+    password: uJK67dC1Ax
     producers:
       invoice:
         generate:
@@ -599,8 +599,8 @@ wynk:
               autoCommitInterval: 100
               autoOffsetConfig: earliest
               bootstrapServers: 10.168.88.20:9092
-              username: admin
-              password: fr8qQGObqgkAMKB
+              username: appuser
+              password: uJK67dC1Ax
               enableAutoCommit: true
               groupId: group1
               keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -616,8 +616,8 @@ wynk:
               autoCommitInterval: 100
               autoOffsetConfig: earliest
               bootstrapServers: 10.168.88.20:9092
-              username: admin
-              password: fr8qQGObqgkAMKB
+              username: appuser
+              password: uJK67dC1Ax
               enableAutoCommit: true
               groupId: group1
               keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -635,8 +635,8 @@ wynk:
                 autoCommitInterval: 100
                 autoOffsetConfig: earliest
                 bootstrapServers: 10.168.88.20:9092
-                username: admin
-                password: fr8qQGObqgkAMKB
+                username: appuser
+                password: uJK67dC1Ax
                 enableAutoCommit: true
                 groupId: group1
                 keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -652,8 +652,8 @@ wynk:
                 autoCommitInterval: 100
                 autoOffsetConfig: earliest
                 bootstrapServers: 10.168.88.20:9092
-                username: admin
-                password: fr8qQGObqgkAMKB
+                username: appuser
+                password: uJK67dC1Ax
                 enableAutoCommit: true
                 groupId: group1
                 keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer

@@ -405,7 +405,7 @@ public class PaymentManager
     @Override
     public WynkResponseEntity<Void> doRenewal (PaymentRenewalChargingRequest request) {
         Optional<Transaction> originalTransaction = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).findById(request.getId());
-        if (!originalTransaction.get().getStatus().getValue().equalsIgnoreCase(SUCCESS) && !isEligibleForRenewal(originalTransaction.get()) && (request.getPaymentGateway().getId().equals(ITUNES) || request.getPaymentGateway().getId().equals(AMAZON_IAP) || request.getPaymentGateway().getId().equals(GOOGLE_IAP))) {
+        if ((request.getPaymentGateway().getId().equals(ITUNES) || request.getPaymentGateway().getId().equals(AMAZON_IAP) || request.getPaymentGateway().getId().equals(GOOGLE_IAP)) && originalTransaction.get().getStatus() != TransactionStatus.SUCCESS && !isEligibleForRenewal(originalTransaction.get())) {
             return null;
         }
         final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
@@ -440,16 +440,16 @@ public class PaymentManager
     private boolean isEligibleForRenewal(Transaction oldTransaction) {
         String lastSuccessTransactionId = getLastSuccessTransactionId(transactionManager.get(oldTransaction.getIdStr()));
         List<PaymentRenewal> paymentRenewalList = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).findByLastTransactionId(lastSuccessTransactionId);
-        List<PaymentRenewal> newSuccessTransactionIdList = paymentRenewalList.stream().filter(paymentRenewal -> getTransactionStatusById(paymentRenewal.getTransactionId()) == true).collect(Collectors.toList());
-        if (newSuccessTransactionIdList.isEmpty()) {
+        Optional<PaymentRenewal> newSuccessTransactionId = paymentRenewalList.stream().filter(paymentRenewal -> isTransactionSuccess(paymentRenewal.getTransactionId())).findFirst();
+        if (!newSuccessTransactionId.isPresent()) {
             return true;
         }
         return false;
     }
 
-    private boolean getTransactionStatusById(String transactionId) {
+    private boolean isTransactionSuccess(String transactionId) {
         Optional<Transaction> optionalTransaction = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).findById(transactionId);
-        if (optionalTransaction.isPresent() && optionalTransaction.get().getStatus().getValue().equalsIgnoreCase(SUCCESS)) {
+        if (optionalTransaction.isPresent() && optionalTransaction.get().getStatus() == TransactionStatus.SUCCESS) {
             return true;
         }
         return false;

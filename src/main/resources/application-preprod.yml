@@ -541,7 +541,7 @@ http:
 service:
   subscription:
     api:
-      root: http://subscription-preprod.wcf.internal
+      root: http://subscription-preprod.prd.wcf.internal
       purchase:
         url: /subscriptions/
       manage:

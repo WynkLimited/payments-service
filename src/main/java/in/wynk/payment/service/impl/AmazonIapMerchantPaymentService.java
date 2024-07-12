@@ -431,7 +431,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         final Transaction transaction = TransactionContext.get();
         Optional<Transaction> oldTransaction = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).findById(paymentRenewalChargingRequest.getId());
         final AmazonReceiptDetails receipt;
-        if (!oldTransaction.get().getStatus().getValue().equalsIgnoreCase(PaymentConstants.SUCCESS)) {
+        if (oldTransaction.get().getStatus() != TransactionStatus.SUCCESS) {
             String lastSuccessTransactionId = getLastSuccessTransactionId(oldTransaction.get());
             receipt = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByPaymentTransactionId(lastSuccessTransactionId);
         } else {

@@ -49,13 +49,13 @@ session:
 ##### mysql database props #####
 spring:
   datasource:
-    url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments-preprod
-    username: admin
-    password: o7QZ?!n=eu
+    url: jdbc:mysql://10.168.64.3:3306/payments-preprod
+    username: wcf-app-user-preprod
+    password: LB+@5l.[@nc~mOg.
     hikari:
-      jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments-preprod
-      username: admin
-      password: o7QZ?!n=eu
+      jdbc-url: jdbc:mysql://10.168.64.3:3306/payments-preprod
+      username: wcf-app-user-preprod
+      password: LB+@5l.[@nc~mOg.
       driver-class-name: com.mysql.cj.jdbc.Driver
       registerMbeans: true
       auto-commit: false
@@ -890,9 +890,9 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 hikari:
-                  jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments-preprod
-                  username: admin
-                  password: o7QZ?!n=eu
+                  jdbc-url: jdbc:mysql://10.168.64.3:3306/payments-preprod
+                  username: wcf-app-user-preprod
+                  password: LB+@5l.[@nc~mOg.
                   driver-class-name: com.mysql.cj.jdbc.Driver
                   registerMbeans: true
                   auto-commit: false
@@ -929,9 +929,9 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 hikari:
-                  jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments-preprod
-                  username: admin
-                  password: o7QZ?!n=eu
+                  jdbc-url: jdbc:mysql://10.168.64.3:3306/payments-preprod
+                  username: wcf-app-user-preprod
+                  password: LB+@5l.[@nc~mOg.
                   driver-class-name: com.mysql.cj.jdbc.Driver
                   registerMbeans: true
                   auto-commit: false
@@ -968,9 +968,9 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 hikari:
-                  jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments-preprod
-                  username: admin
-                  password: o7QZ?!n=eu
+                  jdbc-url: jdbc:mysql://10.168.64.3:3306/payments-preprod
+                  username: wcf-app-user-preprod
+                  password: LB+@5l.[@nc~mOg.
                   driver-class-name: com.mysql.cj.jdbc.Driver
                   registerMbeans: true
                   auto-commit: false
@@ -1007,9 +1007,9 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 hikari:
-                  jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments_preprod_rajtv
-                  username: admin
-                  password: o7QZ?!n=eu
+                  jdbc-url: jdbc:mysql://10.168.64.3:3306/payments_preprod_rajtv
+                  username: wcf-app-user-preprod
+                  password: LB+@5l.[@nc~mOg.
                   driver-class-name: com.mysql.cj.jdbc.Driver
                   registerMbeans: true
                   auto-commit: false
@@ -1046,9 +1046,9 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 hikari:
-                  jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments_preprod_enterr10
-                  username: admin
-                  password: o7QZ?!n=eu
+                  jdbc-url: jdbc:mysql://10.168.64.3:3306/payments_preprod_enterr10
+                  username: wcf-app-user-preprod
+                  password: LB+@5l.[@nc~mOg.
                   driver-class-name: com.mysql.cj.jdbc.Driver
                   registerMbeans: true
                   auto-commit: false

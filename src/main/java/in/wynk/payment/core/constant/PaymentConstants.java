@@ -82,7 +82,7 @@ public interface PaymentConstants extends BaseConstants {
     List<String> IAP_PAYMENT_METHODS = Arrays.asList(PaymentConstants.ITUNES, PaymentConstants.AMAZON_IAP, PaymentConstants.GOOGLE_IAP);
 
     String CONTENT_TYPE = "Content-Type";
-    String CURRENCY_INR = "INR";
+    String CURRENCY_INR="INR";
     String WHATSAPP = "WHATSAPP";
     String UNKNOWN_VPA = "UNKNOWN_VPA";
     String ANDROID_DEEP_LINK = "android_deep_link";
@@ -98,6 +98,7 @@ public interface PaymentConstants extends BaseConstants {
     String ADD_TO_BILL_USER_SUBSCRIPTION_STATUS_TASK = "AddToBillUserSubscriptionStatusTask";
     String EXTERNAL_TRANSACTION_TOKEN = "externalTransactionToken";
     String E6002 = "E6002";
+    String RENEWALS_INELIGIBLE_PLANS = "renewalsIneligiblePlans";
     String ERROR_DESCRIPTION_FOR_E6002 = "Invalid vpa ! please try again";
     String DESCRIPTION = "description";
     int MAXIMUM_RENEWAL_RETRY_ALLOWED = 3;

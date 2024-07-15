@@ -9,7 +9,10 @@ import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.dto.PaymentRenewalMessage;
+import in.wynk.payment.service.IRecurringPaymentManagerService;
+import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.ITransactionManagerService;
+import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.RecurringTransactionUtils;
 import in.wynk.queue.extractor.ISQSMessageExtractor;
 import in.wynk.queue.poller.AbstractSQSMessageConsumerPollingQueue;
@@ -30,6 +33,9 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
     private final ScheduledExecutorService pollingThreadPool;
     private final ITransactionManagerService transactionManager;
     private RecurringTransactionUtils recurringTransactionUtils;
+    private final ISubscriptionServiceManager subscriptionServiceManager;
+    private final IRecurringPaymentManagerService recurringPaymentManagerService;
+    private PaymentCachingService cachingService;
     @Value("${payment.pooling.queue.renewal.enabled}")
     private boolean renewalPollingEnabled;
     @Value("${payment.pooling.queue.renewal.sqs.consumer.delay}")
@@ -44,13 +50,17 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
                                                ExecutorService messageHandlerThreadPool,
                                                ScheduledExecutorService pollingThreadPool,
                                                ISqsManagerService sqsManagerService,
-                                               ITransactionManagerService transactionManager, RecurringTransactionUtils recurringTransactionUtils) {
+                                               ITransactionManagerService transactionManager, ISubscriptionServiceManager subscriptionServiceManager,
+                                               IRecurringPaymentManagerService recurringPaymentManagerService, PaymentCachingService cachingService, RecurringTransactionUtils recurringTransactionUtils) {
         super(queueName, sqs, objectMapper, messagesExtractor, messageHandlerThreadPool);
         this.objectMapper = objectMapper;
         this.pollingThreadPool = pollingThreadPool;
         this.messageHandlerThreadPool = messageHandlerThreadPool;
         this.sqsManagerService = sqsManagerService;
         this.transactionManager = transactionManager;
+        this.subscriptionServiceManager = subscriptionServiceManager;
+        this.recurringPaymentManagerService = recurringPaymentManagerService;
+        this.cachingService = cachingService;
         this.recurringTransactionUtils = recurringTransactionUtils;
     }
 

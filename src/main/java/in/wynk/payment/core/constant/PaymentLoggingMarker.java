@@ -57,7 +57,6 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker GOOGLE_PLAY_ACKNOWLEDGEMENT_FAILURE = MarkerFactory.getMarker("GOOGLE_PLAY_ACKNOWLEDGEMENT_FAILURE");
     Marker GOOGLE_PLAY_RENEWAL_FAILURE = MarkerFactory.getMarker("GOOGLE_PLAY_RENEWAL_FAILURE");
     Marker GOOGLE_PLAY_RENEWAL_ERROR = MarkerFactory.getMarker("GOOGLE_PLAY_RENEWAL_ERROR");
-    Marker GOOGLE_PLAY_SUBSCRIPTION_CANCELLATION_FAILURE = MarkerFactory.getMarker("GOOGLE_PLAY_SUBSCRIPTION_CANCELLATION_FAILURE");
     Marker GOOGLE_PLAY_PAYMENT_REFUND_FAILURE = MarkerFactory.getMarker("GOOGLE_PLAY_PAYMENT_REFUND_FAILURE");
     /**
      * Itunes IAP Marker

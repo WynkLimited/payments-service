@@ -54,8 +54,10 @@ import in.wynk.payment.dto.response.BaseResponse;
 import in.wynk.payment.dto.response.ChargingStatusResponse;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
 import in.wynk.payment.dto.response.gpbs.GooglePlayBillingResponse;
+import in.wynk.payment.gateway.IPaymentRefund;
 import in.wynk.payment.service.*;
 import in.wynk.payment.utils.MerchantServiceUtil;
+import in.wynk.payment.utils.RecurringTransactionUtils;
 import in.wynk.pubsub.service.IPubSubManagerService;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.subscription.common.dto.PlanDTO;
@@ -84,6 +86,7 @@ import java.util.concurrent.locks.Lock;
 import static in.wynk.common.constant.BaseConstants.DEFAULT_ACCESS_STATE_CODE;
 import static in.wynk.common.enums.PaymentEvent.*;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
+import static in.wynk.payment.core.constant.PaymentErrorType.PLAY008;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE;
 import static in.wynk.payment.dto.gpbs.GooglePlayConstant.*;
 
@@ -97,7 +100,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         implements IMerchantIapSubscriptionAcknowledgementService, IMerchantIapPaymentPreVerificationService, IMerchantIapPaymentVerificationService,
         IPaymentNotificationService<Pair<GooglePlayLatestReceiptResponse, ReceiptDetails>>,
         IReceiptDetailService<Pair<GooglePlayLatestReceiptResponse, ReceiptDetails>, GooglePlayCallbackRequest>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>,
-        IMerchantIapSubscriptionCancellationService {
+        IMerchantIapSubscriptionCancellationService, IPaymentRefund<GooglePlayPaymentRefundResponse, GooglePlayPaymentRefundRequest> {
     @Value("${payment.googlePlay.baseUrl}")
     private String baseUrl;
     @Value("${payment.googlePlay.purchaseUrl.subscription}")
@@ -126,14 +129,18 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     private final ITaxManager taxManager;
     private final GSTStateCodesCachingService stateCodesCachingService;
     private final InvoiceDetailsCachingService invoiceDetailsCachingService;
+    private final ITransactionManagerService transactionManager;
+    private final RecurringTransactionUtils recurringTransactionUtils;
 
-    public GooglePlayMerchantPaymentService (@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson,
+    public GooglePlayMerchantPaymentService (ITransactionManagerService transactionManager, RecurringTransactionUtils recurringTransactionUtils, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson,
                                              ApplicationEventPublisher eventPublisher, WynkRedisLockService wynkRedisLockService, IErrorCodesCacheService errorCodesCacheServiceImpl,
                                              GooglePlayCacheService googlePlayCacheService, PaymentCachingService cachingService,
                                              ISqsManagerService sqsMessagePublisher,IPubSubManagerService pubSubManagerService, @Qualifier(AuditConstants.MONGO_AUDIT_LISTENER) IAuditableListener auditingListener,
                                              IUserDetailsService userDetailsService, ITaxManager taxManager,
                                              GSTStateCodesCachingService stateCodesCachingService, InvoiceDetailsCachingService invoiceDetailsCachingService) {
         super(cachingService, errorCodesCacheServiceImpl);
+        this.transactionManager = transactionManager;
+        this.recurringTransactionUtils = recurringTransactionUtils;
         this.gson = gson;
         this.restTemplate = restTemplate;
         this.cachingService = cachingService;
@@ -191,11 +198,8 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
             final GooglePlayLatestReceiptResponse latestReceipt = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
             //set the latest response to be used while deciding payment event
             wrapper.getDecodedNotification().setGooglePlayLatestReceiptResponse(latestReceipt);
-
             AnalyticService.update(GOOGLE_PLAY_RECEIPT, gson.toJson(latestReceipt));
-
             GooglePlayReceiptDetails googlePlayReceiptDetails = (GooglePlayReceiptDetails) receiptDetails;
-
             if ((googlePlayReceiptDetails.getSubscriptionId().equals(abstractGooglePlayReceiptVerificationResponse.getOrderId())) ||
                     (BaseConstants.PLAN.equals(productType) &&
                             Objects.equals(String.valueOf(receiptDetails.getExpiry()), ((GooglePlaySubscriptionReceiptResponse) latestReceipt.getGooglePlayResponse()).getExpiryTimeMillis()) &&
@@ -795,6 +799,9 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                 return WynkResponseEntity.<Void>builder().success(true).build();
             }
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            if (Objects.isNull(receiptDetails)) {
+                throw new WynkRuntimeException(PLAY008);
+            }
             return WynkResponseEntity.<Void>builder().success(false).build();
         } catch (Exception e) {
             if (WynkRuntimeException.class.isAssignableFrom(e.getClass())) {
@@ -807,23 +814,63 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     }
 
     @Override
+    public String getIdAndUpdateReceiptDetails(DecodedNotificationWrapper<GooglePlayCallbackRequest> wrapper) {
+        GooglePlayCallbackRequest callbackRequest = (GooglePlayCallbackRequest) wrapper.getDecodedNotification();
+        Optional<ReceiptDetails> optionalReceiptDetails =
+                RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
+                        .findById(callbackRequest.getPurchaseToken());
+        GooglePlayReceiptDetails receiptDetails = (GooglePlayReceiptDetails) optionalReceiptDetails.get();
+        String productType = receiptDetails.getPlanId() == 0 ? BaseConstants.POINT : BaseConstants.PLAN;
+        AbstractGooglePlayReceiptVerificationResponse abstractGooglePlayReceiptVerificationResponse =
+                googlePlayResponse(callbackRequest.getPurchaseToken(), callbackRequest.getSubscriptionId(), callbackRequest.getPackageName(),
+                        MerchantServiceUtil.getService(callbackRequest.getPackageName()), productType);
+        assert abstractGooglePlayReceiptVerificationResponse != null;
+        LatestReceiptResponse latestReceiptResponse = mapGoogleResponseToReceiptResponse(abstractGooglePlayReceiptVerificationResponse, createRequest(callbackRequest), productType);
+        final GooglePlayLatestReceiptResponse latestReceipt = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
+        GooglePlaySubscriptionReceiptResponse googlePlayReceiptResponse = ((GooglePlaySubscriptionReceiptResponse) latestReceipt.getGooglePlayResponse());
+        receiptDetails.setNotificationType(latestReceipt.getNotificationType());
+        receiptDetails.setExpiry(Long.parseLong(googlePlayReceiptResponse.getExpiryTimeMillis()));
+        auditingListener.onBeforeSave(receiptDetails);
+        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
+                .save(receiptDetails);
+        return receiptDetails.getPaymentTransactionId();
+    }
+
+    @Override
     public boolean supportsRenewalReconciliation () {
         return false;
     }
 
     @Override
     public void cancelSubscription (String uid, String transactionId) {
+        fetchDetailsAndUpdateGooglePlaySubscriptionOnConsole(uid, transactionId, CANCEL);
+    }
+
+    @Override
+    public GooglePlayPaymentRefundResponse doRefund (GooglePlayPaymentRefundRequest request) {
+        final Transaction refundTransaction = TransactionContext.get();
+        fetchDetailsAndUpdateGooglePlaySubscriptionOnConsole(refundTransaction.getUid(), refundTransaction.getIdStr(), GooglePlayConstant.REFUND);
+        return GooglePlayPaymentRefundResponse.builder().transactionId(refundTransaction.getIdStr()).uid(refundTransaction.getUid()).planId(refundTransaction.getPlanId())
+                .itemId(refundTransaction.getItemId()).clientAlias(refundTransaction.getClientAlias()).amount(refundTransaction.getAmount()).msisdn(refundTransaction.getMsisdn())
+                .paymentEvent(refundTransaction.getType()).transactionStatus(TransactionStatus.SUCCESS).build();
+    }
+
+    private void fetchDetailsAndUpdateGooglePlaySubscriptionOnConsole (String uid, String transactionId, String action) {
         List<ReceiptDetails> receiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
                 .findByUid(uid);
         Optional<ReceiptDetails> filteredReceipt = receiptDetails.stream().filter(receiptDetails1 -> receiptDetails1.getPaymentTransactionId().equals(transactionId)).findAny();
         GooglePlayReceiptDetails gPlayReceipt = filteredReceipt.map(details -> (GooglePlayReceiptDetails) details).orElseGet(() -> (GooglePlayReceiptDetails) receiptDetails.get(0));
         String url =
-                baseUrl + gPlayReceipt.getPackageName() + subscriptionPurchase + gPlayReceipt.getSkuId() + TOKEN + gPlayReceipt.getId() + CANCEL + API_KEY_PARAM + getApiKey(gPlayReceipt.getService());
+                baseUrl + gPlayReceipt.getPackageName() + subscriptionPurchase + gPlayReceipt.getSkuId() + TOKEN + gPlayReceipt.getId() + action + API_KEY_PARAM + getApiKey(gPlayReceipt.getService());
         HttpHeaders headers = getHeaders(gPlayReceipt.getService());
         try {
             restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(null, headers), String.class);
         } catch (Exception ex) {
-            throw new WynkRuntimeException(PaymentErrorType.PLAY006, ex);
+            if (action.equalsIgnoreCase(CANCEL)) {
+                throw new WynkRuntimeException(PaymentErrorType.PLAY006, ex);
+            } else {
+                throw new WynkRuntimeException(PaymentErrorType.PLAY007, ex);
+            }
         }
     }
 }

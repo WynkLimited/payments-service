@@ -311,7 +311,17 @@ public class PaymentManager
         final PaymentGateway paymentGateway = request.getPaymentGateway();
         final IMerchantIapPaymentVerificationService verificationService = BeanLocatorFactory.getBean(paymentGateway.getCode(), IMerchantIapPaymentVerificationService.class);
         final LatestReceiptResponse latestReceiptResponse = verificationService.getLatestReceiptResponse(request);
-        BeanLocatorFactory.getBean(VERIFY_IAP_FRAUD_DETECTION_CHAIN, IHandler.class).handle(new IapVerificationWrapperRequest(latestReceiptResponse, request, null));
+        try{
+            BeanLocatorFactory.getBean(VERIFY_IAP_FRAUD_DETECTION_CHAIN, IHandler.class).handle(new IapVerificationWrapperRequest(latestReceiptResponse, request, null));
+        } catch(WynkRuntimeException e){
+            if(e.getErrorCode().equalsIgnoreCase(PaymentErrorType.PAY701.getErrorCode())){
+                //means receipt is already processed, no need for subscription provision again
+                final SessionDTO sessionDTO = SessionContextHolder.getBody();
+                TransactionContext.set(TransactionDetails.builder().transaction(transactionManager.get(sessionDTO.get(TXN_ID))).purchaseDetails(request.getPurchaseDetails()).build());
+                return verificationService.verifyReceipt(latestReceiptResponse);
+            }
+            throw e;
+        }
         final AbstractTransactionInitRequest transactionInitRequest =
                 DefaultTransactionInitRequestMapper.from(IapVerificationRequestWrapper.builder().clientId(clientId).verificationRequest(request).receiptResponse(latestReceiptResponse).build());
         final Transaction transaction = transactionManager.init(transactionInitRequest, request.getPurchaseDetails());
@@ -399,7 +409,7 @@ public class PaymentManager
                     .txnId(txnId)
                     .build();
         }
-       throw new WynkRuntimeException("Exception occurred as type is missing");
+        throw new WynkRuntimeException("Exception occurred as type is missing");
     }
 
     @Override

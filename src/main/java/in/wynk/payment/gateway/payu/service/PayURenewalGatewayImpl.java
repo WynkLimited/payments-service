@@ -145,7 +145,7 @@ public class PayURenewalGatewayImpl implements IPaymentRenewal<PaymentRenewalCha
         MultiValueMap<String, String> requestMap = payUCommonGateway.buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.SI_TRANSACTION.getCode(), variable);
         rateLimiter.acquire();
         try {
-            PayURenewalResponse paymentResponse = payUCommonGateway.exchange(payUCommonGateway.PAYMENT_API, requestMap, new TypeReference<PayURenewalResponse>() {
+            PayURenewalResponse paymentResponse = payUCommonGateway.exchange(payUCommonGateway.INFO_API, requestMap, new TypeReference<PayURenewalResponse>() {
             });
             if (paymentResponse == null) {
                 paymentResponse = new PayURenewalResponse();

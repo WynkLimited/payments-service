@@ -25,7 +25,7 @@ public class MerchantTransactionImpl implements IMerchantTransactionService {
 
     @Override
     public String getPartnerReferenceId(String id) {
-        return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IMerchantTransactionDao.class).findPartnerReferenceById(id).get();
+        return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IMerchantTransactionDao.class).findPartnerReferenceById(id).orElse(null);
     }
 
     @Override

@@ -1,7 +1,5 @@
 package in.wynk.payment.gateway.aps;
 
-import in.wynk.cache.aspect.advice.CachePut;
-import in.wynk.cache.constant.BeanConstant;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentErrorType;
@@ -17,12 +15,7 @@ import in.wynk.payment.dto.common.AbstractPaymentInstrumentsProxy;
 import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
-import in.wynk.payment.dto.request.AbstractPaymentChargingRequest;
-import in.wynk.payment.dto.request.AbstractRechargeOrderRequest;
-import in.wynk.payment.dto.request.AbstractTransactionStatusRequest;
-import in.wynk.payment.dto.request.AbstractVerificationRequest;
-import in.wynk.payment.dto.request.CallbackRequest;
-import in.wynk.payment.dto.request.RechargeOrderRequest;
+import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractPaymentChargingResponse;
 import in.wynk.payment.dto.response.AbstractRechargeOrderResponse;
 import in.wynk.payment.dto.response.RechargeOrderResponse;
@@ -45,10 +38,7 @@ import in.wynk.payment.gateway.aps.service.ApsVerificationGatewayImpl;
 import in.wynk.payment.service.IExternalPaymentEligibilityService;
 import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
-import in.wynk.subscription.common.dto.ThanksPlanResponse;
 import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -56,6 +46,9 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import static in.wynk.payment.core.constant.BeanConstant.AIRTEL_PAY_STACK;
 import static in.wynk.payment.core.constant.BeanConstant.AIRTEL_PAY_STACK_V2;
@@ -105,8 +98,7 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
 
     @Override
     public AbstractPaymentChargingResponse charge(AbstractPaymentChargingRequest request) {
-        Executor executor = Executors.newSingleThreadExecutor();
-        executor.execute(() -> cacheAdditiveDays(request.getUserDetails().getMsisdn(), request.getProductDetails().getId()));
+        CompletableFuture.runAsync(() -> subscriptionServiceManager.cacheAdditiveDays(request.getUserDetails().getMsisdn(), request.getProductDetails().getId()));
 
         RechargeOrderResponse orderResponse = (RechargeOrderResponse) orderGateway.order(RechargeOrderRequest.builder().build());
         request.setOrderId(orderResponse.getOrderId());
@@ -117,17 +109,6 @@ public class ApsOrderGateway implements IExternalPaymentEligibilityService, IPay
         AbstractPaymentChargingResponse chargeResponse = chargingService.charge(request);
         publishMerchantTransactionEvent(orderResponse);
         return chargeResponse;
-    }
-
-    @CachePut(cacheName = "additiveDays", cacheKey = "#msisdn + ':' + #planId", l2CacheTtl = 3600, cacheManager = BeanConstant.L2CACHE_MANAGER)
-    public int cacheAdditiveDays(String msisdn, String planId) {
-        try {
-            ThanksPlanResponse thanksPlanResponse = subscriptionServiceManager.getThanksPlanForAdditiveDays(msisdn);
-            return thanksPlanResponse.getData().getDaysTillExpiry();
-        } catch (Exception e) {
-            log.error("Error in subscriptionServiceManager.getThanksPlanForAdditiveDays", e);
-        }
-        return 0;
     }
 
     private void publishMerchantTransactionEvent(RechargeOrderResponse orderResponse) {

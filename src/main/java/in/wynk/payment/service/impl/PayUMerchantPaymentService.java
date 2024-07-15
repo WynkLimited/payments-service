@@ -654,7 +654,6 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             PaymentRenewal lastRenewal = recurringPaymentManagerService.getRenewalById(transactionId);
             String txnId = getUpdatedTransactionId(transactionId, lastRenewal);
             MerchantTransaction merchantTransaction = getMerchantData(txnId);
-            assert merchantTransaction != null;
             orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, merchantTransaction.getExternalTransactionId());
             orderedMap.put(PAYU_REQUEST_ID, transactionId);
             String variable = gson.toJson(orderedMap);

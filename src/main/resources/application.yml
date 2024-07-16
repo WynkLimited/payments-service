@@ -76,6 +76,7 @@ service:
         allPartners: ${service.subscription.api.root}/wynk/s2s/v1/data/allPartners
         allItems: ${service.subscription.api.root}/wynk/s2s/v1/data/allItems
         subscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/plan/subscribe
+        subscribePlanAdditive: ${service.subscription.api.root}/wynk/s2s/v1/plan/subscribe/additive
         personalisedPlan: ${service.subscription.api.root}/wynk/s2s/v1/plan/personalised
 
         unSubscribePlan: ${service.subscription.api.root}/wynk/s2s/v1/plan/unsubscribe
@@ -86,6 +87,7 @@ service:
         selectivePlanComputationV2: ${service.subscription.api.root}/wynk/s2s/v2/plans/selective/eligible
         status: ${service.subscription.api.root}/wynk/s2s/v1/subscription/status/{uid}/{service}
         bestValue: ${service.subscription.api.root}/wynk/s2s/v1/plans/bestValue
+        thanksPlan: ${service.subscription.api.root}/wynk/v1/plan/active/thanks
     webView:
       root: ${webview.host}/#/
 

@@ -2,23 +2,27 @@ package in.wynk.payment.dto.payu;
 
 import com.fasterxml.jackson.annotation.*;
 import in.wynk.payment.core.constant.PaymentConstants;
+import in.wynk.payment.dto.ChecksumHeaderCallbackRequest;
+import in.wynk.payment.dto.aps.common.ApsConstant;
+import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
 import in.wynk.payment.dto.request.CallbackRequest;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.http.HttpHeaders;
 
 import java.io.Serializable;
 
 @Getter
+@Setter
 @SuperBuilder
 @NoArgsConstructor
+@AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "action", defaultImpl = PayUCallbackRequestPayload.class, visible = true)
-@JsonSubTypes({@JsonSubTypes.Type(value = PayUAutoRefundCallbackRequestPayload.class, name = PayUConstants.REFUND_CALLBACK_ACTION),  @JsonSubTypes.Type(value = PayuRealtimeMandate.class, name = PayUConstants.REALTIME_MANDATE_CALLBACK_ACTION)})
-public class PayUCallbackRequestPayload extends CallbackRequest implements Serializable {
+public class PayUCallbackRequestPayload extends ChecksumHeaderCallbackRequest<PayUCallbackRequestPayload> implements Serializable  {
 
+    private static final long serialVersionUID = 7427670413183914338L;
     private String mode;
     private String udf1;
     @Builder.Default
@@ -106,6 +110,12 @@ public class PayUCallbackRequestPayload extends CallbackRequest implements Seria
 
     private String getUDFOrDefault(String value) {
         return StringUtils.isEmpty(value) ? PaymentConstants.PIPE_SEPARATOR : value.concat(PaymentConstants.PIPE_SEPARATOR);
+    }
+
+    @Override
+    @JsonIgnore
+    public PayUCallbackRequestPayload withHeader(HttpHeaders headers) {
+        return this;
     }
 
 }

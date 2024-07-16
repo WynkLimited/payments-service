@@ -14,7 +14,7 @@ import lombok.experimental.SuperBuilder;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @SuperBuilder
 @NoArgsConstructor
-public class PayuRealtimeMandate extends PayUCallbackRequestPayload {
+public class PayuRealtimeMandatePayload extends PayUCallbackRequestPayload {
     private String status; //active, deleted, pause,
     String authPayuId;
     String message;
@@ -23,16 +23,10 @@ public class PayuRealtimeMandate extends PayUCallbackRequestPayload {
     NotificationType notificationType;
     @JsonProperty("si_details")
     SiDetails siDetails;
-    @JsonProperty("action")
-    UPIMandateAction mandateAction;
+    UPIMandateAction action;
     String dateTime;
-    String amount;
     String endDate;
     String mandateNumber;
     String pauseStartDate;
     String pauseEndDate;
-
-    public String getAction () {
-        return PayUConstants.REALTIME_MANDATE_CALLBACK_ACTION;
-    }
 }

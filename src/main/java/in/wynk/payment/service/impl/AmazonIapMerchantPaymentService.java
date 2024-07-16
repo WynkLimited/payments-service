@@ -251,7 +251,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         Optional<ReceiptDetails> mapping = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(amazonLatestReceiptResponse.getExtTxnId());
         try {
             if ((!mapping.isPresent() || mapping.get().getState() != State.ACTIVE) & EnumSet.of(TransactionStatus.INPROGRESS).contains(transaction.getStatus())) {
-                saveReceipt(transaction.getUid(), transaction.getMsisdn(), transaction.getPlanId(), amazonLatestReceiptResponse.getExtTxnId(), amazonLatestReceiptResponse.getAmazonUserId(), transaction.getIdStr(), amazonLatestReceiptResponse.getService());
+                saveReceipt(transaction.getUid(), transaction.getMsisdn(), transaction.getPlanId(), amazonLatestReceiptResponse.getExtTxnId(), amazonLatestReceiptResponse.getAmazonUserId(), transaction.getIdStr(), amazonLatestReceiptResponse.getService(), Objects.nonNull(amazonLatestReceiptResponse.getAmazonIapReceiptResponse().getRenewalDate()) ? amazonLatestReceiptResponse.getAmazonIapReceiptResponse().getRenewalDate() : null);
                 AmazonIapReceiptResponse amazonIapReceipt = amazonLatestReceiptResponse.getAmazonIapReceiptResponse();
                 if (amazonIapReceipt != null) {
                     if (amazonIapReceipt.getCancelDate() == null) {
@@ -284,8 +284,8 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         }
     }
 
-    private void saveReceipt(String uid, String msisdn, int planId, String receiptId, String amzUserId, String transactionId, String service) {
-        final AmazonReceiptDetails amazonReceiptDetails = AmazonReceiptDetails.builder().paymentTransactionId(transactionId).receiptTransactionId(receiptId).amazonUserId(amzUserId).msisdn(msisdn).planId(planId).id(receiptId).uid(uid).service(service).build();
+    private void saveReceipt(String uid, String msisdn, int planId, String receiptId, String amzUserId, String transactionId, String service, long renewalDate) {
+        final AmazonReceiptDetails amazonReceiptDetails = AmazonReceiptDetails.builder().paymentTransactionId(transactionId).receiptTransactionId(receiptId).amazonUserId(amzUserId).msisdn(msisdn).planId(planId).id(receiptId).uid(uid).service(service).renewalDate(renewalDate).build();
         auditingListener.onBeforeSave(amazonReceiptDetails);
         RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).save(amazonReceiptDetails);
     }
@@ -361,11 +361,25 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
             } else {
                 try {
                     AmazonNotificationMessage message = Utils.getData(request.getMessage(), AmazonNotificationMessage.class);
-                    //TODO: check for eligibility cases.
-                    final boolean existsById = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).existsById(message.getReceiptId());
-                    if ((!existsById && FIRST_TIME_NOTIFICATIONS.contains(message.getNotificationType()) && RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), WynkUserExtUserDao.class).countByExternalUserId(message.getAppUserId()) == 1)
-                            || (existsById && SUB_MODIFICATION_NOTIFICATIONS.contains(message.getNotificationType()))) {
-                        return DecodedNotificationWrapper.<AmazonNotificationRequest>builder().eligible(true).decodedNotification(request).build();
+                    final Optional<ReceiptDetails> receiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(message.getReceiptId());
+                    AmazonReceiptDetails receipt = (AmazonReceiptDetails) receiptDetails.get();
+                    AmazonIapReceiptResponse receiptResponse = getReceiptStatus(message.getReceiptId(), message.getAppUserId());
+                    if (RENEW_NOTIFICATIONS.contains(message.getNotificationType())) {
+                        boolean isEligible = isNotificationEligibleForRenewal(receiptResponse, receipt);
+                        //TODO: check for eligibility cases.
+                        if (isEligible) {
+                            final boolean existsById = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).existsById(message.getReceiptId());
+                            if ((!existsById && FIRST_TIME_NOTIFICATIONS.contains(message.getNotificationType()) && RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), WynkUserExtUserDao.class).countByExternalUserId(message.getAppUserId()) == 1)
+                                    || (existsById && SUB_MODIFICATION_NOTIFICATIONS.contains(message.getNotificationType()))) {
+                                return DecodedNotificationWrapper.<AmazonNotificationRequest>builder().eligible(true).decodedNotification(request).build();
+                            }
+                        }
+                    } else {
+                        final boolean existsById = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).existsById(message.getReceiptId());
+                        if ((!existsById && FIRST_TIME_NOTIFICATIONS.contains(message.getNotificationType()) && RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), WynkUserExtUserDao.class).countByExternalUserId(message.getAppUserId()) == 1)
+                                || (existsById && SUB_MODIFICATION_NOTIFICATIONS.contains(message.getNotificationType()))) {
+                            return DecodedNotificationWrapper.<AmazonNotificationRequest>builder().eligible(true).decodedNotification(request).build();
+                        }
                     }
                 } catch (Exception e) {
                     throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid message");
@@ -395,7 +409,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     @Override
     public void handleNotification(Transaction transaction, UserPlanMapping<AmazonIapReceiptResponse> mapping) {
         final AmazonIapReceiptResponseWrapper wrapper = (AmazonIapReceiptResponseWrapper) mapping.getMessage();
-        saveReceipt(mapping.getUid(), mapping.getMsisdn(), transaction.getPlanId(), wrapper.getReceiptID(), wrapper.getAppUserId(), transaction.getIdStr(), mapping.getService());
+        saveReceipt(mapping.getUid(), mapping.getMsisdn(), transaction.getPlanId(), wrapper.getReceiptID(), wrapper.getAppUserId(), transaction.getIdStr(), mapping.getService(), wrapper.getDecodedResponse().getRenewalDate());
         TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
         AmazonIapReceiptResponse amazonIapReceipt = mapping.getMessage();
         if (amazonIapReceipt.getCancelDate() == null || transaction.getType() == PaymentEvent.CANCELLED) {
@@ -427,14 +441,13 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         TransactionStatus status = TransactionStatus.FAILURE;
         final Transaction transaction = TransactionContext.get();
         final AmazonReceiptDetails receipt = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByPaymentTransactionId(paymentRenewalChargingRequest.getId());
+        final AmazonIapReceiptResponse response = getReceiptStatus(receipt.getId(), receipt.getAmazonUserId());
         try {
-            final AmazonIapReceiptResponse response = getReceiptStatus(receipt.getId(), receipt.getAmazonUserId());
             if (Objects.nonNull(response)) {
-                if (Objects.isNull(response.getCancelDate())) {
-                    if (response.getRenewalDate() > System.currentTimeMillis()) {
-                        status = TransactionStatus.SUCCESS;
-                        return WynkResponseEntity.<Void>builder().build();
-                    }
+                boolean isEligible = isNotificationEligibleForRenewal(response, receipt);
+                if (isEligible && Objects.isNull(response.getCancelDate()) && response.getRenewalDate() > System.currentTimeMillis()) {
+                    status = TransactionStatus.SUCCESS;
+                    return WynkResponseEntity.<Void>builder().build();
                 }
                 if (Objects.nonNull(response.getCancelDate())) {
                     eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PaymentErrorType.APS012.name()).description(CANCELLATION_REASON.get(response.getCancelReason())).build());
@@ -446,8 +459,15 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
             throw new WynkRuntimeException(PaymentErrorType.PAY045, e);
         } finally {
             transaction.setStatus(status.getValue());
-            saveReceipt(transaction.getUid(), transaction.getMsisdn(), transaction.getPlanId(), receipt.getId(), receipt.getAmazonUserId(), transaction.getIdStr(), receipt.getService());
+            saveReceipt(transaction.getUid(), transaction.getMsisdn(), transaction.getPlanId(), receipt.getId(), receipt.getAmazonUserId(), transaction.getIdStr(), receipt.getService(), response.getRenewalDate());
         }
+    }
+
+    private boolean isNotificationEligibleForRenewal(AmazonIapReceiptResponse response, AmazonReceiptDetails receipt) {
+        if (Objects.isNull(receipt.getRenewalDate()) || response.getRenewalDate() > receipt.getRenewalDate()) {
+            return true;
+        }
+        return false;
     }
 
     @Override

@@ -107,6 +107,7 @@ public interface PaymentConstants extends BaseConstants {
     String ADD_TO_BILL_USER_SUBSCRIPTION_STATUS_TASK = "AddToBillUserSubscriptionStatusTask";
     String EXTERNAL_TRANSACTION_TOKEN = "externalTransactionToken";
     String E6002 = "E6002";
+    String RENEWALS_INELIGIBLE_PLANS = "renewalsIneligiblePlans";
     String ERROR_DESCRIPTION_FOR_E6002 = "Invalid vpa ! please try again";
     String DESCRIPTION = "description";
     int MAXIMUM_RENEWAL_RETRY_ALLOWED = 3;

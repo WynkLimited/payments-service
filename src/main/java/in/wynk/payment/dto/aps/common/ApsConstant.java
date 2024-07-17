@@ -8,6 +8,8 @@ public interface ApsConstant extends PaymentConstants {
     String AUTH_TYPE_WEB_UNAUTH = "WEB_UNAUTH";
     String CONTENT_TYPE = "Content-Type";
     String APPLICATION_JSON = "application/json";
+    String AIRTEL_PAY_STACK = "aps";
+    String AIRTEL_PAY_STACK_V2 = "aps_v2";
     String APS = "APS";
     String APS_V2 = "APS_V2";
     String PAYMENT_TIMER_KEY = "payment_timer";

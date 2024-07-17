@@ -29,4 +29,8 @@ public class PayuRealtimeMandatePayload extends PayUCallbackRequestPayload {
     String mandateNumber;
     String pauseStartDate;
     String pauseEndDate;
+
+    public String getAction() {
+        return action.toString();
+    }
 }

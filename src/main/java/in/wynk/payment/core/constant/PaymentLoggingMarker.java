@@ -30,6 +30,7 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker STOP_RENEWAL_FAILURE = MarkerFactory.getMarker("STOP_RENEWAL_FAILURE");
 
 
+    Marker PAYU_CALLBACK_FAILURE = MarkerFactory.getMarker("PAYU_CALLBACK_FAILURE");
     Marker HTTP_ERROR = MarkerFactory.getMarker("HTTP_ERROR");
     Marker PAYTM_ERROR = MarkerFactory.getMarker("PAYTM_ERROR");
 

@@ -31,7 +31,7 @@ import java.util.*;
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY006;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAYU009;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAYU010;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 
 @Slf4j
@@ -67,10 +67,10 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
                 log.error(PAYU_CALLBACK_FAILURE,
                         "Invalid checksum found with transactionStatus: {}, Wynk transactionId: {}, PayU transactionId: {}, Reason: error code: {}, error message: {} for uid: {}",
                         request.getStatus(), transactionId, request.getExternalTransactionId(), errorCode, errorMessage, transaction.getUid());
-                throw new PaymentRuntimeException(PaymentErrorType.PAYU010, "Invalid checksum found with transaction id:" + transactionId);
+                throw new PaymentRuntimeException(PaymentErrorType.PAYU011, "Invalid checksum found with transaction id:" + transactionId);
             }
         } catch (Exception e) {
-            throw new PaymentRuntimeException(PaymentErrorType.PAYU010, e);
+            throw new PaymentRuntimeException(PaymentErrorType.PAYU011, e);
         }
     }
 
@@ -167,7 +167,7 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
                 final String json = objectMapper.writeValueAsString(payload);
                 return objectMapper.readValue(json, PayUCallbackRequestPayload.class);
             } catch (Exception e) {
-                throw new WynkRuntimeException(PAYU009, e);
+                throw new WynkRuntimeException(PAYU010, e);
             }
         }
     }
@@ -191,7 +191,7 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
                 final String json = objectMapper.writeValueAsString(payload);
                 return objectMapper.readValue(json, PayUAutoRefundCallbackRequestPayload.class);
             } catch (Exception e) {
-                throw new WynkRuntimeException(PAYU009, e);
+                throw new WynkRuntimeException(PAYU010, e);
             }
         }
 
@@ -213,7 +213,7 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
                 final String json = objectMapper.writeValueAsString(payload);
                 return objectMapper.readValue(json, PayuRealtimeMandatePayload.class);
             } catch (Exception e) {
-                throw new WynkRuntimeException(PAYU009, e);
+                throw new WynkRuntimeException(PAYU010, e);
             }
 
         }

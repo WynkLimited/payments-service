@@ -273,6 +273,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
             boolean isEligible = receiptDetailsOptional.isPresent();
             return DecodedNotificationWrapper.<GooglePlayCallbackRequest>builder().decodedNotification(googlePlayCallbackRequest).eligible(isEligible).build();
         }
+        log.info("Realtime Notification is not Eligible...");
         return DecodedNotificationWrapper.<GooglePlayCallbackRequest>builder().decodedNotification(googlePlayCallbackRequest).eligible(false).build();
     }
 

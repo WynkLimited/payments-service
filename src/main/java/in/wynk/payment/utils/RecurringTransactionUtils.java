@@ -39,7 +39,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import static in.wynk.common.enums.PaymentEvent.RENEW;
-import static in.wynk.payment.core.constant.PaymentConstants.ERROR_REASONS;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
 
 /**
  * @author Nishesh Pandey
@@ -112,12 +112,13 @@ public class RecurringTransactionUtils {
                                     .finalTransactionStatus(TransactionStatus.CANCELLED).build();
                         }
                     }
-
+                    log.info("request messsage: {}", request);
                     subscriptionServiceManager.unSubscribePlan(AbstractUnSubscribePlanRequest.from(request));
-                    if (event == PaymentEvent.CANCELLED) {
+                    if ((request.getTransaction().getPaymentChannel().getId().equals(AMAZON_IAP) || request.getTransaction().getPaymentChannel().getId().equals(GOOGLE_IAP) || request.getTransaction().getPaymentChannel().getId().equals(PaymentConstants.ITUNES)) && event == PaymentEvent.CANCELLED) {
                         request.getTransaction().setType(txn.getType().toString());
                         updateTransaction(request.getTransaction());
                     } else {
+                        log.info("transaction on db: {}", request.getTransaction());
                         updateTransaction(request.getTransaction());
                     }
                 }

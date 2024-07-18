@@ -389,6 +389,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
                 }
             }
         }
+        log.info("Realtime Notification is not Eligible: {}", request.getDecodedMessage().getReceiptId());
         return DecodedNotificationWrapper.<AmazonNotificationRequest>builder().eligible(false).decodedNotification(request).build();
     }
 
@@ -477,6 +478,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         if (Objects.isNull(receipt.getRenewalDate()) || response.getRenewalDate() > receipt.getRenewalDate()) {
             return true;
         }
+        log.info("User already renewed: {}", receipt.getPaymentTransactionId());
         return false;
     }
 

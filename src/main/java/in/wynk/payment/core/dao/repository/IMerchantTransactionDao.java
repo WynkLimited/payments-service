@@ -16,4 +16,5 @@ public interface IMerchantTransactionDao extends JpaRepository<MerchantTransacti
 
     Optional<String> findTransactionIdByOrderId(@Param("orderId") String orderId);
 
+    Optional<MerchantTransaction> findMerchantTransactionByExternalTransactionId(@Param("externalTransactionId") String externalTransactionId);
 }

@@ -29,6 +29,7 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     /**
      * PAYU related Marker
      **/
+    Marker PAYU_CALLBACK_FAILURE = MarkerFactory.getMarker("PAYU_CALLBACK_FAILURE");
     Marker PAYU_TDR_ERROR = MarkerFactory.getMarker("PAYU_TDR_ERROR");
     Marker PAYU_CHARGING_FAILURE = MarkerFactory.getMarker("PAYU_CHARGING_FAILURE");
     Marker PAYU_RENEWAL_STATUS_ERROR = MarkerFactory.getMarker("PAYU_RENEWAL_STATUS_ERROR");

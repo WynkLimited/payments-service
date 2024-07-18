@@ -78,6 +78,8 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAYU009("Payment Renewal Failure", "An Error occurred while making SI payment on payU", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYU_RENEWAL_STATUS_ERROR),
     PAY014("Payment Renewal Timeout", "Timeout occurred while making SI payment on payU", HttpStatus.REQUEST_TIMEOUT, PaymentLoggingMarker.PAYU_RENEWAL_TIMEOUT_ERROR),
     PAY045("Payment Renewal Failure", "Unable to renew amazon iap subscription", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.AMAZON_IAP_RENEWAL_ERROR),
+    PAYU010("PayU Callback Parse Failure", "Unable to parse the request", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYU_CALLBACK_FAILURE),
+    PAYU011("Payment Callback Failure", "PayU payment callback failed.", "${payment.failure.page}", HttpStatus.FOUND, PaymentLoggingMarker.PAYU_CALLBACK_FAILURE),
     /*PAYU Specific errorCodes end*/
 
     /*Notification Specific errorCodes start*/

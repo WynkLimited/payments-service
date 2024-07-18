@@ -15,8 +15,8 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @NoArgsConstructor
 public class PayuRealtimeMandatePayload extends PayUCallbackRequestPayload {
-    private String status; //active, deleted, pause,
-    String authPayuId;
+    @JsonProperty("authpayuid")
+    Long authPayuId;
     String message;
     String eventDate;
     String key;
@@ -29,8 +29,12 @@ public class PayuRealtimeMandatePayload extends PayUCallbackRequestPayload {
     String mandateNumber;
     String pauseStartDate;
     String pauseEndDate;
-
+    //status will be active, deleted, pause,
     public String getAction() {
-        return action.toString();
+        return this.action.toString();
+    }
+
+    public String getFlow() {
+        return PayUConstants.REALTIME_MANDATE_CALLBACK_ACTION;
     }
 }

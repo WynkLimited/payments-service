@@ -25,4 +25,7 @@ public class PayUAutoRefundCallbackRequestPayload extends PayUCallbackRequestPay
     @JsonProperty("refund_mode")
     private String refundMode;
 
+    public String getFlow() {
+        return PayUConstants.REFUND_CALLBACK_ACTION;
+    }
 }

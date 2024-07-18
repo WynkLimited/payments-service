@@ -100,6 +100,10 @@ public class PayUCallbackRequestPayload extends ChecksumHeaderCallbackRequest<Pa
         return PayUConstants.GENERIC_CALLBACK_ACTION;
     }
 
+    public String getFlow() {
+        return PayUConstants.PAYMENT_STATUS;
+    }
+
     public String getUdf() {
         return  getUDFOrDefault(udf5) +
                 getUDFOrDefault(udf4) +

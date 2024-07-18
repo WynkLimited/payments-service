@@ -7,7 +7,9 @@ import in.wynk.payment.core.constant.PaymentConstants;
 public interface PayUConstants extends PaymentConstants {
 
     String GENERIC_CALLBACK_ACTION = "generic";
-    String REFUND_CALLBACK_ACTION = "refund";
+    String PAYMENT_STATUS = "PAYMENT_STATUS";
+    String REFUND_CALLBACK_ACTION = "REFUND_STATUS";
+    String REALTIME_MANDATE_CALLBACK_ACTION = "MANDATE_STATUS";
     String PAYU_PG = "pg";
     String PAYU_SI = "SI";
     String PAYU_VPA = "vpa";

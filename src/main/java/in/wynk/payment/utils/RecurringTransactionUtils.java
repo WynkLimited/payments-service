@@ -112,13 +112,13 @@ public class RecurringTransactionUtils {
                                     .finalTransactionStatus(TransactionStatus.CANCELLED).build();
                         }
                     }
-                    log.info("request messsage: {}", request);
+                    log.info("request messsage: {}", request.toString());
                     subscriptionServiceManager.unSubscribePlan(AbstractUnSubscribePlanRequest.from(request));
                     if ((request.getTransaction().getPaymentChannel().getId().equals(AMAZON_IAP) || request.getTransaction().getPaymentChannel().getId().equals(GOOGLE_IAP) || request.getTransaction().getPaymentChannel().getId().equals(PaymentConstants.ITUNES)) && event == PaymentEvent.CANCELLED) {
                         request.getTransaction().setType(txn.getType().toString());
                         updateTransaction(request.getTransaction());
                     } else {
-                        log.info("transaction on db: {}", request.getTransaction());
+                        log.info("transaction on db: {}", request.getTransaction().toString());
                         updateTransaction(request.getTransaction());
                     }
                 }

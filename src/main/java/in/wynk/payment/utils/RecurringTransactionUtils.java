@@ -178,11 +178,14 @@ public class RecurringTransactionUtils {
                         furtherDefer = furtherDefer - ((long) 2 * 24 * 60 * 60 * 1000);
                     }
                     recurringPaymentManagerService.unScheduleRecurringPayment(transaction, PaymentEvent.DEFERRED, today, furtherDefer);
+                    log.info("returning false this is inside the eligible method");
                     return false;
                 }
             }
+            log.info("returning true is inside eligible method");
             return true;
         }
+        log.info("returning false inside eligible method");
         return false;
     }
 
@@ -194,12 +197,15 @@ public class RecurringTransactionUtils {
             if (mapping.isPresent() && mapping.get().get(PaymentConstants.RENEWALS_INELIGIBLE_PLANS).isPresent()) {
                 final List<Integer> renewalsDeprecatedPlans = (List<Integer>) mapping.get().getMeta().get(PaymentConstants.RENEWALS_INELIGIBLE_PLANS);
                 if (renewalsDeprecatedPlans.contains(transaction.getPlanId())) {
+                    log.info("plan deprecated");
                     return true;
                 }
             }
         } catch (Exception e) {
+            log.info("inside catch plan deprecated");
             return false;
         }
+        log.info("plan not depricated");
         return false;
     }
 

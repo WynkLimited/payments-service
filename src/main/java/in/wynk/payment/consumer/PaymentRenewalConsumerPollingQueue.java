@@ -91,9 +91,11 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
     @AnalyseTransaction(name = "paymentRenewalMessage")
     public void consume (PaymentRenewalMessage message) {
         AnalyticService.update(message);
+        log.info("inside payment renewal message");
         log.info(PaymentLoggingMarker.PAYMENT_RENEWAL_QUEUE, "processing PaymentRenewalMessage for transactionId {}", message.getTransactionId());
         Transaction transaction = transactionManager.get(message.getTransactionId());
         if (recurringTransactionUtils.isEligibleForRenewal(transaction, false)) {
+            log.info("insiding publish sqs message");
             sqsManagerService.publishSQSMessage(PaymentRenewalChargingMessage.builder()
                     .uid(transaction.getUid())
                     .id(transaction.getIdStr())

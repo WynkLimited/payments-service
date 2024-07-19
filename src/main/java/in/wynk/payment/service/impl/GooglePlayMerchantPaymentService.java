@@ -58,6 +58,7 @@ import in.wynk.payment.gateway.IPaymentRefund;
 import in.wynk.payment.service.*;
 import in.wynk.payment.utils.MerchantServiceUtil;
 import in.wynk.queue.service.ISqsManagerService;
+import in.wynk.pubsub.service.IPubSubManagerService;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.vas.client.dto.MsisdnOperatorDetails;
 import lombok.SneakyThrows;
@@ -120,6 +121,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     private final WynkRedisLockService wynkRedisLockService;
     private GooglePlayCacheService googlePlayCacheService;
     private ISqsManagerService sqsMessagePublisher;
+    private IPubSubManagerService pubSubManagerService;
     private IAuditableListener auditingListener;
     private final IUserDetailsService userDetailsService;
     private final ITaxManager taxManager;
@@ -140,6 +142,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         this.wynkRedisLockService = wynkRedisLockService;
         this.googlePlayCacheService = googlePlayCacheService;
         this.sqsMessagePublisher = sqsMessagePublisher;
+        this.pubSubManagerService= pubSubManagerService;
         this.auditingListener = auditingListener;
         this.userDetailsService = userDetailsService;
         this.taxManager = taxManager;
@@ -655,7 +658,8 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                             .getPurchaseToken()).skuId(request.getProductDetails().getSkuId())
                     .developerPayload(request.getDeveloperPayload()).type(request.getType()).txnId(abstractPaymentAcknowledgementRequest.getTxnId()).build();
             try {
-                sqsMessagePublisher.publishSQSMessage(message);
+                //sqsMessagePublisher.publishSQSMessage(message);
+                pubSubManagerService.publishPubSubMessage(message);
             } catch (Exception e) {
                 log.error("Unable to publish acknowledge message on queue {}", e.getMessage());
             }

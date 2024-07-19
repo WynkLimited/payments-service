@@ -5,9 +5,12 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
+import in.wynk.pubsub.dto.GCPProducerType;
+import in.wynk.pubsub.dto.WynkPubSub;
 import in.wynk.queue.dto.MessageToEventMapper;
 import in.wynk.queue.dto.ProducerType;
 import in.wynk.queue.dto.WynkQueue;
+import in.wynk.scheduler.queue.dto.IPubSubMessage;
 import in.wynk.scheduler.queue.dto.IQueueMessage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,8 +28,9 @@ import static in.wynk.common.constant.CacheBeanNameConstants.PAYMENT_METHOD;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-@WynkQueue(queueName = "${payment.pooling.queue.reconciliation.name}", producerType = ProducerType.ENTITY_DRIVEN_QUARTZ_MESSAGE_PUBLISHER, quartz = @WynkQueue.QuartzConfiguration(entityCacheName= PAYMENT_METHOD, publishUntil = 3, publishUntilUnit = TimeUnit.DAYS))
-public class PaymentReconciliationMessage extends AbstractTransactionMessage implements MessageToEventMapper<PaymentReconciliationThresholdExceedEvent>, IQueueMessage<String> {
+//@WynkQueue(queueName = "${payment.pooling.queue.reconciliation.name}", producerType = ProducerType.ENTITY_DRIVEN_QUARTZ_MESSAGE_PUBLISHER, quartz = @WynkQueue.QuartzConfiguration(entityCacheName= PAYMENT_METHOD, publishUntil = 3, publishUntilUnit = TimeUnit.DAYS))
+@WynkPubSub(projectName = "${payments.pooling.pubSub.reconciliation.projectName}", topicName= "${payments.pooling.pubSub.reconciliation.topicName}", subscriptionName = "${payments.pooling.pubSub.reconciliation.subscriptionName}", bufferInterval = "${payments.pooling.pubSub.reconciliation.bufferInterval}",producerType = GCPProducerType.ENTITY_DRIVEN_QUARTZ_MESSAGE_PUBLISHER, quartz = @WynkPubSub.QuartzConfigurationGCP(entityCacheName= PAYMENT_METHOD, publishUntil = 3, publishUntilUnit = TimeUnit.DAYS))
+public class PaymentReconciliationMessage extends AbstractTransactionMessage implements MessageToEventMapper<PaymentReconciliationThresholdExceedEvent>, IQueueMessage<String>, IPubSubMessage<String> {
 
    @Analysed
    private String paymentMethodId;

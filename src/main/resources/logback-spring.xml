@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration debug="false" scan="true" scanPeriod="30 seconds">
     <springProperty name="ANALYTICS_LOG_PATH" source="logging.path.analytics"/>
+    <springProperty name="APP_NAME" source="logging.appName"/>
+    <springProperty name="ACTIVE_PROFILE" source="logging.profile"/>
+
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <layout class="ch.qos.logback.classic.PatternLayout">
             <pattern>
@@ -60,7 +63,7 @@
             <Pattern>%msg%n</Pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${ANALYTICS_LOG_PATH:-/tmp}/payment/logstash/day=%d{yyyy-MM-dd,
+            <fileNamePattern>${LOG_PATH:-/tmp}/payment/logstash/day=%d{yyyy-MM-dd,
                 aux}/payment-logstash.${HOSTNAME}.%d{yyyy-MM-dd}.%i.log.gz
             </fileNamePattern>
             <maxHistory>3</maxHistory>

@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import in.wynk.payment.consumer.*;
 import in.wynk.payment.extractor.*;
 import in.wynk.payment.service.*;
+import in.wynk.payment.service.impl.RecurringPaymentManager;
+import in.wynk.payment.utils.RecurringTransactionUtils;
 import in.wynk.queue.constant.BeanConstant;
 import in.wynk.queue.service.ISqsManagerService;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -20,17 +22,23 @@ import java.util.concurrent.ScheduledExecutorService;
 @Configuration
 public class PaymentQueuesConfig {
 
+    @Value("${payments.sqs.queue.enabled:false}")
+    private boolean enabled;
+
     @Bean
     public PaymentReconciliationConsumerPollingQueue paymentReconciliationConsumerPollingQueue(@Value("${payment.pooling.queue.reconciliation.name}") String queueName,
                                                                                                @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
                                                                                                ObjectMapper objectMapper,
                                                                                                PaymentReconciliationSQSMessageExtractor paymentReconciliationSQSMessageExtractor, ITransactionManagerService transactionManager, ApplicationEventPublisher eventPublisher) {
-        return new PaymentReconciliationConsumerPollingQueue(queueName,
-                sqsClient,
-                objectMapper,
-                paymentReconciliationSQSMessageExtractor,
-                threadPoolExecutor(4),
-                scheduledThreadPoolExecutor(), transactionManager, eventPublisher);
+        if(enabled) {
+            return new PaymentReconciliationConsumerPollingQueue(queueName,
+                    sqsClient,
+                    objectMapper,
+                    paymentReconciliationSQSMessageExtractor,
+                    threadPoolExecutor(4),
+                    scheduledThreadPoolExecutor(), transactionManager, eventPublisher);
+        }
+        return null;
     }
 
     @Bean
@@ -38,12 +46,15 @@ public class PaymentQueuesConfig {
                                                                                                        @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
                                                                                                        ObjectMapper objectMapper,
                                                                                                        PurchaseAcknowledgementSQSMessageExtractor purchaseAcknowledgementSQSMessageExtractor) {
-        return new PurchaseAcknowledgementConsumerPollingQueue(queueName,
-                sqsClient,
-                objectMapper,
-                purchaseAcknowledgementSQSMessageExtractor,
-                threadPoolExecutor(2),
-                scheduledThreadPoolExecutor());
+        if(enabled) {
+            return new PurchaseAcknowledgementConsumerPollingQueue(queueName,
+                    sqsClient,
+                    objectMapper,
+                    purchaseAcknowledgementSQSMessageExtractor,
+                    threadPoolExecutor(2),
+                    scheduledThreadPoolExecutor());
+        }
+        return null;
     }
 
     @Bean
@@ -51,12 +62,15 @@ public class PaymentQueuesConfig {
                                                                                                         @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
                                                                                                         ObjectMapper objectMapper,
                                                                                                         ExternalTransactionSQSMessageExtractor externalTransactionSQSMessageExtractor) {
-        return new ExternalTransactionReportConsumerPollingQueue(queueName,
-                sqsClient,
-                objectMapper,
-                externalTransactionSQSMessageExtractor,
-                threadPoolExecutor(2),
-                scheduledThreadPoolExecutor());
+        if(enabled) {
+            return new ExternalTransactionReportConsumerPollingQueue(queueName,
+                    sqsClient,
+                    objectMapper,
+                    externalTransactionSQSMessageExtractor,
+                    threadPoolExecutor(2),
+                    scheduledThreadPoolExecutor());
+        }
+        return null;
     }
 
     @Bean
@@ -67,30 +81,36 @@ public class PaymentQueuesConfig {
                                                                                   ISqsManagerService sqsManagerService,
                                                                                   ITransactionManagerService transactionManager,
                                                                                   ISubscriptionServiceManager subscriptionServiceManager,
-                                                                                  IRecurringPaymentManagerService recurringPaymentManagerService, PaymentCachingService cachingService) {
-        return new PaymentRenewalConsumerPollingQueue(queueName,
-                sqsClient,
-                objectMapper,
-                paymentRenewalSQSMessageExtractor,
-                threadPoolExecutor(2),
-                scheduledThreadPoolExecutor(),
-                sqsManagerService,
-                transactionManager,
-                subscriptionServiceManager, recurringPaymentManagerService, cachingService);
+                                                                                  IRecurringPaymentManagerService recurringPaymentManagerService, PaymentCachingService cachingService, RecurringTransactionUtils recurringTransactionUtils) {
+        if(enabled) {
+            return new PaymentRenewalConsumerPollingQueue(queueName,
+                    sqsClient,
+                    objectMapper,
+                    paymentRenewalSQSMessageExtractor,
+                    threadPoolExecutor(2),
+                    scheduledThreadPoolExecutor(),
+                    sqsManagerService,
+                    transactionManager,
+                    subscriptionServiceManager, recurringPaymentManagerService, cachingService, recurringTransactionUtils);
+        }
+        return null;
     }
 
     @Bean
     public PreDebitNotificationConsumerPollingQueue preDebitNotificationConsumerPollingQueue (@Value("${payment.pooling.queue.preDebitNotification.name}") String queueName,
                                                                                               @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
                                                                                               ObjectMapper objectMapper,
-                                                                                              PaymentGatewayManager manager,
+                                                                                              PaymentGatewayManager manager, RecurringPaymentManager recurringPaymentManager,
                                                                                               PreDebitNotificationSQSMessageExtractor preDebitNotificationSQSMessageExtractor) {
-        return new PreDebitNotificationConsumerPollingQueue(queueName,
-                sqsClient,
-                objectMapper,
-                preDebitNotificationSQSMessageExtractor,
-                threadPoolExecutor(2),
-                scheduledThreadPoolExecutor(), manager);
+        if(enabled) {
+            return new PreDebitNotificationConsumerPollingQueue(queueName,
+                    sqsClient,
+                    objectMapper,
+                    preDebitNotificationSQSMessageExtractor,
+                    threadPoolExecutor(2),
+                    scheduledThreadPoolExecutor(), manager, recurringPaymentManager);
+        }
+        return null;
     }
 
     @Bean
@@ -99,12 +119,15 @@ public class PaymentQueuesConfig {
                                                                                                   ObjectMapper objectMapper,
                                                                                                   PaymentRenewalChargingSQSMessageExtractor paymentRenewalChargingSQSMessageExtractor,
                                                                                                   PaymentManager paymentManager, PaymentGatewayManager manager) {
-        return new PaymentRenewalChargingConsumerPollingQueue(queueName,
-                sqsClient,
-                objectMapper,
-                paymentRenewalChargingSQSMessageExtractor,
-                paymentManager, threadPoolExecutor(2),
-                scheduledThreadPoolExecutor(), manager);
+        if(enabled) {
+            return new PaymentRenewalChargingConsumerPollingQueue(queueName,
+                    sqsClient,
+                    objectMapper,
+                    paymentRenewalChargingSQSMessageExtractor,
+                    paymentManager, threadPoolExecutor(2),
+                    scheduledThreadPoolExecutor(), manager);
+        }
+        return null;
     }
 
     @Bean
@@ -112,13 +135,16 @@ public class PaymentQueuesConfig {
                                                                                           @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient, ObjectMapper objectMapper,
                                                                                           PaymentRecurringSchedulingSQSMessageExtractor paymentRecurringSchedulingSQSMessageExtractor,
                                                                                           PaymentManager paymentManager) {
-        return new PaymentRecurringSchedulingPollingQueue(queueName,
-                sqsClient,
-                objectMapper,
-                paymentRecurringSchedulingSQSMessageExtractor,
-                paymentManager,
-                threadPoolExecutor(2),
-                scheduledThreadPoolExecutor());
+        if(enabled) {
+            return new PaymentRecurringSchedulingPollingQueue(queueName,
+                    sqsClient,
+                    objectMapper,
+                    paymentRecurringSchedulingSQSMessageExtractor,
+                    paymentManager,
+                    threadPoolExecutor(2),
+                    scheduledThreadPoolExecutor());
+        }
+        return null;
     }
 
     @Bean
@@ -127,8 +153,9 @@ public class PaymentQueuesConfig {
                                                                                               ObjectMapper objectMapper,
                                                                                               PaymentRecurringUnSchedulingSQSMessageExtractor paymentRecurringUnSchedulingSQSMessageExtractor,
                                                                                               @Qualifier(in.wynk.payment.core.constant.BeanConstant.RECURRING_PAYMENT_RENEWAL_SERVICE)
-                                                                                                      IRecurringPaymentManagerService recurringPaymentManager,
+                                                                                              IRecurringPaymentManagerService recurringPaymentManager,
                                                                                               ITransactionManagerService transactionManagerService, ApplicationEventPublisher eventPublisher) {
+        if(enabled){
         return new PaymentRecurringUnSchedulingPollingQueue(queueName,
                 sqsClient,
                 objectMapper,
@@ -136,6 +163,8 @@ public class PaymentQueuesConfig {
                 threadPoolExecutor(2),
                 scheduledThreadPoolExecutor(),
                 recurringPaymentManager, transactionManagerService, eventPublisher);
+        }
+        return null;
     }
 
     @Bean
@@ -144,12 +173,15 @@ public class PaymentQueuesConfig {
                                                                                     ObjectMapper objectMapper,
                                                                                     PaymentUserDeactivationSQSMessageExtractor paymentUserDeactivationSQSMessageExtractor,
                                                                                     ApplicationEventPublisher eventPublisher) {
-        return new PaymentUserDeactivationPollingQueue(queueName,
-                sqsClient,
-                objectMapper,
-                paymentUserDeactivationSQSMessageExtractor,
-                threadPoolExecutor(2),
-                scheduledThreadPoolExecutor(), eventPublisher);
+        if(enabled) {
+            return new PaymentUserDeactivationPollingQueue(queueName,
+                    sqsClient,
+                    objectMapper,
+                    paymentUserDeactivationSQSMessageExtractor,
+                    threadPoolExecutor(2),
+                    scheduledThreadPoolExecutor(), eventPublisher);
+        }
+        return null;
     }
 
     @Bean
@@ -159,12 +191,15 @@ public class PaymentQueuesConfig {
                                                                                     PaymentRefundSQSMessageExtractor paymentRefundSQSMessageExtractor,
                                                                                     PaymentManager paymentManager, ITransactionManagerService transactionManagerService,
                                                                                PaymentGatewayManager paymentGatewayManager) {
-        return new PaymentRefundConsumerPollingQueue(queueName,
-                sqsClient,
-                objectMapper,
-                paymentRefundSQSMessageExtractor,
-                threadPoolExecutor(2),
-                scheduledThreadPoolExecutor(), paymentManager, transactionManagerService, paymentGatewayManager);
+        if(enabled) {
+            return new PaymentRefundConsumerPollingQueue(queueName,
+                    sqsClient,
+                    objectMapper,
+                    paymentRefundSQSMessageExtractor,
+                    threadPoolExecutor(2),
+                    scheduledThreadPoolExecutor(), paymentManager, transactionManagerService, paymentGatewayManager);
+        }
+        return null;
     }
 
     @Bean

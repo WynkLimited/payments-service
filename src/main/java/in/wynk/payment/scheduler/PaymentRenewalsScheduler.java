@@ -14,6 +14,7 @@ import in.wynk.payment.dto.PaymentRenewalMessage;
 import in.wynk.payment.dto.PreDebitNotificationMessage;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ITransactionManagerService;
+import in.wynk.pubsub.service.IPubSubManagerService;
 import in.wynk.queue.service.ISqsManagerService;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -37,6 +38,8 @@ public class PaymentRenewalsScheduler {
     private IRecurringPaymentManagerService recurringPaymentManager;
     @Autowired
     private ISqsManagerService sqsManagerService;
+    @Autowired
+    private IPubSubManagerService pubSubManagerService;
     @Autowired
     private SeRenewalService seRenewalService;
     @Autowired
@@ -97,7 +100,8 @@ public class PaymentRenewalsScheduler {
     private void publishRenewalMessage (PaymentRenewalMessage message) {
         AnalyticService.update(message);
         if (checkRenewalEligibility(message.getTransactionId(), message.getAttemptSequence())) {
-            sqsManagerService.publishSQSMessage(message);
+            //sqsManagerService.publishSQSMessage(message);
+            pubSubManagerService.publishPubSubMessage(message);
         }
     }
 
@@ -120,7 +124,8 @@ public class PaymentRenewalsScheduler {
     private void publishPreDebitNotificationMessage(PreDebitNotificationMessage message) {
         AnalyticService.update(message);
         if(checkPreDebitEligibility(message.getTransactionId())) {
-            sqsManagerService.publishSQSMessage(message);
+            //sqsManagerService.publishSQSMessage(message);
+            pubSubManagerService.publishPubSubMessage(message);
         }
     }
 

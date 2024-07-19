@@ -35,7 +35,7 @@ session:
     usePooling: true
     readTimeout: 1000
     cluster:
-      nodes: wcf-redis-cluster.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+      nodes: 10.176.88.3:6379
     connection:
       timeout: 1000
       maxTotal: 200
@@ -88,6 +88,10 @@ sms:
     queue:
       name: wcf-staging-notification
       delayInSecond: 0
+    pubSub:
+      projectName: prj-wynk-stg-wcf-svc-01
+      topicName: wcf-staging-notification
+      subscriptionName: wcf-staging-notification-sub
 
 ####### payment props #######
 payment:
@@ -431,6 +435,15 @@ subscription:
         sqs:
           producer:
             delayInSecond: 1
+    pubSub:
+      provisioning:
+        enabled: true
+        projectName: prj-wynk-stg-wcf-svc-01
+        topicName: wcf-staging-subscription
+        subscriptionName: wcf-staging-subscription-sub
+        bufferInterval: 1
+
+
 
 ####### Http Client Props #######
 http:
@@ -529,14 +542,14 @@ http:
 service:
   subscription:
     api:
-      root: http://subscription-staging.wcf.internal
+      root: http://subscription-staging.nprd.wcf.internal
       purchase:
         url: /subscriptions/
       manage:
         url: /manage-subscription/
   payment:
     api:
-      root: https://payments-staging.wynk.in
+      root: http://payment-starter.nprd.wcf.internal
 
 cors:
   allowed:
@@ -556,7 +569,9 @@ webview:
 wynk:
   kafka:
     enabled: true
-    nodes: 10.40.12.120:9092,10.40.12.157:9092,10.40.12.18:9092
+    nodes: 10.168.88.20:9092
+    username: admin
+    password: fr8qQGObqgkAMKB
     producers:
       invoice:
         generate:
@@ -584,7 +599,9 @@ wynk:
             factoryDetails:
               autoCommitInterval: 100
               autoOffsetConfig: earliest
-              bootstrapServers: 10.40.12.120:9092,10.40.12.157:9092,10.40.12.18:9092
+              bootstrapServers: 10.168.88.20:9092
+              username: admin
+              password: fr8qQGObqgkAMKB
               enableAutoCommit: true
               groupId: group1
               keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -599,7 +616,9 @@ wynk:
             factoryDetails:
               autoCommitInterval: 100
               autoOffsetConfig: earliest
-              bootstrapServers: 10.40.12.120:9092,10.40.12.157:9092,10.40.12.18:9092
+              bootstrapServers: 10.168.88.20:9092
+              username: admin
+              password: fr8qQGObqgkAMKB
               enableAutoCommit: true
               groupId: group1
               keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -616,7 +635,9 @@ wynk:
               factoryDetails:
                 autoCommitInterval: 100
                 autoOffsetConfig: earliest
-                bootstrapServers: 10.40.12.120:9092,10.40.12.157:9092,10.40.12.18:9092
+                bootstrapServers: 10.168.88.20:9092
+                username: admin
+                password: fr8qQGObqgkAMKB
                 enableAutoCommit: true
                 groupId: group1
                 keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -631,7 +652,9 @@ wynk:
               factoryDetails:
                 autoCommitInterval: 100
                 autoOffsetConfig: earliest
-                bootstrapServers: 10.40.12.120:9092,10.40.12.157:9092,10.40.12.18:9092
+                bootstrapServers: 10.168.88.20:9092
+                username: admin
+                password: fr8qQGObqgkAMKB
                 enableAutoCommit: true
                 groupId: group1
                 keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -655,7 +678,7 @@ wynk:
     sources:
       payment:
         appName: payment
-        nodes: 10.80.0.128,10.80.0.240
+        nodes: 10.176.88.14,10.176.88.13
         username: user_payments
         password: zS7VvjYRSE
         database: payments
@@ -673,7 +696,7 @@ wynk:
         replicaSet: wcf
       coupons:
         appName: coupon
-        nodes: 10.80.0.128,10.80.0.240
+        nodes: 10.176.88.14,10.176.88.13
         username: user_coupons
         password: Sk6kzU8GU5
         database: coupons
@@ -703,7 +726,7 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 appName: payment
-                nodes: 10.80.0.128,10.80.0.240
+                nodes: 10.176.88.14,10.176.88.13
                 username: user_payments
                 password: zS7VvjYRSE
                 database: payments
@@ -725,7 +748,7 @@ wynk:
                 basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
-                nodes: 10.80.0.128,10.80.0.240
+                nodes: 10.176.88.14,10.176.88.13
                 username: user_coupons
                 password: Sk6kzU8GU5
                 database: coupons
@@ -750,7 +773,7 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 appName: payment
-                nodes: 10.80.0.128,10.80.0.240
+                nodes: 10.176.88.14,10.176.88.13
                 username: user_payments
                 password: zS7VvjYRSE
                 database: payments
@@ -772,7 +795,7 @@ wynk:
                 basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
-                nodes: 10.80.0.128,10.80.0.240
+                nodes: 10.176.88.14,10.176.88.13
                 username: user_coupons
                 password: Sk6kzU8GU5
                 database: coupons
@@ -797,7 +820,7 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 appName: payment
-                nodes: 10.80.0.128,10.80.0.240
+                nodes: 10.176.88.14,10.176.88.13
                 username: user_payments
                 password: zS7VvjYRSE
                 database: payments
@@ -819,7 +842,7 @@ wynk:
                 basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
-                nodes: 10.80.0.128,10.80.0.240
+                nodes: 10.176.88.14,10.176.88.13
                 username: user_coupons
                 password: Sk6kzU8GU5
                 database: coupons
@@ -844,7 +867,7 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 appName: payment
-                nodes: 10.80.0.128,10.80.0.240
+                nodes: 10.176.88.14,10.176.88.13
                 username: user_payments_rajtv
                 password: 53411B8BEBE9E8ABC5F1B21
                 database: payments_rajtv
@@ -866,7 +889,7 @@ wynk:
                 basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
-                nodes: 10.80.0.128,10.80.0.240
+                nodes: 10.176.88.14,10.176.88.13
                 username: user_coupon_rajtv
                 password: C9E1144068F12EF2038B8AE29F6
                 database: coupon_rajtv
@@ -891,7 +914,7 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 appName: payment
-                nodes: 10.80.0.128,10.80.0.240
+                nodes: 10.176.88.14,10.176.88.13
                 username: user_payments_enterr10
                 password: 53411B8BEBE9E8ABC5F1B21
                 database: payments_enterr10
@@ -913,7 +936,7 @@ wynk:
                 basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
-                nodes: 10.80.0.128,10.80.0.240
+                nodes: 10.176.88.14,10.176.88.13
                 username: user_coupon_enterr10
                 password: C9E1144068F12EF2038B8AE29F6
                 database: coupon_enterr10
@@ -1150,6 +1173,9 @@ cache:
   enabled: true
   mode: composite
   redis:
+    refreshTokenDuration: 60
+    refreshTokenLifetime: 3600
+    accountName: projects/-/serviceAccounts/gke-wynk-stg-wcf-app-sa@prj-wynk-stg-wcf-svc-01.iam.gserviceaccount.com
     cache:
       cacheNullValues: false
       keyPrefix: LOCAL
@@ -1157,7 +1183,7 @@ cache:
       ttl: 15
       usePrefix: false
     cluster:
-      nodes: wcf-redis-cluster.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+      nodes: 10.176.88.3:6379
     connection:
       maxIdle: 8
       maxTotal: 10
@@ -1182,12 +1208,15 @@ lock:
     usePooling: true
     readTimeout: 1000
     cluster:
-      nodes: wcf-redis-cluster.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+      nodes: 10.176.88.3:6379
     connection:
       timeout: 1000
       maxTotal: 200
       minIdle: 50
       maxIdle: 100
+  refreshTokenDuration: 60
+  refreshTokenLifetime: 3600
+  accountName: projects/-/serviceAccounts/gke-wynk-stg-wcf-app-sa@prj-wynk-stg-wcf-svc-01.iam.gserviceaccount.com
 
 ######## lib-auth props #######
 security:
@@ -1202,4 +1231,111 @@ event:
   stream:
     dp: data-science-subscription-funnel-information
 
-api.get.endPoint: https://subscription-staging.wynk.in
+api.get.endPoint: http://subscription-staging.nprd.wcf.internal
+
+
+
+########## PUBSUB CONFIGS ###########
+
+payments:
+  pooling:
+    pubSub:
+      reconciliation:
+        projectName: prj-wynk-stg-wcf-svc-01
+        topicName: wcf-staging-payment-reconciliation
+        subscriptionName: wcf-staging-payment-reconciliation-sub
+        bufferInterval: 0
+        enabled: true
+        consumer:
+          delay: 20
+          delayTimeUnit: SECONDS
+      acknowledgement:
+        projectName: prj-wynk-stg-wcf-svc-01
+        topicName: wcf-payment-receipt-ack-staging-sqs
+        subscriptionName: wcf-payment-receipt-ack-staging-sqs-sub
+        bufferInterval: 0
+        enabled: true
+        consumer:
+          delay: 20
+          delayTimeUnit: SECONDS
+      externalTransaction:
+        report:
+          projectName: prj-wynk-stg-wcf-svc-01
+          topicName: wcf-payment-transaction-ack-staging-sqs
+          subscriptionName: wcf-payment-transaction-ack-staging-sqs-sub
+          bufferInterval: 0
+          enabled: true
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+      renewal:
+        projectName: prj-wynk-stg-wcf-svc-01
+        topicName: wcf-staging-payment-renewal
+        subscriptionName: wcf-staging-payment-renewal-sub
+        bufferInterval: 180
+        enabled: true
+        consumer:
+          delay: 20
+          delayTimeUnit: SECONDS
+      charging:
+        projectName: prj-wynk-stg-wcf-svc-01
+        topicName: wcf-staging-payment-charging.fifo
+        subscriptionName: wcf-staging-payment-charging.fifo-sub
+        bufferInterval: 180
+        enabled: true
+        consumer:
+          delay: 20
+          delayTimeUnit: SECONDS
+      schedule:
+        projectName: prj-wynk-stg-wcf-svc-01
+        topicName: wcf-staging-subscription-payment
+        subscriptionName: wcf-staging-subscription-payment-sub
+        bufferInterval: 180
+        enabled: true
+        consumer:
+          delay: 20
+          delayTimeUnit: SECONDS
+      unschedule:
+        projectName: prj-wynk-stg-wcf-svc-01
+        topicName:  wcf-staging-payment-recurring
+        subscriptionName:  wcf-staging-payment-recurring-sub
+        bufferInterval: 180
+        enabled: true
+        consumer:
+          delay: 20
+          delayTimeUnit: SECONDS
+      preDebitNotification:
+        projectName: prj-wynk-stg-wcf-svc-01
+        topicName: wcf-staging-mandate-notification-sqs
+        subscriptionName: wcf-staging-mandate-notification-sqs-sub
+        bufferInterval: 180
+        enabled: true
+        consumer:
+          delay: 20
+          delayTimeUnit: SECONDS
+      refund:
+        projectName: prj-wynk-stg-wcf-svc-01
+        topicName: wcf-staging-payment-refund
+        subscriptionName: wcf-staging-payment-refund-sub
+        bufferInterval: 180
+        enabled: true
+        consumer:
+          delay: 20
+          delayTimeUnit: SECONDS
+      userDeactivation:
+        projectName: prj-wynk-stg-wcf-svc-01
+        topicName: wcf-staging-payment-user-deactivation
+        subscriptionName: wcf-staging-payment-user-deactivation-sub
+        bufferInterval: 180
+        enabled: true
+        consumer:
+          delay: 20
+          delayTimeUnit: SECONDS
+
+
+
+
+
+
+
+

@@ -201,10 +201,18 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
         @Override
         public AbstractPaymentCallbackResponse handle (PayuRealtimeMandatePayload callbackRequest) {
             final Transaction transaction = TransactionContext.get();
-            String description = "Mandate is already " + callbackRequest.getStatus();
-            recurringTransactionUtils.cancelRenewalBasedOnRealtimeMandate(description, transaction);
-            transaction.setStatus(TransactionStatus.CANCELLED.getValue());
+            if (isMandateTypeEligible(callbackRequest)) {
+                String description = "Mandate is already " + callbackRequest.getStatus();
+                recurringTransactionUtils.cancelRenewalBasedOnRealtimeMandate(description, transaction);
+                transaction.setStatus(TransactionStatus.CANCELLED.getValue());
+            }
             return DefaultPaymentCallbackResponse.builder().transactionStatus(transaction.getStatus()).build();
+        }
+
+        private boolean isMandateTypeEligible (PayuRealtimeMandatePayload callbackRequest) {
+            return (!Objects.nonNull(callbackRequest.getNotificationType()) || callbackRequest.getNotificationType() != NotificationType.MANDATE_MODIFICATION) &&
+                    (!Objects.nonNull(callbackRequest.getAction()) || (!callbackRequest.getAction().equalsIgnoreCase(UPIMandateAction.MANDATE_PAUSE.toString()) &&
+                            (!callbackRequest.getAction().equalsIgnoreCase(UPIMandateAction.MANDATE_UNPAUSE.toString()))));
         }
 
         @Override

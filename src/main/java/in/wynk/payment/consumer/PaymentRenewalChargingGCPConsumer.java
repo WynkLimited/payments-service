@@ -1,7 +1,9 @@
 package in.wynk.payment.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
+import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
@@ -45,11 +47,13 @@ public class PaymentRenewalChargingGCPConsumer extends AbstractPubSubMessagePoll
     }
 
     @Override
+    @ClientAware(clientAlias = "#message.clientAlias")
+    @AnalyseTransaction(name = "paymentRenewalChargingMessage")
     public void consume(PaymentRenewalChargingMessage message) {
         AnalyticService.update(message);
         log.info(PaymentLoggingMarker.PAYMENT_CHARGING_QUEUE, "processing PaymentChargingMessage for transaction {}", message);
         //TODO: move payu also to new version after testing and remove check
-        if (AIRTEL_PAY_STACK.equalsIgnoreCase(message.getPaymentCode()) || PAYU_MERCHANT_PAYMENT_SERVICE.equals(message.getPaymentCode())) {
+        if (AIRTEL_PAY_STACK.equalsIgnoreCase(message.getPaymentCode()) || PAYU_MERCHANT_PAYMENT_SERVICE.equalsIgnoreCase(message.getPaymentCode())) {
             manager.renew(PaymentRenewalChargingRequest.builder()
                     .id(message.getId())
                     .uid(message.getUid())

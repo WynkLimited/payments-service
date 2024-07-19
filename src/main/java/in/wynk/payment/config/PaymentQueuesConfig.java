@@ -81,7 +81,7 @@ public class PaymentQueuesConfig {
                                                                                   ISqsManagerService sqsManagerService,
                                                                                   ITransactionManagerService transactionManager,
                                                                                   ISubscriptionServiceManager subscriptionServiceManager,
-                                                                                  IRecurringPaymentManagerService recurringPaymentManagerService, PaymentCachingService cachingService, RecurringTransactionUtils recurringTransactionUtils) {
+                                                                                  IRecurringPaymentManagerService recurringPaymentManagerService, PaymentCachingService cachingService) {
         if(enabled) {
             return new PaymentRenewalConsumerPollingQueue(queueName,
                     sqsClient,
@@ -91,7 +91,7 @@ public class PaymentQueuesConfig {
                     scheduledThreadPoolExecutor(),
                     sqsManagerService,
                     transactionManager,
-                    subscriptionServiceManager, recurringPaymentManagerService, cachingService, recurringTransactionUtils);
+                    subscriptionServiceManager, recurringPaymentManagerService, cachingService);
         }
         return null;
     }
@@ -100,7 +100,7 @@ public class PaymentQueuesConfig {
     public PreDebitNotificationConsumerPollingQueue preDebitNotificationConsumerPollingQueue (@Value("${payment.pooling.queue.preDebitNotification.name}") String queueName,
                                                                                               @Qualifier(BeanConstant.SQS_MANAGER) AmazonSQS sqsClient,
                                                                                               ObjectMapper objectMapper,
-                                                                                              PaymentGatewayManager manager, RecurringPaymentManager recurringPaymentManager,
+                                                                                              PaymentGatewayManager manager,
                                                                                               PreDebitNotificationSQSMessageExtractor preDebitNotificationSQSMessageExtractor) {
         if(enabled) {
             return new PreDebitNotificationConsumerPollingQueue(queueName,
@@ -108,7 +108,7 @@ public class PaymentQueuesConfig {
                     objectMapper,
                     preDebitNotificationSQSMessageExtractor,
                     threadPoolExecutor(2),
-                    scheduledThreadPoolExecutor(), manager, recurringPaymentManager);
+                    scheduledThreadPoolExecutor(), manager);
         }
         return null;
     }

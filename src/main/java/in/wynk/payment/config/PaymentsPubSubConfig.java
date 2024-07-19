@@ -180,13 +180,13 @@ public class PaymentsPubSubConfig {
                                                                                        @Value("${payments.pooling.pubSub.preDebitNotification.topicName}") String topicName,
                                                                                        @Value("${payments.pooling.pubSub.preDebitNotification.subscriptionName}") String subscriptionName,
                                                                                        @Value("${payments.pooling.pubSub.preDebitNotification.bufferInterval}") String bufferInterval,
-                                                                                       ObjectMapper objectMapper, PaymentGatewayManager manager, RecurringPaymentManager recurringPaymentManager) {
+                                                                                       ObjectMapper objectMapper, PaymentGatewayManager manager) {
         return new PreDebitNotificationGCPConsumer(
                 projectName, topicName, subscriptionName,
                 objectMapper,
                 new PreDebitNotificationPubSubMessageExtractor(projectName, subscriptionName, bufferInterval),
                 threadPoolExecutor(2),
-                scheduledThreadPoolExecutor(), manager, recurringPaymentManager);
+                scheduledThreadPoolExecutor(), manager);
     }
 
     @Bean

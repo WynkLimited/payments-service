@@ -79,7 +79,7 @@ public class PaymentRenewalChargingConsumerPollingQueue extends AbstractSQSMessa
     @ClientAware(clientAlias = "#message.clientAlias")
     @AnalyseTransaction(name = "paymentRenewalChargingMessage")
     public void consume(PaymentRenewalChargingMessage message) {
-        log.info("userConsole is inside the paymentRenewalCharging message: {}, message");
+        log.info("userConsole is inside the paymentRenewalCharging message: {},", message.toString());
         AnalyticService.update(message);
         log.info(PaymentLoggingMarker.PAYMENT_CHARGING_QUEUE, "processing PaymentChargingMessage for transaction {}", message.getId());
         //TODO: move payu also to new version after testing and remove check

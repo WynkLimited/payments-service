@@ -450,6 +450,11 @@ sms:
     queue:
       name: wcf-preprod-notification
       delayInSecond: 0
+    pubSub:
+      projectName: prj-wynk-pre-wcf-svc-01
+      topicName: wcf-preprod-notification
+      subscriptionName: wcf-preprod-notification-sub
+      bufferInterval: 0
 
 ####### Http Client Props #######
 http:

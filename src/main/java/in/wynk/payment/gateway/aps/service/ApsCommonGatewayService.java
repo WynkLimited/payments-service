@@ -120,7 +120,7 @@ public class ApsCommonGatewayService {
         try {
             ResponseEntity<String> responseEntity = apsClientService.apsOperations(getLoginId(msisdn), generateToken(url, clientAlias), url, method, body);
             if (responseEntity.getStatusCode() == HttpStatus.OK) {
-                return objectMapper.convertValue(responseEntity.getBody(), target);
+                return objectMapper.readValue(responseEntity.getBody(), target);
                 /*ApsResponseWrapper apsVasResponse = gson.fromJson(responseEntity.getBody(), ApsResponseWrapper.class);
                 if (HttpStatus.OK.name().equals(apsVasResponse.getStatusCode())) {
                     return objectMapper.convertValue(apsVasResponse.getBody(), target);
@@ -130,6 +130,8 @@ public class ApsCommonGatewayService {
                 throw new WynkRuntimeException(failureResponse.getErrorCode(), failureResponse.getMessage(), failureResponse.getStatusCode());*/
             }
             throw new WynkRuntimeException(APS001, responseEntity.getStatusCode().name());
+        } catch (JsonProcessingException ex) {
+            throw new WynkRuntimeException("Unknown Object from ApsGateway", ex);
         } catch (Exception e) {
             if (e instanceof WynkRuntimeException) {
                 throw e;

@@ -67,6 +67,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -247,6 +248,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         try {
             this.publishAsync(SubscriptionProvisioningMessage.builder()
                                                              .uid(request.getUid())
+                                                             .source(myApplicationContext.getClientAlias())
                                                              .msisdn(request.getMsisdn())
                                                              .subscriberId(request.getSubscriberId())
                                                              .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent()))
@@ -267,7 +269,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Override
     public void unSubscribePlanAsync(UnSubscribePlanAsyncRequest request) {
         this.publishAsync(
-            SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).referenceId(request.getTransactionId()).transactionStatus(request.getTransactionStatus())
+                SubscriptionProvisioningMessage.builder().source(myApplicationContext.getClientAlias()).uid(request.getUid()).msisdn(request.getMsisdn()).referenceId(request.getTransactionId()).transactionStatus(request.getTransactionStatus())
                                            .paymentEvent(request.getPaymentEvent()).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentPartner(BaseConstants.WYNK.toLowerCase())
                                            .appVersion(request.getTriggerDataRequest().getAppVersion()).os(request.getTriggerDataRequest().getOs()).build());
     }
@@ -331,7 +333,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
                 PlanProvisioningResponse provisioningResponse = response.getBody().getData();
                 //TODO: remove deferred state check post IAP fixes.
                 if (provisioningResponse.getState() != ProvisionState.SUBSCRIBED && provisioningResponse.getState() != ProvisionState.DEFERRED) {
-                    this.publishAsync(SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId())
+                    this.publishAsync(SubscriptionProvisioningMessage.builder().source(myApplicationContext.getClientAlias()).uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId())
                                                                      .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentCode(request.getPaymentGateway().getCode())
                                                                      .paymentPartner(BaseConstants.WYNK.toLowerCase()).referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent())
                                                                      .transactionStatus(request.getTransactionStatus()).externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired())
@@ -340,7 +342,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
                 }
             }
         } catch (HttpStatusCodeException e) {
-            this.publishAsync(SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId())
+            this.publishAsync(SubscriptionProvisioningMessage.builder().source(myApplicationContext.getClientAlias()).uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId())
                                                              .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentCode(request.getPaymentGateway().getCode()).paymentPartner(BaseConstants.WYNK.toLowerCase())
                                                              .referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent()).transactionStatus(request.getTransactionStatus())
                                                              .externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired()).os(request.getTriggerDataRequest().getOs())
@@ -348,7 +350,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
             throw new WynkRuntimeException(PaymentErrorType.PAY013, e, e.getResponseBodyAsString());
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.PAYMENT_ERROR, "Error occurred while subscribing {}", e.getMessage(), e);
-            this.publishAsync(SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId())
+            this.publishAsync(SubscriptionProvisioningMessage.builder().source(myApplicationContext.getClientAlias()).uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId())
                                                              .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentCode(request.getPaymentGateway().getCode()).paymentPartner(BaseConstants.WYNK.toLowerCase())
                                                              .referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent()).transactionStatus(request.getTransactionStatus())
                                                              .externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired()).os(request.getTriggerDataRequest().getOs())
@@ -358,31 +360,41 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     }
 
     private void additiveDaysSubscribe(AbstractSubscribePlanRequest request) {
-        AnalyticService.update("AdditiveValidity", request.toString());
+        log.info("AdditiveValidity request: {}", request);
         try {
-            if (ApsConstant.APS_V2.equalsIgnoreCase(request.getPaymentGateway().getId())) {
-                Integer additiveDays = getAdditiveDays(request.getMsisdn(), request.getPlanId());
-                AnalyticService.update("AdditiveValidity", additiveDays);
-                PlanProvisioningRequest planProvisioningRequest = SinglePlanAdditiveProvisionRequest.builder()
-                                                                                                    .uid(request.getUid())
-                                                                                                    .msisdn(request.getMsisdn())
-                                                                                                    .subscriberId(request.getSubscriberId())
-                                                                                                    .paymentCode(request.getPaymentGateway().getCode())
-                                                                                                    .referenceId(request.getTransactionId())
-                                                                                                    .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent()))
-                                                                                                    .paymentPartner(BaseConstants.WYNK.toLowerCase())
-                                                                                                    .eventType(request.getPaymentEvent())
-                                                                                                    .externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired())
-                                                                                                    .triggerDataRequest(request.getTriggerDataRequest())
-                                                                                                    .validityInDays(additiveDays)
-                                                                                                    .build();
-                RequestEntity<PlanProvisioningRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(subscribePlanAdditiveEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), planProvisioningRequest, HttpMethod.POST);
-                AnalyticService.update("AdditiveValidity", requestEntity.toString());
-                restTemplate.exchange(requestEntity,
-                                      new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<PlanProvisioningResponse>>() {
-                                      });
-                removeFromCache(request.getMsisdn(), request.getPlanId());
+            if (!ApsConstant.APS_V2.equalsIgnoreCase(request.getPaymentGateway().getId())) {
+                return;
             }
+
+            PlanDTO planDTO = cachingService.getPlan(request.getPlanId());
+            if (Boolean.FALSE.equals(MapUtils.getBoolean(planDTO.getMeta(), "additiveValidityEnabled", false))) {
+                log.info("Additive validity not enabled for plan id: {}", request.getPlanId());
+                AnalyticService.update("AdditiveValidity", 0);
+                return;
+            }
+
+            Integer additiveDays = getAdditiveDays(request.getMsisdn(), request.getPlanId());
+            AnalyticService.update("AdditiveValidity", additiveDays);
+            PlanProvisioningRequest planProvisioningRequest = SinglePlanAdditiveProvisionRequest.builder()
+                                                                                                .uid(request.getUid())
+                                                                                                .msisdn(request.getMsisdn())
+                                                                                                .subscriberId(request.getSubscriberId())
+                                                                                                .paymentCode(request.getPaymentGateway().getCode())
+                                                                                                .referenceId(request.getTransactionId())
+                                                                                                .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent()))
+                                                                                                .paymentPartner(BaseConstants.WYNK.toLowerCase())
+                                                                                                .eventType(request.getPaymentEvent())
+                                                                                                .externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired())
+                                                                                                .triggerDataRequest(request.getTriggerDataRequest())
+                                                                                                .validityInDays(additiveDays)
+                                                                                                .build();
+            RequestEntity<PlanProvisioningRequest> requestEntity = ChecksumUtils.buildEntityWithAuthHeaders(subscribePlanAdditiveEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), planProvisioningRequest, HttpMethod.POST);
+            log.info("AdditiveValidity requestEntity: {}", requestEntity);
+            restTemplate.exchange(requestEntity,
+                                  new ParameterizedTypeReference<WynkResponse.WynkResponseWrapper<PlanProvisioningResponse>>() {
+                                  });
+
+            removeFromCache(request.getMsisdn(), request.getPlanId());
         } catch (Exception e) {
             log.error("Error in Subscribe Plan Additive request", e);
         }
@@ -416,7 +428,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
             PlanUnProvisioningRequest unProvisioningRequest =
                 PlanUnProvisioningRequest.builder().msisdn(request.getMsisdn()).uid(request.getUid()).referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent())
                                          .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentPartner(BaseConstants.WYNK.toLowerCase())
-                                         .triggerDataRequest(request.getTriggerDataRequest()).build();
+                            .triggerDataRequest(request.getTriggerDataRequest()).source(myApplicationContext.getClientAlias()).build();
             RequestEntity<PlanUnProvisioningRequest> requestEntity =
                 ChecksumUtils.buildEntityWithAuthHeaders(unSubscribePlanEndPoint, myApplicationContext.getClientId(), myApplicationContext.getClientSecret(), unProvisioningRequest,
                                                          HttpMethod.POST);

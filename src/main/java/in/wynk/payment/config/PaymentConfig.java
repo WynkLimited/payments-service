@@ -77,9 +77,9 @@ public class PaymentConfig implements WebMvcConfigurer {
     @Bean
     public ThreadPoolTaskExecutor taskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(10);
-        executor.setMaxPoolSize(20);
-        executor.setQueueCapacity(100);
+        executor.setCorePoolSize(40);
+        executor.setMaxPoolSize(80);
+        executor.setQueueCapacity(400);
         executor.initialize();
         return executor;
     }

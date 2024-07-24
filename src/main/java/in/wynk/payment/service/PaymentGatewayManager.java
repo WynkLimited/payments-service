@@ -446,7 +446,7 @@ public class PaymentGatewayManager
             throw new WynkRuntimeException(PaymentErrorType.PAY020, e);
         } finally {
             assert refundInitResponse != null;
-            if (BeanConstant.AIRTEL_PAY_STACK.equalsIgnoreCase(originalTransaction.getPaymentChannel().getCode()) ||
+            if (BeanConstant.AIRTEL_PAY_STACK.equalsIgnoreCase(originalTransaction.getPaymentChannel().getCode()) || BeanConstant.AIRTEL_PAY_STACK_V2.equalsIgnoreCase(originalTransaction.getPaymentChannel().getCode()) ||
                     BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE.equalsIgnoreCase(originalTransaction.getPaymentChannel().getCode()) &&
                             refundInitResponse.getTransactionStatus() != TransactionStatus.FAILURE) {
                 pubSubManagerService.publishPubSubMessage(

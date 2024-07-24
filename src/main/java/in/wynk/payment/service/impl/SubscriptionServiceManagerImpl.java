@@ -511,8 +511,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         String pg = additionalParam.get(BaseConstants.DEEPLINK_PACK_GROUP);
         int validity = Validity.getValidity(additionalParam.get(BaseConstants.VALIDITY));
         String price = additionalParam.get(BaseConstants.PRICE);
-        if(!StringUtils.isEmpty(pg) && validity != -1) return true;
-        else return !StringUtils.isEmpty(price);
+        return !StringUtils.isEmpty(pg) && (validity != -1 || !StringUtils.isEmpty(price));
     }
 
     public ThanksPlanResponse getThanksPlanForAdditiveDays(String msisdn) {

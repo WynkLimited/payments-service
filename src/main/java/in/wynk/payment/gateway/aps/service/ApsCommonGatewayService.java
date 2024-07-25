@@ -20,11 +20,13 @@ import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.core.event.PaymentRefundInitEvent;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.aps.common.*;
+import in.wynk.payment.dto.aps.request.status.mandate.ApsMandateStatusRequest;
 import in.wynk.payment.dto.aps.request.status.refund.RefundStatusRequest;
 import in.wynk.payment.dto.aps.response.order.ApsOrderStatusResponse;
 import in.wynk.payment.dto.aps.response.order.OrderInfo;
 import in.wynk.payment.dto.aps.response.order.OrderPaymentDetails;
-import in.wynk.payment.dto.aps.response.refund.ExternalPaymentRefundStatusResponse;
+import in.wynk.payment.dto.aps.response.status.mandate.ApsMandateStatusResponse;
+import in.wynk.payment.dto.aps.response.status.refund.ApsRefundStatusResponse;
 import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
 import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.PaymentCachingService;
@@ -77,6 +79,8 @@ public class ApsCommonGatewayService {
     private String CHARGING_STATUS_ENDPOINT;
     @Value("${aps.payment.order.status.api}")
     private String ORDER_STATUS_ENDPOINT;
+    @Value("${aps.payment.mandate.status.api}")
+    private String MANDATE_STATUS_ENDPOINT;
 
     private final Gson gson;
     private EncryptionUtils.RSA rsa;
@@ -150,9 +154,9 @@ public class ApsCommonGatewayService {
         try {
             final RefundStatusRequest refundStatusRequest = RefundStatusRequest.builder().refundId(refundId).build();
             mBuilder.request(refundStatusRequest);
-            ExternalPaymentRefundStatusResponse externalPaymentRefundStatusResponse =
+            ApsRefundStatusResponse externalPaymentRefundStatusResponse =
                     exchange(transaction.getClientAlias(), REFUND_STATUS_ENDPOINT, HttpMethod.POST, getLoginId(transaction.getMsisdn()), refundStatusRequest,
-                            ExternalPaymentRefundStatusResponse.class);
+                            ApsRefundStatusResponse.class);
             mBuilder.response(externalPaymentRefundStatusResponse);
             mBuilder.externalTransactionId(externalPaymentRefundStatusResponse.getRefundId());
             AnalyticService.update(BaseConstants.EXTERNAL_TRANSACTION_ID, externalPaymentRefundStatusResponse.getRefundId());
@@ -325,5 +329,11 @@ public class ApsCommonGatewayService {
 
     public String getLoginId (String msisdn) {
         return msisdn != null ? msisdn.replace("+91", "") : null;
+    }
+
+    public boolean isMandateActive (String clientAlias, String mandateId, String merchantId) {
+        ApsMandateStatusRequest request= ApsMandateStatusRequest.builder().mandateId(mandateId).merchantConfigId(merchantId).build();
+        ApsMandateStatusResponse apsMandateStatusResponse = exchange(clientAlias, MANDATE_STATUS_ENDPOINT, HttpMethod.POST, null, request, ApsMandateStatusResponse.class);
+        return true;
     }
 }

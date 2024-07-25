@@ -6,11 +6,10 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.PaymentErrorEvent;
-import in.wynk.payment.dto.ApsPaymentRefundRequest;
 import in.wynk.payment.dto.ApsPaymentRefundResponse;
 import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.aps.request.refund.ExternalPaymentRefundRequest;
-import in.wynk.payment.dto.aps.response.refund.ExternalPaymentRefundStatusResponse;
+import in.wynk.payment.dto.aps.request.status.refund.ApsPaymentRefundRequest;
+import in.wynk.payment.dto.aps.response.status.refund.ApsRefundStatusResponse;
 import in.wynk.payment.gateway.IPaymentRefund;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -21,7 +20,7 @@ import org.springframework.http.HttpMethod;
  * @author Nishesh Pandey
  */
 @Slf4j
-public class ApsRefundGatewayServiceImpl implements IPaymentRefund<ApsPaymentRefundResponse, ApsPaymentRefundRequest> {
+public class ApsRefundGatewayServiceImpl implements IPaymentRefund<ApsPaymentRefundResponse, in.wynk.payment.dto.ApsPaymentRefundRequest> {
 
     private final String REFUND_ENDPOINT;
     private final ApsCommonGatewayService common;
@@ -35,7 +34,7 @@ public class ApsRefundGatewayServiceImpl implements IPaymentRefund<ApsPaymentRef
 
 
     @Override
-    public ApsPaymentRefundResponse doRefund(ApsPaymentRefundRequest request) {
+    public ApsPaymentRefundResponse doRefund(in.wynk.payment.dto.ApsPaymentRefundRequest request) {
         TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
         final Transaction refundTransaction = TransactionContext.get();
         final MerchantTransactionEvent.Builder mBuilder = MerchantTransactionEvent.builder(refundTransaction.getIdStr());
@@ -44,10 +43,10 @@ public class ApsRefundGatewayServiceImpl implements IPaymentRefund<ApsPaymentRef
                         .itemId(refundTransaction.getItemId()).clientAlias(refundTransaction.getClientAlias()).amount(refundTransaction.getAmount()).msisdn(refundTransaction.getMsisdn())
                         .paymentEvent(refundTransaction.getType());
         try {
-            final ExternalPaymentRefundRequest refundRequest =
-                    ExternalPaymentRefundRequest.builder().refundAmount(String.valueOf(refundTransaction.getAmount())).pgId(request.getPgId()).postingId(refundTransaction.getIdStr()).build();
-            ExternalPaymentRefundStatusResponse body =
-                    common.exchange(refundTransaction.getClientAlias(), REFUND_ENDPOINT, HttpMethod.POST, refundTransaction.getMsisdn(), refundRequest, ExternalPaymentRefundStatusResponse.class);
+            final ApsPaymentRefundRequest refundRequest =
+                    ApsPaymentRefundRequest.builder().refundAmount(String.valueOf(refundTransaction.getAmount())).pgId(request.getPgId()).postingId(refundTransaction.getIdStr()).build();
+            ApsRefundStatusResponse body =
+                    common.exchange(refundTransaction.getClientAlias(), REFUND_ENDPOINT, HttpMethod.POST, refundTransaction.getMsisdn(), refundRequest, ApsRefundStatusResponse.class);
 
             mBuilder.request(refundRequest);
             mBuilder.response(body);

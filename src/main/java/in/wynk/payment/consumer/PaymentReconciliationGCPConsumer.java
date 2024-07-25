@@ -113,7 +113,7 @@ public class PaymentReconciliationGCPConsumer extends AbstractPubSubMessagePolli
 
     @Override
     public void start() {
-        if (false) {
+        if (reconciliationPollingEnabled) {
             log.info("Starting PaymentReconciliationGCPConsumerPolling...");
             pollingThreadPool.scheduleWithFixedDelay(
                     this::poll,
@@ -126,7 +126,7 @@ public class PaymentReconciliationGCPConsumer extends AbstractPubSubMessagePolli
 
     @Override
     public void stop() {
-        if (false) {
+        if (reconciliationPollingEnabled) {
             log.info("Shutting down PaymentReconciliationGCPConsumerPolling ...");
             pollingThreadPool.shutdownNow();
             messageHandlerThreadPool.shutdown();

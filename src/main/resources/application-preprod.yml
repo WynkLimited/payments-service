@@ -690,7 +690,7 @@ wynk:
     sources:
       payment:
         appName: payment
-        nodes: 10.80.2.240,10.80.2.128
+        nodes: 10.168.88.13,10.168.88.14
         username: user_payments_preprod
         password: t2KXcR8dnW
         database: payments_preprod

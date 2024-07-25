@@ -12,5 +12,6 @@ import lombok.ToString;
 @ToString
 public class ApsMandateStatusRequest {
     private String mandateId;
-    private String merchantConfigId;
+    @Builder.Default
+    private String merchantConfigId = "3520";
 }

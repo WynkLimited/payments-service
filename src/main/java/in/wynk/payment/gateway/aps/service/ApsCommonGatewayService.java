@@ -335,7 +335,7 @@ public class ApsCommonGatewayService {
     }
 
     public boolean isMandateActive (Transaction transaction, String mandateId, String merchantId) {
-        ApsMandateStatusRequest request = ApsMandateStatusRequest.builder().mandateId(mandateId).merchantConfigId(merchantId).build();
+        ApsMandateStatusRequest request = ApsMandateStatusRequest.builder().mandateId(mandateId).build();
         ApsMandateStatusResponse apsMandateStatusResponse;
         try {
             apsMandateStatusResponse = exchange(transaction.getClientAlias(), MANDATE_STATUS_ENDPOINT, HttpMethod.POST, null, request, ApsMandateStatusResponse.class);

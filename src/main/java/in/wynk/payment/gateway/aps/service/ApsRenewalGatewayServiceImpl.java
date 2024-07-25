@@ -92,7 +92,7 @@ public class ApsRenewalGatewayServiceImpl implements IPaymentRenewal<PaymentRene
             return;
         }
         AnalyticService.update(PaymentConstants.PAYMENT_MODE, merchantData.getPaymentMode());
-        if (Objects.nonNull(merchantData.getMandateId()) && common.isMandateActive(transaction.getClientAlias(),merchantData.getMandateId(), merchantData.getMerchantId())) {
+        if (Objects.nonNull(merchantData.getMandateId()) && common.isMandateActive(transaction,merchantData.getMandateId(), merchantData.getMerchantId())) {
             SiPaymentRecurringResponse apsRenewalResponse = doChargingForRenewal(merchantData);
             updateTransactionStatus(apsRenewalResponse, transaction);
         } else {

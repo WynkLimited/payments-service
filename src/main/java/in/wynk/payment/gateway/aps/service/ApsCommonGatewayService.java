@@ -33,6 +33,7 @@ import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.payment.utils.RecurringTransactionUtils;
 import in.wynk.vas.client.service.ApsClientService;
+import io.netty.channel.ConnectTimeoutException;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -47,9 +48,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -331,9 +334,38 @@ public class ApsCommonGatewayService {
         return msisdn != null ? msisdn.replace("+91", "") : null;
     }
 
-    public boolean isMandateActive (String clientAlias, String mandateId, String merchantId) {
-        ApsMandateStatusRequest request= ApsMandateStatusRequest.builder().mandateId(mandateId).merchantConfigId(merchantId).build();
-        ApsMandateStatusResponse apsMandateStatusResponse = exchange(clientAlias, MANDATE_STATUS_ENDPOINT, HttpMethod.POST, null, request, ApsMandateStatusResponse.class);
-        return true;
+    public boolean isMandateActive (Transaction transaction, String mandateId, String merchantId) {
+        ApsMandateStatusRequest request = ApsMandateStatusRequest.builder().mandateId(mandateId).merchantConfigId(merchantId).build();
+        ApsMandateStatusResponse apsMandateStatusResponse;
+        try {
+            apsMandateStatusResponse = exchange(transaction.getClientAlias(), MANDATE_STATUS_ENDPOINT, HttpMethod.POST, null, request, ApsMandateStatusResponse.class);
+        } catch (RestClientException e) {
+            if (e.getRootCause() != null) {
+                if (e.getRootCause() instanceof SocketTimeoutException || e.getRootCause() instanceof ConnectTimeoutException) {
+                    log.error(APS_MANDATE_STATUS_VALIDATION_ERROR, "Socket timeout during mandate validation but retry will happen {}, {} ", request, e.getMessage(), e);
+                    throw new WynkRuntimeException(APS013);
+                } else {
+                    throw new WynkRuntimeException(APS013, e);
+                }
+            } else {
+                throw new WynkRuntimeException(APS013, e);
+            }
+        } catch (Exception ex) {
+            log.error(APS_MANDATE_STATUS_VALIDATION_ERROR, ex.getMessage(), ex);
+            throw new WynkRuntimeException(APS013, ex);
+        }
+        boolean isMandateActive = false;
+        if (apsMandateStatusResponse != null) {
+            isMandateActive = "active".equalsIgnoreCase(apsMandateStatusResponse.getStatus());
+            if (!isMandateActive) {
+                String errorReason = "mandate status is: " + apsMandateStatusResponse.getStatus();
+                AnalyticService.update(PaymentConstants.ERROR_REASON, errorReason);
+                recurringTransactionUtils.cancelRenewalBasedOnErrorReason(errorReason, transaction);
+                transaction.setStatus(TransactionStatus.FAILURE.getValue());
+                eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(APS013.getErrorCode()).description(errorReason).build());
+
+            }
+        }
+        return isMandateActive;
     }
 }

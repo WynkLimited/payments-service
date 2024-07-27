@@ -1166,7 +1166,7 @@ cache:
   redis:
     refreshTokenDuration: 60
     refreshTokenLifetime: 3600
-    accountName: projects/-/serviceAccounts/gke-wynk-pre-wcf-app-sa@prj-wynk-pre-wcf-svc-01.iam.gserviceaccount.com
+    accountName: projects/-/serviceAccounts/gke-wynk-prd-wcf-app-sa@prj-wynk-prd-wcf-svc-01.iam.gserviceaccount.com
     cache:
       cacheNullValues: false
       keyPrefix: PROD

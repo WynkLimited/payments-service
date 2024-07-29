@@ -30,17 +30,16 @@ public class PaymentsPubSubConfig {
         return new PaymentReconciliationGCPConsumer(
                 projectName, topicName, subscriptionName,
                 objectMapper,
-                new PaymentReconciliationGCPMessageExtractor(projectName, subscriptionName, bufferInterval),
                 threadPoolExecutor(4),
                 scheduledThreadPoolExecutor(), transactionManager, eventPublisher);
     }
 
-    @Bean
+   /* @Bean
     public PaymentReconciliationGCPMessageExtractor paymentReconciliationGCPMessageExtractor(@Value("${payments.pooling.pubSub.reconciliation.projectName}") String projectName,
                                                                                              @Value("${payments.pooling.pubSub.reconciliation.subscriptionName}") String subscriptionName,
                                                                                              @Value("${payments.pooling.pubSub.reconciliation.bufferInterval}") String bufferInterval) {
         return new PaymentReconciliationGCPMessageExtractor(projectName, subscriptionName, bufferInterval);
-    }
+    }*/
 
     @Bean
     public PurchaseAcknowledgementGCPConsumer purchaseAcknowledgementGCPConsumer(@Value("${payments.pooling.pubSub.acknowledgement.projectName}") String projectName,
@@ -51,17 +50,16 @@ public class PaymentsPubSubConfig {
         return new PurchaseAcknowledgementGCPConsumer(
                 projectName, topicName, subscriptionName,
                 objectMapper,
-                new PurchaseAcknowledgementGCPMessageExtractor(projectName, subscriptionName, bufferInterval),
                 threadPoolExecutor(2),
                 scheduledThreadPoolExecutor());
     }
 
-    @Bean
+    /*@Bean
     public PurchaseAcknowledgementGCPMessageExtractor purchaseAcknowledgementGCPMessageExtractor(@Value("${payments.pooling.pubSub.acknowledgement.projectName}") String projectName,
                                                                                                  @Value("${payments.pooling.pubSub.acknowledgement.subscriptionName}") String subscriptionName,
                                                                                                  @Value("${payments.pooling.pubSub.acknowledgement.bufferInterval}") String bufferInterval) {
         return new PurchaseAcknowledgementGCPMessageExtractor(projectName, subscriptionName, bufferInterval);
-    }
+    }*/
 
     @Bean
     public ExternalTransactionReportGCPConsumer ExternalTransactionReportGCPConsumer(@Value("${payments.pooling.pubSub.externalTransaction.report.projectName}") String projectName,
@@ -72,17 +70,16 @@ public class PaymentsPubSubConfig {
         return new ExternalTransactionReportGCPConsumer(
                 projectName, topicName, subscriptionName,
                 objectMapper,
-                new ExternalTransactionPubSubMessageExtractor(projectName, subscriptionName, bufferInterval),
                 threadPoolExecutor(2),
                 scheduledThreadPoolExecutor());
     }
 
-    @Bean
+    /*@Bean
     public ExternalTransactionPubSubMessageExtractor externalTransactionPubSubMessageExtractor(@Value("${payments.pooling.pubSub.externalTransaction.report.projectName}") String projectName,
                                                                                                @Value("${payments.pooling.pubSub.externalTransaction.report.subscriptionName}") String subscriptionName,
                                                                                                @Value("${payments.pooling.pubSub.externalTransaction.report.bufferInterval}") String bufferInterval) {
         return new ExternalTransactionPubSubMessageExtractor(projectName, subscriptionName, bufferInterval);
-    }
+    }*/
 
     @Bean
     public PaymentRenewalGCPConsumer paymentRenewalConsumer(@Value("${payments.pooling.pubSub.renewal.projectName}") String projectName,
@@ -95,18 +92,17 @@ public class PaymentsPubSubConfig {
         return new PaymentRenewalGCPConsumer(
                 projectName, topicName, subscriptionName,
                 objectMapper,
-                new PaymentRenewalPubSubMessageExtractor(projectName, subscriptionName, bufferInterval),
                 pubSubManagerService,
                 threadPoolExecutor(2),
                 scheduledThreadPoolExecutor(), transactionManager, subscriptionServiceManager, recurringPaymentManagerService, cachingService, recurringTransactionUtils);
     }
 
-    @Bean
+    /*@Bean
     public PaymentRenewalPubSubMessageExtractor paymentRenewalPubSubMessageExtractor(@Value("${payments.pooling.pubSub.renewal.projectName}") String projectName,
                                                                                      @Value("${payments.pooling.pubSub.renewal.subscriptionName}") String subscriptionName,
                                                                                      @Value("${payments.pooling.pubSub.renewal.bufferInterval}") String bufferInterva) {
         return new PaymentRenewalPubSubMessageExtractor(projectName, subscriptionName, bufferInterva);
-    }
+    }*/
 
 
     @Bean
@@ -118,17 +114,16 @@ public class PaymentsPubSubConfig {
         return new PaymentRenewalChargingGCPConsumer(
                 projectName, topicName, subscriptionName,
                 objectMapper,
-                new PaymentRenewalChargingPubSubMessageExtractor(projectName, subscriptionName, bufferInterval),
                 threadPoolExecutor(2),
                 scheduledThreadPoolExecutor(), paymentManager, manager);
     }
 
-    @Bean
+    /*@Bean
     public PaymentRenewalChargingPubSubMessageExtractor paymentRenewalChargingPubSubMessageExtractor(@Value("${payments.pooling.pubSub.charging.projectName}") String projectName,
                                                                                                  @Value("${payments.pooling.pubSub.charging.subscriptionName}") String subscriptionName,
                                                                                                  @Value("${payments.pooling.pubSub.charging.bufferInterval}") String bufferInterval) {
         return new PaymentRenewalChargingPubSubMessageExtractor(projectName, subscriptionName, bufferInterval);
-    }
+    }*/
 
     @Bean
     public PaymentRecurringSchedulingGCPConsumer paymentRecurringSchedulingGCPConsumer(@Value("${payments.pooling.pubSub.schedule.projectName}") String projectName,
@@ -139,17 +134,16 @@ public class PaymentsPubSubConfig {
         return new PaymentRecurringSchedulingGCPConsumer(
                 projectName, topicName, subscriptionName,
                 objectMapper,
-                new PaymentRecurringSchedulingPubSubMessageExtractor(projectName, subscriptionName, bufferInterval),
                 threadPoolExecutor(2),
                 scheduledThreadPoolExecutor(), paymentManager);
     }
 
-    @Bean
+   /* @Bean
     public PaymentRecurringSchedulingPubSubMessageExtractor paymentRecurringSchedulingPubSubMessageExtractor(@Value("${payments.pooling.pubSub.schedule.projectName}") String projectName,
                                                                                                      @Value("${payments.pooling.pubSub.schedule.subscriptionName}") String subscriptionName,
                                                                                                      @Value("${payments.pooling.pubSub.schedule.bufferInterval}") String bufferInterval) {
         return new PaymentRecurringSchedulingPubSubMessageExtractor(projectName, subscriptionName, bufferInterval);
-    }
+    }*/
 
 
     @Bean
@@ -162,17 +156,16 @@ public class PaymentsPubSubConfig {
         return new PaymentRecurringUnSchedulingGCPConsumer(
                 projectName, topicName, subscriptionName,
                 objectMapper,
-                new PaymentRecurringUnSchedulingPubSubMessageExtractor(projectName, subscriptionName, bufferInterval),
                 threadPoolExecutor(2),
                 scheduledThreadPoolExecutor(), recurringPaymentManager,transactionManagerService,eventPublisher);
     }
 
-    @Bean
+    /*@Bean
     public PaymentRecurringUnSchedulingPubSubMessageExtractor paymentRecurringUnSchedulingPubSubMessageExtractor(@Value("${payments.pooling.pubSub.unschedule.projectName}") String projectName,
                                                                                                              @Value("${payments.pooling.pubSub.unschedule.subscriptionName}") String subscriptionName,
                                                                                                              @Value("${payments.pooling.pubSub.unschedule.bufferInterval}") String bufferInterval) {
         return new PaymentRecurringUnSchedulingPubSubMessageExtractor(projectName, subscriptionName, bufferInterval);
-    }
+    }*/
 
 
     @Bean
@@ -184,17 +177,16 @@ public class PaymentsPubSubConfig {
         return new PreDebitNotificationGCPConsumer(
                 projectName, topicName, subscriptionName,
                 objectMapper,
-                new PreDebitNotificationPubSubMessageExtractor(projectName, subscriptionName, bufferInterval),
                 threadPoolExecutor(2),
                 scheduledThreadPoolExecutor(), manager, recurringPaymentManager);
     }
 
-    @Bean
+   /* @Bean
     public PreDebitNotificationPubSubMessageExtractor preDebitNotificationPubSubMessageExtractor(@Value("${payments.pooling.pubSub.preDebitNotification.projectName}") String projectName,
                                                                                                              @Value("${payments.pooling.pubSub.preDebitNotification.subscriptionName}") String subscriptionName,
                                                                                                              @Value("${payments.pooling.pubSub.preDebitNotification.bufferInterval}") String bufferInterval) {
         return new PreDebitNotificationPubSubMessageExtractor(projectName, subscriptionName, bufferInterval);
-    }
+    }*/
 
 
     @Bean
@@ -206,17 +198,16 @@ public class PaymentsPubSubConfig {
         return new PaymentRefundGCPConsumer(
                 projectName, topicName, subscriptionName,
                 objectMapper,
-                new PaymentRefundPubSubMessageExtractor(projectName, subscriptionName, bufferInterval),
                 threadPoolExecutor(2),
                 scheduledThreadPoolExecutor(), paymentManager);
     }
 
-    @Bean
+    /*@Bean
     public PaymentRefundPubSubMessageExtractor paymentRefundPubSubMessageExtractor(@Value("${payments.pooling.pubSub.refund.projectName}") String projectName,
                                                                                                              @Value("${payments.pooling.pubSub.refund.subscriptionName}") String subscriptionName,
                                                                                                              @Value("${payments.pooling.pubSub.refund.bufferInterval}") String bufferInterval) {
         return new PaymentRefundPubSubMessageExtractor(projectName, subscriptionName, bufferInterval);
-    }
+    }*/
 
 
     @Bean
@@ -228,17 +219,16 @@ public class PaymentsPubSubConfig {
         return new PaymentUserDeactivationGCPConsumer(
                 projectName, topicName, subscriptionName,
                 objectMapper,
-                new PaymentUserDeactivationPubSubMessageExtractor(projectName, subscriptionName, bufferInterval),
                 threadPoolExecutor(2),
                 scheduledThreadPoolExecutor(), eventPublisher);
     }
 
-    @Bean
+    /*@Bean
     public PaymentUserDeactivationPubSubMessageExtractor paymentUserDeactivationPubSubMessageExtractor(@Value("${payments.pooling.pubSub.userDeactivation.projectName}") String projectName,
                                                                                    @Value("${payments.pooling.pubSub.userDeactivation.subscriptionName}") String subscriptionName,
                                                                                    @Value("${payments.pooling.pubSub.userDeactivation.bufferInterval}") String bufferInterval) {
         return new PaymentUserDeactivationPubSubMessageExtractor(projectName, subscriptionName, bufferInterval);
-    }
+    }*/
 
 
 

@@ -1,3 +1,4 @@
+/*
 package in.wynk.payment.extractor;
 
 import in.wynk.pubsub.extractor.AbstractPubSubMessageExtractor;
@@ -7,3 +8,4 @@ public class PreDebitNotificationPubSubMessageExtractor extends AbstractPubSubMe
         super(projectName, subscriptionName, bufferInterval);
     }
 }
+*/

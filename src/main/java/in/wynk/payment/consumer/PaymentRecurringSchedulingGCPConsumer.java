@@ -8,7 +8,6 @@ import in.wynk.payment.common.messages.PaymentRecurringSchedulingMessage;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.dto.request.MigrationTransactionRequest;
 import in.wynk.payment.service.PaymentManager;
-import in.wynk.pubsub.extractor.IPubSubMessageExtractor;
 import in.wynk.pubsub.poller.AbstractPubSubMessagePolling;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,8 +30,8 @@ public class PaymentRecurringSchedulingGCPConsumer extends AbstractPubSubMessage
     private final ExecutorService threadPoolExecutor;
     private final ScheduledExecutorService scheduledThreadPoolExecutor;
 
-    public PaymentRecurringSchedulingGCPConsumer(String projectName, String topicName, String subscriptionName, ObjectMapper objectMapper, IPubSubMessageExtractor pubSubMessageExtractor, ExecutorService threadPoolExecutor, ScheduledExecutorService scheduledThreadPoolExecutor,PaymentManager paymentManager) {
-        super(projectName, topicName, subscriptionName, threadPoolExecutor, objectMapper, pubSubMessageExtractor);
+    public PaymentRecurringSchedulingGCPConsumer(String projectName, String topicName, String subscriptionName, ObjectMapper objectMapper, ExecutorService threadPoolExecutor, ScheduledExecutorService scheduledThreadPoolExecutor,PaymentManager paymentManager) {
+        super(projectName, topicName, subscriptionName, threadPoolExecutor, scheduledThreadPoolExecutor, objectMapper);
         this.paymentManager = paymentManager;
         this.threadPoolExecutor = threadPoolExecutor;
         this.scheduledThreadPoolExecutor = scheduledThreadPoolExecutor;
@@ -72,7 +71,6 @@ public class PaymentRecurringSchedulingGCPConsumer extends AbstractPubSubMessage
             log.info("Shutting down PaymentRecurringSchedulingGCPConsumer ...");
             scheduledThreadPoolExecutor.shutdownNow();
             threadPoolExecutor.shutdown();
-            pubSubMessageExtractor.stop();
         }
 
     }

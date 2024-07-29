@@ -12,7 +12,6 @@ import in.wynk.payment.dto.PreDebitRequest;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.service.PaymentGatewayManager;
 import in.wynk.payment.service.impl.RecurringPaymentManager;
-import in.wynk.pubsub.extractor.IPubSubMessageExtractor;
 import in.wynk.pubsub.poller.AbstractPubSubMessagePolling;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,8 +38,8 @@ public class PreDebitNotificationGCPConsumer extends AbstractPubSubMessagePollin
     @Value("${payments.pooling.pubSub.preDebitNotification.consumer.delayTimeUnit}")
     private TimeUnit poolingDelayTimeUnit;
 
-    public PreDebitNotificationGCPConsumer(String projectName, String topicName, String subscriptionName, ObjectMapper objectMapper, IPubSubMessageExtractor pubSubMessageExtractor, ExecutorService messageHandlerThreadPool, ScheduledExecutorService pollingThreadPool, PaymentGatewayManager manager, RecurringPaymentManager recurringPaymentManager) {
-        super(projectName, topicName, subscriptionName, messageHandlerThreadPool, objectMapper, pubSubMessageExtractor);
+    public PreDebitNotificationGCPConsumer(String projectName, String topicName, String subscriptionName, ObjectMapper objectMapper, ExecutorService messageHandlerThreadPool, ScheduledExecutorService pollingThreadPool, PaymentGatewayManager manager, RecurringPaymentManager recurringPaymentManager) {
+        super(projectName, topicName, subscriptionName, messageHandlerThreadPool, pollingThreadPool, objectMapper);
         this.messageHandlerThreadPool = messageHandlerThreadPool;
         this.pollingThreadPool = pollingThreadPool;
         this.manager = manager;
@@ -90,7 +89,6 @@ public class PreDebitNotificationGCPConsumer extends AbstractPubSubMessagePollin
             log.info("Shutting down PreDebitNotificationGCPConsumer...");
             pollingThreadPool.shutdownNow();
             messageHandlerThreadPool.shutdown();
-            pubSubMessageExtractor.stop();
         }
 
     }

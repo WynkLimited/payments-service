@@ -4,9 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
-import in.wynk.common.dto.WynkResponse;
-import in.wynk.common.enums.PaymentEvent;
-import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
@@ -16,16 +13,11 @@ import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.RecurringTransactionUtils;
-import in.wynk.pubsub.extractor.IPubSubMessageExtractor;
 import in.wynk.pubsub.poller.AbstractPubSubMessagePolling;
 import in.wynk.pubsub.service.IPubSubManagerService;
-import in.wynk.queue.service.ISqsManagerService;
-import in.wynk.subscription.common.dto.RenewalPlanEligibilityResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
 
-import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -49,8 +41,8 @@ public class PaymentRenewalGCPConsumer extends AbstractPubSubMessagePolling<Paym
     @Value("${payments.pooling.pubSub.renewal.consumer.delayTimeUnit}")
     private TimeUnit renewalPoolingDelayTimeUnit;
 
-    public PaymentRenewalGCPConsumer(String projectName, String topicName, String subscriptionName, ObjectMapper objectMapper, IPubSubMessageExtractor pubSubMessageExtractor, IPubSubManagerService pubSubManagerService, ExecutorService messageHandlerThreadPool, ScheduledExecutorService pollingThreadPool, ITransactionManagerService transactionManager, ISubscriptionServiceManager subscriptionServiceManager, IRecurringPaymentManagerService recurringPaymentManagerService, PaymentCachingService cachingService, RecurringTransactionUtils recurringTransactionUtils) {
-        super(projectName, topicName, subscriptionName, messageHandlerThreadPool , objectMapper, pubSubMessageExtractor);
+    public PaymentRenewalGCPConsumer(String projectName, String topicName, String subscriptionName, ObjectMapper objectMapper, IPubSubManagerService pubSubManagerService, ExecutorService messageHandlerThreadPool, ScheduledExecutorService pollingThreadPool, ITransactionManagerService transactionManager, ISubscriptionServiceManager subscriptionServiceManager, IRecurringPaymentManagerService recurringPaymentManagerService, PaymentCachingService cachingService, RecurringTransactionUtils recurringTransactionUtils) {
+        super(projectName, topicName, subscriptionName, messageHandlerThreadPool , pollingThreadPool, objectMapper);
         this.objectMapper = objectMapper;
         this.pubSubManagerService = pubSubManagerService;
         this.messageHandlerThreadPool = messageHandlerThreadPool;
@@ -106,7 +98,7 @@ public class PaymentRenewalGCPConsumer extends AbstractPubSubMessagePolling<Paym
             log.info("Shutting down PaymentRenewalGCPConsumer...");
             pollingThreadPool.shutdownNow();
             messageHandlerThreadPool.shutdown();
-            pubSubMessageExtractor.stop();
+
         }
 
     }

@@ -5,7 +5,6 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.payment.common.messages.PaymentUserDeactivationMessage;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.event.PaymentUserDeactivationEvent;
-import in.wynk.pubsub.extractor.IPubSubMessageExtractor;
 import in.wynk.pubsub.poller.AbstractPubSubMessagePolling;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,8 +27,8 @@ public class PaymentUserDeactivationGCPConsumer extends AbstractPubSubMessagePol
     private final ExecutorService threadPoolExecutor;
     private final ScheduledExecutorService scheduledThreadPoolExecutor;
     private final ApplicationEventPublisher eventPublisher;
-    public PaymentUserDeactivationGCPConsumer(String projectName, String topicName, String subscriptionName, ObjectMapper objectMapper, IPubSubMessageExtractor pubSubMessageExtractor, ExecutorService threadPoolExecutor, ScheduledExecutorService scheduledThreadPoolExecutor, ApplicationEventPublisher eventPublisher) {
-        super(projectName, topicName, subscriptionName, threadPoolExecutor, objectMapper, pubSubMessageExtractor);
+    public PaymentUserDeactivationGCPConsumer(String projectName, String topicName, String subscriptionName, ObjectMapper objectMapper, ExecutorService threadPoolExecutor, ScheduledExecutorService scheduledThreadPoolExecutor, ApplicationEventPublisher eventPublisher) {
+        super(projectName, topicName, subscriptionName, threadPoolExecutor,scheduledThreadPoolExecutor, objectMapper);
         this.threadPoolExecutor = threadPoolExecutor;
         this.scheduledThreadPoolExecutor = scheduledThreadPoolExecutor;
         this.eventPublisher = eventPublisher;
@@ -69,7 +68,6 @@ public class PaymentUserDeactivationGCPConsumer extends AbstractPubSubMessagePol
             log.info("Shutting down PaymentUserDeactivationMessage ...");
             scheduledThreadPoolExecutor.shutdownNow();
             threadPoolExecutor.shutdown();
-            pubSubMessageExtractor.stop();
         }
 
     }

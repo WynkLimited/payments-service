@@ -4,12 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.payment.common.messages.PaymentRecurringUnSchedulingMessage;
-import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.RecurringPaymentEvent;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ITransactionManagerService;
-import in.wynk.pubsub.extractor.IPubSubMessageExtractor;
 import in.wynk.pubsub.poller.AbstractPubSubMessagePolling;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,8 +34,8 @@ public class PaymentRecurringUnSchedulingGCPConsumer extends AbstractPubSubMessa
     private long paymentRecurringUnSchedulePollingDelay;
     @Value("${payments.pooling.pubSub.unschedule.consumer.delayTimeUnit}")
     private TimeUnit paymentRecurringUnSchedulePollingDelayTimeUnit;
-    public PaymentRecurringUnSchedulingGCPConsumer(String projectName, String topicName, String subscriptionName, ObjectMapper objectMapper, IPubSubMessageExtractor pubSubMessageExtractor, ExecutorService messageHandlerThreadPool, ScheduledExecutorService pollingThreadPool, IRecurringPaymentManagerService recurringPaymentManager, ITransactionManagerService transactionManagerService, ApplicationEventPublisher eventPublisher) {
-        super(projectName, topicName, subscriptionName, messageHandlerThreadPool, objectMapper, pubSubMessageExtractor);
+    public PaymentRecurringUnSchedulingGCPConsumer(String projectName, String topicName, String subscriptionName, ObjectMapper objectMapper, ExecutorService messageHandlerThreadPool, ScheduledExecutorService pollingThreadPool, IRecurringPaymentManagerService recurringPaymentManager, ITransactionManagerService transactionManagerService, ApplicationEventPublisher eventPublisher) {
+        super(projectName, topicName, subscriptionName, messageHandlerThreadPool, pollingThreadPool, objectMapper);
         this.messageHandlerThreadPool = messageHandlerThreadPool;
         this.pollingThreadPool = pollingThreadPool;
         this.recurringPaymentManager = recurringPaymentManager;
@@ -82,7 +80,7 @@ public class PaymentRecurringUnSchedulingGCPConsumer extends AbstractPubSubMessa
             log.info("Shutting down PaymentRecurringUnSchedulingPollingQueue ...");
             pollingThreadPool.shutdownNow();
             messageHandlerThreadPool.shutdown();
-            pubSubMessageExtractor.stop();
+
         }
 
     }

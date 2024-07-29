@@ -7,11 +7,9 @@ import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
-import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.service.PaymentGatewayManager;
 import in.wynk.payment.service.PaymentManager;
-import in.wynk.pubsub.extractor.IPubSubMessageExtractor;
 import in.wynk.pubsub.poller.AbstractPubSubMessagePolling;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,8 +36,8 @@ public class PaymentRenewalChargingGCPConsumer extends AbstractPubSubMessagePoll
     @Value("${payments.pooling.pubSub.charging.consumer.delayTimeUnit}")
     private TimeUnit chargingPoolingDelayTimeUnit;
 
-    public PaymentRenewalChargingGCPConsumer(String projectName, String topicName, String subscriptionName, ObjectMapper objectMapper, IPubSubMessageExtractor pubSubMessageExtractor, ExecutorService messageHandlerThreadPool, ScheduledExecutorService pollingThreadPool,PaymentManager paymentManager, PaymentGatewayManager manager) {
-        super(projectName, topicName, subscriptionName, messageHandlerThreadPool, objectMapper, pubSubMessageExtractor);
+    public PaymentRenewalChargingGCPConsumer(String projectName, String topicName, String subscriptionName, ObjectMapper objectMapper, ExecutorService messageHandlerThreadPool, ScheduledExecutorService pollingThreadPool,PaymentManager paymentManager, PaymentGatewayManager manager) {
+        super(projectName, topicName, subscriptionName, messageHandlerThreadPool, pollingThreadPool, objectMapper);
         this.paymentManager = paymentManager;
         this.manager = manager;
         this.messageHandlerThreadPool = messageHandlerThreadPool;
@@ -102,7 +100,6 @@ public class PaymentRenewalChargingGCPConsumer extends AbstractPubSubMessagePoll
             log.info("Shutting down PaymentRenewalChargingGCPConsumer ...");
             pollingThreadPool.shutdownNow();
             messageHandlerThreadPool.shutdown();
-            pubSubMessageExtractor.stop();
         }
 
     }

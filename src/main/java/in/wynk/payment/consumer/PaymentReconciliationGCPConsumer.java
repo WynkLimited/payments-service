@@ -18,7 +18,6 @@ import in.wynk.payment.gateway.IPaymentStatus;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.service.PaymentGatewayManager;
 import in.wynk.payment.service.PaymentManager;
-import in.wynk.pubsub.extractor.IPubSubMessageExtractor;
 import in.wynk.pubsub.poller.AbstractPubSubMessagePolling;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,8 +46,8 @@ public class PaymentReconciliationGCPConsumer extends AbstractPubSubMessagePolli
 
     @Autowired
     private PaymentCodeCachingService codeCache;
-    public PaymentReconciliationGCPConsumer(String projectName, String topicName, String subscriptionName, ObjectMapper objectMapper, IPubSubMessageExtractor pubSubMessageExtractor, ExecutorService messageHandlerThreadPool, ScheduledExecutorService pollingThreadPool, ITransactionManagerService transactionManager, ApplicationEventPublisher eventPublisher) {
-        super(projectName, topicName, subscriptionName, messageHandlerThreadPool, objectMapper, pubSubMessageExtractor);
+    public PaymentReconciliationGCPConsumer(String projectName, String topicName, String subscriptionName, ObjectMapper objectMapper, ExecutorService messageHandlerThreadPool, ScheduledExecutorService pollingThreadPool, ITransactionManagerService transactionManager, ApplicationEventPublisher eventPublisher) {
+        super(projectName, topicName, subscriptionName, messageHandlerThreadPool, pollingThreadPool, objectMapper);
         this.messageHandlerThreadPool = messageHandlerThreadPool;
         this.pollingThreadPool = pollingThreadPool;
         this.transactionManager = transactionManager;
@@ -130,7 +129,6 @@ public class PaymentReconciliationGCPConsumer extends AbstractPubSubMessagePolli
             log.info("Shutting down PaymentReconciliationGCPConsumerPolling ...");
             pollingThreadPool.shutdownNow();
             messageHandlerThreadPool.shutdown();
-            pubSubMessageExtractor.stop();
         }
     }
 

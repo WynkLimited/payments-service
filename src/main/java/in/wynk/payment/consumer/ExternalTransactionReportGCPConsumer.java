@@ -13,7 +13,6 @@ import in.wynk.payment.dto.gpbs.acknowledge.queue.ExternalTransactionReportMessa
 import in.wynk.payment.dto.gpbs.acknowledge.request.AbstractPaymentAcknowledgementRequest;
 import in.wynk.payment.dto.gpbs.acknowledge.request.GooglePlayReportExternalTransactionRequest;
 import in.wynk.payment.service.PaymentManager;
-import in.wynk.pubsub.extractor.IPubSubMessageExtractor;
 import in.wynk.pubsub.poller.AbstractPubSubMessagePolling;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,8 +37,8 @@ public class ExternalTransactionReportGCPConsumer extends AbstractPubSubMessageP
     @Autowired
     private PaymentManager paymentManager;
 
-    public ExternalTransactionReportGCPConsumer(String projectName, String topicName, String subscriptionName, ObjectMapper objectMapper, IPubSubMessageExtractor pubSubMessageExtractor, ExecutorService messageHandlerThreadPool, ScheduledExecutorService pollingThreadPool) {
-        super(projectName, topicName, subscriptionName, messageHandlerThreadPool, objectMapper, pubSubMessageExtractor);
+    public ExternalTransactionReportGCPConsumer(String projectName, String topicName, String subscriptionName, ObjectMapper objectMapper, ExecutorService messageHandlerThreadPool, ScheduledExecutorService pollingThreadPool) {
+        super(projectName, topicName, subscriptionName, messageHandlerThreadPool,pollingThreadPool, objectMapper);
         this.messageHandlerThreadPool = messageHandlerThreadPool;
         this.pollingThreadPool = pollingThreadPool;
     }
@@ -84,7 +83,6 @@ public class ExternalTransactionReportGCPConsumer extends AbstractPubSubMessageP
             log.info("Shutting down ExternalTransactionGCPReportConsumer...");
             pollingThreadPool.shutdownNow();
             messageHandlerThreadPool.shutdown();
-            pubSubMessageExtractor.stop();
         }
 
     }

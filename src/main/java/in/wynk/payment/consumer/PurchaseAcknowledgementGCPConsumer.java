@@ -15,7 +15,6 @@ import in.wynk.payment.dto.gpbs.request.GooglePlayAppDetails;
 import in.wynk.payment.dto.gpbs.request.GooglePlayPaymentDetails;
 import in.wynk.payment.dto.gpbs.request.GooglePlayProductDetails;
 import in.wynk.payment.service.PaymentManager;
-import in.wynk.pubsub.extractor.IPubSubMessageExtractor;
 import in.wynk.pubsub.poller.AbstractPubSubMessagePolling;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,8 +38,8 @@ public class PurchaseAcknowledgementGCPConsumer extends AbstractPubSubMessagePol
 
     @Autowired
     private PaymentManager paymentManager;
-    public PurchaseAcknowledgementGCPConsumer(String projectName, String topicName, String subscriptionName, ObjectMapper objectMapper, IPubSubMessageExtractor pubSubMessageExtractor, ExecutorService messageHandlerThreadPool, ScheduledExecutorService pollingThreadPool) {
-        super(projectName, topicName, subscriptionName, messageHandlerThreadPool, objectMapper, pubSubMessageExtractor);
+    public PurchaseAcknowledgementGCPConsumer(String projectName, String topicName, String subscriptionName, ObjectMapper objectMapper, ExecutorService messageHandlerThreadPool, ScheduledExecutorService pollingThreadPool) {
+        super(projectName, topicName, subscriptionName, messageHandlerThreadPool, pollingThreadPool, objectMapper);
         this.messageHandlerThreadPool = messageHandlerThreadPool;
         this.pollingThreadPool = pollingThreadPool;
     }
@@ -106,7 +105,6 @@ public class PurchaseAcknowledgementGCPConsumer extends AbstractPubSubMessagePol
             log.info("Shutting down SubscriptionAcknowledgementConsumerPollingQueue ...");
             pollingThreadPool.shutdownNow();
             messageHandlerThreadPool.shutdown();
-            pubSubMessageExtractor.stop();
         }
 
     }

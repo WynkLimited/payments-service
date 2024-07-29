@@ -1,3 +1,4 @@
+/*
 package in.wynk.payment.extractor;
 
 import in.wynk.pubsub.extractor.AbstractPubSubMessageExtractor;
@@ -8,3 +9,4 @@ public class PaymentReconciliationGCPMessageExtractor extends AbstractPubSubMess
     }
 
 }
+*/

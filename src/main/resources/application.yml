@@ -327,7 +327,7 @@ aps:
         api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/refund/enquiry
     mandate:
       status:
-        api: ${payment.merchant.aps.api.base}/pg-service/v2/payment/mandate-status
+        api: ${payment.merchant.aps.paydigi.api.base}/pg-service/v2/payment/mandate-status
     charge:
       status:
         api: ${payment.merchant.aps.api.base}/pg-service/v1/payment/status/order/{txnId}?fetchHistoryTransaction={fetchHistoryTransaction}

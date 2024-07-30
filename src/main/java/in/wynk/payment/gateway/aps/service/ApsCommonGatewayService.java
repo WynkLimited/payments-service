@@ -57,6 +57,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.EnumSet;
+import java.util.Locale;
 import java.util.Optional;
 
 import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
@@ -358,7 +359,7 @@ public class ApsCommonGatewayService {
         if (apsMandateStatusResponse != null) {
             isMandateActive = "active".equalsIgnoreCase(apsMandateStatusResponse.getStatus());
             if (!isMandateActive) {
-                String errorReason = "mandate status is: " + apsMandateStatusResponse.getStatus();
+                String errorReason = "mandate status is: " + apsMandateStatusResponse.getStatus().toLowerCase(Locale.ROOT);
                 AnalyticService.update(PaymentConstants.ERROR_REASON, errorReason);
                 recurringTransactionUtils.cancelRenewalBasedOnErrorReason(errorReason, transaction);
                 transaction.setStatus(TransactionStatus.FAILURE.getValue());

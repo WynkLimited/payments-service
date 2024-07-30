@@ -11,10 +11,9 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ApsMandateStatusResponse {
+    private String pgId;
+    private String mandateId;
+    private String customerId;
     private String status;
-    private String action;
-    private String amount;
-    private String authpayuid;
-    private String mandateEndDate;
-    private String mandateStartDate;
+    private String endDate;
 }

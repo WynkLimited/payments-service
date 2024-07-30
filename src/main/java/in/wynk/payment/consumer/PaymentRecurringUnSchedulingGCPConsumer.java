@@ -64,12 +64,12 @@ public class PaymentRecurringUnSchedulingGCPConsumer extends AbstractPubSubMessa
     public void start() {
         if (paymentRecurringUnSchedulePollingEnabled) {
             log.info("Starting PaymentRecurringUnSchedulingPollingQueue...");
-            pollingThreadPool.scheduleWithFixedDelay(
+            /*pollingThreadPool.scheduleWithFixedDelay(
                     this::poll,
                     0,
                     paymentRecurringUnSchedulePollingDelay,
                     paymentRecurringUnSchedulePollingDelayTimeUnit
-            );
+            );*/
         }
 
     }

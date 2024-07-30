@@ -55,12 +55,12 @@ public class PaymentRecurringSchedulingGCPConsumer extends AbstractPubSubMessage
     public void start() {
         if (recurringPollingEnabled) {
             log.info("Starting PaymentRecurringSchedulingGCPConsumer...");
-            scheduledThreadPoolExecutor.scheduleWithFixedDelay(
+            /*scheduledThreadPoolExecutor.scheduleWithFixedDelay(
                     this::poll,
                     0,
                     recurringPoolingDelay,
                     recurringPoolingDelayTimeUnit
-            );
+            );*/
         }
 
     }

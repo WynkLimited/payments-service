@@ -73,12 +73,12 @@ public class PreDebitNotificationGCPConsumer extends AbstractPubSubMessagePollin
     public void start() {
         if (pollingEnabled) {
             log.info("Starting PreDebitNotificationConsumerPollingQueue...");
-            pollingThreadPool.scheduleWithFixedDelay(
+            /*pollingThreadPool.scheduleWithFixedDelay(
                     this::poll,
                     0,
                     poolingDelay,
                     poolingDelayTimeUnit
-            );
+            );*/
         }
 
     }

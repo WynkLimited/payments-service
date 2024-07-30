@@ -58,12 +58,12 @@ public class PaymentRefundGCPConsumer extends AbstractPubSubMessagePolling<Payme
     public void start() {
         if (refundPollingEnabled) {
             log.info("Starting PaymentRefundInitMessage...");
-            scheduledThreadPoolExecutor.scheduleWithFixedDelay(
+            /*scheduledThreadPoolExecutor.scheduleWithFixedDelay(
                     this::poll,
                     0,
                     refundPoolingDelay,
                     refundPoolingDelayTimeUnit
-            );
+            );*/
         }
 
     }

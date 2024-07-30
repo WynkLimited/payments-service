@@ -89,12 +89,12 @@ public class PurchaseAcknowledgementGCPConsumer extends AbstractPubSubMessagePol
     public void start() {
         if (subscriptionAcknowledgementPollingEnabled) {
             log.info("Starting PurchaseAcknowledgementGCPConsumer...");
-            pollingThreadPool.scheduleWithFixedDelay(
+            /*pollingThreadPool.scheduleWithFixedDelay(
                     this::poll,
                     0,
                     subscriptionAcknowledgementPoolingDelay,
                     subscriptionAcknowledgementPoolingDelayTimeUnit
-            );
+            );*/
         }
 
     }

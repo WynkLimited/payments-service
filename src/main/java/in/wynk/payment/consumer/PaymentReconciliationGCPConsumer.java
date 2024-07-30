@@ -114,12 +114,12 @@ public class PaymentReconciliationGCPConsumer extends AbstractPubSubMessagePolli
     public void start() {
         if (reconciliationPollingEnabled) {
             log.info("Starting PaymentReconciliationGCPConsumerPolling...");
-            pollingThreadPool.scheduleWithFixedDelay(
+            /*pollingThreadPool.scheduleWithFixedDelay(
                     this::poll,
                     0,
                     reconciliationPoolingDelay,
                     reconciliationPoolingDelayTimeUnit
-            );
+            );*/
         }
     }
 

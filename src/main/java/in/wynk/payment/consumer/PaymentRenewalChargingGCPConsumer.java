@@ -84,12 +84,12 @@ public class PaymentRenewalChargingGCPConsumer extends AbstractPubSubMessagePoll
     public void start() {
         if (chargingPollingEnabled) {
             log.info("Starting PaymentRenewalChargingGCPConsumer...");
-            pollingThreadPool.scheduleWithFixedDelay(
+            /*pollingThreadPool.scheduleWithFixedDelay(
                     this::poll,
                     0,
                     chargingPoolingDelay,
                     chargingPoolingDelayTimeUnit
-            );
+            );*/
         }
 
     }

@@ -67,12 +67,12 @@ public class ExternalTransactionReportGCPConsumer extends AbstractPubSubMessageP
     public void start() {
         if (externalTransactionReportPollingEnabled) {
             log.info("Starting ExternalTransactionGCPReportConsumer...");
-            pollingThreadPool.scheduleWithFixedDelay(
+            /*pollingThreadPool.scheduleWithFixedDelay(
                     this::poll,
                     0,
                     externalTransactionReportPoolingDelay,
                     externalTransactionReportPoolingDelayTimeUnit
-            );
+            );*/
         }
 
     }

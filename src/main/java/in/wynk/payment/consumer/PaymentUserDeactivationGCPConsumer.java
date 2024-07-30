@@ -52,12 +52,12 @@ public class PaymentUserDeactivationGCPConsumer extends AbstractPubSubMessagePol
     public void start() {
         if (userDeactivationPollingEnabled) {
             log.info("Starting PaymentUserDeactivationMessage...");
-            scheduledThreadPoolExecutor.scheduleWithFixedDelay(
+            /*scheduledThreadPoolExecutor.scheduleWithFixedDelay(
                     this::poll,
                     0,
                     userDeactivationPoolingDelay,
                     userDeactivationPoolingDelayTimeUnit
-            );
+            );*/
         }
 
     }

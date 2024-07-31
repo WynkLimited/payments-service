@@ -309,10 +309,10 @@ public class PaymentManager
         final PaymentGateway paymentGateway = request.getPaymentGateway();
         final IMerchantIapPaymentVerificationService verificationService = BeanLocatorFactory.getBean(paymentGateway.getCode(), IMerchantIapPaymentVerificationService.class);
         final LatestReceiptResponse latestReceiptResponse = verificationService.getLatestReceiptResponse(request);
-        try{
+        try {
             BeanLocatorFactory.getBean(VERIFY_IAP_FRAUD_DETECTION_CHAIN, IHandler.class).handle(new IapVerificationWrapperRequest(latestReceiptResponse, request, null));
-        } catch(WynkRuntimeException e){
-            if(e.getErrorCode().equalsIgnoreCase(PaymentErrorType.PAY701.getErrorCode())){
+        } catch (WynkRuntimeException e) {
+            if (e.getErrorCode().equalsIgnoreCase(PaymentErrorType.PAY701.getErrorCode())) {
                 //means receipt is already processed, no need for subscription provision again
                 final SessionDTO sessionDTO = SessionContextHolder.getBody();
                 TransactionContext.set(TransactionDetails.builder().transaction(transactionManager.get(sessionDTO.get(TXN_ID))).purchaseDetails(request.getPurchaseDetails()).build());

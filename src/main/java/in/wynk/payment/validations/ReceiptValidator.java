@@ -79,6 +79,7 @@ public class ReceiptValidator extends BaseHandler<IReceiptValidatorRequest<Lates
             Optional<ReceiptDetails> receiptDetailsOptional =
                     RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(receiptId);
             if (receiptDetailsOptional.isPresent() && verifyIfPreviousTransactionSuccess(receiptDetailsOptional.get())) {
+                SessionContextHolder.<SessionDTO>getBody().put(TXN_ID, receiptDetailsOptional.get().getPaymentTransactionId());
                 throw new WynkRuntimeException(PaymentErrorType.PAY701);
             }
         }
@@ -105,10 +106,12 @@ public class ReceiptValidator extends BaseHandler<IReceiptValidatorRequest<Lates
                     if (verifyIfPreviousTransactionSuccess(receiptDetailsOptional.get()) &&
                             Objects.equals(receiptDetailsOptional.get().getNotificationType(), latestReceiptInfo.getNotificationType()) &&
                             !Objects.equals(subscriptionReceiptResponse.getLinkedPurchaseToken(), latestReceiptInfo.getPurchaseToken())) {
+                        SessionContextHolder.<SessionDTO>getBody().put(TXN_ID, receiptDetailsOptional.get().getPaymentTransactionId());
                         throw new WynkRuntimeException(PaymentErrorType.PAY701);
                     }
                 } else if (verifyIfPreviousTransactionSuccess(receiptDetailsOptional.get()) &&
                         Objects.equals(receiptDetailsOptional.get().getNotificationType(), latestReceiptInfo.getNotificationType())) {
+                    SessionContextHolder.<SessionDTO>getBody().put(TXN_ID, receiptDetailsOptional.get().getPaymentTransactionId());
                     throw new WynkRuntimeException(PaymentErrorType.PAY701);
                 }
             }

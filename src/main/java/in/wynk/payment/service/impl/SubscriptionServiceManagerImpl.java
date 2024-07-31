@@ -60,11 +60,7 @@ import in.wynk.subscription.common.response.AllPlansResponse;
 import in.wynk.subscription.common.response.PlanProvisioningResponse;
 import in.wynk.subscription.common.response.SelectivePlansComputationResponse;
 import java.net.URI;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
@@ -500,7 +496,8 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     private boolean validateMandatoryParam(final Map<String, String> additionalParam) {
         String pg = additionalParam.get(BaseConstants.DEEPLINK_PACK_GROUP);
         int validity = Validity.getValidity(additionalParam.get(BaseConstants.VALIDITY));
-        return !StringUtils.isEmpty(pg) && validity != -1;
+        String price = additionalParam.get(BaseConstants.PRICE);
+        return !StringUtils.isEmpty(pg) && (validity != -1 || !StringUtils.isEmpty(price));
     }
 
     public ThanksPlanResponse getThanksPlanForAdditiveDays(String msisdn) {

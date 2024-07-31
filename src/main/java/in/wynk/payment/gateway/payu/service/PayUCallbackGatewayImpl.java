@@ -93,7 +93,7 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
                 final String generatedString =
                         request.getStatus() + PIPE_SEPARATOR + request.getAction() + PIPE_SEPARATOR + request.getAuthPayuId() + PIPE_SEPARATOR + request.getDateTime() + PIPE_SEPARATOR +
                                 request.getAmount() + PIPE_SEPARATOR + request.getEndDate() + payUMerchantSecret;
-                return true/*validateHashEquality(generatedString, request.getResponseHash())*/;
+                return validateHashEquality(generatedString, request.getResponseHash());
             }
 
         }

@@ -23,8 +23,6 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.*;
-import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
-import in.wynk.payment.core.dao.repository.ITransactionDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.core.service.GSTStateCodesCachingService;
@@ -767,16 +765,9 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         final Transaction transaction = TransactionContext.get();
         log.info("Auto renewal request received for google play-------->\n");
         try {
-            Optional<Transaction> oldTransaction = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).findById(paymentRenewalChargingRequest.getId());
-            final GooglePlayReceiptDetails receiptDetails;
-            if (oldTransaction.get().getStatus() != TransactionStatus.SUCCESS) {
-                String lastSuccessTransactionId = getLastSuccessTransactionId(oldTransaction.get());
-                receiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByPaymentTransactionId(lastSuccessTransactionId);
-            } else {
-                receiptDetails =
-                        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
-                                .findByPaymentTransactionId(paymentRenewalChargingRequest.getId());
-            }
+            final GooglePlayReceiptDetails receiptDetails =
+                    RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
+                            .findByPaymentTransactionId(paymentRenewalChargingRequest.getId());
             if (Objects.nonNull(receiptDetails)) {
                 String productType = receiptDetails.getPlanId() == 0 ? BaseConstants.POINT : BaseConstants.PLAN;
                 final AbstractGooglePlayReceiptVerificationResponse
@@ -814,16 +805,6 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
             throw new WynkRuntimeException(e);
         }
-    }
-
-    private String getLastSuccessTransactionId (Transaction transaction) {
-        if (transaction.getType() == PaymentEvent.RENEW) {
-            PaymentRenewal renewal =
-                    RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).findById(transaction.getIdStr())
-                            .orElse(null);
-            return Objects.nonNull(renewal) ? renewal.getLastSuccessTransactionId() : null;
-        }
-        return null;
     }
 
     @Override

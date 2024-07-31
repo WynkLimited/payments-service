@@ -19,6 +19,7 @@ public enum PaymentErrorType implements IWynkErrorType {
     APS010("Aps Callback Parse Failure", "Unable to find order created in database for APS", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.APS_CALLBACK_ORDER_ERROR),
     APS011("Aps Callback Parse Failure", "Unable to parse the request", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.APS_CALLBACK_ORDER_ERROR),
     APS012("Mandate Revoke Failure", "Cancelling Recurring failed at APS side.", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.APS_MANDATE_REVOKE_ERROR),
+    APS013("Mandate Status Validation Failure", "Aps Mandate status validation failure", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.APS_MANDATE_STATUS_VALIDATION_ERROR),
 
     /*Common errorCodes start*/
     PAY001("Invalid Payment Method", "unable to charge, unknown payment method is supplied", HttpStatus.BAD_REQUEST, BaseLoggingMarkers.APPLICATION_INVALID_USECASE),

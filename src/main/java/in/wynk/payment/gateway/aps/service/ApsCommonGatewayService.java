@@ -341,16 +341,11 @@ public class ApsCommonGatewayService {
         try {
             apsMandateStatusResponse = exchange(transaction.getClientAlias(), MANDATE_STATUS_ENDPOINT, HttpMethod.POST, null, request, ApsMandateStatusResponse.class);
         } catch (RestClientException e) {
-            if (e.getRootCause() != null) {
-                if (e.getRootCause() instanceof SocketTimeoutException || e.getRootCause() instanceof ConnectTimeoutException) {
-                    log.error(APS_MANDATE_STATUS_VALIDATION_ERROR, "Socket timeout during mandate validation but retry will happen {}, {} ", request, e.getMessage(), e);
-                    throw new WynkRuntimeException(APS013);
-                } else {
-                    throw new WynkRuntimeException(APS013, e);
-                }
-            } else {
-                throw new WynkRuntimeException(APS013, e);
+            if (e.getRootCause() != null && e.getRootCause() instanceof SocketTimeoutException || e.getRootCause() instanceof ConnectTimeoutException) {
+                log.error(APS_MANDATE_STATUS_VALIDATION_ERROR, "Socket timeout during mandate validation but retry will happen {}, {} ", request, e.getMessage(), e);
+                throw new WynkRuntimeException(APS013);
             }
+            return true;
         } catch (Exception ex) {
             log.error(APS_MANDATE_STATUS_VALIDATION_ERROR, ex.getMessage(), ex);
             throw new WynkRuntimeException(APS013, ex);

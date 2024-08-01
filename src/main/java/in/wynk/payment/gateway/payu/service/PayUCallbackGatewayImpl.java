@@ -90,13 +90,14 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
                                 request.getUdf3() + PIPE_SEPARATOR + request.getUdf4() + PIPE_SEPARATOR + request.getUdf5() + PIPE_SEPARATOR + payUMerchantSecret;
                 return validateHashEquality(generatedString, request.getResponseHash());
             } else {
+                String amount = request.getAmount() + "0";
                 final String generatedString =
                         request.getStatus() + PIPE_SEPARATOR + request.getAction() + PIPE_SEPARATOR + request.getAuthPayuId() + PIPE_SEPARATOR + request.getDateTime() + PIPE_SEPARATOR +
-                                request.getAmount() + PIPE_SEPARATOR + request.getEndDate() + PIPE_SEPARATOR + payUMerchantSecret;
-                return /*validateHashEquality(generatedString, request.getResponseHash())*/ true;
+                                amount + PIPE_SEPARATOR + request.getEndDate() + PIPE_SEPARATOR + payUMerchantSecret;
+                return validateHashEquality(generatedString, request.getResponseHash());
             }
-
         }
+
         return validateCallbackChecksum(payUMerchantKey, payUMerchantSecret, transactionId, callbackRequest.getStatus(), callbackRequest.getUdf(), callbackRequest.getEmail(),
                 callbackRequest.getFirstName(), ((transaction.getType() == PaymentEvent.POINT_PURCHASE) ? transaction.getItemId() : String.valueOf(transaction.getPlanId())), transaction.getAmount(),
                 callbackRequest.getResponseHash());

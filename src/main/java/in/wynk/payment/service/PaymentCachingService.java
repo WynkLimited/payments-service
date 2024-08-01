@@ -89,7 +89,7 @@ public class PaymentCachingService {
         this.myApplicationContext=myApplicationContext;
     }
 
-    @Value("${api.get.endPoint}")
+    @Value("${service.subscription.api.root}")
     private String subscriptionEndPoint;
 
     @PostConstruct

@@ -554,7 +554,7 @@ http:
 service:
   subscription:
     api:
-      root: http://subscription-preprod.prd.wcf.internal
+      root: http://subscription-preprod.wcf.internal
       purchase:
         url: /subscriptions/
       manage:
@@ -1324,7 +1324,6 @@ event:
   stream:
     dp: data-science-subscription-funnel-information
 
-api.get.endPoint: https://subscription-preprod.wynk.in
 
 ########## PUBSUB CONFIGS ###########
 

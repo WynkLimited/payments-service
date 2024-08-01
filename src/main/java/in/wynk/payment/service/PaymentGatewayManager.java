@@ -287,21 +287,6 @@ public class PaymentGatewayManager
         final MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
             renewalService.renew(request);
-        } catch (RestClientException e) {
-            PaymentErrorEvent.Builder errorEventBuilder = PaymentErrorEvent.builder(transaction.getIdStr());
-            if (e.getRootCause() != null) {
-                if (e.getRootCause() instanceof SocketTimeoutException || e.getRootCause() instanceof ConnectTimeoutException) {
-                    log.error(RENEWAL_STATUS_ERROR, "Socket timeout but valid for reconciliation for request : due to {}", e.getMessage(), e);
-                    errorEventBuilder.code(APS007.getErrorCode());
-                    errorEventBuilder.description(APS007.getErrorMessage() + "for " + paymentGateway);
-                    eventPublisher.publishEvent(errorEventBuilder.build());
-                    throw new WynkRuntimeException(APS007);
-                } else {
-                    handleException(errorEventBuilder, paymentGateway, e, transaction);
-                }
-            } else {
-                handleException(errorEventBuilder, paymentGateway, e, transaction);
-            }
         } catch (Exception ex) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
             PaymentErrorEvent.Builder errorEventBuilder = PaymentErrorEvent.builder(transaction.getIdStr());
@@ -313,11 +298,9 @@ public class PaymentGatewayManager
                 PaymentErrorEvent errorEvent = errorEventBuilder.build();
                 recurringTransactionUtils.cancelRenewalBasedOnErrorReason(errorEvent.getDescription(), transaction);
                 eventPublisher.publishEvent(errorEvent);
-                throw ex;
             } else {
                 errorEventBuilder.code(PaymentErrorType.PAY024.getErrorCode()).description(PaymentErrorType.PAY024.getErrorMessage());
                 eventPublisher.publishEvent(errorEventBuilder.build());
-                throw new WynkRuntimeException(PAY024, ex);
             }
         } finally {
             eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
@@ -332,14 +315,6 @@ public class PaymentGatewayManager
             transactionManager.revision(AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus)
                     .attemptSequence(request.getAttemptSequence()).originalTransactionId(request.getId()).lastSuccessTransactionId(transaction.getIdStr()).build());
         }
-    }
-
-    private void handleException(PaymentErrorEvent.Builder errorEventBuilder, PaymentGateway paymentGateway, RestClientException e, Transaction transaction) {
-        transaction.setStatus(TransactionStatus.FAILURE.getValue());
-        errorEventBuilder.code(PAY024.getErrorCode());
-        errorEventBuilder.description(PAY024.getErrorMessage() + "for " + paymentGateway.getCode());
-        eventPublisher.publishEvent(errorEventBuilder.build());
-        throw new WynkRuntimeException(PAY024, e);
     }
 
     @Override

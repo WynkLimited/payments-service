@@ -60,8 +60,7 @@ import in.wynk.payment.gateway.IPaymentRefund;
 import in.wynk.payment.service.*;
 import in.wynk.payment.utils.MerchantServiceUtil;
 import in.wynk.payment.utils.RecurringTransactionUtils;
-import in.wynk.pubsub.service.IPubSubManagerService;
-import in.wynk.queue.service.ISqsManagerService;
+import in.wynk.stream.producer.IKafkaPublisherService;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.vas.client.dto.MsisdnOperatorDetails;
 import lombok.SneakyThrows;
@@ -124,8 +123,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     private final ApplicationEventPublisher eventPublisher;
     private final WynkRedisLockService wynkRedisLockService;
     private GooglePlayCacheService googlePlayCacheService;
-    private ISqsManagerService sqsMessagePublisher;
-    private IPubSubManagerService pubSubManagerService;
+    private final IKafkaPublisherService kafkaPublisherService;
     private IAuditableListener auditingListener;
     private final IUserDetailsService userDetailsService;
     private final ITaxManager taxManager;
@@ -137,7 +135,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     public GooglePlayMerchantPaymentService (ITransactionManagerService transactionManager, RecurringTransactionUtils recurringTransactionUtils, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson,
                                              ApplicationEventPublisher eventPublisher, WynkRedisLockService wynkRedisLockService, IErrorCodesCacheService errorCodesCacheServiceImpl,
                                              GooglePlayCacheService googlePlayCacheService, PaymentCachingService cachingService,
-                                             ISqsManagerService sqsMessagePublisher,IPubSubManagerService pubSubManagerService, @Qualifier(AuditConstants.MONGO_AUDIT_LISTENER) IAuditableListener auditingListener,
+                                             IKafkaPublisherService kafkaPublisherService, @Qualifier(AuditConstants.MONGO_AUDIT_LISTENER) IAuditableListener auditingListener,
                                              IUserDetailsService userDetailsService, ITaxManager taxManager,
                                              GSTStateCodesCachingService stateCodesCachingService, InvoiceDetailsCachingService invoiceDetailsCachingService) {
         super(cachingService, errorCodesCacheServiceImpl);
@@ -149,8 +147,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         this.eventPublisher = eventPublisher;
         this.wynkRedisLockService = wynkRedisLockService;
         this.googlePlayCacheService = googlePlayCacheService;
-        this.sqsMessagePublisher = sqsMessagePublisher;
-        this.pubSubManagerService= pubSubManagerService;
+        this.kafkaPublisherService = kafkaPublisherService;
         this.auditingListener = auditingListener;
         this.userDetailsService = userDetailsService;
         this.taxManager = taxManager;
@@ -665,7 +662,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                     .developerPayload(request.getDeveloperPayload()).type(request.getType()).txnId(abstractPaymentAcknowledgementRequest.getTxnId()).build();
             try {
                 //sqsMessagePublisher.publishSQSMessage(message);
-                pubSubManagerService.publishPubSubMessage(message);
+                kafkaPublisherService.publishKafkaMessage(message);
             } catch (Exception e) {
                 log.error("Unable to publish acknowledge message on queue {}", e.getMessage());
             }

@@ -42,16 +42,13 @@ import in.wynk.payment.handler.CustomerWinBackHandler;
 import in.wynk.payment.handler.InvoiceRetryTaskHandler;
 import in.wynk.payment.service.*;
 import in.wynk.payment.utils.TaxUtils;
-import in.wynk.pubsub.service.IPubSubManagerService;
-import in.wynk.queue.constant.QueueConstant;
-import in.wynk.queue.dto.MessageThresholdExceedEvent;
-import in.wynk.queue.dto.Payment;
-import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.scheduler.task.dto.TaskDefinition;
 import in.wynk.scheduler.task.service.ITaskScheduler;
-import in.wynk.sms.common.message.SmsNotificationGCPMessage;
 import in.wynk.sms.common.message.SmsNotificationMessage;
+import in.wynk.stream.constant.StreamConstant;
+import in.wynk.stream.dto.MessageThresholdExceedEvent;
 import in.wynk.stream.producer.IKafkaEventPublisher;
+import in.wynk.stream.producer.IKafkaPublisherService;
 import in.wynk.stream.producer.IKinesisEventPublisher;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.tinylytics.dto.BranchEvent;
@@ -95,8 +92,7 @@ public class PaymentEventListener {
     private final PaymentManager paymentManager;
     private final PaymentGatewayManager paymentGatewayManager;
     private final ITaskScheduler<TaskDefinition<?>> taskScheduler;
-    private final ISqsManagerService<Object> sqsManagerService;
-    private final IPubSubManagerService<Object> pubSubManagerService;
+    private final IKafkaPublisherService<String, Object> kafkaPublisherService;
     private final IPaymentErrorService paymentErrorService;
     private final ApplicationEventPublisher eventPublisher;
     private final IClientCallbackService clientCallbackService;
@@ -127,7 +123,7 @@ public class PaymentEventListener {
 
     public PaymentEventListener (TaxUtils taxUtils, ObjectMapper mapper, RetryRegistry retryRegistry, PaymentManager paymentManager,
                                  PaymentGatewayManager paymentGatewayManager, ITaskScheduler<TaskDefinition<?>> taskScheduler,
-                                 ISqsManagerService<Object> sqsManagerService, IPubSubManagerService<Object> pubSubManagerService, IPaymentErrorService paymentErrorService, ApplicationEventPublisher eventPublisher,
+                                 IKafkaPublisherService<String, Object> kafkaPublisherService, IPaymentErrorService paymentErrorService, ApplicationEventPublisher eventPublisher,
                                  IClientCallbackService clientCallbackService, ITransactionManagerService transactionManagerService,
                                  IMerchantTransactionService merchantTransactionService, IRecurringPaymentManagerService recurringPaymentManagerService,
                                  PaymentCachingService cachingService, IQuickPayLinkGenerator quickPayLinkGenerator, InvoiceService invoiceService,
@@ -144,8 +140,7 @@ public class PaymentEventListener {
         this.paymentManager = paymentManager;
         this.paymentGatewayManager = paymentGatewayManager;
         this.taskScheduler = taskScheduler;
-        this.sqsManagerService = sqsManagerService;
-        this.pubSubManagerService = pubSubManagerService;
+        this.kafkaPublisherService = kafkaPublisherService;
         this.paymentErrorService = paymentErrorService;
         this.eventPublisher = eventPublisher;
         this.clientCallbackService = clientCallbackService;
@@ -165,7 +160,7 @@ public class PaymentEventListener {
     }
 
     @EventListener
-    @AnalyseTransaction(name = QueueConstant.DEFAULT_SQS_MESSAGE_THRESHOLD_EXCEED_EVENT)
+    @AnalyseTransaction(name = StreamConstant.DEFAULT_KAFKA_MESSAGE_THRESHOLD_EXCEED_EVENT)
     public void onAnyOrderMessageThresholdExceedEvent (MessageThresholdExceedEvent event) throws JsonProcessingException {
         AnalyticService.update(event);
         AnalyticService.update(MESSAGE_PAYLOAD, mapper.writeValueAsString(event));
@@ -189,7 +184,7 @@ public class PaymentEventListener {
     public void onPaymentRenewalMessageThresholdExceedEvent (PaymentRenewalMessageThresholdExceedEvent event) {
         AnalyticService.update(event);
         Transaction transaction = transactionManagerService.get(event.getTransactionId());
-        pubSubManagerService.publishPubSubMessage(PaymentRenewalChargingMessage.builder()
+        kafkaPublisherService.publishKafkaMessage(PaymentRenewalChargingMessage.builder()
                 .uid(transaction.getUid())
                 .id(transaction.getIdStr())
                 .planId(transaction.getPlanId())
@@ -425,7 +420,7 @@ public class PaymentEventListener {
     @AnalyseTransaction(name = "paymentRefundInitEvent")
     public void onPaymentRefundInitEvent (PaymentRefundInitEvent event) {
         AnalyticService.update(event);
-        pubSubManagerService.publishPubSubMessage(PaymentRefundInitMessage.builder()
+        kafkaPublisherService.publishKafkaMessage(PaymentRefundInitMessage.builder()
                 .originalTransactionId(event.getOriginalTransactionId())
                 .reason(event.getReason())
                 .build());
@@ -549,7 +544,7 @@ public class PaymentEventListener {
     public void onExternalTransactionReportEvent (ExternalTransactionReportEvent event) {
         AnalyticService.update(event);
         try {
-            pubSubManagerService.publishPubSubMessage(ExternalTransactionReportMessageManager.builder().clientAlias(event.getClientAlias()).transactionId(event.getTransactionId())
+            kafkaPublisherService.publishKafkaMessage(ExternalTransactionReportMessageManager.builder().clientAlias(event.getClientAlias()).transactionId(event.getTransactionId())
                     .externalTransactionId(event.getExternalTokenReferenceId()).paymentEvent(event.getPaymentEvent()).initialTransactionId(event.getInitialTransactionId()).build());
         } catch (Exception e) {
             log.error("Exception occurred while publishing event on ExternalTransactionReport queue for transactionId: {}", event.getTransactionId(), e);
@@ -578,13 +573,13 @@ public class PaymentEventListener {
                 put(OFFER, cachingService.getOffer(plan.getLinkedOfferId()));
                 put(WINBACK_NOTIFICATION_URL, tinyUrl);
             }};
-            SmsNotificationGCPMessage notificationMessage = SmsNotificationGCPMessage.builder()
+            SmsNotificationMessage notificationMessage = SmsNotificationMessage.builder()
                     .messageId(message.getMessageId())
                     .msisdn(msisdn)
                     .service(service)
                     .contextMap(contextMap)
                     .build();
-            pubSubManagerService.publishPubSubMessage(notificationMessage);
+            kafkaPublisherService.publishKafkaMessage(notificationMessage);
         } else {
             log.info("Skipping to send drop out notification for msisdn {} as it has been disabled", msisdn);
         }

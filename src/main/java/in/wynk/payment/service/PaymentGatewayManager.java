@@ -44,9 +44,8 @@ import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.gateway.*;
 import in.wynk.payment.mapper.DefaultTransactionInitRequestMapper;
 import in.wynk.payment.utils.RecurringTransactionUtils;
-import in.wynk.pubsub.service.IPubSubManagerService;
-import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.session.context.SessionContextHolder;
+import in.wynk.stream.producer.IKafkaPublisherService;
 import io.netty.channel.ConnectTimeoutException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -85,8 +84,7 @@ public class PaymentGatewayManager
 
     private final ICouponManager couponManager;
     private final ApplicationEventPublisher eventPublisher;
-    private final ISqsManagerService<Object> sqsManagerService;
-    private final IPubSubManagerService<Object> pubSubManagerService;
+    private final IKafkaPublisherService<String, Object> kafkaPublisherService;
     private final ITransactionManagerService transactionManager;
     private final PaymentMethodCachingService paymentMethodCachingService;
     private final IMerchantTransactionService merchantTransactionService;
@@ -133,7 +131,7 @@ public class PaymentGatewayManager
             eventPublisher.publishEvent(eventBuilder.build());
             throw new PaymentRuntimeException(PaymentErrorType.PAY007, ex.getMessage());
         } finally {
-            pubSubManagerService.publishPubSubMessage(
+            kafkaPublisherService.publishKafkaMessage(
                     PaymentReconciliationMessage.builder().paymentMethodId(request.getPaymentDetails().getPaymentId()).paymentCode(transaction.getPaymentChannel().getId())
                             .paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
                             .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
@@ -336,7 +334,7 @@ public class PaymentGatewayManager
         } finally {
             eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
             if (renewalService.canRenewalReconciliation()) {
-                pubSubManagerService.publishPubSubMessage(
+                kafkaPublisherService.publishKafkaMessage(
                         PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transactionManager.get(request.getId()))).paymentCode(transaction.getPaymentChannel().getId())
                                 .paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
                                 .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid())
@@ -449,7 +447,7 @@ public class PaymentGatewayManager
             if (BeanConstant.AIRTEL_PAY_STACK.equalsIgnoreCase(originalTransaction.getPaymentChannel().getCode()) || BeanConstant.AIRTEL_PAY_STACK_V2.equalsIgnoreCase(originalTransaction.getPaymentChannel().getCode()) ||
                     BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE.equalsIgnoreCase(originalTransaction.getPaymentChannel().getCode()) &&
                             refundInitResponse.getTransactionStatus() != TransactionStatus.FAILURE) {
-                pubSubManagerService.publishPubSubMessage(
+                kafkaPublisherService.publishKafkaMessage(
                         PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transactionManager.get(request.getOriginalTransactionId())))
                                 .paymentCode(refundTransaction.getPaymentChannel().getId()).extTxnId(refundInitResponse.getExternalReferenceId())
                                 .transactionId(refundTransaction.getIdStr()).paymentEvent(refundTransaction.getType()).itemId(refundTransaction.getItemId()).planId(refundTransaction.getPlanId())

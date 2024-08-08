@@ -36,9 +36,8 @@ import in.wynk.payment.dto.request.UnSubscribePlanSyncRequest;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.CurrencyCountryUtils;
-import in.wynk.pubsub.service.IPubSubManagerService;
 import in.wynk.queue.constant.QueueErrorType;
-import in.wynk.queue.service.ISqsManagerService;
+import in.wynk.stream.producer.IKafkaPublisherService;
 import in.wynk.subscription.common.dto.ItemDTO;
 import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PartnerDTO;
@@ -48,14 +47,12 @@ import in.wynk.subscription.common.dto.RenewalPlanEligibilityRequest;
 import in.wynk.subscription.common.dto.RenewalPlanEligibilityResponse;
 import in.wynk.subscription.common.dto.ThanksPlanResponse;
 import in.wynk.subscription.common.enums.ProvisionState;
-import in.wynk.subscription.common.message.SubscriptionProvisioningMessage;
 import in.wynk.subscription.common.message.SubscriptionProvisionMessage;
 import in.wynk.subscription.common.request.PlanProvisioningRequest;
 import in.wynk.subscription.common.request.PlanUnProvisioningRequest;
 import in.wynk.subscription.common.request.SelectivePlansComputationRequest;
 import in.wynk.subscription.common.request.SessionRequest;
 import in.wynk.subscription.common.request.SinglePlanAdditiveProvisionRequest;
-import in.wynk.subscription.common.request.SinglePlanProvisionRequest;
 import in.wynk.subscription.common.request.UserPersonalisedPlanRequest;
 import in.wynk.subscription.common.response.AllItemsResponse;
 import in.wynk.subscription.common.response.AllPlansResponse;
@@ -79,13 +76,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
-import java.net.URI;
-import java.util.*;
-import java.util.stream.Collectors;
-
 import static in.wynk.payment.core.constant.BeanConstant.AIRTEL_PAY_STACK;
-import static in.wynk.payment.core.constant.BeanConstant.SUBSCRIPTION_SERVICE_S2S_TEMPLATE;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY105;
 
 @Service
 @Slf4j
@@ -144,10 +135,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     private RestTemplate restTemplate;
 
     @Autowired
-    private ISqsManagerService sqsMessagePublisher;
-
-    @Autowired
-    private IPubSubManagerService pubSubManagerService;
+    private IKafkaPublisherService kafkaPublisherService;
 
     @Autowired
     private WynkApplicationContext myApplicationContext;
@@ -460,7 +448,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     private void publishAsync(SubscriptionProvisionMessage message) {
         try {
            // sqsMessagePublisher.publishSQSMessage(message);
-            pubSubManagerService.publishPubSubMessage(message);
+            kafkaPublisherService.publishKafkaMessage(message);
         } catch (Exception e) {
             throw new WynkRuntimeException(QueueErrorType.SQS001, e);
         }

@@ -35,9 +35,8 @@ import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.*;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.mapper.DefaultTransactionInitRequestMapper;
-import in.wynk.pubsub.service.IPubSubManagerService;
-import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.session.context.SessionContextHolder;
+import in.wynk.stream.producer.IKafkaPublisherService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -66,8 +65,7 @@ public class PaymentManager
     private final ICouponManager couponManager;
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
-    private final ISqsManagerService<Object> sqsManagerService;
-    private final IPubSubManagerService<Object> pubSubManagerService;
+    private final IKafkaPublisherService<String, Object> kafkaPublisherService;
     private final ITransactionManagerService transactionManager;
     private final IMerchantTransactionService merchantTransactionService;
     private final IEntityCacheService<PaymentMethod, String> paymentMethodCache;
@@ -92,7 +90,7 @@ public class PaymentManager
             if (Objects.nonNull(refundInitResponse.getBody())) {
                 final AbstractPaymentRefundResponse refundResponse = refundInitResponse.getBody().getData();
                 if (refundResponse.getTransactionStatus() != TransactionStatus.FAILURE) {
-                    pubSubManagerService.publishPubSubMessage(
+                    kafkaPublisherService.publishKafkaMessage(
                             PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transactionManager.get(request.getOriginalTransactionId())))
                                     .paymentCode(refundTransaction.getPaymentChannel().getId()).extTxnId(refundResponse.getExternalReferenceId())
                                     .transactionId(refundTransaction.getIdStr()).paymentEvent(refundTransaction.getType()).itemId(refundTransaction.getItemId()).planId(refundTransaction.getPlanId())
@@ -145,7 +143,7 @@ public class PaymentManager
                         .sid(Optional.ofNullable(SessionContextHolder
                                 .getId())).build());
             }
-            pubSubManagerService.publishPubSubMessage(
+            kafkaPublisherService.publishKafkaMessage(
                     PaymentReconciliationMessage.builder().paymentMethodId(request.getPurchaseDetails().getPaymentDetails().getPaymentId()).paymentCode(transaction.getPaymentChannel().getId())
                             .paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
                             .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
@@ -327,7 +325,7 @@ public class PaymentManager
         final AbstractTransactionInitRequest transactionInitRequest =
                 DefaultTransactionInitRequestMapper.from(IapVerificationRequestWrapper.builder().clientId(clientId).verificationRequest(request).receiptResponse(latestReceiptResponse).build());
         final Transaction transaction = transactionManager.init(transactionInitRequest, request.getPurchaseDetails());
-        pubSubManagerService.publishPubSubMessage(
+        kafkaPublisherService.publishKafkaMessage(
                 PaymentReconciliationMessage.builder().extTxnId(latestReceiptResponse.getExtTxnId()).paymentCode(transaction.getPaymentChannel().getId()).transactionId(transaction.getIdStr())
                         .paymentEvent(transaction.getType()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
         final TransactionStatus initialStatus = transaction.getStatus();
@@ -363,7 +361,7 @@ public class PaymentManager
                 DefaultTransactionInitRequestMapper.fromV2(IapVerificationRequestWrapper.builder().clientId(clientId).verificationRequestV2(request).receiptResponse(latestReceiptResponse).build(),
                         cachingService);
         final Transaction transaction = transactionManager.init(transactionInitRequest, request.getPurchaseDetails());
-        pubSubManagerService.publishPubSubMessage(
+        kafkaPublisherService.publishKafkaMessage(
                 PaymentReconciliationMessage.builder().extTxnId(latestReceiptResponse.getExtTxnId()).paymentCode(transaction.getPaymentChannel().getId()).transactionId(transaction.getIdStr())
                         .paymentEvent(transaction.getType()).itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
         final TransactionStatus initialStatus = transaction.getStatus();
@@ -434,7 +432,7 @@ public class PaymentManager
             return merchantPaymentRenewalService.doRenewal(request);
         } finally {
             if (merchantPaymentRenewalService.supportsRenewalReconciliation()) {
-                pubSubManagerService.publishPubSubMessage(
+                kafkaPublisherService.publishKafkaMessage(
                         PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transactionManager.get(request.getId()))).paymentCode(transaction.getPaymentChannel().getId())
                                 .paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
                                 .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid())
@@ -486,7 +484,7 @@ public class PaymentManager
         BeanLocatorFactory.getBean(CHARGING_FRAUD_DETECTION_CHAIN, IHandler.class).handle(request);
         final PaymentGateway paymentGateway = paymentMethodCache.get(request.getPurchaseDetails().getPaymentDetails().getPaymentId()).getPaymentCode();
         final Transaction transaction = transactionManager.init(DefaultTransactionInitRequestMapper.from(request.getPurchaseDetails()));
-        pubSubManagerService.publishPubSubMessage(
+        kafkaPublisherService.publishKafkaMessage(
                 PaymentReconciliationMessage.builder().paymentMethodId(request.getPurchaseDetails().getPaymentDetails().getPaymentId()).paymentCode(transaction.getPaymentChannel().getId())
                         .transactionId(transaction.getIdStr()).paymentEvent(transaction.getType())
                         .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());

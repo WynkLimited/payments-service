@@ -9,9 +9,8 @@ import in.wynk.payment.dto.PaymentRenewalMessage;
 import in.wynk.payment.dto.PreDebitNotificationMessageManager;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ITransactionManagerService;
-import in.wynk.pubsub.service.IPubSubManagerService;
 import in.wynk.payment.utils.RecurringTransactionUtils;
-import in.wynk.queue.service.ISqsManagerService;
+import in.wynk.stream.producer.IKafkaPublisherService;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,9 +31,7 @@ public class PaymentRenewalsScheduler {
     @Autowired
     private IRecurringPaymentManagerService recurringPaymentManager;
     @Autowired
-    private ISqsManagerService sqsManagerService;
-    @Autowired
-    private IPubSubManagerService pubSubManagerService;
+    private IKafkaPublisherService kafkaPublisherService;
     @Autowired
     private SeRenewalService seRenewalService;
     @Autowired
@@ -97,7 +94,7 @@ public class PaymentRenewalsScheduler {
         AnalyticService.update(message);
         if (recurringTransactionUtils.checkRenewalEligibility(message.getTransactionId(), message.getAttemptSequence())) {
             //sqsManagerService.publishSQSMessage(message);
-            pubSubManagerService.publishPubSubMessage(message);
+            kafkaPublisherService.publishKafkaMessage(message);
         }
     }
 
@@ -105,7 +102,7 @@ public class PaymentRenewalsScheduler {
     private void publishPreDebitNotificationMessage (PreDebitNotificationMessageManager message) {
         AnalyticService.update(message);
         //sqsManagerService.publishSQSMessage(message);
-        pubSubManagerService.publishPubSubMessage(message);
+        kafkaPublisherService.publishKafkaMessage(message);
     }
 
     private boolean checkPreDebitEligibility (String transactionId) {

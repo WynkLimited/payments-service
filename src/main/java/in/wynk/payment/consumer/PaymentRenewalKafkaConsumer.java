@@ -70,10 +70,10 @@ public class PaymentRenewalKafkaConsumer extends AbstractKafkaEventConsumer<Stri
     }
 
     @KafkaListener(id = "paymentRenewalMessageListener", topics = "${wynk.kafka.consumers.listenerFactory.paymentRenewal[0].factoryDetails.topic}", containerFactory = "${wynk.kafka.consumers.listenerFactory.paymentRenewal[0].name}")
-    protected void listenPaymentRenewalMessage(@Header(BeanConstant.MESSAGE_LAST_ATTEMPTED_SEQUENCE) String lastAttemptedSequence,
-                                               @Header(BeanConstant.MESSAGE_CREATION_DATETIME) String createdAt,
-                                               @Header(BeanConstant.MESSAGE_LAST_PROCESSED_DATETIME) String lastProcessedAt,
-                                               @Header(StreamConstant.RETRY_COUNT) String retryCount,
+    protected void listenPaymentRenewalMessage(@Header(value = StreamConstant.MESSAGE_LAST_ATTEMPTED_SEQUENCE, required = false) String lastAttemptedSequence,
+                                               @Header(value = StreamConstant.MESSAGE_CREATION_DATETIME, required = false) String createdAt,
+                                               @Header(value = StreamConstant.MESSAGE_LAST_PROCESSED_DATETIME, required = false) String lastProcessedAt,
+                                               @Header(value = StreamConstant.RETRY_COUNT, required = false) String retryCount,
                                                ConsumerRecord<String, PaymentRenewalMessage> consumerRecord) {
         try {
             log.debug("Kafka consume record result {} for event {}", consumerRecord, consumerRecord.value().toString());

@@ -114,11 +114,11 @@ public class PaymentReconciliationKafkaConsumer extends AbstractKafkaEventConsum
 
     @AnalyseTransaction(name = "logReconciliationMetrics")
     @KafkaListener(id = "paymentReconciliationMessageListener", topics = "${wynk.kafka.consumers.listenerFactory.paymentReconciliation[0].factoryDetails.topic}", containerFactory = "${wynk.kafka.consumers.listenerFactory.paymentReconciliation[0].name}")
-    protected void listenPaymentReconciliationMessage(@Header(BeanConstant.MESSAGE_LAST_ATTEMPTED_SEQUENCE) String lastAttemptedSequence,
-                                                      @Header(BeanConstant.MESSAGE_CREATION_DATETIME) String createdAt,
-                                                      @Header(BeanConstant.MESSAGE_LAST_PROCESSED_DATETIME) String lastProcessedAt,
-                                                      @Header(StreamConstant.RETRY_COUNT) String retryCount,
-                                                      @Header(StreamConstant.KAFKA_DELAY_INTERVAL) String delayInMs,
+    protected void listenPaymentReconciliationMessage(@Header(value = StreamConstant.MESSAGE_LAST_ATTEMPTED_SEQUENCE, required = false) String lastAttemptedSequence,
+                                                      @Header(value = StreamConstant.MESSAGE_CREATION_DATETIME, required = false) String createdAt,
+                                                      @Header(value = StreamConstant.MESSAGE_LAST_PROCESSED_DATETIME, required = false) String lastProcessedAt,
+                                                      @Header(value = StreamConstant.RETRY_COUNT, required = false) String retryCount,
+                                                      @Header(value = StreamConstant.KAFKA_DELAY_INTERVAL, required = false) String delayInMs,
                                                       ConsumerRecord<String, PaymentReconciliationMessage> consumerRecord) {
         try {
             scheduler.schedule(() -> processorPool.submit(() -> {

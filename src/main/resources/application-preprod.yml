@@ -441,6 +441,9 @@ subscription:
         topicName: wcf-preprod-subscription
         subscriptionName: wcf-preprod-subscription-sub
         bufferInterval: 1
+    kafka:
+      provisioning:
+        topic: wcf_preprod.subscription
 
 
 

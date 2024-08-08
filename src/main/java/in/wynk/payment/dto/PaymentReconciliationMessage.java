@@ -1,6 +1,5 @@
 package in.wynk.payment.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.auth.dao.entity.Client;
@@ -8,8 +7,7 @@ import in.wynk.client.context.ClientContext;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 
 import in.wynk.scheduler.queue.dto.IKafkaMessage;
-import in.wynk.scheduler.queue.dto.IQueueMessage;
-import in.wynk.stream.advice.DelayedKafkaEvent;
+import in.wynk.stream.advice.WynkKafkaMessage;
 import in.wynk.stream.constant.ProducerType;
 import in.wynk.stream.dto.MessageToEventMapper;
 import lombok.AllArgsConstructor;
@@ -30,7 +28,7 @@ import static in.wynk.common.constant.CacheBeanNameConstants.PAYMENT_METHOD;
 @AllArgsConstructor
 //@WynkQueue(queueName = "${payment.pooling.queue.reconciliation.name}", producerType = ProducerType.ENTITY_DRIVEN_QUARTZ_MESSAGE_PUBLISHER, quartz = @WynkQueue.QuartzConfiguration(entityCacheName= PAYMENT_METHOD, publishUntil = 3, publishUntilUnit = TimeUnit.DAYS))
 //@WynkPubSub(projectName = "${payments.pooling.pubSub.reconciliation.projectName}", topicName= "${payments.pooling.pubSub.reconciliation.topicName}", subscriptionName = "${payments.pooling.pubSub.reconciliation.subscriptionName}", bufferInterval = "${payments.pooling.pubSub.reconciliation.bufferInterval}",producerType = GCPProducerType.ENTITY_DRIVEN_QUARTZ_MESSAGE_PUBLISHER, quartz = @WynkPubSub.QuartzConfigurationGCP(entityCacheName= PAYMENT_METHOD, publishUntil = 3, publishUntilUnit = TimeUnit.DAYS))
-@DelayedKafkaEvent(topic = "${wynk.kafka.consumers.listenerFactory.paymentReconciliation[0].factoryDetails.topic}", producerType = ProducerType.ENTITY_DRIVEN_QUARTZ_MESSAGE_PRODUCER, quartz = @DelayedKafkaEvent.QuartzConfiguration(entityCacheName= PAYMENT_METHOD, publishUntil = 3, publishUntilUnit = TimeUnit.DAYS))
+@WynkKafkaMessage(topic = "${wynk.kafka.consumers.listenerFactory.paymentReconciliation[0].factoryDetails.topic}", producerType = ProducerType.ENTITY_DRIVEN_QUARTZ_MESSAGE_PRODUCER, quartz = @WynkKafkaMessage.QuartzConfiguration(entityCacheName= PAYMENT_METHOD, publishUntil = 3, publishUntilUnit = TimeUnit.DAYS))
 public class PaymentReconciliationMessage extends AbstractTransactionMessage implements MessageToEventMapper<PaymentReconciliationThresholdExceedEvent>, IKafkaMessage<String> {
 
    @Analysed

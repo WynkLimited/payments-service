@@ -430,6 +430,13 @@ public class PaymentManager
                 });
         try {
             return merchantPaymentRenewalService.doRenewal(request);
+        } catch (Exception e) {
+            if (WynkRuntimeException.class.isAssignableFrom(e.getClass())) {
+                final WynkRuntimeException exception = (WynkRuntimeException) e;
+                eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(exception.getErrorCode())).description(exception.getErrorTitle()).build());
+            }
+            log.error("Unable to do renewal for the transaction {}, error message {}", transaction.getId(), e.getMessage(), e);
+            return WynkResponseEntity.<Void>builder().success(false).build();
         } finally {
             if (merchantPaymentRenewalService.supportsRenewalReconciliation()) {
                 kafkaPublisherService.publishKafkaMessage(
@@ -449,21 +456,29 @@ public class PaymentManager
     }
 
     private boolean isEligibleForRenewal(Transaction oldTransaction) {
-        String lastSuccessTransactionId = getLastSuccessTransactionId(transactionManager.get(oldTransaction.getIdStr()));
-        List<PaymentRenewal> paymentRenewalList = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).findByLastTransactionId(lastSuccessTransactionId);
-        Optional<PaymentRenewal> newSuccessTransactionId = paymentRenewalList.stream().filter(paymentRenewal -> isTransactionSuccess(paymentRenewal.getTransactionId())).findFirst();
-        if (!newSuccessTransactionId.isPresent()) {
+        try {
+            String lastSuccessTransactionId = getLastSuccessTransactionId(transactionManager.get(oldTransaction.getIdStr()));
+            List<PaymentRenewal> paymentRenewalList = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).findByLastTransactionId(lastSuccessTransactionId);
+            Optional<PaymentRenewal> newSuccessTransactionId = paymentRenewalList.stream().filter(paymentRenewal -> isTransactionSuccess(paymentRenewal.getTransactionId())).findFirst();
+            if (!newSuccessTransactionId.isPresent()) {
+                return true;
+            }
+            return false;
+        } catch (Exception ex) {
             return true;
         }
-        return false;
     }
 
     private boolean isTransactionSuccess(String transactionId) {
-        Optional<Transaction> optionalTransaction = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).findById(transactionId);
-        if (optionalTransaction.isPresent() && optionalTransaction.get().getStatus() == TransactionStatus.SUCCESS) {
-            return true;
-        }
-        return false;
+       try {
+           Optional<Transaction> optionalTransaction = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).findById(transactionId);
+           if (optionalTransaction.isPresent() && optionalTransaction.get().getStatus() == TransactionStatus.SUCCESS) {
+               return true;
+           }
+           return false;
+       } catch (Exception ex) {
+           return false;
+       }
     }
 
     public void addToPaymentRenewalMigration (MigrationTransactionRequest request) {

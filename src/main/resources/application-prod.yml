@@ -840,8 +840,8 @@ wynk:
     sources:
       payment:
         appName: payment
-        #nodes: 10.40.12.86,10.40.12.75,10.40.12.45
-        nodes: 10.160.88.16,10.160.88.15,10.160.88.17
+        nodes: 10.40.12.86,10.40.12.75,10.40.12.45
+        #nodes: 10.160.88.16,10.160.88.15,10.160.88.17
         username: user_payments
         password: tHdPNyp6Du
         database: payments
@@ -859,8 +859,8 @@ wynk:
         replicaSet: wcf
       coupons:
         appName: coupon
-        #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-        nodes: 10.160.88.16,10.160.88.15,10.160.88.17
+        nodes: 10.40.12.101,10.40.12.75,10.40.12.45
+        #nodes: 10.160.88.16,10.160.88.15,10.160.88.17
         username: user_coupons
         password: 6sSUZcp2gy
         database: coupons
@@ -890,8 +890,8 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 appName: payment
-                #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.160.88.16,10.160.88.15,10.160.88.17
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
+                #nodes: 10.160.88.16,10.160.88.15,10.160.88.17
                 username: user_payments
                 password: tHdPNyp6Du
                 database: payments
@@ -913,8 +913,8 @@ wynk:
                 basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
-                #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.160.88.16,10.160.88.15,10.160.88.17
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
+                #nodes: 10.160.88.16,10.160.88.15,10.160.88.17
                 username: user_coupons
                 password: 6sSUZcp2gy
                 database: coupons
@@ -939,8 +939,8 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 appName: payment
-                #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.160.88.16,10.160.88.15,10.160.88.17
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
+                #nodes: 10.160.88.16,10.160.88.15,10.160.88.17
                 username: user_payments
                 password: tHdPNyp6Du
                 database: payments
@@ -962,8 +962,8 @@ wynk:
                 basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
-                #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.160.88.16,10.160.88.15,10.160.88.17
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
+                #nodes: 10.160.88.16,10.160.88.15,10.160.88.17
                 username: user_coupons
                 password: 6sSUZcp2gy
                 database: coupons
@@ -988,8 +988,8 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 appName: payment
-                #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.160.88.16,10.160.88.15,10.160.88.17
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
+                #nodes: 10.160.88.16,10.160.88.15,10.160.88.17
                 username: user_payments
                 password: tHdPNyp6Du
                 database: payments
@@ -1011,8 +1011,8 @@ wynk:
                 basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
-                #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.160.88.16,10.160.88.15,10.160.88.17
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
+                #nodes: 10.160.88.16,10.160.88.15,10.160.88.17
                 username: user_coupons
                 password: 6sSUZcp2gy
                 database: coupons
@@ -1037,8 +1037,8 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 appName: payment
-                #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.160.88.16,10.160.88.15,10.160.88.17
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
+                #nodes: 10.160.88.16,10.160.88.15,10.160.88.17
                 username: user_payments_rajtv
                 password: 91F306FC2BEBF8D2E75E699D74014
                 database: payments_rajtv
@@ -1060,8 +1060,8 @@ wynk:
                 basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
-                #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.160.88.16,10.160.88.15,10.160.88.17
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
+                #nodes: 10.160.88.16,10.160.88.15,10.160.88.17
                 username: user_coupons_rajtv
                 password: BE750841543CCFC2F932478ED
                 database: coupons_rajtv
@@ -1086,8 +1086,8 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 appName: payment
-                #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.160.88.16,10.160.88.15,10.160.88.17
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
+                #nodes: 10.160.88.16,10.160.88.15,10.160.88.17
                 username: user_payments_enterr10
                 password: 3217D9F83BF777888154
                 database: payments_enterr10
@@ -1109,8 +1109,8 @@ wynk:
                 basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
-                #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.160.88.16,10.160.88.15,10.160.88.17
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45
+                #nodes: 10.160.88.16,10.160.88.15,10.160.88.17
                 username: user_coupons_enterr10
                 password: E9504307BBE0251C1F4E87E
                 database: coupons_enterr10
@@ -1351,7 +1351,8 @@ cache:
       ttl: 15
       usePrefix: false
     cluster:
-      nodes: 10.168.88.7:6379
+      nodes: wcf-redis.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+      #nodes: 10.168.88.7:6379
     connection:
       maxIdle: 300
       maxTotal: 1500
@@ -1376,7 +1377,8 @@ lock:
     usePooling: true
     readTimeout: 1000
     cluster:
-      nodes: 10.168.88.7:6379
+      nodes: wcf-redis.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+      #nodes: 10.168.88.7:6379
     connection:
       timeout: 1000
       maxTotal: 200
@@ -1396,104 +1398,5 @@ event:
     dp: wcf-data-science-prod-subscription-funnel
 
 api.get.endPoint: http://subscription.wcf.internal
-
-
-
-########## PUBSUB CONFIGS ###########
-
-payments:
-  pooling:
-    pubSub:
-      reconciliation:
-        projectName: prj-wynk-prd-wcf-svc-01
-        topicName: wcf-prod-payment-reconciliation
-        subscriptionName: wcf-prod-payment-reconciliation-sub
-        bufferInterval: 0
-        enabled: true
-        consumer:
-          delay: 1
-          delayTimeUnit: SECONDS
-      acknowledgement:
-        projectName: prj-wynk-prd-wcf-svc-01
-        topicName: wcf-payment-receipt-ack-prod-sqs
-        subscriptionName: wcf-payment-receipt-ack-prod-sqs-sub
-        bufferInterval: 0
-        enabled: true
-        consumer:
-          delay: 20
-          delayTimeUnit: SECONDS
-      externalTransaction:
-        report:
-          projectName: prj-wynk-prd-wcf-svc-01
-          topicName: wcf-payment-transaction-ack-prod-sqs
-          subscriptionName: wcf-payment-transaction-ack-prod-sqs-sub
-          bufferInterval: 0
-          enabled: true
-          consumer:
-            delay: 20
-            delayTimeUnit: SECONDS
-      renewal:
-        projectName: prj-wynk-prd-wcf-svc-01
-        topicName: wcf-prod-payment-renewal
-        subscriptionName: wcf-prod-payment-renewal-sub
-        bufferInterval: 180
-        enabled: true
-        consumer:
-          delay: 1
-          delayTimeUnit: SECONDS
-      charging:
-        projectName: prj-wynk-prd-wcf-svc-01
-        topicName: wcf-prod-payment-charging.fifo
-        subscriptionName: wcf-prod-payment-charging.fifo-sub
-        bufferInterval: 0
-        enabled: true
-        consumer:
-          delay: 10
-          delayTimeUnit: SECONDS
-      schedule:
-        projectName: prj-wynk-prd-wcf-svc-01
-        topicName: wcf-prod-subscription-payment
-        subscriptionName: wcf-prod-subscription-payment-sub
-        bufferInterval: 180
-        enabled: true
-        consumer:
-          delay: 20
-          delayTimeUnit: SECONDS
-      unschedule:
-        projectName: prj-wynk-prd-wcf-svc-01
-        topicName:  wcf-prod-payment-recurring
-        subscriptionName:  wcf-prod-payment-recurring-sub
-        bufferInterval: 180
-        enabled: true
-        consumer:
-          delay: 20
-          delayTimeUnit: SECONDS
-      preDebitNotification:
-        projectName: prj-wynk-prd-wcf-svc-01
-        topicName: wcf-prod-mandate-notification-sqs
-        subscriptionName: wcf-prod-mandate-notification-sqs-sub
-        bufferInterval: 180
-        enabled: true
-        consumer:
-          delay: 20
-          delayTimeUnit: SECONDS
-      refund:
-        projectName: prj-wynk-prd-wcf-svc-01
-        topicName: wcf-prod-payment-refund
-        subscriptionName: wcf-prod-payment-refund-sub
-        bufferInterval: 180
-        enabled: true
-        consumer:
-          delay: 20
-          delayTimeUnit: SECONDS
-      userDeactivation:
-        projectName: prj-wynk-prd-wcf-svc-01
-        topicName: wcf-prod-payment-user-deactivation
-        subscriptionName: wcf-prod-payment-user-deactivation-sub
-        bufferInterval: 180
-        enabled: true
-        consumer:
-          delay: 20
-          delayTimeUnit: SECONDS
 
 

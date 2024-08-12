@@ -573,6 +573,12 @@ wynk:
       item:
         generate:
           topic: wcf_local.generate_item
+      subscription:
+        provision:
+          topic: wcf_prod.subscription
+      sms:
+        notification:
+          topic: wcf_prod.sms_notification_message
     consumers:
       enabled: true
       listenerFactory:

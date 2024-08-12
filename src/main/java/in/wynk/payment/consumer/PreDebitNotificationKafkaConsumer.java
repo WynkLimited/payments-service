@@ -4,16 +4,8 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.aspect.advice.TransactionAware;
-import in.wynk.payment.core.dao.entity.PaymentRenewal;
-import in.wynk.payment.core.dao.entity.Transaction;
-import in.wynk.payment.dto.PaymentReconciliationMessage;
-import in.wynk.payment.dto.PreDebitNotificationMessageManager;
-import in.wynk.payment.dto.PreDebitRequest;
-import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.PreDebitNotificationMessage;
 import in.wynk.payment.service.PaymentGatewayManager;
-import in.wynk.payment.service.impl.RecurringPaymentManager;
-import in.wynk.scheduler.queue.constant.BeanConstant;
 import in.wynk.stream.constant.StreamConstant;
 import in.wynk.stream.constant.StreamMarker;
 import in.wynk.stream.consumer.impl.AbstractKafkaEventConsumer;
@@ -36,39 +28,27 @@ import static in.wynk.common.enums.PaymentEvent.*;
 @Slf4j
 @Service
 @DependsOn("kafkaConsumerConfig")
-public class PreDebitNotificationKafkaConsumer extends AbstractKafkaEventConsumer<String, PreDebitNotificationMessageManager> {
+public class PreDebitNotificationKafkaConsumer extends AbstractKafkaEventConsumer<String, PreDebitNotificationMessage> {
 
     @Value("${wynk.kafka.consumers.enabled}")
     private boolean enabled;
     private final PaymentGatewayManager manager;
-    private final RecurringPaymentManager recurringPaymentManager;
     private final KafkaListenerEndpointRegistry endpointRegistry;
     @Autowired
-    private KafkaRetryHandlerService<String, PreDebitNotificationMessageManager> kafkaRetryHandlerService;
+    private KafkaRetryHandlerService<String, PreDebitNotificationMessage> kafkaRetryHandlerService;
 
-    public PreDebitNotificationKafkaConsumer (PaymentGatewayManager manager, RecurringPaymentManager recurringPaymentManager, KafkaListenerEndpointRegistry endpointRegistry) {
+    public PreDebitNotificationKafkaConsumer (PaymentGatewayManager manager, KafkaListenerEndpointRegistry endpointRegistry) {
         super();
         this.manager = manager;
-        this.recurringPaymentManager = recurringPaymentManager;
         this.endpointRegistry = endpointRegistry;
     }
 
     @Override
     @ClientAware(clientAlias = "#message.clientAlias")
     @AnalyseTransaction(name = "preDebitNotificationMessage")
-    @TransactionAware(txnId = "#message.transactionId")
-    public void consume(PreDebitNotificationMessageManager message) throws WynkRuntimeException {
-        Transaction transaction = TransactionContext.get();
-        PaymentRenewal paymentRenewal = recurringPaymentManager.getRenewalById(message.getTransactionId());
-        if (Objects.nonNull(paymentRenewal) && (paymentRenewal.getTransactionEvent() == RENEW || paymentRenewal.getTransactionEvent() == SUBSCRIBE || paymentRenewal.getTransactionEvent() == DEFERRED)) {
-            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
-            PreDebitRequest request = PreDebitRequest.builder().planId(transaction.getPlanId()).transactionId(transaction.getIdStr()).renewalDay(format.format(paymentRenewal.getDay().getTime()))
-                    .renewalHour(paymentRenewal.getHour())
-                    .initialTransactionId(paymentRenewal.getInitialTransactionId()).lastSuccessTransactionId(paymentRenewal.getLastSuccessTransactionId()).uid(transaction.getUid())
-                    .paymentCode(transaction.getPaymentChannel().getCode()).clientAlias(message.getClientAlias()).build();
-            AnalyticService.update(request);
-            manager.notify(request);
-        }
+    public void consume(PreDebitNotificationMessage message) {
+        AnalyticService.update(message);
+        manager.notify(message);
     }
 
     @KafkaListener(id = "preDebitNotificationMessageManagerListener", topics = "${wynk.kafka.consumers.listenerFactory.preDebitNotification[0].factoryDetails.topic}", containerFactory = "${wynk.kafka.consumers.listenerFactory.preDebitNotification[0].name}")
@@ -76,14 +56,14 @@ public class PreDebitNotificationKafkaConsumer extends AbstractKafkaEventConsume
                                                             @Header(value = StreamConstant.MESSAGE_CREATION_DATETIME, required = false) String createdAt,
                                                             @Header(value = StreamConstant.MESSAGE_LAST_PROCESSED_DATETIME, required = false) String lastProcessedAt,
                                                             @Header(value = StreamConstant.RETRY_COUNT, required = false) String retryCount,
-                                                            ConsumerRecord<String, PreDebitNotificationMessageManager> consumerRecord) {
+                                                            ConsumerRecord<String, PreDebitNotificationMessage> consumerRecord) {
         try {
             log.debug("Kafka consume record result {} for event {}", consumerRecord, consumerRecord.value().toString());
             consume(consumerRecord.value());
         } catch (Exception e) {
             kafkaRetryHandlerService.retry(consumerRecord, lastAttemptedSequence, createdAt, lastProcessedAt, retryCount);
             if (!(e instanceof WynkRuntimeException)) {
-                log.error(StreamMarker.KAFKA_POLLING_CONSUMPTION_ERROR, "Something went wrong while processing message {} for kafka consumer : {}", consumerRecord.value(), ", PreDebitNotificationMessageManager - ", e);
+                log.error(StreamMarker.KAFKA_POLLING_CONSUMPTION_ERROR, "Something went wrong while processing message {} for kafka consumer : {}", consumerRecord.value(), ", PreDebitNotificationMessage - ", e);
             }
         }
     }

@@ -647,6 +647,186 @@ wynk:
                 topic: wcf_preprod.pay_link_req_retry
                 valueDeserializer: in.wynk.payment.consumer.PaymentChargeCallbackKafkaSerializer
               name: PAYMENT_CHARGE_RETRY_BEAN
+        paymentReconciliation:
+          - concurrency: 3
+            enabled: true
+            factoryDetails:
+              autoCommitInterval: 100
+              autoOffsetConfig: earliest
+              bootstrapServers: 10.168.88.20:9092
+              username: appuser
+              password: uJK67dC1Ax
+              enableAutoCommit: true
+              groupId: group1
+              keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
+              maxPollInterval: 600000
+              maxPollRecords: 100
+              sessionTimeout: 180000
+              topic: wcf_preprod.payment_reconciliation
+              valueDeserializer: in.wynk.payment.consumer.deserializer.PaymentReconciliationKafkaDeserializer
+            name: PAYMENT_RECONCILIATION_BEAN
+        purchaseAcknowledgement:
+          - concurrency: 3
+            enabled: true
+            factoryDetails:
+              autoCommitInterval: 100
+              autoOffsetConfig: earliest
+              bootstrapServers: 10.168.88.20:9092
+              username: appuser
+              password: uJK67dC1Ax
+              enableAutoCommit: true
+              groupId: group1
+              keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
+              maxPollInterval: 600000
+              maxPollRecords: 50
+              sessionTimeout: 180000
+              topic: wcf_preprod.payment_purchase_acknowledgement
+              valueDeserializer: in.wynk.payment.consumer.deserializer.PurchaseAcknowledgementKafkaDeserializer
+            name: PAYMENT_PURCHASE_ACKNOWLEDGEMENT_BEAN
+        externalTransactionReport:
+          - concurrency: 3
+            enabled: true
+            factoryDetails:
+              autoCommitInterval: 100
+              autoOffsetConfig: earliest
+              bootstrapServers: 10.168.88.20:9092
+              username: appuser
+              password: uJK67dC1Ax
+              enableAutoCommit: true
+              groupId: group1
+              keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
+              maxPollInterval: 600000
+              maxPollRecords: 50
+              sessionTimeout: 180000
+              topic: wcf_preprod.payment_external_transaction_report
+              valueDeserializer: in.wynk.payment.consumer.deserializer.ExternalTransactionReportKafkaDeserializer
+            name: PAYMENT_EXTERNAL_TRANSACTION_REPORT_BEAN
+        paymentRenewal:
+          - concurrency: 3
+            enabled: true
+            factoryDetails:
+              autoCommitInterval: 100
+              autoOffsetConfig: earliest
+              bootstrapServers: 10.168.88.20:9092
+              username: appuser
+              password: uJK67dC1Ax
+              enableAutoCommit: true
+              groupId: group1
+              keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
+              maxPollInterval: 600000
+              maxPollRecords: 50
+              sessionTimeout: 180000
+              topic: wcf_preprod.payment_renewal
+              valueDeserializer: in.wynk.payment.consumer.deserializer.PaymentRenewalKafkaDeserializer
+            name: PAYMENT_RENEWAL_BEAN
+        preDebitNotification:
+          - concurrency: 3
+            enabled: true
+            factoryDetails:
+              autoCommitInterval: 100
+              autoOffsetConfig: earliest
+              bootstrapServers: 10.168.88.20:9092
+              username: appuser
+              password: uJK67dC1Ax
+              enableAutoCommit: true
+              groupId: group1
+              keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
+              maxPollInterval: 600000
+              maxPollRecords: 50
+              sessionTimeout: 180000
+              topic: wcf_preprod.payment_pre_debit_notification
+              valueDeserializer: in.wynk.payment.consumer.deserializer.PreDebitNotificationKafkaDeserializer
+            name: PAYMENT_PRE_DEBIT_NOTIFICATION_BEAN
+        paymentRenewalCharging:
+          - concurrency: 3
+            enabled: true
+            factoryDetails:
+              autoCommitInterval: 100
+              autoOffsetConfig: earliest
+              bootstrapServers: 10.168.88.20:9092
+              username: appuser
+              password: uJK67dC1Ax
+              enableAutoCommit: true
+              groupId: group1
+              keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
+              maxPollInterval: 600000
+              maxPollRecords: 50
+              sessionTimeout: 180000
+              topic: wcf_preprod.payment_renewal_charging
+              valueDeserializer: in.wynk.payment.consumer.deserializer.PaymentRenewalChargingKafkaDeserializer
+            name: PAYMENT_RENEWAL_CHARGING_BEAN
+        paymentRecurringScheduling:
+          - concurrency: 3
+            enabled: true
+            factoryDetails:
+              autoCommitInterval: 100
+              autoOffsetConfig: earliest
+              bootstrapServers: 10.168.88.20:9092
+              username: appuser
+              password: uJK67dC1Ax
+              enableAutoCommit: true
+              groupId: group1
+              keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
+              maxPollInterval: 600000
+              maxPollRecords: 50
+              sessionTimeout: 180000
+              topic: wcf_preprod.payment_recurring_scheduling
+              valueDeserializer: in.wynk.payment.consumer.deserializer.PaymentRecurringSchedulingKafkaDeserializer
+            name: PAYMENT_RECURRING_SCHEDULING_BEAN
+        paymentRecurringUnScheduling:
+          - concurrency: 3
+            enabled: true
+            factoryDetails:
+              autoCommitInterval: 100
+              autoOffsetConfig: earliest
+              bootstrapServers: 10.168.88.20:9092
+              username: appuser
+              password: uJK67dC1Ax
+              enableAutoCommit: true
+              groupId: group1
+              keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
+              maxPollInterval: 600000
+              maxPollRecords: 50
+              sessionTimeout: 180000
+              topic: wcf_preprod.payment_recurring_unscheduling
+              valueDeserializer: in.wynk.payment.consumer.deserializer.PaymentRecurringUnSchedulingKafkaDeserializer
+            name: PAYMENT_RECURRING_UNSCHEDULING_BEAN
+        paymentUserDeactivation:
+          - concurrency: 3
+            enabled: true
+            factoryDetails:
+              autoCommitInterval: 100
+              autoOffsetConfig: earliest
+              bootstrapServers: 10.168.88.20:9092
+              username: appuser
+              password: uJK67dC1Ax
+              enableAutoCommit: true
+              groupId: group1
+              keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
+              maxPollInterval: 600000
+              maxPollRecords: 50
+              sessionTimeout: 180000
+              topic: wcf_preprod.payment_user_deactivation
+              valueDeserializer: in.wynk.payment.consumer.deserializer.PaymentUserDeactivationKafkaDeserializer
+            name: PAYMENT_USER_DEACTIVATION_BEAN
+        paymentRefundMessage:
+          - concurrency: 3
+            enabled: true
+            factoryDetails:
+              autoCommitInterval: 100
+              autoOffsetConfig: earliest
+              bootstrapServers: 10.168.88.20:9092
+              username: appuser
+              password: uJK67dC1Ax
+              enableAutoCommit: true
+              groupId: group1
+              keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
+              maxPollInterval: 600000
+              maxPollRecords: 50
+              sessionTimeout: 180000
+              topic: wcf_preprod.payment_refund_message
+              valueDeserializer: in.wynk.payment.consumer.deserializer.PaymentRefundKafkaDeserializer
+            name: PAYMENT_REFUND_MESSAGE_BEAN
   multi:
     kafka:
       enabled: true

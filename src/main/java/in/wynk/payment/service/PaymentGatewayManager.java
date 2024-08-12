@@ -41,9 +41,9 @@ import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.gateway.*;
 import in.wynk.payment.mapper.DefaultTransactionInitRequestMapper;
 import in.wynk.payment.utils.RecurringTransactionUtils;
-import in.wynk.pubsub.service.IPubSubManagerService;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.session.context.SessionContextHolder;
+import in.wynk.stream.producer.IKafkaPublisherService;
 import io.netty.channel.ConnectTimeoutException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -83,7 +83,7 @@ public class PaymentGatewayManager
     private final ICouponManager couponManager;
     private final ApplicationEventPublisher eventPublisher;
     private final ISqsManagerService<Object> sqsManagerService;
-    private final IPubSubManagerService<Object> pubSubManagerService;
+    private final IKafkaPublisherService<String, Object> kafkaPublisherService;
     private final ITransactionManagerService transactionManager;
     private final PaymentMethodCachingService paymentMethodCachingService;
     private final IMerchantTransactionService merchantTransactionService;
@@ -130,7 +130,7 @@ public class PaymentGatewayManager
             eventPublisher.publishEvent(eventBuilder.build());
             throw new PaymentRuntimeException(PaymentErrorType.PAY007, ex.getMessage());
         } finally {
-            pubSubManagerService.publishPubSubMessage(
+            kafkaPublisherService.publishKafkaMessage(
                     PaymentReconciliationMessage.builder().paymentMethodId(request.getPaymentDetails().getPaymentId()).paymentCode(transaction.getPaymentChannel().getId())
                             .paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
                             .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).build());
@@ -289,21 +289,6 @@ public class PaymentGatewayManager
         final MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
             renewalService.renew(request);
-        } catch (RestClientException e) {
-            PaymentErrorEvent.Builder errorEventBuilder = PaymentErrorEvent.builder(transaction.getIdStr());
-            if (e.getRootCause() != null) {
-                if (e.getRootCause() instanceof SocketTimeoutException || e.getRootCause() instanceof ConnectTimeoutException) {
-                    log.error(RENEWAL_STATUS_ERROR, "Socket timeout but valid for reconciliation for request : due to {}", e.getMessage(), e);
-                    errorEventBuilder.code(APS007.getErrorCode());
-                    errorEventBuilder.description(APS007.getErrorMessage() + "for " + paymentGateway);
-                    eventPublisher.publishEvent(errorEventBuilder.build());
-                    throw new WynkRuntimeException(APS007);
-                } else {
-                    handleException(errorEventBuilder, paymentGateway, e, transaction);
-                }
-            } else {
-                handleException(errorEventBuilder, paymentGateway, e, transaction);
-            }
         } catch (Exception ex) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
             PaymentErrorEvent.Builder errorEventBuilder = PaymentErrorEvent.builder(transaction.getIdStr());
@@ -315,16 +300,14 @@ public class PaymentGatewayManager
                 PaymentErrorEvent errorEvent = errorEventBuilder.build();
                 recurringTransactionUtils.cancelRenewalBasedOnErrorReason(errorEvent.getDescription(), transaction);
                 eventPublisher.publishEvent(errorEvent);
-                throw ex;
             } else {
                 errorEventBuilder.code(PaymentErrorType.PAY024.getErrorCode()).description(PaymentErrorType.PAY024.getErrorMessage());
                 eventPublisher.publishEvent(errorEventBuilder.build());
-                throw new WynkRuntimeException(PAY024, ex);
             }
         } finally {
             eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
             if (renewalService.canRenewalReconciliation()) {
-                pubSubManagerService.publishPubSubMessage(
+                kafkaPublisherService.publishKafkaMessage(
                         PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transactionManager.get(request.getId()))).paymentCode(transaction.getPaymentChannel().getId())
                                 .paymentEvent(transaction.getType()).transactionId(transaction.getIdStr())
                                 .itemId(transaction.getItemId()).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid())
@@ -334,14 +317,6 @@ public class PaymentGatewayManager
             transactionManager.revision(AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus)
                     .attemptSequence(request.getAttemptSequence()).originalTransactionId(request.getId()).lastSuccessTransactionId(transaction.getIdStr()).build());
         }
-    }
-
-    private void handleException(PaymentErrorEvent.Builder errorEventBuilder, PaymentGateway paymentGateway, RestClientException e, Transaction transaction) {
-        transaction.setStatus(TransactionStatus.FAILURE.getValue());
-        errorEventBuilder.code(PAY024.getErrorCode());
-        errorEventBuilder.description(PAY024.getErrorMessage() + "for " + paymentGateway.getCode());
-        eventPublisher.publishEvent(errorEventBuilder.build());
-        throw new WynkRuntimeException(PAY024, e);
     }
 
     @Override
@@ -439,7 +414,7 @@ public class PaymentGatewayManager
             if (ApsConstant.AIRTEL_PAY_STACK.equalsIgnoreCase(originalTransaction.getPaymentChannel().getCode()) ||
                     BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE.equalsIgnoreCase(originalTransaction.getPaymentChannel().getCode()) &&
                             refundInitResponse.getTransactionStatus() != TransactionStatus.FAILURE) {
-                pubSubManagerService.publishPubSubMessage(
+                kafkaPublisherService.publishKafkaMessage(
                         PaymentReconciliationMessage.builder().paymentMethodId(common.getPaymentId(transactionManager.get(request.getOriginalTransactionId())))
                                 .paymentCode(refundTransaction.getPaymentChannel().getId()).extTxnId(refundInitResponse.getExternalReferenceId())
                                 .transactionId(refundTransaction.getIdStr()).paymentEvent(refundTransaction.getType()).itemId(refundTransaction.getItemId()).planId(refundTransaction.getPlanId())

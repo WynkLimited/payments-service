@@ -37,7 +37,7 @@ session:
     usePooling: true
     readTimeout: 1000
     cluster:
-      nodes: 10.168.88.7:6379
+      nodes: wcf-redis.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
     connection:
       timeout: 1000
       maxTotal: 200
@@ -424,13 +424,6 @@ subscription:
         sqs:
           producer:
             delayInSecond: 1
-    pubSub:
-      provisioning:
-        enabled: true
-        projectName: prj-wynk-prd-wcf-svc-01
-        topicName: wcf-production-revenue-subscription
-        subscriptionName: wcf-production-revenue-subscription
-        bufferInterval: 1
 
 
 ####### sms props #######
@@ -439,12 +432,6 @@ sms:
     queue:
       name: wcf-production-revenue-notification
       delayInSecond: 0
-    pubSub:
-      enabled: true
-      projectName: prj-wynk-prd-wcf-svc-01
-      topicName: wcf-prod-notification
-      subscriptionName: wcf-prod-notification-sub
-      bufferInterval: 0
 
 ####### Http Client Props #######
 http:
@@ -566,6 +553,8 @@ wynk:
     enabled: true
     #nodes: 10.40.12.120:9092,10.40.12.157:9092,10.40.12.18:9092
     nodes: 10.160.88.23:9092,10.160.88.24:9092,10.160.88.25:9092
+    username: appuser
+    password: uJK67dC1Ax
     producers:
       invoice:
         generate:
@@ -594,6 +583,8 @@ wynk:
               autoCommitInterval: 100
               autoOffsetConfig: earliest
               bootstrapServers: 10.160.88.23:9092,10.160.88.24:9092,10.160.88.25:9092
+              username: appuser
+              password: uJK67dC1Ax
               enableAutoCommit: true
               groupId: group1
               keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -609,6 +600,8 @@ wynk:
               autoCommitInterval: 100
               autoOffsetConfig: earliest
               bootstrapServers: 10.160.88.23:9092,10.160.88.24:9092,10.160.88.25:9092
+              username: appuser
+              password: uJK67dC1Ax
               enableAutoCommit: true
               groupId: group1
               keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -626,6 +619,8 @@ wynk:
                 autoCommitInterval: 100
                 autoOffsetConfig: earliest
                 bootstrapServers: 10.160.88.23:9092,10.160.88.24:9092,10.160.88.25:9092
+                username: appuser
+                password: uJK67dC1Ax
                 enableAutoCommit: true
                 groupId: group1
                 keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -641,6 +636,8 @@ wynk:
                 autoCommitInterval: 100
                 autoOffsetConfig: earliest
                 bootstrapServers: 10.160.88.23:9092,10.160.88.24:9092,10.160.88.25:9092
+                username: appuser
+                password: uJK67dC1Ax
                 enableAutoCommit: true
                 groupId: group1
                 keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer

@@ -4,6 +4,7 @@ import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.queue.dto.FIFOQueueMessageMarker;
+import in.wynk.stream.advice.WynkKafkaMessage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -14,7 +15,7 @@ import lombok.NoArgsConstructor;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-//@WynkQueue(queueName = "${payment.pooling.queue.charging.name}", delaySeconds = "${payment.pooling.queue.charging.sqs.producer.delayInSecond}", queueType = QueueType.FIFO)
+@WynkKafkaMessage(topic = "${wynk.kafka.consumers.listenerFactory.paymentRenewalCharging[0].factoryDetails.topic}")
 public class PaymentRenewalChargingMessage implements FIFOQueueMessageMarker {
 
     @Analysed

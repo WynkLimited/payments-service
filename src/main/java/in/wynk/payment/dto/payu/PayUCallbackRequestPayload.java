@@ -2,23 +2,24 @@ package in.wynk.payment.dto.payu;
 
 import com.fasterxml.jackson.annotation.*;
 import in.wynk.payment.core.constant.PaymentConstants;
-import in.wynk.payment.dto.request.CallbackRequest;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import in.wynk.payment.dto.ChecksumHeaderCallbackRequest;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.http.HttpHeaders;
 
 import java.io.Serializable;
 
 @Getter
+@Setter
 @SuperBuilder
 @NoArgsConstructor
+@AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "action", defaultImpl = PayUCallbackRequestPayload.class, visible = true)
-@JsonSubTypes(@JsonSubTypes.Type(value = PayUAutoRefundCallbackRequestPayload.class, name = PayUConstants.REFUND_CALLBACK_ACTION))
-public class PayUCallbackRequestPayload extends CallbackRequest implements Serializable {
+public class PayUCallbackRequestPayload extends ChecksumHeaderCallbackRequest<PayUCallbackRequestPayload> implements Serializable  {
 
+    private static final long serialVersionUID = 7427670413183914338L;
     private String mode;
     private String udf1;
     @Builder.Default
@@ -96,6 +97,10 @@ public class PayUCallbackRequestPayload extends CallbackRequest implements Seria
         return PayUConstants.GENERIC_CALLBACK_ACTION;
     }
 
+    public String getFlow() {
+        return PayUConstants.PAYMENT_STATUS;
+    }
+
     public String getUdf() {
         return  getUDFOrDefault(udf5) +
                 getUDFOrDefault(udf4) +
@@ -106,6 +111,12 @@ public class PayUCallbackRequestPayload extends CallbackRequest implements Seria
 
     private String getUDFOrDefault(String value) {
         return StringUtils.isEmpty(value) ? PaymentConstants.PIPE_SEPARATOR : value.concat(PaymentConstants.PIPE_SEPARATOR);
+    }
+
+    @Override
+    @JsonIgnore
+    public PayUCallbackRequestPayload withHeader(HttpHeaders headers) {
+        return this;
     }
 
 }

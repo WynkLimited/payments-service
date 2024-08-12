@@ -418,14 +418,6 @@ subscription:
         sqs:
           producer:
             delayInSecond: 1
-    pubSub:
-      provisioning:
-        enabled: true
-        projectName: prj-wynk-pre-wcf-svc-01
-        topicName: wcf-preprod-subscription
-        subscriptionName: wcf-preprod-subscription-sub
-        bufferInterval: 1
-
 
 
 ####### sms props #######
@@ -434,12 +426,6 @@ sms:
     queue:
       name: wcf-preprod-notification
       delayInSecond: 0
-    pubSub:
-      enabled: true
-      projectName: prj-wynk-pre-wcf-svc-01
-      topicName: wcf-preprod-notification
-      subscriptionName: wcf-preprod-notification-sub
-      bufferInterval: 0
 
 ####### Http Client Props #######
 http:

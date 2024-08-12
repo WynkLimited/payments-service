@@ -58,7 +58,7 @@ import in.wynk.payment.gateway.IPaymentRefund;
 import in.wynk.payment.service.*;
 import in.wynk.payment.utils.MerchantServiceUtil;
 import in.wynk.queue.service.ISqsManagerService;
-import in.wynk.pubsub.service.IPubSubManagerService;
+import in.wynk.stream.producer.IKafkaPublisherService;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.vas.client.dto.MsisdnOperatorDetails;
 import lombok.SneakyThrows;
@@ -85,6 +85,7 @@ import java.util.concurrent.locks.Lock;
 import static in.wynk.common.constant.BaseConstants.DEFAULT_ACCESS_STATE_CODE;
 import static in.wynk.common.enums.PaymentEvent.*;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
+import static in.wynk.payment.core.constant.PaymentErrorType.PLAY008;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE;
 import static in.wynk.payment.dto.gpbs.GooglePlayConstant.*;
 
@@ -121,7 +122,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     private final WynkRedisLockService wynkRedisLockService;
     private GooglePlayCacheService googlePlayCacheService;
     private ISqsManagerService sqsMessagePublisher;
-    private IPubSubManagerService pubSubManagerService;
+    private IKafkaPublisherService kafkaPublisherService;
     private IAuditableListener auditingListener;
     private final IUserDetailsService userDetailsService;
     private final ITaxManager taxManager;
@@ -142,7 +143,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         this.wynkRedisLockService = wynkRedisLockService;
         this.googlePlayCacheService = googlePlayCacheService;
         this.sqsMessagePublisher = sqsMessagePublisher;
-        this.pubSubManagerService= pubSubManagerService;
+        this.kafkaPublisherService = kafkaPublisherService;
         this.auditingListener = auditingListener;
         this.userDetailsService = userDetailsService;
         this.taxManager = taxManager;
@@ -658,8 +659,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                             .getPurchaseToken()).skuId(request.getProductDetails().getSkuId())
                     .developerPayload(request.getDeveloperPayload()).type(request.getType()).txnId(abstractPaymentAcknowledgementRequest.getTxnId()).build();
             try {
-                //sqsMessagePublisher.publishSQSMessage(message);
-                pubSubManagerService.publishPubSubMessage(message);
+                kafkaPublisherService.publishKafkaMessage(message);
             } catch (Exception e) {
                 log.error("Unable to publish acknowledge message on queue {}", e.getMessage());
             }
@@ -796,6 +796,9 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                 return WynkResponseEntity.<Void>builder().success(true).build();
             }
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            if (Objects.isNull(receiptDetails)) {
+                throw new WynkRuntimeException(PLAY008);
+            }
             return WynkResponseEntity.<Void>builder().success(false).build();
         } catch (Exception e) {
             if (WynkRuntimeException.class.isAssignableFrom(e.getClass())) {

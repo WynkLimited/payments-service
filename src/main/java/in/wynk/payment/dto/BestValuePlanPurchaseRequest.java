@@ -110,6 +110,7 @@ public class BestValuePlanPurchaseRequest implements IClientValidatorRequest, IW
                 .packGroup(additionalPram.get(BaseConstants.DEEPLINK_PACK_GROUP))
                 .validity(Validity.getValidity(additionalPram.get(BaseConstants.VALIDITY)))
                 .validityUnit(additionalPram.get(BaseConstants.VALIDITY))
+                .price(Optional.ofNullable(additionalPram.get(BaseConstants.PRICE)).map(Double::parseDouble).orElse(null))
                 .build();
     }
 }

@@ -19,10 +19,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-@Configuration
+//@Configuration
 public class PaymentQueuesConfig {
 
-    @Value("${payments.sqs.queue.enabled:false}")
+    /*@Value("${payments.sqs.queue.enabled:false}")
     private boolean enabled;
 
     @Bean
@@ -270,5 +270,5 @@ public class PaymentQueuesConfig {
     private ScheduledExecutorService scheduledThreadPoolExecutor () {
         return Executors.newScheduledThreadPool(2);
     }
-
+*/
 }

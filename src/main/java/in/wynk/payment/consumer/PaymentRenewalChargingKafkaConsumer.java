@@ -31,8 +31,6 @@ import org.springframework.kafka.config.KafkaListenerEndpointRegistry;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
 
-import static in.wynk.payment.core.constant.BeanConstant.AIRTEL_PAY_STACK;
-import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
 
 @Slf4j
 @Service

@@ -38,6 +38,7 @@ session:
     readTimeout: 1000
     cluster:
       nodes: wcf-redis.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+      #nodes: 10.168.88.7:6379
     connection:
       timeout: 1000
       maxTotal: 200
@@ -52,19 +53,19 @@ cors:
 ##### mysql database props #####
 spring:
   datasource:
-#    url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
-#    username: huygens
-#    password: 2dtRAHGI5OhfBj1hNkpd
-    url: jdbc:mysql://10.160.64.6:3306/payments
-    username: wcf-app-user-prod
-    password: -/&tU%KGrM2~l7d1
+    url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
+    username: huygens
+    password: 2dtRAHGI5OhfBj1hNkpd
+#    url: jdbc:mysql://10.160.64.6:3306/payments
+#    username: wcf-app-user-prod
+#    password: -/&tU%KGrM2~l7d1
     hikari:
-#      jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
-#      username: huygens
-#      password: 2dtRAHGI5OhfBj1hNkpd
-      jdbc-url: jdbc:mysql://10.160.64.6:3306/payments
-      username: wcf-app-user-prod
-      password: -/&tU%KGrM2~l7d1
+      jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
+      username: huygens
+      password: 2dtRAHGI5OhfBj1hNkpd
+#      jdbc-url: jdbc:mysql://10.160.64.6:3306/payments
+#      username: wcf-app-user-prod
+#      password: -/&tU%KGrM2~l7d1
       driver-class-name: com.mysql.cj.jdbc.Driver
       registerMbeans: true
       auto-commit: false
@@ -853,7 +854,7 @@ wynk:
       payment:
         appName: payment
         #nodes: 10.40.12.86,10.40.12.75,10.40.12.45
-        nodes: 10.160.88.16,10.160.88.15,10.160.88.17
+        nodes: 10.40.12.101,10.40.12.75,10.40.12.45,10.160.88.30,10.160.88.31,10.160.88.32
         username: user_payments
         password: tHdPNyp6Du
         database: payments
@@ -872,7 +873,7 @@ wynk:
       coupons:
         appName: coupon
         #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-        nodes: 10.160.88.16,10.160.88.15,10.160.88.17
+        nodes: 10.40.12.101,10.40.12.75,10.40.12.45,10.160.88.30,10.160.88.31,10.160.88.32
         username: user_coupons
         password: 6sSUZcp2gy
         database: coupons
@@ -903,7 +904,7 @@ wynk:
               source:
                 appName: payment
                 #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.160.88.16,10.160.88.15,10.160.88.17
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45,10.160.88.30,10.160.88.31,10.160.88.32
                 username: user_payments
                 password: tHdPNyp6Du
                 database: payments
@@ -926,7 +927,7 @@ wynk:
               source:
                 appName: coupon
                 #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.160.88.16,10.160.88.15,10.160.88.17
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45,10.160.88.30,10.160.88.31,10.160.88.32
                 username: user_coupons
                 password: 6sSUZcp2gy
                 database: coupons
@@ -952,7 +953,7 @@ wynk:
               source:
                 appName: payment
                 #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.160.88.16,10.160.88.15,10.160.88.17
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45,10.160.88.30,10.160.88.31,10.160.88.32
                 username: user_payments
                 password: tHdPNyp6Du
                 database: payments
@@ -975,7 +976,7 @@ wynk:
               source:
                 appName: coupon
                 #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.160.88.16,10.160.88.15,10.160.88.17
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45,10.160.88.30,10.160.88.31,10.160.88.32
                 username: user_coupons
                 password: 6sSUZcp2gy
                 database: coupons
@@ -1001,7 +1002,7 @@ wynk:
               source:
                 appName: payment
                 #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.160.88.16,10.160.88.15,10.160.88.17
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45,10.160.88.30,10.160.88.31,10.160.88.32
                 username: user_payments
                 password: tHdPNyp6Du
                 database: payments
@@ -1024,7 +1025,7 @@ wynk:
               source:
                 appName: coupon
                 #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.160.88.16,10.160.88.15,10.160.88.17
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45,10.160.88.30,10.160.88.31,10.160.88.32
                 username: user_coupons
                 password: 6sSUZcp2gy
                 database: coupons
@@ -1050,7 +1051,7 @@ wynk:
               source:
                 appName: payment
                 #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.160.88.16,10.160.88.15,10.160.88.17
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45,10.160.88.30,10.160.88.31,10.160.88.32
                 username: user_payments_rajtv
                 password: 91F306FC2BEBF8D2E75E699D74014
                 database: payments_rajtv
@@ -1073,7 +1074,7 @@ wynk:
               source:
                 appName: coupon
                 #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.160.88.16,10.160.88.15,10.160.88.17
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45,10.160.88.30,10.160.88.31,10.160.88.32
                 username: user_coupons_rajtv
                 password: BE750841543CCFC2F932478ED
                 database: coupons_rajtv
@@ -1099,7 +1100,7 @@ wynk:
               source:
                 appName: payment
                 #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.160.88.16,10.160.88.15,10.160.88.17
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45,10.160.88.30,10.160.88.31,10.160.88.32
                 username: user_payments_enterr10
                 password: 3217D9F83BF777888154
                 database: payments_enterr10
@@ -1122,7 +1123,7 @@ wynk:
               source:
                 appName: coupon
                 #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.160.88.16,10.160.88.15,10.160.88.17
+                nodes: 10.40.12.101,10.40.12.75,10.40.12.45,10.160.88.30,10.160.88.31,10.160.88.32
                 username: user_coupons_enterr10
                 password: E9504307BBE0251C1F4E87E
                 database: coupons_enterr10
@@ -1150,12 +1151,12 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 hikari:
-#                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
-#                  username: huygens
-#                  password: 2dtRAHGI5OhfBj1hNkpd
-                  jdbc-url: jdbc:mysql://10.160.64.6:3306/payments
-                  username: wcf-app-user-prod
-                  password: -/&tU%KGrM2~l7d1
+                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
+                  username: huygens
+                  password: 2dtRAHGI5OhfBj1hNkpd
+#                  jdbc-url: jdbc:mysql://10.160.64.6:3306/payments
+#                  username: wcf-app-user-prod
+#                  password: -/&tU%KGrM2~l7d1
                   driver-class-name: com.mysql.cj.jdbc.Driver
                   registerMbeans: true
                   auto-commit: false
@@ -1192,12 +1193,12 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 hikari:
-#                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
-#                  username: huygens
-#                  password: 2dtRAHGI5OhfBj1hNkpd
-                  jdbc-url: jdbc:mysql://10.160.64.6:3306/payments
-                  username: wcf-app-user-prod
-                  password: -/&tU%KGrM2~l7d1
+                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
+                  username: huygens
+                  password: 2dtRAHGI5OhfBj1hNkpd
+#                  jdbc-url: jdbc:mysql://10.160.64.6:3306/payments
+#                  username: wcf-app-user-prod
+#                  password: -/&tU%KGrM2~l7d1
                   driver-class-name: com.mysql.cj.jdbc.Driver
                   registerMbeans: true
                   auto-commit: false
@@ -1234,12 +1235,12 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 hikari:
-#                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
-#                  username: huygens
-#                  password: 2dtRAHGI5OhfBj1hNkpd
-                  jdbc-url: jdbc:mysql://10.160.64.6:3306/payments
-                  username: wcf-app-user-prod
-                  password: -/&tU%KGrM2~l7d1
+                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
+                  username: huygens
+                  password: 2dtRAHGI5OhfBj1hNkpd
+#                  jdbc-url: jdbc:mysql://10.160.64.6:3306/payments
+#                  username: wcf-app-user-prod
+#                  password: -/&tU%KGrM2~l7d1
                   driver-class-name: com.mysql.cj.jdbc.Driver
                   registerMbeans: true
                   auto-commit: false
@@ -1276,12 +1277,12 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 hikari:
-#                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments_rajtv
-#                  username: huygens
-#                  password: 2dtRAHGI5OhfBj1hNkpd
-                  jdbc-url: jdbc:mysql://10.160.64.6:3306/payments
-                  username: wcf-app-user-prod
-                  password: -/&tU%KGrM2~l7d1
+                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments_rajtv
+                  username: huygens
+                  password: 2dtRAHGI5OhfBj1hNkpd
+#                  jdbc-url: jdbc:mysql://10.160.64.6:3306/payments
+#                  username: wcf-app-user-prod
+#                  password: -/&tU%KGrM2~l7d1
                   driver-class-name: com.mysql.cj.jdbc.Driver
                   registerMbeans: true
                   auto-commit: false
@@ -1318,12 +1319,12 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 hikari:
-#                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments_enterr10
-#                  username: huygens
-#                  password: 2dtRAHGI5OhfBj1hNkpd
-                  jdbc-url: jdbc:mysql://10.160.64.6:3306/payments
-                  username: wcf-app-user-prod
-                  password: -/&tU%KGrM2~l7d1
+                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments_enterr10
+                  username: huygens
+                  password: 2dtRAHGI5OhfBj1hNkpd
+#                  jdbc-url: jdbc:mysql://10.160.64.6:3306/payments
+#                  username: wcf-app-user-prod
+#                  password: -/&tU%KGrM2~l7d1
                   driver-class-name: com.mysql.cj.jdbc.Driver
                   registerMbeans: true
                   auto-commit: false
@@ -1378,8 +1379,8 @@ cache:
       ttl: 15
       usePrefix: false
     cluster:
-      #nodes: wcf-redis.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
-      nodes: 10.168.88.7:6379
+      nodes: wcf-redis.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+      #nodes: 10.168.88.7:6379
     connection:
       maxIdle: 300
       maxTotal: 1500
@@ -1404,8 +1405,8 @@ lock:
     usePooling: true
     readTimeout: 1000
     cluster:
-      #nodes: wcf-redis.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
-      nodes: 10.168.88.7:6379
+      nodes: wcf-redis.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+      #nodes: 10.168.88.7:6379
     connection:
       timeout: 1000
       maxTotal: 200

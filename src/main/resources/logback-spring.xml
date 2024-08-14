@@ -63,7 +63,7 @@
             <Pattern>%msg%n</Pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_PATH:-/tmp}/payment/logstash/day=%d{yyyy-MM-dd,
+            <fileNamePattern>${LOG_PATH:-/tmp}/logs/payment/logstash/day=%d{yyyy-MM-dd,
                 aux}/payment-logstash.${HOSTNAME}.%d{yyyy-MM-dd}.%i.log.gz
             </fileNamePattern>
             <maxHistory>3</maxHistory>

@@ -20,11 +20,11 @@
         <encoder class="in.wynk.logging.WynkErrorEncoder"/>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>
-                ${LOG_PATH:-/tmp}/logs/payment/error/%d{yyyy-MM-dd,
-                aux}/payment-error.${HOSTNAME}.%d{yyyy-MM-dd}.%i.log.gz
+                ${LOG_PATH:-/tmp}/logs/payments/error/%d{yyyy-MM-dd,
+                aux}/payments-error.${HOSTNAME}.%d{yyyy-MM-dd}.%i.log.gz
             </fileNamePattern>
             <maxHistory>3</maxHistory>
-            <maxFileSize>200MB</maxFileSize>
+            <maxFileSize>500MB</maxFileSize>
         </rollingPolicy>
     </appender>
     <appender name="ASYNC_ERRORLOG"
@@ -41,11 +41,11 @@
             <Pattern>%level %date [%thread] [%X{rid}] [%file:%line] %msg%n</Pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_PATH:-/tmp}/logs/payment/app/%d{yyyy-MM-dd,
-                aux}/payment.${HOSTNAME}.%d{yyyy-MM-dd}.%i.log.gz
+            <fileNamePattern>${LOG_PATH:-/tmp}/logs/payments/app/%d{yyyy-MM-dd,
+                aux}/payments.${HOSTNAME}.%d{yyyy-MM-dd}.%i.log.gz
             </fileNamePattern>
             <maxHistory>3</maxHistory>
-            <maxFileSize>200MB</maxFileSize>
+            <maxFileSize>500MB</maxFileSize>
         </rollingPolicy>
     </appender>
     <appender name="ASYNC_FILE"
@@ -63,11 +63,11 @@
             <Pattern>%msg%n</Pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_PATH:-/tmp}/logs/payment/logstash/day=%d{yyyy-MM-dd,
-                aux}/payment-logstash.${HOSTNAME}.%d{yyyy-MM-dd}.%i.log.gz
+            <fileNamePattern>${LOG_PATH:-/tmp}/logs/payments/logstash/%d{yyyy-MM-dd,
+                aux}/payments-logstash.${HOSTNAME}.%d{yyyy-MM-dd}.%i.log.gz
             </fileNamePattern>
             <maxHistory>3</maxHistory>
-            <maxFileSize>200MB</maxFileSize>
+            <maxFileSize>500MB</maxFileSize>
         </rollingPolicy>
     </appender>
     <appender name="ASYNC_ANALYTIC_LOG_FILE"
@@ -282,6 +282,9 @@
     <logger name="paymentReconciliation" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
+    <logger name="logReconciliationMetrics" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
     <logger name="paymentReconciledEvent" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
@@ -427,6 +430,15 @@
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
 
+    <logger name="ATBChargingScheduler" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+
+    <logger name="ATBCharging" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+
+
     <!-- invoice loggers end -->
 
     <springProfile name="local">
@@ -441,9 +453,9 @@
             <appender-ref ref="ASYNC_ERRORLOG"/>
         </logger>
     </springProfile>
-
     <springProfile name="dev,preprod">
         <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
             <appender-ref ref="ASYNC_FILE"/>
             <appender-ref ref="ASYNC_ERRORLOG"/>
         </root>
@@ -452,7 +464,6 @@
             <appender-ref ref="ASYNC_ERRORLOG"/>
         </logger>
     </springProfile>
-
     <springProfile name="prod">
         <root level="INFO">
             <appender-ref ref="ASYNC_FILE"/>

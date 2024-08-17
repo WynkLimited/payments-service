@@ -126,6 +126,8 @@ public class ApsCommonGatewayService {
         }
         try {
             ResponseEntity<String> responseEntity = apsClientService.apsOperations(getLoginId(msisdn), generateToken(url, clientAlias), url, method, body);
+            log.info("Response Status Code: {}", responseEntity.getStatusCode());
+            log.info("Response Body: {}", responseEntity.getBody());
             if (responseEntity.getStatusCode() == HttpStatus.OK) {
                 ApsResponseWrapper apsVasResponse = gson.fromJson(responseEntity.getBody(), ApsResponseWrapper.class);
                 if (HttpStatus.OK.name().equals(apsVasResponse.getStatusCode())) {

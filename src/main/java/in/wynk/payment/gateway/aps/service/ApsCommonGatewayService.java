@@ -137,10 +137,6 @@ public class ApsCommonGatewayService {
                     failureResponse.setStatusCode(apsVasResponse.getStatusCode());
                     throw new WynkRuntimeException(failureResponse.getErrorCode(), failureResponse.getMessage(), failureResponse.getStatusCode());
                 } catch (Exception e){
-                    if (e instanceof WynkRuntimeException) {
-                        log.error("error received from APS : {}", e.getMessage(), e);
-                        throw e;
-                    }
                     return objectMapper.readValue(responseEntity.getBody(), target);
                 }
             }

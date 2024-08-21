@@ -127,13 +127,22 @@ public class ApsCommonGatewayService {
         try {
             ResponseEntity<String> responseEntity = apsClientService.apsOperations(getLoginId(msisdn), generateToken(url, clientAlias), url, method, body);
             if (responseEntity.getStatusCode() == HttpStatus.OK) {
-                ApsResponseWrapper apsVasResponse = gson.fromJson(responseEntity.getBody(), ApsResponseWrapper.class);
-                if (HttpStatus.OK.name().equals(apsVasResponse.getStatusCode())) {
-                    return objectMapper.convertValue(apsVasResponse.getBody(), target);
+                try {
+                    log.info("response received from APS : {}", responseEntity.getBody());
+                    ApsResponseWrapper apsVasResponse = gson.fromJson(responseEntity.getBody(), ApsResponseWrapper.class);
+                    if (HttpStatus.OK.name().equals(apsVasResponse.getStatusCode())) {
+                        return objectMapper.convertValue(apsVasResponse.getBody(), target);
+                    }
+                    ApsFailureResponse failureResponse = objectMapper.readValue((String) responseEntity.getBody(), ApsFailureResponse.class);
+                    failureResponse.setStatusCode(apsVasResponse.getStatusCode());
+                    throw new WynkRuntimeException(failureResponse.getErrorCode(), failureResponse.getMessage(), failureResponse.getStatusCode());
+                } catch (Exception e){
+                    if (e instanceof WynkRuntimeException) {
+                        log.error("error received from APS : {}", e.getMessage(), e);
+                        throw e;
+                    }
+                    return objectMapper.readValue(responseEntity.getBody(), target);
                 }
-                ApsFailureResponse failureResponse = objectMapper.readValue((String) responseEntity.getBody(), ApsFailureResponse.class);
-                failureResponse.setStatusCode(apsVasResponse.getStatusCode());
-                throw new WynkRuntimeException(failureResponse.getErrorCode(), failureResponse.getMessage(), failureResponse.getStatusCode());
             }
             throw new WynkRuntimeException(APS001, responseEntity.getStatusCode().name());
         } catch (JsonProcessingException ex) {

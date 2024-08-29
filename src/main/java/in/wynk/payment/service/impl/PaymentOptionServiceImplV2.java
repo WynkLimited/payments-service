@@ -14,6 +14,7 @@ import in.wynk.payment.dto.response.PaymentOptionsComputationResponse;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
 import in.wynk.payment.eligibility.request.PaymentOptionsComputationDTO;
 import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
+import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
 import in.wynk.payment.eligibility.service.IPaymentOptionComputationManager;
 import in.wynk.payment.service.IPaymentOptionServiceV2;
 import in.wynk.payment.service.PaymentCachingService;
@@ -129,6 +130,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
             List<PaymentMethod> filterMethods = availableMethods.get(group.getId()).stream().filter(filterPredicate).collect(Collectors.toList());
             final PaymentOptionsComputationResponse response = paymentOptionManager.compute(request);
             filterMethods = filterPaymentMethodsBasedOnEligibility(response, filterMethods);
+            filterMethods = (filterMethods.size() > 0) ? filterPaymentMethodsForRechargePlans(filterMethods, request) : filterMethods;
             List<in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentMethodDTO> filteredDTO = filterMethods.stream().map((pm) -> new in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentMethodDTO(pm, autoRenewalSupplier)).collect(Collectors.toList());
             finalMethods.addAll(filteredDTO);
         }
@@ -140,4 +142,13 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
         return methods.stream().filter(eligibilityResultSet::contains).collect(Collectors.toList());
     }
 
+    private List<PaymentMethod> filterPaymentMethodsForRechargePlans(List<PaymentMethod> filterMethods, PaymentOptionsEligibilityRequest request) {
+        if (request instanceof PaymentOptionsPlanEligibilityRequest) {
+            PlanDTO plan = paymentCachingService.getPlan(((PaymentOptionsPlanEligibilityRequest) request).getPlanId());
+            if (plan.isEligibleRechargePlan()) {
+                filterMethods.removeIf(method -> !method.getPaymentCode().getCode().equalsIgnoreCase("APS_V2"));
+            }
+        }
+        return filterMethods;
+    }
 }

@@ -21,8 +21,10 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
+import in.wynk.payment.core.dao.entity.ReceiptDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
+import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.*;
@@ -33,6 +35,8 @@ import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.common.response.AbstractVerificationResponse;
 import in.wynk.payment.dto.common.response.DefaultPaymentStatusResponse;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
+import in.wynk.payment.dto.itune.ItunesCallbackRequest;
+import in.wynk.payment.dto.itune.LatestReceiptInfo;
 import in.wynk.payment.dto.manager.CallbackResponseWrapper;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractPaymentChargingResponse;
@@ -218,7 +222,7 @@ public class PaymentGatewayManager
         }
     }
 
-    private String getLastSuccessTransactionId (Transaction transaction) {
+    private String getLastSuccessTransactionId(Transaction transaction) {
         if (transaction.getType() == PaymentEvent.RENEW) {
             PaymentRenewal renewal =
                     RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).findById(transaction.getIdStr())
@@ -228,7 +232,6 @@ public class PaymentGatewayManager
         return null;
     }
 
-    @ClientAware(clientAlias = "#request.clientAlias")
     public WynkResponseEntity<Void> handleNotification(NotificationRequest request) {
         final IReceiptDetailService<?, IAPNotification> receiptDetailService =
                 BeanLocatorFactory.getBean(request.getPaymentGateway().getCode(), new ParameterizedTypeReference<IReceiptDetailService<?, IAPNotification>>() {
@@ -240,13 +243,23 @@ public class PaymentGatewayManager
             if (mapping != null) {
                 String productType = Objects.nonNull(mapping.getItemId()) ? BaseConstants.POINT : BaseConstants.PLAN;
                 final in.wynk.common.enums.PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper, productType);
-                final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
-                        PlanRenewalRequest.builder().txnId(mapping.getLinkedTransactionId()).planId(mapping.getPlanId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentGateway(request.getPaymentGateway())
-                                .clientAlias(request.getClientAlias()).build());
-                transactionInitRequest.setEvent(event);
-                final Transaction transaction = transactionManager.init(transactionInitRequest);
-                handleNotification(transaction, mapping);
-                return WynkResponseEntity.<Void>builder().success(true).build();
+                if (event != PaymentEvent.RENEW) {
+                    String paymentTransactionId = receiptDetailService.getIdAndUpdateReceiptDetails(wrapper);
+                    Transaction transaction = transactionManager.get(paymentTransactionId);
+                    if(event == PaymentEvent.UNSUBSCRIBE) {
+                        recurringTransactionUtils.cancelRenewalBasedOnRealtimeMandateForIAP("PaymentEvent Unsubscribed", transaction, event);
+                    } else {
+                        recurringTransactionUtils.cancelRenewalBasedOnRealtimeMandateForIAP("PaymentEvent Cancelled", transaction, event);
+                    }
+                } else {
+                    final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
+                            PlanRenewalRequest.builder().txnId(mapping.getLinkedTransactionId()).planId(mapping.getPlanId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentGateway(request.getPaymentGateway())
+                                    .clientAlias(mapping.getService().equalsIgnoreCase("music") ? "music" : "airtelxstream").build());
+                    transactionInitRequest.setEvent(event);
+                    final Transaction transaction = transactionManager.init(transactionInitRequest);
+                    handleNotification(transaction, mapping);
+                    return WynkResponseEntity.<Void>builder().success(true).build();
+                }
             }
         }
         return WynkResponseEntity.<Void>builder().success(false).build();

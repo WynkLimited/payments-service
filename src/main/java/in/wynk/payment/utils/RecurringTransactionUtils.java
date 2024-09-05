@@ -7,6 +7,7 @@ import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.TransactionAware;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
@@ -27,8 +28,7 @@ import org.springframework.stereotype.Component;
 import java.util.EnumSet;
 import java.util.Objects;
 
-import static in.wynk.payment.core.constant.PaymentConstants.ERROR_REASONS;
-import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
 
 /**
  * @author Nishesh Pandey
@@ -96,7 +96,7 @@ public class RecurringTransactionUtils {
                         }
                     }
                     subscriptionServiceManager.unSubscribePlan(AbstractUnSubscribePlanRequest.from(request));
-                    if (event == PaymentEvent.CANCELLED) {
+                    if ((request.getTransaction().getPaymentChannel().getId().equals(AMAZON_IAP) || request.getTransaction().getPaymentChannel().getId().equals(GOOGLE_IAP) || request.getTransaction().getPaymentChannel().getId().equals(PaymentConstants.ITUNES)) && event == PaymentEvent.CANCELLED) {
                         request.getTransaction().setType(txn.getType().toString());
                         updateTransaction(request.getTransaction());
                     } else {

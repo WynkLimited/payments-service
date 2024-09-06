@@ -22,6 +22,7 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.*;
 import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
+import in.wynk.payment.core.dao.repository.ITransactionDao;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.gpbs.acknowledge.request.AbstractAcknowledgement;
@@ -44,6 +45,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.MIGRATED;
 import static in.wynk.payment.core.constant.BeanConstant.CHARGING_FRAUD_DETECTION_CHAIN;
@@ -412,6 +414,11 @@ public class PaymentManager
 
     @Override
     public WynkResponseEntity<Void> doRenewal (PaymentRenewalChargingRequest request) {
+        Optional<Transaction> originalTransaction = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).findById(request.getId());
+        if ((request.getPaymentGateway().getId().equals(ITUNES) || request.getPaymentGateway().getId().equals(AMAZON_IAP) || request.getPaymentGateway().getId().equals(GOOGLE_IAP)) && originalTransaction.get().getStatus() != TransactionStatus.SUCCESS && !isEligibleForRenewal(originalTransaction.get())) {
+            log.info("User already renewed through callback: {} ", request.getId());
+            return null;
+        }
         final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
                 PlanRenewalRequest.builder().txnId(request.getId()).planId(request.getPlanId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(request.getPaymentGateway())
                         .clientAlias(request.getClientAlias())
@@ -423,6 +430,13 @@ public class PaymentManager
                 });
         try {
             return merchantPaymentRenewalService.doRenewal(request);
+        } catch (Exception e) {
+            if (WynkRuntimeException.class.isAssignableFrom(e.getClass())) {
+                final WynkRuntimeException exception = (WynkRuntimeException) e;
+                eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(exception.getErrorCode())).description(exception.getErrorTitle()).build());
+            }
+            log.error("Unable to do renewal for the transaction {}, error message {}", transaction.getId(), e.getMessage(), e);
+            return WynkResponseEntity.<Void>builder().success(false).build();
         } finally {
             if (merchantPaymentRenewalService.supportsRenewalReconciliation()) {
                 sqsManagerService.publishSQSMessage(
@@ -439,6 +453,32 @@ public class PaymentManager
                 eventPublisher.publishEvent(RecurringPaymentEvent.builder().transaction(oldTransaction).paymentEvent(PaymentEvent.UNSUBSCRIBE).build());
             }
         }
+    }
+
+    private boolean isEligibleForRenewal(Transaction oldTransaction) {
+        try {
+            String lastSuccessTransactionId = getLastSuccessTransactionId(transactionManager.get(oldTransaction.getIdStr()));
+            List<PaymentRenewal> paymentRenewalList = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).findByLastTransactionId(lastSuccessTransactionId);
+            Optional<PaymentRenewal> newSuccessTransactionId = paymentRenewalList.stream().filter(paymentRenewal -> isTransactionSuccess(paymentRenewal.getTransactionId())).findFirst();
+            if (!newSuccessTransactionId.isPresent()) {
+                return true;
+            }
+            return false;
+        } catch (Exception ex) {
+            return true;
+        }
+    }
+
+    private boolean isTransactionSuccess(String transactionId) {
+       try {
+           Optional<Transaction> optionalTransaction = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).findById(transactionId);
+           if (optionalTransaction.isPresent() && optionalTransaction.get().getStatus() == TransactionStatus.SUCCESS) {
+               return true;
+           }
+           return false;
+       } catch (Exception ex) {
+           return false;
+       }
     }
 
     public void addToPaymentRenewalMigration (MigrationTransactionRequest request) {

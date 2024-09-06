@@ -453,7 +453,6 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     @Override
     public String getIdAndUpdateReceiptDetails(DecodedNotificationWrapper<AmazonNotificationRequest> wrapper) {
         AmazonNotificationMessage message = Utils.getData(wrapper.getDecodedNotification().getMessage(), AmazonNotificationMessage.class);
-        AmazonIapReceiptResponse receiptResponse = getReceiptStatus(message.getReceiptId(), message.getAppUserId());
         Optional<ReceiptDetails> optionalReceiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(message.getReceiptId());
         AmazonReceiptDetails amazonReceiptDetails = (AmazonReceiptDetails) optionalReceiptDetails.get();
         amazonReceiptDetails.setExpiry(System.currentTimeMillis());

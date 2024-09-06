@@ -464,10 +464,14 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     }
 
     private boolean isNotificationEligibleForRenewal(AmazonIapReceiptResponse response, AmazonReceiptDetails receipt) {
-        if (Objects.isNull(receipt.getRenewalDate()) || response.getRenewalDate() > receipt.getRenewalDate()) {
-            return true;
+        try {
+            if (Objects.isNull(receipt.getRenewalDate()) || response.getRenewalDate() > receipt.getRenewalDate()) {
+                return true;
+            }
+            return false;
+        } catch (Exception ex) {
+            return false;
         }
-        return false;
     }
 
     public boolean supportsRenewalReconciliation() {

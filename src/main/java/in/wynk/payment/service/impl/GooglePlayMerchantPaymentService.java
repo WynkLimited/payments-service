@@ -27,6 +27,7 @@ import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 import in.wynk.payment.core.dao.repository.ITransactionDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.PaymentErrorEvent;
+import in.wynk.payment.core.event.TransactionSnapshotEvent;
 import in.wynk.payment.core.service.GSTStateCodesCachingService;
 import in.wynk.payment.core.service.InvoiceDetailsCachingService;
 import in.wynk.payment.dto.*;
@@ -131,13 +132,14 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     private final InvoiceDetailsCachingService invoiceDetailsCachingService;
     private final ITransactionManagerService transactionManager;
     private final RecurringTransactionUtils recurringTransactionUtils;
+    private final IPurchaseDetailsManger purchaseDetailsManger;
 
     public GooglePlayMerchantPaymentService (ITransactionManagerService transactionManager, RecurringTransactionUtils recurringTransactionUtils, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson,
                                              ApplicationEventPublisher eventPublisher, WynkRedisLockService wynkRedisLockService, IErrorCodesCacheService errorCodesCacheServiceImpl,
                                              GooglePlayCacheService googlePlayCacheService, PaymentCachingService cachingService,
                                              IKafkaPublisherService kafkaPublisherService, @Qualifier(AuditConstants.MONGO_AUDIT_LISTENER) IAuditableListener auditingListener,
                                              IUserDetailsService userDetailsService, ITaxManager taxManager,
-                                             GSTStateCodesCachingService stateCodesCachingService, InvoiceDetailsCachingService invoiceDetailsCachingService) {
+                                             GSTStateCodesCachingService stateCodesCachingService, InvoiceDetailsCachingService invoiceDetailsCachingService, IPurchaseDetailsManger purchaseDetailsManger) {
         super(cachingService, errorCodesCacheServiceImpl);
         this.transactionManager = transactionManager;
         this.recurringTransactionUtils = recurringTransactionUtils;
@@ -153,6 +155,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         this.taxManager = taxManager;
         this.stateCodesCachingService = stateCodesCachingService;
         this.invoiceDetailsCachingService = invoiceDetailsCachingService;
+        this.purchaseDetailsManger = purchaseDetailsManger;
     }
 
     @Deprecated
@@ -867,9 +870,34 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     public GooglePlayPaymentRefundResponse doRefund (GooglePlayPaymentRefundRequest request) {
         final Transaction refundTransaction = TransactionContext.get();
         fetchDetailsAndUpdateGooglePlaySubscriptionOnConsole(refundTransaction.getUid(), refundTransaction.getIdStr(), GooglePlayConstant.REFUND);
+        publishTransactionSnapShotEvent(refundTransaction);
         return GooglePlayPaymentRefundResponse.builder().transactionId(refundTransaction.getIdStr()).uid(refundTransaction.getUid()).planId(refundTransaction.getPlanId())
                 .itemId(refundTransaction.getItemId()).clientAlias(refundTransaction.getClientAlias()).amount(refundTransaction.getAmount()).msisdn(refundTransaction.getMsisdn())
                 .paymentEvent(refundTransaction.getType()).transactionStatus(TransactionStatus.SUCCESS).build();
+    }
+
+    private void publishTransactionSnapShotEvent (Transaction transaction) {
+        final TransactionSnapshotEvent.TransactionSnapshotEventBuilder builder = TransactionSnapshotEvent.builder().transaction(Transaction.builder()
+                .id(transaction.getIdStr())
+                .status(String.valueOf(TransactionStatus.SUCCESS))
+                .discount(transaction.getDiscount())
+                .amount(transaction.getAmount())
+                .mandateAmount(transaction.getMandateAmount())
+                .paymentChannel(transaction.getPaymentChannel().getCode())
+                .planId(transaction.getPlanId())
+                .consent(transaction.getConsent())
+                .itemId(transaction.getItemId())
+                .coupon(transaction.getCoupon())
+                .uid(transaction.getUid())
+                .msisdn(transaction.getMsisdn())
+                .clientAlias(transaction.getClientAlias())
+                .type(transaction.getType().getValue())
+                .exitTime(transaction.getExitTime())
+                .initTime(transaction.getInitTime())
+                .itemId(transaction.getItemId())
+                .build());
+        Optional.ofNullable(purchaseDetailsManger.get(transaction)).ifPresent(builder::purchaseDetails);
+        eventPublisher.publishEvent(builder.build());
     }
 
     private void fetchDetailsAndUpdateGooglePlaySubscriptionOnConsole (String uid, String transactionId, String action) {

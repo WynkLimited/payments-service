@@ -569,8 +569,8 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         try {
             Optional<Transaction> oldTransaction = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).findById(paymentRenewalChargingRequest.getId());
             final ItunesReceiptDetails receiptDetails;
-            if (oldTransaction.get().getStatus() != TransactionStatus.SUCCESS) {
-                String lastSuccessTransactionId = getLastSuccessTransactionId(oldTransaction.get());
+            String lastSuccessTransactionId = getLastSuccessTransactionId(oldTransaction.get());
+            if (oldTransaction.get().getStatus() != TransactionStatus.SUCCESS && !StringUtils.isEmpty(lastSuccessTransactionId)) {
                 receiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByPaymentTransactionId(lastSuccessTransactionId);
             } else {
                 receiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByPaymentTransactionId(paymentRenewalChargingRequest.getId());

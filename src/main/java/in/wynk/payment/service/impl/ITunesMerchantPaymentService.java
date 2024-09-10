@@ -71,8 +71,7 @@ import java.util.stream.Collectors;
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.logging.BaseLoggingMarkers.PAYMENT_ERROR;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY011;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY026;
+import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE;
 import static in.wynk.payment.dto.itune.ItunesConstant.*;
@@ -576,13 +575,17 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             } else {
                 receiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByPaymentTransactionId(paymentRenewalChargingRequest.getId());
             }
-            final ItunesReceiptType receiptType = ItunesReceiptType.valueOf(receiptDetails.getType());
-            final ItunesReceipt itunesReceipt = getReceiptObjForUser(receiptDetails.getReceipt(), receiptType, receiptDetails.getMsisdn());
-            final ItunesLatestReceiptResponse latestReceiptResponse = getLatestReceiptResponseInternal(receiptDetails.getReceipt(), itunesReceipt, receiptType);
-            final List<LatestReceiptInfo> filteredReceiptResponse = latestReceiptResponse.getLatestReceiptInfo().stream().filter(details -> receiptDetails.getId().equals(details.getOriginalTransactionId())).sorted(Comparator.comparingLong(receiptType::getExpireDate).reversed()).collect(Collectors.toList());
-            latestReceiptResponse.setLatestReceiptInfo(filteredReceiptResponse);
-            fetchAndUpdateFromReceipt(transaction, latestReceiptResponse, receiptDetails);
-            return WynkResponseEntity.<Void>builder().success(true).build();
+            if (Objects.nonNull(receiptDetails)) {
+                final ItunesReceiptType receiptType = ItunesReceiptType.valueOf(receiptDetails.getType());
+                final ItunesReceipt itunesReceipt = getReceiptObjForUser(receiptDetails.getReceipt(), receiptType, receiptDetails.getMsisdn());
+                final ItunesLatestReceiptResponse latestReceiptResponse = getLatestReceiptResponseInternal(receiptDetails.getReceipt(), itunesReceipt, receiptType);
+                final List<LatestReceiptInfo> filteredReceiptResponse = latestReceiptResponse.getLatestReceiptInfo().stream().filter(details -> receiptDetails.getId().equals(details.getOriginalTransactionId())).sorted(Comparator.comparingLong(receiptType::getExpireDate).reversed()).collect(Collectors.toList());
+                latestReceiptResponse.setLatestReceiptInfo(filteredReceiptResponse);
+                fetchAndUpdateFromReceipt(transaction, latestReceiptResponse, receiptDetails);
+                return WynkResponseEntity.<Void>builder().success(true).build();
+            }
+            transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            return WynkResponseEntity.<Void>builder().success(false).build();
         } catch (Exception e) {
             if (WynkRuntimeException.class.isAssignableFrom(e.getClass())) {
                 final WynkRuntimeException exception = (WynkRuntimeException) e;

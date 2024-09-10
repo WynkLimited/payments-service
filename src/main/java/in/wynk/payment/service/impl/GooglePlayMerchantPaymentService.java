@@ -127,6 +127,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     private final IUserDetailsService userDetailsService;
     private final IPurchaseDetailsManger purchaseDetailsManger;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final ITransactionManagerService transactionManager;
     private final ITaxManager taxManager;
     private final GSTStateCodesCachingService stateCodesCachingService;
     private final InvoiceDetailsCachingService invoiceDetailsCachingService;
@@ -135,7 +136,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                                              ApplicationEventPublisher eventPublisher, WynkRedisLockService wynkRedisLockService, IErrorCodesCacheService errorCodesCacheServiceImpl,
                                              GooglePlayCacheService googlePlayCacheService, PaymentCachingService cachingService,
                                              ISqsManagerService sqsMessagePublisher, @Qualifier(AuditConstants.MONGO_AUDIT_LISTENER) IAuditableListener auditingListener,
-                                             IUserDetailsService userDetailsService, IPurchaseDetailsManger purchaseDetailsManger, ApplicationEventPublisher applicationEventPublisher, ITaxManager taxManager,
+                                             IUserDetailsService userDetailsService, IPurchaseDetailsManger purchaseDetailsManger, ApplicationEventPublisher applicationEventPublisher, ITransactionManagerService transactionManager, ITaxManager taxManager,
                                              GSTStateCodesCachingService stateCodesCachingService, InvoiceDetailsCachingService invoiceDetailsCachingService) {
         super(cachingService, errorCodesCacheServiceImpl);
         this.gson = gson;
@@ -149,6 +150,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         this.userDetailsService = userDetailsService;
         this.purchaseDetailsManger = purchaseDetailsManger;
         this.applicationEventPublisher = applicationEventPublisher;
+        this.transactionManager = transactionManager;
         this.taxManager = taxManager;
         this.stateCodesCachingService = stateCodesCachingService;
         this.invoiceDetailsCachingService = invoiceDetailsCachingService;
@@ -820,20 +822,14 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
 
     @Override
     public void cancelSubscription (String uid, String transactionId) {
-        fetchDetailsAndUpdateGooglePlaySubscriptionOnConsole(uid, transactionId, CANCEL);
+        final Transaction transaction = transactionManager.get(transactionId);
+        fetchDetailsAndUpdateGooglePlaySubscriptionOnConsole(transaction, uid, transactionId, CANCEL);
     }
 
     @Override
     public GooglePlayPaymentRefundResponse doRefund (GooglePlayPaymentRefundRequest request) {
         final Transaction refundTransaction = TransactionContext.get();
-        ResponseEntity<String> responseEntity= fetchDetailsAndUpdateGooglePlaySubscriptionOnConsole(refundTransaction.getUid(), refundTransaction.getIdStr(), GooglePlayConstant.REFUND);
-        if(responseEntity.getStatusCode().equals(HttpStatus.OK)){
-            refundTransaction.setStatus(String.valueOf(TransactionStatus.SUCCESS));
-        } else{
-            refundTransaction.setStatus(String.valueOf(TransactionStatus.FAILURE));
-        }
-        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).save(refundTransaction);
-        publishTransactionSnapShotEvent(refundTransaction);
+        fetchDetailsAndUpdateGooglePlaySubscriptionOnConsole(refundTransaction,refundTransaction.getUid(), refundTransaction.getIdStr(), GooglePlayConstant.REFUND);
         return GooglePlayPaymentRefundResponse.builder().transactionId(refundTransaction.getIdStr()).uid(refundTransaction.getUid()).planId(refundTransaction.getPlanId())
                 .itemId(refundTransaction.getItemId()).clientAlias(refundTransaction.getClientAlias()).amount(refundTransaction.getAmount()).msisdn(refundTransaction.getMsisdn())
                 .paymentEvent(refundTransaction.getType()).transactionStatus(refundTransaction.getStatus()).build();
@@ -845,7 +841,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         applicationEventPublisher.publishEvent(builder.build());
     }
 
-    private ResponseEntity<String> fetchDetailsAndUpdateGooglePlaySubscriptionOnConsole (String uid, String transactionId, String action) {
+    private ResponseEntity<String> fetchDetailsAndUpdateGooglePlaySubscriptionOnConsole (Transaction refundTransaction, String uid, String transactionId, String action) {
         List<ReceiptDetails> receiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
                 .findByUid(uid);
         Optional<ReceiptDetails> filteredReceipt = receiptDetails.stream().filter(receiptDetails1 -> receiptDetails1.getPaymentTransactionId().equals(transactionId)).findAny();
@@ -855,13 +851,19 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         HttpHeaders headers = getHeaders(gPlayReceipt.getService());
         try {
               ResponseEntity<String> responseEntity= restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(null, headers), String.class);
+              AnalyticService.update(responseEntity);
+              refundTransaction.setStatus(String.valueOf(TransactionStatus.SUCCESS));
               return responseEntity;
         } catch (Exception ex) {
             if (action.equalsIgnoreCase(CANCEL)) {
                 throw new WynkRuntimeException(PaymentErrorType.PLAY006, ex);
             } else {
+                refundTransaction.setStatus(String.valueOf(TransactionStatus.FAILURE));
                 throw new WynkRuntimeException(PaymentErrorType.PLAY007, ex);
             }
+        }finally {
+            RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).save(refundTransaction);
+            publishTransactionSnapShotEvent(refundTransaction);
         }
     }
 }

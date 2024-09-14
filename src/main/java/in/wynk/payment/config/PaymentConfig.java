@@ -1,5 +1,7 @@
 package in.wynk.payment.config;
 
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.google.gson.Gson;
@@ -111,7 +113,10 @@ public class PaymentConfig implements WebMvcConfigurer {
 
     @Bean
     public AmazonS3 amazonS3Client(AmazonSdkProperties sdkProperties) {
-        return AmazonS3ClientBuilder.standard().withRegion(sdkProperties.getSdk().getRegions()).build();
+        BasicAWSCredentials basicAWSCredentials = new BasicAWSCredentials(sdkProperties.getAccessKey(), sdkProperties.getSecretKey());
+        return AmazonS3ClientBuilder.standard()
+                .withCredentials(new AWSStaticCredentialsProvider(basicAWSCredentials))
+                .withRegion(sdkProperties.getSdk().getRegions()).build();
     }
 
     @Bean

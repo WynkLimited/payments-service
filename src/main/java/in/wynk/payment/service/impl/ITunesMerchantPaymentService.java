@@ -585,6 +585,9 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                 return WynkResponseEntity.<Void>builder().success(true).build();
             }
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            if (Objects.isNull(receiptDetails)) {
+                throw new WynkRuntimeException(ITUNES001);
+            }
             return WynkResponseEntity.<Void>builder().success(false).build();
         } catch (Exception e) {
             if (WynkRuntimeException.class.isAssignableFrom(e.getClass())) {

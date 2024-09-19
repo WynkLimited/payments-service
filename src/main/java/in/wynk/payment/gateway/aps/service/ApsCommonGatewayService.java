@@ -62,13 +62,12 @@ import java.util.Optional;
 
 import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
 import static in.wynk.payment.constant.OrderStatus.*;
-import static in.wynk.payment.core.constant.BeanConstant.AIRTEL_PAY_STACK;
 import static in.wynk.payment.core.constant.PaymentConstants.BANK_CODE;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_MODE;
 import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
-import static in.wynk.payment.dto.aps.common.ApsConstant.INT_PAY;
-import static in.wynk.payment.dto.aps.common.ApsConstant.PAY_DIGI;
+import static in.wynk.payment.dto.aps.common.ApsConstant.*;
+
 /**
  * @author Nishesh Pandey
  */

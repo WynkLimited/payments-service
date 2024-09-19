@@ -98,7 +98,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
                 } else if (request.getTransaction().getType() == PaymentEvent.MANDATE) {
                     setRenewalDate(request, nextRecurringDateTime, planDTO);
                 }
-            } else if (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS && (request.getFinalTransactionStatus() == TransactionStatus.FAILURE || request.getFinalTransactionStatus() == TransactionStatus.FAILUREALREADYSUBSCRIBED) &&
+            } else if (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS && request.getFinalTransactionStatus() == TransactionStatus.FAILURE &&
                     request.getTransaction().getType() == PaymentEvent.RENEW && request.getTransaction().getPaymentChannel().isInternalRecurring()) {
                 PaymentRenewal renewal = getRenewalById(request.getTransaction().getIdStr());
                 if (Objects.nonNull(renewal) && renewal.getTransactionEvent() == PaymentEvent.CANCELLED) {

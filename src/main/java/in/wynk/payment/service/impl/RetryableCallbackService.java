@@ -11,7 +11,9 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
+import in.wynk.payment.dto.gateway.callback.DefaultPaymentCallbackResponse;
 import in.wynk.payment.dto.manager.CallbackResponseWrapper;
+import in.wynk.payment.dto.request.CallbackRequest;
 import in.wynk.payment.dto.request.CallbackRequestWrapper;
 import in.wynk.payment.dto.request.CallbackRequestWrapperV2;
 import in.wynk.payment.dto.request.NotificationRequest;
@@ -27,10 +29,7 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 
@@ -123,7 +122,12 @@ public class RetryableCallbackService implements ICallbackService<Object, Abstra
         @ClientAware(clientAlias = "#clientAlias")
         public CallbackResponseWrapper<AbstractPaymentCallbackResponse> handle(String clientAlias, String partner, HttpHeaders headers, Map<String, Object> payload) {
             final PaymentGateway paymentGateway = PaymentCodeCachingService.getFromCode(partner);
-            return newManager.handle(CallbackRequestWrapperV2.builder().paymentGateway(paymentGateway).payload(payload).headers(headers).build());
+            CallbackRequestWrapperV2<CallbackRequest> callbackRequest =
+                    CallbackRequestWrapperV2.builder().paymentGateway(paymentGateway).payload(payload).headers(headers).build();
+            if (Objects.isNull(callbackRequest.getTransactionId())) {
+                return CallbackResponseWrapper.builder().callbackResponse(DefaultPaymentCallbackResponse.builder().build()).build();
+            }
+            return newManager.handle(callbackRequest);
         }
     }
 

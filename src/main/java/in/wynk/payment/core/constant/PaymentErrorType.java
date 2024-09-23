@@ -155,7 +155,12 @@ public enum PaymentErrorType implements IWynkErrorType {
 
     /*Realtime Mandate start*/
     RTMANDATE001("Realtime Mandate Processing Failure", "Could not stop renewal based on realtime mandate as we don't have record for initial transaction id",HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.STOP_RENEWAL_FAILURE),
+    RTMANDATE002("Realtime Mandate Processing Failure", "Could not stop renewal based on realtime mandate for IAP",HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.STOP_RENEWAL_FAILURE),
     /*Realtime Mandate start*/
+
+    /* Itunes errorCodes start */
+    ITUNES001("Itunes Renewal Pipeline Failure", "Receipt entry is not Found in db While renewal", HttpStatus.NOT_FOUND, PaymentLoggingMarker.ITUNES_RENEWAL_ERROR),
+    /* Itunes errorCodes end */
 
     /*Add to bill errorCodes start*/
     PAY800("Fetching Plan page Url failure", "Unable to get the plan page for DTP", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.BEST_VALUE_PLAN_API_ERROR),

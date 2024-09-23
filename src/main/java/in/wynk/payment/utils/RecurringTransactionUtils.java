@@ -4,6 +4,7 @@ import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.TransactionAware;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
@@ -23,7 +24,7 @@ import org.springframework.stereotype.Component;
 import java.util.EnumSet;
 import java.util.Objects;
 
-import static in.wynk.payment.core.constant.PaymentConstants.ERROR_REASONS;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
 
 /**
  * @author Nishesh Pandey
@@ -41,12 +42,12 @@ public class RecurringTransactionUtils {
 
     public void cancelRenewalBasedOnErrorReason (String description, Transaction transaction) {
         if (ERROR_REASONS.contains(description)) {
-            updateSubscriptionAndTransaction(description, transaction, false);
+            updateSubscriptionAndTransaction(description, transaction, false, PaymentEvent.UNSUBSCRIBE);
         }
     }
 
     @TransactionAware(txnId = "#txn.id")
-    private void updateSubscriptionAndTransaction (String description, Transaction txn, boolean isRealTimeMandateFlow) {
+    private void updateSubscriptionAndTransaction (String description, Transaction txn, boolean isRealTimeMandateFlow, PaymentEvent event) {
         Transaction transactionCopy = Transaction.builder().id(txn.getIdStr()).planId(txn.getPlanId()).amount(txn.getAmount()).mandateAmount(txn.getMandateAmount()).discount(txn.getDiscount())
                 .initTime(txn.getInitTime()).uid(txn.getUid()).msisdn(txn.getMsisdn()).clientAlias(txn.getClientAlias()).itemId(txn.getItemId())
                 .paymentChannel(txn.getPaymentChannel().getId()).type(txn.getType().getValue()).status(txn.getStatus().getValue()).coupon(txn.getCoupon()).exitTime(txn.getExitTime())
@@ -80,12 +81,23 @@ public class RecurringTransactionUtils {
                         request = AsyncTransactionRevisionRequest.builder().transaction(lastSuccessTransaction).existingTransactionStatus(lastSuccessTransaction.getStatus())
                                 .finalTransactionStatus(TransactionStatus.CANCELLED).build();
                     } else {
-                        transactionCopy.setType(PaymentEvent.UNSUBSCRIBE.getValue());
-                        request = AsyncTransactionRevisionRequest.builder().transaction(transactionCopy).existingTransactionStatus(transactionCopy.getStatus())
-                                .finalTransactionStatus(TransactionStatus.CANCELLED).build();
+                        if (event == PaymentEvent.UNSUBSCRIBE) {
+                            transactionCopy.setType(PaymentEvent.UNSUBSCRIBE.getValue());
+                            request = AsyncTransactionRevisionRequest.builder().transaction(transactionCopy).existingTransactionStatus(transactionCopy.getStatus())
+                                    .finalTransactionStatus(TransactionStatus.CANCELLED).build();
+                        } else {
+                            transactionCopy.setType(PaymentEvent.CANCELLED.getValue());
+                            request = AsyncTransactionRevisionRequest.builder().transaction(transactionCopy).existingTransactionStatus(transactionCopy.getStatus())
+                                    .finalTransactionStatus(TransactionStatus.CANCELLED).build();
+                        }
                     }
-
                     subscriptionServiceManager.unSubscribePlan(AbstractUnSubscribePlanRequest.from(request));
+                    if ((request.getTransaction().getPaymentChannel().getId().equals(AMAZON_IAP) || request.getTransaction().getPaymentChannel().getId().equals(GOOGLE_IAP) || request.getTransaction().getPaymentChannel().getId().equals(PaymentConstants.ITUNES)) && event == PaymentEvent.CANCELLED) {
+                        request.getTransaction().setType(txn.getType().toString());
+                        updateTransaction(request.getTransaction());
+                    } else {
+                        updateTransaction(request.getTransaction());
+                    }
                 }
             }
         } catch (Exception e) {
@@ -94,13 +106,18 @@ public class RecurringTransactionUtils {
 
     }
 
+    private void updateTransaction (Transaction transaction) {
+        transaction.setStatus(TransactionStatus.CANCELLED.getValue());
+        transactionManagerService.upsert(transaction);
+    }
+
     public void cancelRenewalBasedOnRealtimeMandate (String description, Transaction firstTransaction) {
         try {
             PaymentRenewal paymentRenewal = recurringPaymentManagerService.getLatestRecurringPaymentByInitialTxnId(firstTransaction.getIdStr());
             if (Objects.nonNull(paymentRenewal)) {
                 final Transaction transaction =
                         (firstTransaction.getIdStr().equals(paymentRenewal.getTransactionId())) ? firstTransaction : transactionManagerService.get(paymentRenewal.getTransactionId());
-                updateSubscriptionAndTransaction(description, transaction, true);
+                updateSubscriptionAndTransaction(description, transaction, true, PaymentEvent.UNSUBSCRIBE);
             } else {
                 eventPublisher.publishEvent(MandateStatusEvent.builder().txnId(firstTransaction.getIdStr()).clientAlias(firstTransaction.getClientAlias()).errorReason(description)
                         .referenceTransactionId(null).planId(firstTransaction.getPlanId()).paymentMethod(firstTransaction.getPaymentChannel().getCode()).uid(firstTransaction.getUid())
@@ -111,5 +128,13 @@ public class RecurringTransactionUtils {
             throw new WynkRuntimeException(PaymentErrorType.RTMANDATE001);
         }
 
+    }
+
+    public void cancelRenewalBasedOnRealtimeMandateForIAP (String description, Transaction transaction, PaymentEvent event) {
+        try {
+            updateSubscriptionAndTransaction(description, transaction, true, event);
+        } catch (Exception ex) {
+            throw new WynkRuntimeException(PaymentErrorType.RTMANDATE002, ex);
+        }
     }
 }

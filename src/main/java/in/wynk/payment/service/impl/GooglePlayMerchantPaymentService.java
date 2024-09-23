@@ -23,8 +23,10 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.repository.ITransactionDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.PaymentErrorEvent;
+import in.wynk.payment.core.event.TransactionSnapshotEvent;
 import in.wynk.payment.core.service.GSTStateCodesCachingService;
 import in.wynk.payment.core.service.InvoiceDetailsCachingService;
 import in.wynk.payment.dto.*;
@@ -57,6 +59,7 @@ import in.wynk.payment.dto.response.gpbs.GooglePlayBillingResponse;
 import in.wynk.payment.gateway.IPaymentRefund;
 import in.wynk.payment.service.*;
 import in.wynk.payment.utils.MerchantServiceUtil;
+import in.wynk.payment.utils.RecurringTransactionUtils;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.stream.producer.IKafkaPublisherService;
 import in.wynk.subscription.common.dto.PlanDTO;
@@ -125,17 +128,23 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     private IKafkaPublisherService kafkaPublisherService;
     private IAuditableListener auditingListener;
     private final IUserDetailsService userDetailsService;
+    private final IPurchaseDetailsManger purchaseDetailsManger;
+    private final ApplicationEventPublisher applicationEventPublisher;
+    private final ITransactionManagerService transactionManager;
     private final ITaxManager taxManager;
     private final GSTStateCodesCachingService stateCodesCachingService;
     private final InvoiceDetailsCachingService invoiceDetailsCachingService;
+    private final RecurringTransactionUtils recurringTransactionUtils;
 
-    public GooglePlayMerchantPaymentService (@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson,
+    public GooglePlayMerchantPaymentService (ITransactionManagerService transactionManager, RecurringTransactionUtils recurringTransactionUtils, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson,
                                              ApplicationEventPublisher eventPublisher, WynkRedisLockService wynkRedisLockService, IErrorCodesCacheService errorCodesCacheServiceImpl,
                                              GooglePlayCacheService googlePlayCacheService, PaymentCachingService cachingService,
                                              ISqsManagerService sqsMessagePublisher, @Qualifier(AuditConstants.MONGO_AUDIT_LISTENER) IAuditableListener auditingListener,
-                                             IUserDetailsService userDetailsService, ITaxManager taxManager,
+                                             IUserDetailsService userDetailsService, IPurchaseDetailsManger purchaseDetailsManger, ApplicationEventPublisher applicationEventPublisher, ITaxManager taxManager,
                                              GSTStateCodesCachingService stateCodesCachingService, InvoiceDetailsCachingService invoiceDetailsCachingService) {
         super(cachingService, errorCodesCacheServiceImpl);
+        this.transactionManager = transactionManager;
+        this.recurringTransactionUtils = recurringTransactionUtils;
         this.gson = gson;
         this.restTemplate = restTemplate;
         this.cachingService = cachingService;
@@ -146,6 +155,8 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         this.kafkaPublisherService = kafkaPublisherService;
         this.auditingListener = auditingListener;
         this.userDetailsService = userDetailsService;
+        this.purchaseDetailsManger = purchaseDetailsManger;
+        this.applicationEventPublisher = applicationEventPublisher;
         this.taxManager = taxManager;
         this.stateCodesCachingService = stateCodesCachingService;
         this.invoiceDetailsCachingService = invoiceDetailsCachingService;
@@ -434,10 +445,8 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     @Override
     public LatestReceiptResponse getLatestReceiptResponse (IapVerificationRequestV2 iapVerificationRequest) {
         final GooglePlayVerificationRequest request = (GooglePlayVerificationRequest) iapVerificationRequest;
-        String productType =
-                (Objects.nonNull(request.getProductDetails().getType()) && (Objects.equals(request.getProductDetails().getType(), BaseConstants.POINT))) ? BaseConstants.POINT : BaseConstants.PLAN;
-        if (Objects.isNull(request.getPaymentDetails()) || Objects.isNull(request.getProductDetails()) || Objects.isNull(request.getAppDetails()) ||
-                (productType.equals(BaseConstants.POINT) && StringUtils.isEmpty(request.getProductDetails().getItemId()))) {
+        String productType = (Objects.nonNull(request.getProductDetails().getType()) && (Objects.equals(request.getProductDetails().getType(), BaseConstants.POINT))) ? BaseConstants.POINT : BaseConstants.PLAN;
+        if (Objects.isNull(request.getPaymentDetails()) || Objects.isNull(request.getProductDetails()) || Objects.isNull(request.getAppDetails()) || (productType.equals(BaseConstants.POINT) && StringUtils.isEmpty(request.getProductDetails().getItemId()))) {
             throw new WynkRuntimeException(PaymentErrorType.PAY501);
         }
         AbstractGooglePlayReceiptVerificationResponse abstractGooglePlayReceiptVerificationResponse =
@@ -811,25 +820,55 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     }
 
     @Override
+    public String getIdAndUpdateReceiptDetails(DecodedNotificationWrapper<GooglePlayCallbackRequest> wrapper) {
+        GooglePlayCallbackRequest callbackRequest = (GooglePlayCallbackRequest) wrapper.getDecodedNotification();
+        Optional<ReceiptDetails> optionalReceiptDetails =
+                RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
+                        .findById(callbackRequest.getPurchaseToken());
+        GooglePlayReceiptDetails receiptDetails = (GooglePlayReceiptDetails) optionalReceiptDetails.get();
+        String productType = receiptDetails.getPlanId() == 0 ? BaseConstants.POINT : BaseConstants.PLAN;
+        AbstractGooglePlayReceiptVerificationResponse abstractGooglePlayReceiptVerificationResponse =
+                googlePlayResponse(callbackRequest.getPurchaseToken(), callbackRequest.getSubscriptionId(), callbackRequest.getPackageName(),
+                        MerchantServiceUtil.getService(callbackRequest.getPackageName()), productType);
+        assert abstractGooglePlayReceiptVerificationResponse != null;
+        LatestReceiptResponse latestReceiptResponse = mapGoogleResponseToReceiptResponse(abstractGooglePlayReceiptVerificationResponse, createRequest(callbackRequest), productType);
+        final GooglePlayLatestReceiptResponse latestReceipt = (GooglePlayLatestReceiptResponse) latestReceiptResponse;
+        GooglePlaySubscriptionReceiptResponse googlePlayReceiptResponse = ((GooglePlaySubscriptionReceiptResponse) latestReceipt.getGooglePlayResponse());
+        receiptDetails.setNotificationType(latestReceipt.getNotificationType());
+        receiptDetails.setExpiry(Long.parseLong(googlePlayReceiptResponse.getExpiryTimeMillis()));
+        auditingListener.onBeforeSave(receiptDetails);
+        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
+                .save(receiptDetails);
+        return receiptDetails.getPaymentTransactionId();
+    }
+
+    @Override
     public boolean supportsRenewalReconciliation () {
         return false;
     }
 
     @Override
     public void cancelSubscription (String uid, String transactionId) {
-        fetchDetailsAndUpdateGooglePlaySubscriptionOnConsole(uid, transactionId, CANCEL);
+        final Transaction transaction = transactionManager.get(transactionId);
+        fetchDetailsAndUpdateGooglePlaySubscriptionOnConsole(transaction, uid, transactionId, CANCEL);
     }
 
     @Override
     public GooglePlayPaymentRefundResponse doRefund (GooglePlayPaymentRefundRequest request) {
         final Transaction refundTransaction = TransactionContext.get();
-        fetchDetailsAndUpdateGooglePlaySubscriptionOnConsole(refundTransaction.getUid(), refundTransaction.getIdStr(), GooglePlayConstant.REFUND);
+        fetchDetailsAndUpdateGooglePlaySubscriptionOnConsole(refundTransaction,refundTransaction.getUid(), refundTransaction.getIdStr(), GooglePlayConstant.REFUND);
         return GooglePlayPaymentRefundResponse.builder().transactionId(refundTransaction.getIdStr()).uid(refundTransaction.getUid()).planId(refundTransaction.getPlanId())
                 .itemId(refundTransaction.getItemId()).clientAlias(refundTransaction.getClientAlias()).amount(refundTransaction.getAmount()).msisdn(refundTransaction.getMsisdn())
-                .paymentEvent(refundTransaction.getType()).transactionStatus(TransactionStatus.SUCCESS).build();
+                .paymentEvent(refundTransaction.getType()).transactionStatus(refundTransaction.getStatus()).build();
     }
 
-    private void fetchDetailsAndUpdateGooglePlaySubscriptionOnConsole (String uid, String transactionId, String action) {
+    private void publishTransactionSnapShotEvent (Transaction transaction) {
+        final TransactionSnapshotEvent.TransactionSnapshotEventBuilder builder = TransactionSnapshotEvent.builder().transaction(transaction);
+        Optional.ofNullable(purchaseDetailsManger.get(transaction)).ifPresent(builder::purchaseDetails);
+        applicationEventPublisher.publishEvent(builder.build());
+    }
+
+    private ResponseEntity<String> fetchDetailsAndUpdateGooglePlaySubscriptionOnConsole (Transaction refundTransaction, String uid, String transactionId, String action) {
         List<ReceiptDetails> receiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
                 .findByUid(uid);
         Optional<ReceiptDetails> filteredReceipt = receiptDetails.stream().filter(receiptDetails1 -> receiptDetails1.getPaymentTransactionId().equals(transactionId)).findAny();
@@ -838,13 +877,20 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                 baseUrl + gPlayReceipt.getPackageName() + subscriptionPurchase + gPlayReceipt.getSkuId() + TOKEN + gPlayReceipt.getId() + action + API_KEY_PARAM + getApiKey(gPlayReceipt.getService());
         HttpHeaders headers = getHeaders(gPlayReceipt.getService());
         try {
-            restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(null, headers), String.class);
+              ResponseEntity<String> responseEntity= restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(null, headers), String.class);
+              AnalyticService.update(responseEntity);
+              refundTransaction.setStatus(String.valueOf(TransactionStatus.SUCCESS));
+              return responseEntity;
         } catch (Exception ex) {
             if (action.equalsIgnoreCase(CANCEL)) {
                 throw new WynkRuntimeException(PaymentErrorType.PLAY006, ex);
             } else {
+                refundTransaction.setStatus(String.valueOf(TransactionStatus.FAILURE));
                 throw new WynkRuntimeException(PaymentErrorType.PLAY007, ex);
             }
+        }finally {
+            RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).save(refundTransaction);
+            publishTransactionSnapShotEvent(refundTransaction);
         }
     }
 }

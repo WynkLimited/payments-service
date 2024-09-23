@@ -26,10 +26,9 @@ import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.dao.entity.ItunesReceiptDetails;
-import in.wynk.payment.core.dao.entity.ReceiptDetails;
-import in.wynk.payment.core.dao.entity.TestingByPassNumbers;
-import in.wynk.payment.core.dao.entity.Transaction;
+import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
+import in.wynk.payment.core.dao.repository.ITransactionDao;
 import in.wynk.payment.core.dao.repository.TestingByPassNumbersDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.PaymentErrorEvent;
@@ -41,6 +40,7 @@ import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.dto.response.*;
 import in.wynk.payment.service.*;
+import in.wynk.payment.utils.RecurringTransactionUtils;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.SneakyThrows;
@@ -70,8 +70,8 @@ import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.logging.BaseLoggingMarkers.PAYMENT_ERROR;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY011;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY026;
+import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
+import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE;
 import static in.wynk.payment.dto.itune.ItunesConstant.*;
@@ -83,6 +83,8 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     private static final List<String> RENEWAL_NOTIFICATION = Arrays.asList("DID_RENEW", "INTERACTIVE_RENEWAL", "DID_RECOVER");
     private static final List<String> REACTIVATION_NOTIFICATION = Collections.singletonList("DID_CHANGE_RENEWAL_STATUS");
     private static final List<String> REFUND_NOTIFICATION = Collections.singletonList("CANCEL");
+    private final ITransactionManagerService transactionManager;
+    private final RecurringTransactionUtils recurringTransactionUtils;
 
     @Value("${payment.merchant.itunes.api.url}")
     private String itunesApiUrl;
@@ -97,8 +99,10 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     private final WynkRedisLockService wynkRedisLockService;
     private final IAuditableListener auditingListener;
 
-    public ITunesMerchantPaymentService(@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson, ObjectMapper mapper, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, WynkRedisLockService wynkRedisLockService, IErrorCodesCacheService errorCodesCacheServiceImpl, @Qualifier(AuditConstants.MONGO_AUDIT_LISTENER) IAuditableListener auditingListener) {
+    public ITunesMerchantPaymentService(ITransactionManagerService transactionManager, RecurringTransactionUtils recurringTransactionUtils, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson, ObjectMapper mapper, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, WynkRedisLockService wynkRedisLockService, IErrorCodesCacheService errorCodesCacheServiceImpl, @Qualifier(AuditConstants.MONGO_AUDIT_LISTENER) IAuditableListener auditingListener) {
         super(cachingService, errorCodesCacheServiceImpl);
+        this.transactionManager = transactionManager;
+        this.recurringTransactionUtils = recurringTransactionUtils;
         this.gson = gson;
         this.mapper = mapper;
         this.restTemplate = restTemplate;
@@ -563,14 +567,28 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     public WynkResponseEntity<Void> doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
         final Transaction transaction = TransactionContext.get();
         try {
-            final ItunesReceiptDetails receiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByPaymentTransactionId(paymentRenewalChargingRequest.getId());
-            final ItunesReceiptType receiptType = ItunesReceiptType.valueOf(receiptDetails.getType());
-            final ItunesReceipt itunesReceipt = getReceiptObjForUser(receiptDetails.getReceipt(), receiptType, receiptDetails.getMsisdn());
-            final ItunesLatestReceiptResponse latestReceiptResponse = getLatestReceiptResponseInternal(receiptDetails.getReceipt(), itunesReceipt, receiptType);
-            final List<LatestReceiptInfo> filteredReceiptResponse = latestReceiptResponse.getLatestReceiptInfo().stream().filter(details -> receiptDetails.getId().equals(details.getOriginalTransactionId())).sorted(Comparator.comparingLong(receiptType::getExpireDate).reversed()).collect(Collectors.toList());
-            latestReceiptResponse.setLatestReceiptInfo(filteredReceiptResponse);
-            fetchAndUpdateFromReceipt(transaction, latestReceiptResponse, receiptDetails);
-            return WynkResponseEntity.<Void>builder().success(true).build();
+            Optional<Transaction> oldTransaction = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).findById(paymentRenewalChargingRequest.getId());
+            final ItunesReceiptDetails receiptDetails;
+            String lastSuccessTransactionId = getLastSuccessTransactionId(oldTransaction.get());
+            if (oldTransaction.get().getStatus() != TransactionStatus.SUCCESS && !StringUtils.isEmpty(lastSuccessTransactionId)) {
+                receiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByPaymentTransactionId(lastSuccessTransactionId);
+            } else {
+                receiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByPaymentTransactionId(paymentRenewalChargingRequest.getId());
+            }
+            if (Objects.nonNull(receiptDetails)) {
+                final ItunesReceiptType receiptType = ItunesReceiptType.valueOf(receiptDetails.getType());
+                final ItunesReceipt itunesReceipt = getReceiptObjForUser(receiptDetails.getReceipt(), receiptType, receiptDetails.getMsisdn());
+                final ItunesLatestReceiptResponse latestReceiptResponse = getLatestReceiptResponseInternal(receiptDetails.getReceipt(), itunesReceipt, receiptType);
+                final List<LatestReceiptInfo> filteredReceiptResponse = latestReceiptResponse.getLatestReceiptInfo().stream().filter(details -> receiptDetails.getId().equals(details.getOriginalTransactionId())).sorted(Comparator.comparingLong(receiptType::getExpireDate).reversed()).collect(Collectors.toList());
+                latestReceiptResponse.setLatestReceiptInfo(filteredReceiptResponse);
+                fetchAndUpdateFromReceipt(transaction, latestReceiptResponse, receiptDetails);
+                return WynkResponseEntity.<Void>builder().success(true).build();
+            }
+            transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            if (Objects.isNull(receiptDetails)) {
+                throw new WynkRuntimeException(ITUNES001);
+            }
+            return WynkResponseEntity.<Void>builder().success(false).build();
         } catch (Exception e) {
             if (WynkRuntimeException.class.isAssignableFrom(e.getClass())) {
                 final WynkRuntimeException exception = (WynkRuntimeException) e;
@@ -580,6 +598,29 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
             throw new WynkRuntimeException(PaymentErrorType.PAY026, e);
         }
+    }
+
+    @Override
+    public String getIdAndUpdateReceiptDetails(DecodedNotificationWrapper<ItunesCallbackRequest> wrapper) {
+        ItunesCallbackRequest itunesCallbackRequest = (ItunesCallbackRequest) wrapper.getDecodedNotification();
+        final LatestReceiptInfo latestReceiptInfo = itunesCallbackRequest.getUnifiedReceipt().getLatestReceiptInfoList().get(0);
+        final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
+        Optional<ReceiptDetails> optionalReceiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(iTunesId);
+        ReceiptDetails receiptDetails = optionalReceiptDetails.get();
+        receiptDetails.setExpiry(latestReceiptInfo.getExpiresDateMs() != null ? Long.parseLong(latestReceiptInfo.getExpiresDateMs()) : 0L);
+        auditingListener.onBeforeSave(receiptDetails);
+        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).save(receiptDetails);
+        return receiptDetails.getPaymentTransactionId();
+    }
+
+    private String getLastSuccessTransactionId (Transaction transaction) {
+        if (transaction.getType() == PaymentEvent.RENEW) {
+            PaymentRenewal renewal =
+                    RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).findById(transaction.getIdStr())
+                            .orElse(null);
+            return Objects.nonNull(renewal) ? renewal.getLastSuccessTransactionId() : null;
+        }
+        return null;
     }
 
     public boolean supportsRenewalReconciliation() {

@@ -102,6 +102,10 @@ public interface PaymentConstants extends BaseConstants {
     String RENEWALS_INELIGIBLE_PLANS = "renewalsIneligiblePlans";
     String ERROR_DESCRIPTION_FOR_E6002 = "Invalid vpa ! please try again";
     String DESCRIPTION = "description";
+
+    String REFUND_TEMPLATE_ID= "refund_template_id";
+
+    String TRANSACTION = "transaction";
     int MAXIMUM_RENEWAL_RETRY_ALLOWED = 3;
     ArrayList<String> ERROR_REASONS = new ArrayList<>(
             Arrays.asList("mandate status is: revoked", "|Mandate has been revoked", "mandate status is: pause", "Card has been classified as lost and has been blocked.",

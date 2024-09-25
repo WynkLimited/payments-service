@@ -534,6 +534,9 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
             Optional<ReceiptDetails> lastProcessedReceiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(iTunesId);
             boolean isEligible = lastProcessedReceiptDetails.isPresent() && !latestReceiptInfo.getTransactionId().equalsIgnoreCase(lastProcessedReceiptDetails.get().getReceiptTransactionId());
+            if (Objects.nonNull(itunesCallbackRequest) && itunesCallbackRequest.getAutoRenewStatus().equals("false") && REACTIVATION_NOTIFICATION.contains(itunesCallbackRequest.getNotificationType()) || REFUND_NOTIFICATION.contains(itunesCallbackRequest.getNotificationType())) {
+                isEligible = true;
+            }
             return DecodedNotificationWrapper.<ItunesCallbackRequest>builder().decodedNotification(itunesCallbackRequest).eligible(isEligible).build();
         }
         return DecodedNotificationWrapper.<ItunesCallbackRequest>builder().decodedNotification(itunesCallbackRequest).eligible(false).build();

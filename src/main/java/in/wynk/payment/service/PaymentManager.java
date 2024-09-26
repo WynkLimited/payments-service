@@ -68,6 +68,7 @@ public class PaymentManager
     private final ISqsManagerService<Object> sqsManagerService;
     private final ITransactionManagerService transactionManager;
     private final IMerchantTransactionService merchantTransactionService;
+    private final IRecurringPaymentManagerService recurringPaymentManagerService;
     private final IEntityCacheService<PaymentMethod, String> paymentMethodCache;
     private final PaymentGatewayCommon common;
 
@@ -177,8 +178,9 @@ public class PaymentManager
         } finally {
             final TransactionStatus finalStatus = TransactionContext.get().getStatus();
             String lastSuccessTransactionId = getLastSuccessTransactionId(transaction);
+            PaymentRenewal renewal= recurringPaymentManagerService.getRenewalById(transaction.getIdStr());
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(existingStatus)
-                    .finalTransactionStatus(finalStatus).build());
+                    .finalTransactionStatus(finalStatus).attemptSequence(renewal.getAttemptSequence()).build());
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
             //publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_CALLBACK_EVENT).data(getEventsWrapperBuilder(transaction, TransactionContext.getPurchaseDetails())
             // .callbackRequest(request.getBody()).build()).build());

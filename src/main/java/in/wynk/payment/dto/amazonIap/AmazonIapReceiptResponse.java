@@ -29,7 +29,7 @@ public class AmazonIapReceiptResponse {
     @Analysed
     private int quantity;
     @Analysed
-    private String receiptID;
+    private String receiptId;
     @Analysed
     private Long renewalDate;
     @Analysed

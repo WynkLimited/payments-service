@@ -52,8 +52,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.*;
-import static in.wynk.payment.core.constant.PaymentConstants.EXTERNAL_TRANSACTION_TOKEN;
-import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
+import static in.wynk.payment.core.constant.PaymentConstants.GOOGLE_IAP;
+import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_CODE;
 
 @Slf4j
 @Service
@@ -389,7 +390,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         if (Objects.nonNull(transaction.getExitTime())) {
             AnalyticService.update(EXIT_TIMESTAMP, transaction.getExitTime().getTime().getTime());
         }
-        AnalyticService.update(PaymentConstants.PAYMENT_CODE, transaction.getPaymentChannel().getCode());
+        AnalyticService.update(PAYMENT_CODE, transaction.getPaymentChannel().getCode());
         AnalyticService.update(PaymentConstants.PAYMENT_METHOD, transaction.getPaymentChannel().getCode());
     }
 

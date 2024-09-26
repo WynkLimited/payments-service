@@ -10,6 +10,8 @@ import lombok.experimental.SuperBuilder;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
+import java.util.Map;
+
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_GATEWAY;
 
 @Getter
@@ -37,6 +39,9 @@ public class PaymentGateway extends MongoBaseEntity<String> {
 
     @Field("invoice_supported")
     private boolean invoiceSupported;
+
+    @Analysed
+    private Map<String, Object> meta;
 
     public String name() {
         return this.getId();

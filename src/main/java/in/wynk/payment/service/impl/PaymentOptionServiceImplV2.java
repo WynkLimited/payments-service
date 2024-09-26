@@ -3,6 +3,7 @@ package in.wynk.payment.service.impl;
 import in.wynk.common.dto.SessionDTO;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.FraudAware;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.PaymentGroup;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
@@ -14,6 +15,7 @@ import in.wynk.payment.dto.response.PaymentOptionsComputationResponse;
 import in.wynk.payment.dto.response.PaymentOptionsDTO;
 import in.wynk.payment.eligibility.request.PaymentOptionsComputationDTO;
 import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
+import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
 import in.wynk.payment.eligibility.service.IPaymentOptionComputationManager;
 import in.wynk.payment.service.IPaymentOptionServiceV2;
 import in.wynk.payment.service.PaymentCachingService;
@@ -24,6 +26,7 @@ import in.wynk.subscription.common.enums.PlanType;
 import in.wynk.subscription.common.response.SelectivePlansComputationResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.math.NumberUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -35,6 +38,7 @@ import java.util.stream.Collectors;
 import static in.wynk.common.constant.BaseConstants.PLAN;
 import static in.wynk.common.constant.BaseConstants.POINT;
 import static in.wynk.payment.core.constant.BeanConstant.OPTION_FRAUD_DETECTION_CHAIN;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY022;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAY023;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYMENT_OPTIONS_FAILURE;
 
@@ -65,6 +69,9 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
 
     private FilteredPaymentOptionsResult getPaymentOptionsDetailsForPlan(IPaymentOptionsRequest request) {
         boolean trialEligible = false;
+        if(PaymentConstants.MUSIC_PLAN_IDS.contains(NumberUtils.toInt(request.getProductDetails().getId()))){
+            throw new WynkRuntimeException(PAY022);
+        }
         final PlanDTO paidPlan = paymentCachingService.getPlan(request.getProductDetails().getId());
         PaymentOptionsEligibilityRequest eligibilityRequest =
                 PaymentOptionsEligibilityRequest.from(
@@ -129,6 +136,7 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
             List<PaymentMethod> filterMethods = availableMethods.get(group.getId()).stream().filter(filterPredicate).collect(Collectors.toList());
             final PaymentOptionsComputationResponse response = paymentOptionManager.compute(request);
             filterMethods = filterPaymentMethodsBasedOnEligibility(response, filterMethods);
+            filterMethods = (filterMethods.size() > 0) ? filterPaymentMethodsForRechargePlans(filterMethods, request) : filterMethods;
             List<in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentMethodDTO> filteredDTO = filterMethods.stream().map((pm) -> new in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentMethodDTO(pm, autoRenewalSupplier)).collect(Collectors.toList());
             finalMethods.addAll(filteredDTO);
         }
@@ -140,4 +148,13 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
         return methods.stream().filter(eligibilityResultSet::contains).collect(Collectors.toList());
     }
 
+    private List<PaymentMethod> filterPaymentMethodsForRechargePlans(List<PaymentMethod> filterMethods, PaymentOptionsEligibilityRequest request) {
+        if (request instanceof PaymentOptionsPlanEligibilityRequest) {
+            PlanDTO plan = paymentCachingService.getPlan(((PaymentOptionsPlanEligibilityRequest) request).getPlanId());
+            if (plan.isEligibleRechargePlan()) {
+                filterMethods.removeIf(method -> !method.getPaymentCode().getCode().equalsIgnoreCase("APS_V2"));
+            }
+        }
+        return filterMethods;
+    }
 }

@@ -655,7 +655,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             String txnId = getUpdatedTransactionId(transactionId, lastRenewal);
             MerchantTransaction merchantTransaction = getMerchantData(txnId);
             orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, merchantTransaction.getExternalTransactionId());
-            orderedMap.put(PAYU_REQUEST_ID, transactionId);
+            orderedMap.put(PAYU_REQUEST_ID, transactionId.replace("-", ""));
             String variable = gson.toJson(orderedMap);
             ITransactionManagerService transactionManagerService = BeanLocatorFactory.getBean(ITransactionManagerService.class);
             MultiValueMap<String, String> requestMap = buildPayUInfoRequest(transactionManagerService.get(transactionId).getClientAlias(), UPI_MANDATE_REVOKE.getCode(), variable);
@@ -720,8 +720,13 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         @Override
         public PayUCallbackRequestPayload parseCallback (Map<String, Object> payload) {
             try {
-                final String json = objectMapper.writeValueAsString(payload);
-                return objectMapper.readValue(json, PayUCallbackRequestPayload.class);
+                if (Objects.nonNull(payload.get("action")) && payload.get("action").equals("refund")){
+                    final String json = objectMapper.writeValueAsString(payload);
+                    return objectMapper.readValue(json, PayUAutoRefundCallbackRequestPayload.class);
+                } else {
+                    final String json = objectMapper.writeValueAsString(payload);
+                    return objectMapper.readValue(json, PayUCallbackRequestPayload.class);
+                }
             } catch (Exception e) {
                 log.error(CALLBACK_PAYLOAD_PARSING_FAILURE, "Unable to parse callback payload due to {}", e.getMessage(), e);
                 throw new WynkRuntimeException(PAY006, e);

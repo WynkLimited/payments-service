@@ -21,6 +21,9 @@ debug: false
 
 server:
   port: 8081
+  error:
+    whitelabel:
+      enabled: false
 
 ########## Management Config ##########
 management:

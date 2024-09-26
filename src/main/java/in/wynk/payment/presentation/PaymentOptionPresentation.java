@@ -4,6 +4,7 @@ import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.GeoLocation;
 import in.wynk.common.dto.IPresentation;
 import in.wynk.common.dto.IWynkPresentation;
+import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.constant.CardConstants;
 import in.wynk.payment.constant.NetBankingConstants;
 import in.wynk.payment.constant.UpiConstants;
@@ -45,11 +46,14 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static in.wynk.payment.core.constant.PaymentErrorType.PAY022;
 
 @Component
 @RequiredArgsConstructor
@@ -78,7 +82,9 @@ public class PaymentOptionPresentation implements IWynkPresentation<PaymentOptio
         final PaymentOptionsDTO.PaymentOptionsDTOBuilder<?, ?> builder = PaymentOptionsDTO.builder().productDetails(productPresentation.transform(payload));
         final Set<String> uniqueGroupIds = result.getMethods().stream().map(PaymentMethodDTO::getGroup).collect(Collectors.toSet());
         builder.paymentGroups(uniqueGroupIds.stream().filter(groupCache::containsKey).map(groupCache::get).sorted(Comparator.comparingInt(PaymentGroup::getHierarchy)).map(group -> PaymentGroupsDTO.builder().id(group.getId()).title(group.getDisplayName()).description(group.getDescription()).build()).collect(Collectors.toList()));
-        return builder.paymentMethods(methodPresentation.transform(payload)).savedPaymentDTO(detailsPresentation.transform(payload)).build();
+        final Map<String, List<AbstractPaymentMethodDTO>> paymentMethods = methodPresentation.transform(payload);
+        if (CollectionUtils.isEmpty(paymentMethods)) throw new WynkRuntimeException(PAY022);
+        return builder.paymentMethods(paymentMethods).savedPaymentDTO(detailsPresentation.transform(payload)).build();
     }
 
     private class ProductPresentation implements IPresentation<IProductDetails, Pair<IPaymentOptionsRequest, FilteredPaymentOptionsResult>> {

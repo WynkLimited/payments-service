@@ -44,7 +44,9 @@ import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.gateway.*;
 import in.wynk.payment.mapper.DefaultTransactionInitRequestMapper;
 import in.wynk.payment.utils.RecurringTransactionUtils;
+import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.session.context.SessionContextHolder;
+import in.wynk.sms.common.message.SmsNotificationMessage;
 import in.wynk.stream.producer.IKafkaPublisherService;
 import io.netty.channel.ConnectTimeoutException;
 import lombok.RequiredArgsConstructor;
@@ -56,16 +58,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 
 import javax.annotation.PostConstruct;
-import java.net.SocketTimeoutException;
 import java.util.*;
 
 import static in.wynk.payment.core.constant.BeanConstant.CHARGING_FRAUD_DETECTION_CHAIN;
-import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
-import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
-import static in.wynk.payment.core.constant.PaymentErrorType.APS007;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY024;
+import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.CHARGING_API_FAILURE;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.RENEWAL_STATUS_ERROR;
+import static in.wynk.payment.dto.request.AbstractUnSubscribePlanRequest.getTriggerData;
 
 @Slf4j
 @Service(BeanConstant.PAYMENT_MANAGER_V2)
@@ -92,6 +90,7 @@ public class PaymentGatewayManager
     private final Gson gson;
     private final PaymentGatewayCommon common;
     private final RecurringTransactionUtils recurringTransactionUtils;
+    private final ISubscriptionServiceManager subscriptionServiceManager;
 
     @PostConstruct
     public void init() {
@@ -231,6 +230,7 @@ public class PaymentGatewayManager
         return null;
     }
 
+    @ClientAware(clientAlias = "#request.clientAlias")
     public WynkResponseEntity<Void> handleNotification(NotificationRequest request) {
         final IReceiptDetailService<?, IAPNotification> receiptDetailService =
                 BeanLocatorFactory.getBean(request.getPaymentGateway().getCode(), new ParameterizedTypeReference<IReceiptDetailService<?, IAPNotification>>() {
@@ -299,21 +299,6 @@ public class PaymentGatewayManager
         final MerchantTransactionEvent.Builder merchantTransactionEventBuilder = MerchantTransactionEvent.builder(transaction.getIdStr());
         try {
             renewalService.renew(request);
-        } catch (RestClientException e) {
-            PaymentErrorEvent.Builder errorEventBuilder = PaymentErrorEvent.builder(transaction.getIdStr());
-            if (e.getRootCause() != null) {
-                if (e.getRootCause() instanceof SocketTimeoutException || e.getRootCause() instanceof ConnectTimeoutException) {
-                    log.error(RENEWAL_STATUS_ERROR, "Socket timeout but valid for reconciliation for request : due to {}", e.getMessage(), e);
-                    errorEventBuilder.code(APS007.getErrorCode());
-                    errorEventBuilder.description(APS007.getErrorMessage() + "for " + paymentGateway);
-                    eventPublisher.publishEvent(errorEventBuilder.build());
-                    throw new WynkRuntimeException(APS007);
-                } else {
-                    handleException(errorEventBuilder, paymentGateway, e, transaction);
-                }
-            } else {
-                handleException(errorEventBuilder, paymentGateway, e, transaction);
-            }
         } catch (Exception ex) {
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
             PaymentErrorEvent.Builder errorEventBuilder = PaymentErrorEvent.builder(transaction.getIdStr());
@@ -325,11 +310,9 @@ public class PaymentGatewayManager
                 PaymentErrorEvent errorEvent = errorEventBuilder.build();
                 recurringTransactionUtils.cancelRenewalBasedOnErrorReason(errorEvent.getDescription(), transaction);
                 eventPublisher.publishEvent(errorEvent);
-                throw ex;
             } else {
                 errorEventBuilder.code(PaymentErrorType.PAY024.getErrorCode()).description(PaymentErrorType.PAY024.getErrorMessage());
                 eventPublisher.publishEvent(errorEventBuilder.build());
-                throw new WynkRuntimeException(PAY024, ex);
             }
         } finally {
             eventPublisher.publishEvent(merchantTransactionEventBuilder.build());
@@ -344,14 +327,6 @@ public class PaymentGatewayManager
             transactionManager.revision(AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus)
                     .attemptSequence(request.getAttemptSequence()).originalTransactionId(request.getId()).lastSuccessTransactionId(transaction.getIdStr()).build());
         }
-    }
-
-    private void handleException(PaymentErrorEvent.Builder errorEventBuilder, PaymentGateway paymentGateway, RestClientException e, Transaction transaction) {
-        transaction.setStatus(TransactionStatus.FAILURE.getValue());
-        errorEventBuilder.code(PAY024.getErrorCode());
-        errorEventBuilder.description(PAY024.getErrorMessage() + "for " + paymentGateway.getCode());
-        eventPublisher.publishEvent(errorEventBuilder.build());
-        throw new WynkRuntimeException(PAY024, e);
     }
 
     @Override
@@ -437,6 +412,10 @@ public class PaymentGatewayManager
         AbstractPaymentRefundResponse refundInitResponse = null;
         try {
             refundInitResponse = refundService.doRefund(refundRequest);
+            if(!originalTransaction.getType().equals(PaymentEvent.TRIAL_SUBSCRIPTION)){
+                sendNotificationToUser(refundTransaction);
+                subscriptionServiceManager.unSubscribePlan(UnSubscribePlanAsyncRequest.builder().uid(refundTransaction.getUid()).msisdn(refundTransaction.getMsisdn()).planId(refundTransaction.getPlanId()).transactionId(refundTransaction.getIdStr()).paymentEvent(PaymentEvent.CANCELLED).transactionStatus(refundTransaction.getStatus()).triggerDataRequest(getTriggerData()).build());
+            }
             return refundInitResponse;
         } catch (WynkRuntimeException e) {
             throw e;
@@ -453,6 +432,27 @@ public class PaymentGatewayManager
                                 .transactionId(refundTransaction.getIdStr()).paymentEvent(refundTransaction.getType()).itemId(refundTransaction.getItemId()).planId(refundTransaction.getPlanId())
                                 .msisdn(refundTransaction.getMsisdn()).uid(refundTransaction.getUid()).build());
             }
+        }
+    }
+
+    private void sendNotificationToUser( Transaction refundTransaction){
+        final String messageId= (String) Optional.ofNullable(refundTransaction.getPaymentChannel())
+                .map(channel -> channel.getMeta())
+                .map(meta -> meta.get(REFUND_TEMPLATE_ID))
+                .orElse(null);
+        if(!messageId.isEmpty()){
+            Map<String, Object> contextMap = new HashMap<String, Object>() {{
+                put(TRANSACTION, refundTransaction);
+            }};
+            SmsNotificationMessage notificationMessage = SmsNotificationMessage.builder()
+                    .messageId(messageId)
+                    .msisdn("9306449656")
+                    .service(refundTransaction.getClientAlias())
+                    .contextMap(contextMap)
+                    .build();
+            kafkaPublisherService.publishKafkaMessage(notificationMessage);
+        }else{
+            log.info("Skipping to send refund notification for msisdn {} as it has been disabled", refundTransaction.getMsisdn());
         }
     }
 

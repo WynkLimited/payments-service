@@ -40,7 +40,6 @@ import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.dto.response.*;
 import in.wynk.payment.service.*;
-import in.wynk.payment.utils.RecurringTransactionUtils;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.SneakyThrows;
@@ -83,8 +82,6 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     private static final List<String> RENEWAL_NOTIFICATION = Arrays.asList("DID_RENEW", "INTERACTIVE_RENEWAL", "DID_RECOVER");
     private static final List<String> REACTIVATION_NOTIFICATION = Collections.singletonList("DID_CHANGE_RENEWAL_STATUS");
     private static final List<String> REFUND_NOTIFICATION = Collections.singletonList("CANCEL");
-    private final ITransactionManagerService transactionManager;
-    private final RecurringTransactionUtils recurringTransactionUtils;
 
     @Value("${payment.merchant.itunes.api.url}")
     private String itunesApiUrl;
@@ -99,10 +96,8 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     private final WynkRedisLockService wynkRedisLockService;
     private final IAuditableListener auditingListener;
 
-    public ITunesMerchantPaymentService(ITransactionManagerService transactionManager, RecurringTransactionUtils recurringTransactionUtils, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson, ObjectMapper mapper, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, WynkRedisLockService wynkRedisLockService, IErrorCodesCacheService errorCodesCacheServiceImpl, @Qualifier(AuditConstants.MONGO_AUDIT_LISTENER) IAuditableListener auditingListener) {
+    public ITunesMerchantPaymentService(@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson, ObjectMapper mapper, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, WynkRedisLockService wynkRedisLockService, IErrorCodesCacheService errorCodesCacheServiceImpl, @Qualifier(AuditConstants.MONGO_AUDIT_LISTENER) IAuditableListener auditingListener) {
         super(cachingService, errorCodesCacheServiceImpl);
-        this.transactionManager = transactionManager;
-        this.recurringTransactionUtils = recurringTransactionUtils;
         this.gson = gson;
         this.mapper = mapper;
         this.restTemplate = restTemplate;
@@ -419,8 +414,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             log.error(PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE, "Exception while posting data to iTunes: {}", e.getResponseBodyAsString());
             throw new WynkRuntimeException(PAY011, e);
         } catch (Exception e) {
-            log.error(e.getLocalizedMessage());
-            log.error(PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE, "failed to execute getReceiptObjForUser due to " + e.getMessage(), e);
+            log.error(PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE, "failed to execute getReceiptObjForUser due to ", e);
             throw new WynkRuntimeException(WynkErrorType.UT999, e);
         }
     }
@@ -540,7 +534,6 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             }
             return DecodedNotificationWrapper.<ItunesCallbackRequest>builder().decodedNotification(itunesCallbackRequest).eligible(isEligible).build();
         }
-        log.info("Realtime Notification is not Eligible...");
         return DecodedNotificationWrapper.<ItunesCallbackRequest>builder().decodedNotification(itunesCallbackRequest).eligible(false).build();
     }
 

@@ -242,7 +242,7 @@ public class PaymentGatewayManager
             if (mapping != null) {
                 String productType = Objects.nonNull(mapping.getItemId()) ? BaseConstants.POINT : BaseConstants.PLAN;
                 final in.wynk.common.enums.PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper, productType);
-                if (event != PaymentEvent.RENEW) {
+                if (event == PaymentEvent.UNSUBSCRIBE || event == PaymentEvent.CANCELLED) {
                     String paymentTransactionId = receiptDetailService.getIdAndUpdateReceiptDetails(wrapper);
                     Transaction transaction = transactionManager.get(paymentTransactionId);
                     if(event == PaymentEvent.UNSUBSCRIBE) {

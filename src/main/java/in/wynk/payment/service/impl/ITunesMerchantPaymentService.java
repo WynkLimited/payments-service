@@ -71,8 +71,7 @@ import java.util.stream.Collectors;
 import static in.wynk.common.constant.BaseConstants.*;
 import static in.wynk.logging.BaseLoggingMarkers.PAYMENT_ERROR;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY011;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY026;
+import static in.wynk.payment.core.constant.PaymentErrorType.*;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.ITUNES_VERIFICATION_FAILURE;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE;
 import static in.wynk.payment.dto.itune.ItunesConstant.*;
@@ -536,6 +535,9 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             final String iTunesId = latestReceiptInfo.getOriginalTransactionId();
             Optional<ReceiptDetails> lastProcessedReceiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(iTunesId);
             boolean isEligible = lastProcessedReceiptDetails.isPresent() && !latestReceiptInfo.getTransactionId().equalsIgnoreCase(lastProcessedReceiptDetails.get().getReceiptTransactionId());
+            if (Objects.nonNull(itunesCallbackRequest) && itunesCallbackRequest.getAutoRenewStatus().equals("false") && REACTIVATION_NOTIFICATION.contains(itunesCallbackRequest.getNotificationType()) || REFUND_NOTIFICATION.contains(itunesCallbackRequest.getNotificationType())) {
+                isEligible = true;
+            }
             return DecodedNotificationWrapper.<ItunesCallbackRequest>builder().decodedNotification(itunesCallbackRequest).eligible(isEligible).build();
         }
         log.info("Realtime Notification is not Eligible...");
@@ -572,19 +574,26 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         try {
             Optional<Transaction> oldTransaction = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).findById(paymentRenewalChargingRequest.getId());
             final ItunesReceiptDetails receiptDetails;
-            if (oldTransaction.get().getStatus() != TransactionStatus.SUCCESS) {
-                String lastSuccessTransactionId = getLastSuccessTransactionId(oldTransaction.get());
+            String lastSuccessTransactionId = getLastSuccessTransactionId(oldTransaction.get());
+            if (oldTransaction.get().getStatus() != TransactionStatus.SUCCESS && !StringUtils.isEmpty(lastSuccessTransactionId)) {
                 receiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByPaymentTransactionId(lastSuccessTransactionId);
             } else {
                 receiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByPaymentTransactionId(paymentRenewalChargingRequest.getId());
             }
-            final ItunesReceiptType receiptType = ItunesReceiptType.valueOf(receiptDetails.getType());
-            final ItunesReceipt itunesReceipt = getReceiptObjForUser(receiptDetails.getReceipt(), receiptType, receiptDetails.getMsisdn());
-            final ItunesLatestReceiptResponse latestReceiptResponse = getLatestReceiptResponseInternal(receiptDetails.getReceipt(), itunesReceipt, receiptType);
-            final List<LatestReceiptInfo> filteredReceiptResponse = latestReceiptResponse.getLatestReceiptInfo().stream().filter(details -> receiptDetails.getId().equals(details.getOriginalTransactionId())).sorted(Comparator.comparingLong(receiptType::getExpireDate).reversed()).collect(Collectors.toList());
-            latestReceiptResponse.setLatestReceiptInfo(filteredReceiptResponse);
-            fetchAndUpdateFromReceipt(transaction, latestReceiptResponse, receiptDetails);
-            return WynkResponseEntity.<Void>builder().success(true).build();
+            if (Objects.nonNull(receiptDetails)) {
+                final ItunesReceiptType receiptType = ItunesReceiptType.valueOf(receiptDetails.getType());
+                final ItunesReceipt itunesReceipt = getReceiptObjForUser(receiptDetails.getReceipt(), receiptType, receiptDetails.getMsisdn());
+                final ItunesLatestReceiptResponse latestReceiptResponse = getLatestReceiptResponseInternal(receiptDetails.getReceipt(), itunesReceipt, receiptType);
+                final List<LatestReceiptInfo> filteredReceiptResponse = latestReceiptResponse.getLatestReceiptInfo().stream().filter(details -> receiptDetails.getId().equals(details.getOriginalTransactionId())).sorted(Comparator.comparingLong(receiptType::getExpireDate).reversed()).collect(Collectors.toList());
+                latestReceiptResponse.setLatestReceiptInfo(filteredReceiptResponse);
+                fetchAndUpdateFromReceipt(transaction, latestReceiptResponse, receiptDetails);
+                return WynkResponseEntity.<Void>builder().success(true).build();
+            }
+            transaction.setStatus(TransactionStatus.FAILURE.getValue());
+            if (Objects.isNull(receiptDetails)) {
+                throw new WynkRuntimeException(ITUNES001);
+            }
+            return WynkResponseEntity.<Void>builder().success(false).build();
         } catch (Exception e) {
             if (WynkRuntimeException.class.isAssignableFrom(e.getClass())) {
                 final WynkRuntimeException exception = (WynkRuntimeException) e;

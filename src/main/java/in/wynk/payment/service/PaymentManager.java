@@ -458,6 +458,10 @@ public class PaymentManager
     private boolean isEligibleForRenewal(Transaction oldTransaction) {
         try {
             String lastSuccessTransactionId = getLastSuccessTransactionId(transactionManager.get(oldTransaction.getIdStr()));
+            if(StringUtils.isEmpty(lastSuccessTransactionId)) {
+                log.info("The user subscription cannot be renewed because the LastSuccessTransactionId is not present in payment Renewal table");
+                return true;
+            }
             List<PaymentRenewal> paymentRenewalList = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).findByLastTransactionId(lastSuccessTransactionId);
             Optional<PaymentRenewal> newSuccessTransactionId = paymentRenewalList.stream().filter(paymentRenewal -> isTransactionSuccess(paymentRenewal.getTransactionId())).findFirst();
             if (!newSuccessTransactionId.isPresent()) {
@@ -465,6 +469,7 @@ public class PaymentManager
             }
             return false;
         } catch (Exception ex) {
+            log.info("The user subscription cannot be renewed: {} ", ex);
             return true;
         }
     }
@@ -477,6 +482,7 @@ public class PaymentManager
            }
            return false;
        } catch (Exception ex) {
+           log.info("User cannot be renewed: {} ", ex);
            return false;
        }
     }

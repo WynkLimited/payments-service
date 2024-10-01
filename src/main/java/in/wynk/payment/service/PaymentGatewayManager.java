@@ -91,6 +91,7 @@ public class PaymentGatewayManager
     private final PaymentGatewayCommon common;
     private final RecurringTransactionUtils recurringTransactionUtils;
     private final ISubscriptionServiceManager subscriptionServiceManager;
+    private final IPurchaseDetailsManger purchaseDetailsManger;
 
     @PostConstruct
     public void init() {
@@ -230,7 +231,6 @@ public class PaymentGatewayManager
         return null;
     }
 
-    @ClientAware(clientAlias = "#request.clientAlias")
     public WynkResponseEntity<Void> handleNotification(NotificationRequest request) {
         final IReceiptDetailService<?, IAPNotification> receiptDetailService =
                 BeanLocatorFactory.getBean(request.getPaymentGateway().getCode(), new ParameterizedTypeReference<IReceiptDetailService<?, IAPNotification>>() {
@@ -250,6 +250,7 @@ public class PaymentGatewayManager
                     } else {
                         recurringTransactionUtils.cancelRenewalBasedOnRealtimeMandateForIAP("PaymentEvent Cancelled", transaction, event);
                     }
+                    publishTransactionSnapShotEvent(transaction);
                 } else {
                     final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
                             PlanRenewalRequest.builder().txnId(mapping.getLinkedTransactionId()).planId(mapping.getPlanId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentGateway(request.getPaymentGateway())
@@ -471,5 +472,11 @@ public class PaymentGatewayManager
         }
         transactionManager.revision(abstractTransactionRevisionRequest);
         exhaustCouponIfApplicable(existingStatus, transaction.getStatus(), transaction);
+    }
+
+    private void publishTransactionSnapShotEvent (Transaction transaction) {
+        final TransactionSnapshotEvent.TransactionSnapshotEventBuilder builder = TransactionSnapshotEvent.builder().transaction(transaction);
+        Optional.ofNullable(purchaseDetailsManger.get(transaction)).ifPresent(builder::purchaseDetails);
+        eventPublisher.publishEvent(builder.build());
     }
 }

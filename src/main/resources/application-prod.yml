@@ -53,19 +53,19 @@ cors:
 ##### mysql database props #####
 spring:
   datasource:
-    url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
-    username: huygens
-    password: 2dtRAHGI5OhfBj1hNkpd
-#    url: jdbc:mysql://10.160.64.6:3306/payments
-#    username: wcf-app-user-prod
-#    password: -/&tU%KGrM2~l7d1
+#    url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
+#    username: huygens
+#    password: 2dtRAHGI5OhfBj1hNkpd
+    url: jdbc:mysql://10.160.64.6:3306/payments
+    username: wcf-app-user-prod
+    password: -/&tU%KGrM2~l7d1
     hikari:
-      jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
-      username: huygens
-      password: 2dtRAHGI5OhfBj1hNkpd
-#      jdbc-url: jdbc:mysql://10.160.64.6:3306/payments
-#      username: wcf-app-user-prod
-#      password: -/&tU%KGrM2~l7d1
+#      jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
+#      username: huygens
+#      password: 2dtRAHGI5OhfBj1hNkpd
+      jdbc-url: jdbc:mysql://10.160.64.6:3306/payments
+      username: wcf-app-user-prod
+      password: -/&tU%KGrM2~l7d1
       driver-class-name: com.mysql.cj.jdbc.Driver
       registerMbeans: true
       auto-commit: false
@@ -1151,12 +1151,12 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 hikari:
-                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
-                  username: huygens
-                  password: 2dtRAHGI5OhfBj1hNkpd
-#                  jdbc-url: jdbc:mysql://10.160.64.6:3306/payments
-#                  username: wcf-app-user-prod
-#                  password: -/&tU%KGrM2~l7d1
+#                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
+#                  username: huygens
+#                  password: 2dtRAHGI5OhfBj1hNkpd
+                  jdbc-url: jdbc:mysql://10.160.64.6:3306/payments
+                  username: wcf-app-user-prod
+                  password: -/&tU%KGrM2~l7d1
                   driver-class-name: com.mysql.cj.jdbc.Driver
                   registerMbeans: true
                   auto-commit: false
@@ -1193,12 +1193,12 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 hikari:
-                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
-                  username: huygens
-                  password: 2dtRAHGI5OhfBj1hNkpd
-#                  jdbc-url: jdbc:mysql://10.160.64.6:3306/payments
-#                  username: wcf-app-user-prod
-#                  password: -/&tU%KGrM2~l7d1
+#                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
+#                  username: huygens
+#                  password: 2dtRAHGI5OhfBj1hNkpd
+                  jdbc-url: jdbc:mysql://10.160.64.6:3306/payments
+                  username: wcf-app-user-prod
+                  password: -/&tU%KGrM2~l7d1
                   driver-class-name: com.mysql.cj.jdbc.Driver
                   registerMbeans: true
                   auto-commit: false
@@ -1235,12 +1235,12 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 hikari:
-                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
-                  username: huygens
-                  password: 2dtRAHGI5OhfBj1hNkpd
-#                  jdbc-url: jdbc:mysql://10.160.64.6:3306/payments
-#                  username: wcf-app-user-prod
-#                  password: -/&tU%KGrM2~l7d1
+#                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
+#                  username: huygens
+#                  password: 2dtRAHGI5OhfBj1hNkpd
+                  jdbc-url: jdbc:mysql://10.160.64.6:3306/payments
+                  username: wcf-app-user-prod
+                  password: -/&tU%KGrM2~l7d1
                   driver-class-name: com.mysql.cj.jdbc.Driver
                   registerMbeans: true
                   auto-commit: false
@@ -1277,12 +1277,12 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 hikari:
-                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments_rajtv
-                  username: huygens
-                  password: 2dtRAHGI5OhfBj1hNkpd
-#                  jdbc-url: jdbc:mysql://10.160.64.6:3306/payments
-#                  username: wcf-app-user-prod
-#                  password: -/&tU%KGrM2~l7d1
+#                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments_rajtv
+#                  username: huygens
+#                  password: 2dtRAHGI5OhfBj1hNkpd
+                  jdbc-url: jdbc:mysql://10.160.64.6:3306/payments
+                  username: wcf-app-user-prod
+                  password: -/&tU%KGrM2~l7d1
                   driver-class-name: com.mysql.cj.jdbc.Driver
                   registerMbeans: true
                   auto-commit: false
@@ -1319,12 +1319,12 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 hikari:
-                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments_enterr10
-                  username: huygens
-                  password: 2dtRAHGI5OhfBj1hNkpd
-#                  jdbc-url: jdbc:mysql://10.160.64.6:3306/payments
-#                  username: wcf-app-user-prod
-#                  password: -/&tU%KGrM2~l7d1
+#                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments_enterr10
+#                  username: huygens
+#                  password: 2dtRAHGI5OhfBj1hNkpd
+                  jdbc-url: jdbc:mysql://10.160.64.6:3306/payments
+                  username: wcf-app-user-prod
+                  password: -/&tU%KGrM2~l7d1
                   driver-class-name: com.mysql.cj.jdbc.Driver
                   registerMbeans: true
                   auto-commit: false

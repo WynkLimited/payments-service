@@ -670,7 +670,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
             try {
                 kafkaPublisherService.publishKafkaMessage(message);
             } catch (Exception e) {
-                log.error("Unable to publish acknowledge message on queue {}", e.getMessage());
+                log.error("Unable to publish acknowledge message on queue {}", e.getMessage(), e);
             }
         }
     }

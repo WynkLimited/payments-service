@@ -38,7 +38,7 @@ session:
     readTimeout: 1000
     cluster:
       #nodes: wcf-redis.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
-      nodes: 10.168.88.7:6379
+      nodes: 10.168.88.21:6379
     connection:
       timeout: 1000
       maxTotal: 200
@@ -1380,7 +1380,7 @@ cache:
       usePrefix: false
     cluster:
       #nodes: wcf-redis.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
-      nodes: 10.168.88.7:6379
+      nodes: 10.168.88.21:6379
     connection:
       maxIdle: 300
       maxTotal: 1500
@@ -1406,7 +1406,7 @@ lock:
     readTimeout: 1000
     cluster:
       #nodes: wcf-redis.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
-      nodes: 10.168.88.7:6379
+      nodes: 10.168.88.21:6379
     connection:
       timeout: 1000
       maxTotal: 200

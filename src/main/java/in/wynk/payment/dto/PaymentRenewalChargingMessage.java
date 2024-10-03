@@ -35,12 +35,12 @@ public class PaymentRenewalChargingMessage {
     @Analysed
     private Integer planId;
 
-    public String getMessageGroupId() {
+    /*public String getMessageGroupId() {
         return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode).getCode();
     }
 
     public String getMessageDeDuplicationId() {
         return id;
-    }
+    }*/
 
 }

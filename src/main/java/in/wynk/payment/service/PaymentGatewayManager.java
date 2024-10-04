@@ -17,6 +17,7 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.FraudAware;
 import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.BeanConstant;
+import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
@@ -208,6 +209,11 @@ public class PaymentGatewayManager
             if (pg.isPreDebit() && Objects.nonNull(response)) {
                 eventPublisher.publishEvent(
                         PaymentErrorEvent.builder(transaction.getIdStr()).code(PaymentErrorType.PAY302.getErrorCode()).description(PaymentErrorType.PAY302.getErrorMessage()).build());
+            }
+            if(request.getPaymentGateway().getId().equals(PaymentConstants.PAYU) || request.getPaymentGateway().getId().equals(ApsConstant.APS) ){
+                if(transaction.getType().equals(PaymentEvent.REFUND)){
+                    subscriptionServiceManager.unSubscribePlan(UnSubscribePlanAsyncRequest.builder().uid(transaction.getUid()).msisdn(transaction.getMsisdn()).planId(transaction.getPlanId()).transactionId(transaction.getIdStr()).paymentEvent(PaymentEvent.CANCELLED).transactionStatus(transaction.getStatus()).triggerDataRequest(getTriggerData()).build());
+                }
             }
             return CallbackResponseWrapper.builder().callbackResponse(response).transaction(transaction).build();
         } catch (WynkRuntimeException e) {
@@ -413,8 +419,8 @@ public class PaymentGatewayManager
         AbstractPaymentRefundResponse refundInitResponse = null;
         try {
             refundInitResponse = refundService.doRefund(refundRequest);
-            if(!originalTransaction.getType().equals(PaymentEvent.TRIAL_SUBSCRIPTION)){
-                sendNotificationToUser(refundTransaction);
+            if((originalTransaction.getType().equals(PaymentEvent.SUBSCRIBE) || originalTransaction.getType().equals(PaymentEvent.RENEW) || originalTransaction.getType().equals(PaymentEvent.PURCHASE)) && refundTransaction.getPaymentChannel().getId().equals(PaymentConstants.GOOGLE_IAP)){
+                //sendNotificationToUser(refundTransaction);
                 subscriptionServiceManager.unSubscribePlan(UnSubscribePlanAsyncRequest.builder().uid(refundTransaction.getUid()).msisdn(refundTransaction.getMsisdn()).planId(refundTransaction.getPlanId()).transactionId(refundTransaction.getIdStr()).paymentEvent(PaymentEvent.CANCELLED).transactionStatus(refundTransaction.getStatus()).triggerDataRequest(getTriggerData()).build());
             }
             return refundInitResponse;
@@ -447,13 +453,13 @@ public class PaymentGatewayManager
             }};
             SmsNotificationMessage notificationMessage = SmsNotificationMessage.builder()
                     .messageId(messageId)
-                    .msisdn("9306449656")
+                    .msisdn(refundTransaction.getMsisdn())
                     .service(refundTransaction.getClientAlias())
                     .contextMap(contextMap)
                     .build();
             kafkaPublisherService.publishKafkaMessage(notificationMessage);
         }else{
-            log.info("Skipping to send refund notification for msisdn {} as it has been disabled", refundTransaction.getMsisdn());
+            log.info("Skipping to send refund notification for msisdn {}", refundTransaction.getMsisdn());
         }
     }
 

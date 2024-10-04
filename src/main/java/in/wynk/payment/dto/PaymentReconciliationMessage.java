@@ -27,7 +27,6 @@ import static in.wynk.common.constant.CacheBeanNameConstants.PAYMENT_METHOD;
 @NoArgsConstructor
 @AllArgsConstructor
 //@WynkQueue(queueName = "${payment.pooling.queue.reconciliation.name}", producerType = ProducerType.ENTITY_DRIVEN_QUARTZ_MESSAGE_PUBLISHER, quartz = @WynkQueue.QuartzConfiguration(entityCacheName= PAYMENT_METHOD, publishUntil = 3, publishUntilUnit = TimeUnit.DAYS))
-//@WynkPubSub(projectName = "${payments.pooling.pubSub.reconciliation.projectName}", topicName= "${payments.pooling.pubSub.reconciliation.topicName}", subscriptionName = "${payments.pooling.pubSub.reconciliation.subscriptionName}", bufferInterval = "${payments.pooling.pubSub.reconciliation.bufferInterval}",producerType = GCPProducerType.ENTITY_DRIVEN_QUARTZ_MESSAGE_PUBLISHER, quartz = @WynkPubSub.QuartzConfigurationGCP(entityCacheName= PAYMENT_METHOD, publishUntil = 3, publishUntilUnit = TimeUnit.DAYS))
 @WynkKafkaMessage(topic = "${wynk.kafka.consumers.listenerFactory.paymentReconciliation[0].factoryDetails.topic}", producerType = ProducerType.ENTITY_DRIVEN_QUARTZ_MESSAGE_PRODUCER, quartz = @WynkKafkaMessage.QuartzConfiguration(entityCacheName= PAYMENT_METHOD, publishUntil = 3, publishUntilUnit = TimeUnit.DAYS))
 public class PaymentReconciliationMessage extends AbstractTransactionMessage implements MessageToEventMapper<PaymentReconciliationThresholdExceedEvent>, IKafkaMessage<String> {
 

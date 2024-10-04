@@ -17,7 +17,6 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 @NoArgsConstructor
 @AllArgsConstructor
 //@WynkQueue(queueName = "${payment.pooling.queue.preDebitNotification.name}", delaySeconds = "${payment.pooling.queue.preDebitNotification.sqs.producer.delayInSecond}")
-//@WynkPubSub(projectName = "${payments.pooling.pubSub.preDebitNotification.projectName}", topicName = "${payments.pooling.pubSub.preDebitNotification.topicName}", subscriptionName = "${payments.pooling.pubSub.preDebitNotification.subscriptionName}", bufferInterval = "${payments.pooling.pubSub.preDebitNotification.bufferInterval}")
 //@DelayedKafkaEvent(topic = "${payment.pooling.kafka.preDebitNotification.topic}")
 public class PreDebitNotificationMessage {
 

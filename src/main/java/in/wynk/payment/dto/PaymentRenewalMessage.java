@@ -6,7 +6,6 @@ import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.payment.core.event.PaymentRenewalMessageThresholdExceedEvent;
-import in.wynk.pubsub.dto.WynkPubSub;
 import in.wynk.queue.dto.MessageToEventMapper;
 import in.wynk.stream.advice.WynkKafkaMessage;
 import lombok.AllArgsConstructor;
@@ -22,7 +21,6 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 @NoArgsConstructor
 @AllArgsConstructor
 //@WynkQueue(queueName = "${payment.pooling.queue.renewal.name}", delaySeconds = "${payment.pooling.queue.renewal.sqs.producer.delayInSecond}")
-//@WynkPubSub(projectName = "${payments.pooling.pubSub.renewal.projectName}", topicName = "${payments.pooling.pubSub.renewal.topicName}", subscriptionName = "${payments.pooling.pubSub.renewal.subscriptionName}", bufferInterval = "${payments.pooling.pubSub.renewal.bufferInterval}")
 @WynkKafkaMessage(topic = "${wynk.kafka.consumers.listenerFactory.paymentRenewal[0].factoryDetails.topic}")
 public class PaymentRenewalMessage implements MessageToEventMapper<PaymentRenewalMessageThresholdExceedEvent> {
 
@@ -37,9 +35,9 @@ public class PaymentRenewalMessage implements MessageToEventMapper<PaymentRenewa
 
     @Override
     public PaymentRenewalMessageThresholdExceedEvent map() {
-        WynkPubSub pubSubData = this.getClass().getAnnotation(WynkPubSub.class);
+        WynkKafkaMessage kafkaMessage = this.getClass().getAnnotation(WynkKafkaMessage.class);
         return PaymentRenewalMessageThresholdExceedEvent.builder()
-                .maxAttempt(pubSubData.maxRetryCount())
+                .maxAttempt(kafkaMessage.maxRetryCount())
                 .attemptSequence(getAttemptSequence())
                 .transactionId(getTransactionId())
                 .clientAlias(getClientAlias())

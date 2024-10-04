@@ -20,7 +20,6 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 @NoArgsConstructor
 @AllArgsConstructor
 //@WynkQueue(queueName = "${payment.pooling.queue.refund.name}", delaySeconds = "${payment.pooling.queue.refund.sqs.producer.delayInSecond}")
-//@WynkPubSub(projectName = "${payments.pooling.pubSub.refund.projectName}", topicName = "${payments.pooling.pubSub.refund.topicName}", subscriptionName = "${payments.pooling.pubSub.refund.subscriptionName}", bufferInterval = "${payments.pooling.pubSub.refund.bufferInterval}")
 @WynkKafkaMessage(topic = "${wynk.kafka.consumers.listenerFactory.paymentRefundMessage[0].factoryDetails.topic}")
 public class PaymentRefundInitMessage {
 

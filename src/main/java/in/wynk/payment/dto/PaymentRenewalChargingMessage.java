@@ -16,7 +16,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 //@WynkQueue(queueName = "${payment.pooling.queue.charging.name}", delaySeconds = "${payment.pooling.queue.charging.sqs.producer.delayInSecond}", queueType = QueueType.FIFO)
-//@WynkPubSub(projectName = "${payments.pooling.pubSub.charging.projectName}", topicName = "${payments.pooling.pubSub.charging.topicName}", subscriptionName = "${payments.pooling.pubSub.charging.subscriptionName}", bufferInterval = "${payments.pooling.pubSub.charging.bufferInterval}")
 @WynkKafkaMessage(topic = "${wynk.kafka.consumers.listenerFactory.paymentRenewalCharging[0].factoryDetails.topic}")
 public class PaymentRenewalChargingMessage implements FIFOQueueMessageMarker {
 

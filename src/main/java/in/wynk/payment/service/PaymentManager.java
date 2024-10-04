@@ -25,6 +25,7 @@ import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 import in.wynk.payment.core.dao.repository.ITransactionDao;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.dto.*;
+import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.gpbs.acknowledge.request.AbstractAcknowledgement;
 import in.wynk.payment.dto.gpbs.acknowledge.request.AbstractPaymentAcknowledgementRequest;
 import in.wynk.payment.dto.gpbs.acknowledge.request.GooglePlayProductAcknowledgementRequest;
@@ -50,6 +51,7 @@ import static in.wynk.common.constant.BaseConstants.MIGRATED;
 import static in.wynk.payment.core.constant.BeanConstant.CHARGING_FRAUD_DETECTION_CHAIN;
 import static in.wynk.payment.core.constant.BeanConstant.VERIFY_IAP_FRAUD_DETECTION_CHAIN;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
+import static in.wynk.payment.dto.request.AbstractUnSubscribePlanRequest.getTriggerData;
 
 @Slf4j
 @Service(BeanConstant.PAYMENT_MANAGER)
@@ -69,6 +71,7 @@ public class PaymentManager
     private final IMerchantTransactionService merchantTransactionService;
     private final IRecurringPaymentManagerService recurringPaymentManagerService;
     private final IEntityCacheService<PaymentMethod, String> paymentMethodCache;
+    private final ISubscriptionServiceManager subscriptionServiceManager;
     private final PaymentGatewayCommon common;
 
     private static final List<Integer> NOTIFICATION = Arrays.asList(4, 6, 11, 13);
@@ -168,6 +171,11 @@ public class PaymentManager
                 if (Objects.nonNull(body) && !body.isSuccess()) {
                     final AbstractErrorDetails errorDetails = (AbstractErrorDetails) body.getError();
                     eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(errorDetails.getCode()).description(errorDetails.getDescription()).build());
+                }
+            }
+            if(request.getPaymentGateway().getId().equals(PaymentConstants.PAYU) || request.getPaymentGateway().getId().equals(ApsConstant.APS) ){
+                if(transaction.getType().equals(PaymentEvent.REFUND)){
+                    subscriptionServiceManager.unSubscribePlan(UnSubscribePlanAsyncRequest.builder().uid(transaction.getUid()).msisdn(transaction.getMsisdn()).planId(transaction.getPlanId()).transactionId(transaction.getIdStr()).paymentEvent(PaymentEvent.CANCELLED).transactionStatus(transaction.getStatus()).triggerDataRequest(getTriggerData()).build());
                 }
             }
             return response;

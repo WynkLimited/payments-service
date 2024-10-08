@@ -273,7 +273,7 @@ public class ApsCommonGatewayService {
         String txnId = transaction.getIdStr();
         final MerchantTransactionEvent.Builder builder = MerchantTransactionEvent.builder(transaction.getIdStr());
         MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(txnId);
-        if (merchantTransaction != null){
+
             String orderId = merchantTransaction.getOrderId();
             if (StringUtils.isEmpty(orderId)) {
                 throw new WynkRuntimeException("Order Id is missing in merchant table which is mandatory for aps_v2");
@@ -321,7 +321,7 @@ public class ApsCommonGatewayService {
             if (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE) {
                 eventPublisher.publishEvent(builder.build());
             }
-        }
+
 
 
     }

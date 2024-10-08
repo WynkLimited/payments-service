@@ -8,7 +8,9 @@ import in.wynk.payment.core.dao.repository.IMerchantTransactionDao;
 import in.wynk.payment.service.IMerchantTransactionService;
 import org.springframework.stereotype.Service;
 
+import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Optional;
 
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 
@@ -22,8 +24,10 @@ public class MerchantTransactionImpl implements IMerchantTransactionService {
 
     @Override
     public MerchantTransaction getMerchantTransaction(String id) {
-        return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IMerchantTransactionDao.class).findById(id).get();
+        return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IMerchantTransactionDao.class).findById(id).orElse(null);
     }
+
+
 
     @Override
     public String getPartnerReferenceId(String id) {

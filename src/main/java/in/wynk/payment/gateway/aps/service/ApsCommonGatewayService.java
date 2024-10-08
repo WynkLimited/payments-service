@@ -273,53 +273,56 @@ public class ApsCommonGatewayService {
         String txnId = transaction.getIdStr();
         final MerchantTransactionEvent.Builder builder = MerchantTransactionEvent.builder(transaction.getIdStr());
         MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(txnId);
-        String orderId = merchantTransaction.getOrderId();
-        if (StringUtils.isEmpty(orderId)) {
-            throw new WynkRuntimeException("Order Id is missing in merchant table which is mandatory for aps_v2");
-        }
-        final URI uri = httpTemplate.getUriTemplateHandler().expand(ORDER_STATUS_ENDPOINT, orderId);
-        builder.request(uri);
-        builder.orderId(orderId);
-        ApsOrderStatusResponse apsChargeStatusResponse;
-        OrderPaymentDetails paymentDetails;
-        try {
-            apsChargeStatusResponse = exchange(transaction.getClientAlias(), uri.toString(), HttpMethod.GET, null, null, ApsOrderStatusResponse.class);
-            builder.response(apsChargeStatusResponse);
-            paymentDetails = apsChargeStatusResponse.getPaymentDetails()[0];
-            if (StringUtils.isNotEmpty(paymentDetails.getPaymentMode())) {
-                String mode = paymentDetails.getPaymentMode();
-                if ("CREDIT_CARD".equals(paymentDetails.getPaymentMode()) || "DEBIT_CARD".equals(paymentDetails.getPaymentMode())) {
-                    mode = "CREDIT_CARD".equals(paymentDetails.getPaymentMode()) ? "CC" : "DC";
+        if (merchantTransaction != null){
+            String orderId = merchantTransaction.getOrderId();
+            if (StringUtils.isEmpty(orderId)) {
+                throw new WynkRuntimeException("Order Id is missing in merchant table which is mandatory for aps_v2");
+            }
+            final URI uri = httpTemplate.getUriTemplateHandler().expand(ORDER_STATUS_ENDPOINT, orderId);
+            builder.request(uri);
+            builder.orderId(orderId);
+            ApsOrderStatusResponse apsChargeStatusResponse;
+            OrderPaymentDetails paymentDetails;
+            try {
+                apsChargeStatusResponse = exchange(transaction.getClientAlias(), uri.toString(), HttpMethod.GET, null, null, ApsOrderStatusResponse.class);
+                builder.response(apsChargeStatusResponse);
+                paymentDetails = apsChargeStatusResponse.getPaymentDetails()[0];
+                if (StringUtils.isNotEmpty(paymentDetails.getPaymentMode())) {
+                    String mode = paymentDetails.getPaymentMode();
+                    if ("CREDIT_CARD".equals(paymentDetails.getPaymentMode()) || "DEBIT_CARD".equals(paymentDetails.getPaymentMode())) {
+                        mode = "CREDIT_CARD".equals(paymentDetails.getPaymentMode()) ? "CC" : "DC";
+                    }
+                    AnalyticService.update(PAYMENT_MODE, mode);
                 }
-                AnalyticService.update(PAYMENT_MODE, mode);
-            }
-            if (StringUtils.isNotEmpty(paymentDetails.getBankCode())) {
-                AnalyticService.update(BANK_CODE, paymentDetails.getBankCode());
-            }
-            if (StringUtils.isNotEmpty(paymentDetails.getCardNetwork())) {
-                AnalyticService.update(ApsConstant.APS_CARD_TYPE, paymentDetails.getCardNetwork());
-            }
-            builder.externalTransactionId(paymentDetails.getPgId());
-            AnalyticService.update(BaseConstants.EXTERNAL_TRANSACTION_ID, paymentDetails.getPgId());
-            syncTransactionWithSourceResponse(apsChargeStatusResponse.getOrderInfo());
-            if (transaction.getStatus() == TransactionStatus.FAILURE) {
-                if (!StringUtils.isEmpty(paymentDetails.getErrorCode()) || !StringUtils.isEmpty(paymentDetails.getErrorDescription())) {
-                    recurringTransactionUtils.cancelRenewalBasedOnErrorReason(paymentDetails.getErrorDescription(), transaction);
-                    eventPublisher.publishEvent(
-                            PaymentErrorEvent.builder(transaction.getIdStr()).code(paymentDetails.getErrorCode())
-                                    .description(paymentDetails.getErrorDescription()).build());
+                if (StringUtils.isNotEmpty(paymentDetails.getBankCode())) {
+                    AnalyticService.update(BANK_CODE, paymentDetails.getBankCode());
                 }
+                if (StringUtils.isNotEmpty(paymentDetails.getCardNetwork())) {
+                    AnalyticService.update(ApsConstant.APS_CARD_TYPE, paymentDetails.getCardNetwork());
+                }
+                builder.externalTransactionId(paymentDetails.getPgId());
+                AnalyticService.update(BaseConstants.EXTERNAL_TRANSACTION_ID, paymentDetails.getPgId());
+                syncTransactionWithSourceResponse(apsChargeStatusResponse.getOrderInfo());
+                if (transaction.getStatus() == TransactionStatus.FAILURE) {
+                    if (!StringUtils.isEmpty(paymentDetails.getErrorCode()) || !StringUtils.isEmpty(paymentDetails.getErrorDescription())) {
+                        recurringTransactionUtils.cancelRenewalBasedOnErrorReason(paymentDetails.getErrorDescription(), transaction);
+                        eventPublisher.publishEvent(
+                                PaymentErrorEvent.builder(transaction.getIdStr()).code(paymentDetails.getErrorCode())
+                                        .description(paymentDetails.getErrorDescription()).build());
+                    }
+                }
+            } catch (HttpStatusCodeException e) {
+                builder.response(e.getResponseBodyAsString());
+                throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
+            } catch (Exception e) {
+                log.error(APS_ORDER_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to " + e.getMessage());
+                throw new WynkRuntimeException(PAY998, e);
             }
-        } catch (HttpStatusCodeException e) {
-            builder.response(e.getResponseBodyAsString());
-            throw new WynkRuntimeException(PaymentErrorType.PAY998, e);
-        } catch (Exception e) {
-            log.error(APS_ORDER_STATUS_VERIFICATION, "unable to execute fetchAndUpdateTransactionFromSource due to " + e.getMessage());
-            throw new WynkRuntimeException(PAY998, e);
+            if (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE) {
+                eventPublisher.publishEvent(builder.build());
+            }
         }
-        if (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE) {
-            eventPublisher.publishEvent(builder.build());
-        }
+
 
     }
 

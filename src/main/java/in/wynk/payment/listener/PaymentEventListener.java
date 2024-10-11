@@ -200,7 +200,8 @@ public class PaymentEventListener {
     public void onRecurringPaymentEvent (RecurringPaymentEvent event) {
         AnalyticService.update(event);
         Transaction transaction = event.getTransaction();
-        if ((!cancelMandatePG.contains(transaction.getPaymentChannel().getId())) && (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.UNSUBSCRIBE) &&
+        if ((!cancelMandatePG.contains(transaction.getPaymentChannel().getId())) && ((transaction.getStatus() == TransactionStatus.SUCCESS || (transaction.getStatus()==TransactionStatus.REFUNDED && transaction.getType()== PaymentEvent.TRIAL_SUBSCRIPTION ))
+                && transaction.getType() != PaymentEvent.UNSUBSCRIBE) &&
                 event.getPaymentEvent() == PaymentEvent.UNSUBSCRIBE) {
             cancelMandateFromPG(transaction.getPaymentChannel().getId(), transaction.getPaymentChannel().getCode(), transaction.getIdStr(), event.getClientAlias());
         }

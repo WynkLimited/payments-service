@@ -53,8 +53,8 @@ logging:
     org.apache.catalina: off
     in.wynk: DEBUG
     in.wynk.scheduler.core: DEBUG
-  path: /tmp
-  path.analytics: /tmp
+  path: /data
+  path.analytics: /logs
 
 ##### resilience props for lib-queue ######
 resilience:

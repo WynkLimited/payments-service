@@ -267,7 +267,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         this.publishAsync(
                 SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).referenceId(request.getTransactionId()).transactionStatus(request.getTransactionStatus())
                         .paymentEvent(request.getPaymentEvent()).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentPartner(BaseConstants.WYNK.toLowerCase())
-                        .appVersion(request.getTriggerDataRequest().getAppVersion()).os(request.getTriggerDataRequest().getOs()).build());
+                        .appVersion(request.getTriggerDataRequest().getAppVersion()).os(request.getTriggerDataRequest().getOs()).source(myApplicationContext.getClientAlias()).build());
     }
 
     @Override

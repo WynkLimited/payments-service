@@ -47,7 +47,7 @@ import in.wynk.subscription.common.dto.RenewalPlanEligibilityRequest;
 import in.wynk.subscription.common.dto.RenewalPlanEligibilityResponse;
 import in.wynk.subscription.common.dto.ThanksPlanResponse;
 import in.wynk.subscription.common.enums.ProvisionState;
-import in.wynk.subscription.common.message.SubscriptionProvisionMessage;
+import in.wynk.subscription.common.message.SubscriptionProvisioningMessage;
 import in.wynk.subscription.common.request.PlanProvisioningRequest;
 import in.wynk.subscription.common.request.PlanUnProvisioningRequest;
 import in.wynk.subscription.common.request.SelectivePlansComputationRequest;
@@ -243,7 +243,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
             return;
         }
         try {
-            this.publishAsync(SubscriptionProvisionMessage.builder()
+            this.publishAsync(SubscriptionProvisioningMessage.builder()
                                                              .uid(request.getUid())
                                                              .msisdn(request.getMsisdn())
                                                              .subscriberId(request.getSubscriberId())
@@ -265,7 +265,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     @Override
     public void unSubscribePlanAsync(UnSubscribePlanAsyncRequest request) {
         this.publishAsync(
-                SubscriptionProvisionMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).referenceId(request.getTransactionId()).transactionStatus(request.getTransactionStatus())
+                SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).referenceId(request.getTransactionId()).transactionStatus(request.getTransactionStatus())
                         .paymentEvent(request.getPaymentEvent()).planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentPartner(BaseConstants.WYNK.toLowerCase())
                         .appVersion(request.getTriggerDataRequest().getAppVersion()).os(request.getTriggerDataRequest().getOs()).build());
     }
@@ -329,7 +329,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
                 PlanProvisioningResponse provisioningResponse = response.getBody().getData();
                 //TODO: remove deferred state check post IAP fixes.
                 if (provisioningResponse.getState() != ProvisionState.SUBSCRIBED && provisioningResponse.getState() != ProvisionState.DEFERRED) {
-                    this.publishAsync(SubscriptionProvisionMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId())
+                    this.publishAsync(SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId())
                             .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentCode(request.getPaymentGateway().getCode())
                             .paymentPartner(BaseConstants.WYNK.toLowerCase()).referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent())
                             .transactionStatus(request.getTransactionStatus()).externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired())
@@ -338,7 +338,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
                 }
             }
         } catch (HttpStatusCodeException e) {
-            this.publishAsync(SubscriptionProvisionMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId())
+            this.publishAsync(SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId())
                     .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentCode(request.getPaymentGateway().getCode()).paymentPartner(BaseConstants.WYNK.toLowerCase())
                     .referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent()).transactionStatus(request.getTransactionStatus())
                     .externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired()).os(request.getTriggerDataRequest().getOs())
@@ -346,7 +346,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
             throw new WynkRuntimeException(PaymentErrorType.PAY013, e, e.getResponseBodyAsString());
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.PAYMENT_ERROR, "Error occurred while subscribing {}", e.getMessage(), e);
-            this.publishAsync(SubscriptionProvisionMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId())
+            this.publishAsync(SubscriptionProvisioningMessage.builder().uid(request.getUid()).msisdn(request.getMsisdn()).subscriberId(request.getSubscriberId())
                     .planId(getUpdatedPlanId(request.getPlanId(), request.getPaymentEvent())).paymentCode(request.getPaymentGateway().getCode()).paymentPartner(BaseConstants.WYNK.toLowerCase())
                     .referenceId(request.getTransactionId()).paymentEvent(request.getPaymentEvent()).transactionStatus(request.getTransactionStatus())
                     .externalActivationNotRequired(request.getPaymentGateway().isExternalActivationNotRequired()).os(request.getTriggerDataRequest().getOs())
@@ -445,7 +445,7 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
         }
     }
 
-    private void publishAsync(SubscriptionProvisionMessage message) {
+    private void publishAsync(SubscriptionProvisioningMessage message) {
         try {
            // sqsMessagePublisher.publishSQSMessage(message);
             kafkaPublisherService.publishKafkaMessage(message);

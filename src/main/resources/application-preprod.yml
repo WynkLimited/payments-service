@@ -254,7 +254,7 @@ payment:
         api:
           base: https://paydigi.airtel.in
       encryption:
-        key: classpath:/cryptography/aps/public.key
+        key: file:///opt/public.key
       airtelxstream:
         intpay:
           id: wynk

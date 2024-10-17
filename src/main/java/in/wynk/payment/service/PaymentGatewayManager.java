@@ -213,11 +213,6 @@ public class PaymentGatewayManager
                 eventPublisher.publishEvent(
                         PaymentErrorEvent.builder(transaction.getIdStr()).code(PaymentErrorType.PAY302.getErrorCode()).description(PaymentErrorType.PAY302.getErrorMessage()).build());
             }
-            if(request.getPaymentGateway().getId().equals(PaymentConstants.PAYU) || request.getPaymentGateway().getId().equals(ApsConstant.APS) ){
-                if(transaction.getType().equals(PaymentEvent.REFUND) && transaction.getClientAlias().equals("music")){
-                    subscriptionServiceManager.unSubscribePlan(UnSubscribePlanAsyncRequest.builder().uid(transaction.getUid()).msisdn(transaction.getMsisdn()).planId(transaction.getPlanId()).transactionId(transaction.getIdStr()).paymentEvent(PaymentEvent.CANCELLED).transactionStatus(transaction.getStatus()).triggerDataRequest(getTriggerData()).build());
-                }
-            }
             return CallbackResponseWrapper.builder().callbackResponse(response).transaction(transaction).build();
         } catch (WynkRuntimeException e) {
             eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(e.getErrorCode())).description(e.getErrorTitle()).build());
@@ -227,6 +222,11 @@ public class PaymentGatewayManager
             String lastSuccessTransactionId = getLastSuccessTransactionId(transaction);
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
+            if( request.getPaymentGateway().getId().equals(PaymentConstants.PAYU) || request.getPaymentGateway().getId().equals(ApsConstant.APS) ){
+                if(finalStatus== TransactionStatus.SUCCESS && transaction.getType().equals(PaymentEvent.REFUND) && transaction.getClientAlias().equals("music")){
+                    subscriptionServiceManager.unSubscribePlan(UnSubscribePlanAsyncRequest.builder().uid(transaction.getUid()).msisdn(transaction.getMsisdn()).planId(transaction.getPlanId()).transactionId(transaction.getIdStr()).paymentEvent(PaymentEvent.CANCELLED).transactionStatus(transaction.getStatus()).triggerDataRequest(getTriggerData()).build());
+                }
+            }
         }
     }
 
@@ -423,7 +423,7 @@ public class PaymentGatewayManager
         AbstractPaymentRefundResponse refundInitResponse = null;
         try {
             refundInitResponse = refundService.doRefund(refundRequest);
-            if( originalTransaction.getClientAlias().equals("music") && refundTransaction.getPaymentChannel().getId().equals(PaymentConstants.GOOGLE_IAP)){
+            if(refundInitResponse.getTransactionStatus()== TransactionStatus.SUCCESS && originalTransaction.getClientAlias().equals("music") && refundTransaction.getPaymentChannel().getId().equals(PaymentConstants.GOOGLE_IAP)){
                 //sendNotificationToUser(refundTransaction);
                 subscriptionServiceManager.unSubscribePlan(UnSubscribePlanAsyncRequest.builder().uid(refundTransaction.getUid()).msisdn(refundTransaction.getMsisdn()).planId(refundTransaction.getPlanId()).transactionId(refundTransaction.getIdStr()).paymentEvent(PaymentEvent.CANCELLED).transactionStatus(refundInitResponse.getTransactionStatus()).triggerDataRequest(getTriggerData()).build());
             }

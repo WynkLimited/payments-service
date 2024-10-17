@@ -251,8 +251,11 @@ public class PaymentGatewayManager
                     Transaction transaction = transactionManager.get(paymentTransactionId);
                     if(event == PaymentEvent.UNSUBSCRIBE) {
                         recurringTransactionUtils.cancelRenewalBasedOnRealtimeMandateForIAP("PaymentEvent Unsubscribed", transaction, event);
+                        transaction.setType(PaymentEvent.UNSUBSCRIBE.getValue());
+                        transaction.setStatus(PaymentEvent.CANCELLED.getValue());
                     } else {
                         recurringTransactionUtils.cancelRenewalBasedOnRealtimeMandateForIAP("PaymentEvent Cancelled", transaction, event);
+                        transaction.setStatus(PaymentEvent.CANCELLED.getValue());
                     }
                     publishTransactionSnapShotEvent(transaction);
                 } else {

@@ -406,7 +406,7 @@ public class PaymentGatewayManager
         AbstractPaymentRefundResponse refundInitResponse = null;
         try {
             refundInitResponse = refundService.doRefund(refundRequest);
-            if((originalTransaction.getType().equals(PaymentEvent.SUBSCRIBE) || originalTransaction.getType().equals(PaymentEvent.RENEW) || originalTransaction.getType().equals(PaymentEvent.PURCHASE)) && refundTransaction.getPaymentChannel().getId().equals(PaymentConstants.GOOGLE_IAP)){
+            if( originalTransaction.getClientAlias().equals("music") && excludedAmounts.contains(originalTransaction.getAmount()) && refundTransaction.getPaymentChannel().getId().equals(PaymentConstants.GOOGLE_IAP)){
                 //sendNotificationToUser(refundTransaction);
                 subscriptionServiceManager.unSubscribePlan(UnSubscribePlanAsyncRequest.builder().uid(refundTransaction.getUid()).msisdn(refundTransaction.getMsisdn()).planId(refundTransaction.getPlanId()).transactionId(refundTransaction.getIdStr()).paymentEvent(PaymentEvent.CANCELLED).transactionStatus(refundInitResponse.getTransactionStatus()).triggerDataRequest(getTriggerData()).build());
             }

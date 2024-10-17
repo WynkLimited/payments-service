@@ -95,6 +95,7 @@ public class PaymentGatewayManager
     private final Gson gson;
     private final PaymentGatewayCommon common;
     private final RecurringTransactionUtils recurringTransactionUtils;
+    private final IPurchaseDetailsManger purchaseDetailsManger;
 
     @PostConstruct
     public void init() {
@@ -253,6 +254,7 @@ public class PaymentGatewayManager
                     } else {
                         recurringTransactionUtils.cancelRenewalBasedOnRealtimeMandateForIAP("PaymentEvent Cancelled", transaction, event);
                     }
+                    publishTransactionSnapShotEvent(transaction);
                 } else {
                     final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
                             PlanRenewalRequest.builder().txnId(mapping.getLinkedTransactionId()).planId(mapping.getPlanId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentGateway(request.getPaymentGateway())
@@ -441,6 +443,12 @@ public class PaymentGatewayManager
         if (!EnumSet.of(in.wynk.common.enums.PaymentEvent.REFUND).contains(transaction.getType()) && existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
             eventPublisher.publishEvent(ClientCallbackEvent.from(transaction));
         }
+    }
+
+    private void publishTransactionSnapShotEvent (Transaction transaction) {
+        final TransactionSnapshotEvent.TransactionSnapshotEventBuilder builder = TransactionSnapshotEvent.builder().transaction(transaction);
+        Optional.ofNullable(purchaseDetailsManger.get(transaction)).ifPresent(builder::purchaseDetails);
+        eventPublisher.publishEvent(builder.build());
     }
 
     private void reviseTransactionAndExhaustCoupon(Transaction transaction, TransactionStatus existingStatus,

@@ -23,6 +23,7 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 import in.wynk.payment.core.dao.repository.ITransactionDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.PaymentErrorEvent;
@@ -777,9 +778,16 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         final Transaction transaction = TransactionContext.get();
         log.info("Auto renewal request received for google play-------->\n");
         try {
-            final GooglePlayReceiptDetails receiptDetails =
-                    RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
-                            .findByPaymentTransactionId(paymentRenewalChargingRequest.getId());
+            Optional<Transaction> oldTransaction = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).findById(paymentRenewalChargingRequest.getId());
+            final GooglePlayReceiptDetails receiptDetails;
+            String lastSuccessTransactionId = getLastSuccessTransactionId(oldTransaction.get());
+            if (oldTransaction.get().getStatus() != TransactionStatus.SUCCESS && !StringUtils.isEmpty(lastSuccessTransactionId)) {
+                receiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByPaymentTransactionId(lastSuccessTransactionId);
+            } else {
+                receiptDetails =
+                        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)
+                                .findByPaymentTransactionId(paymentRenewalChargingRequest.getId());
+            }
             if (Objects.nonNull(receiptDetails)) {
                 String productType = receiptDetails.getPlanId() == 0 ? BaseConstants.POINT : BaseConstants.PLAN;
                 final AbstractGooglePlayReceiptVerificationResponse
@@ -805,9 +813,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                 return WynkResponseEntity.<Void>builder().success(true).build();
             }
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            if (Objects.isNull(receiptDetails)) {
-                throw new WynkRuntimeException(PLAY008);
-            }
+            eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PLAY008.getErrorCode()).description(PLAY008.getErrorMessage()).build());
             return WynkResponseEntity.<Void>builder().success(false).build();
         } catch (Exception e) {
             if (WynkRuntimeException.class.isAssignableFrom(e.getClass())) {
@@ -866,6 +872,16 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         final TransactionSnapshotEvent.TransactionSnapshotEventBuilder builder = TransactionSnapshotEvent.builder().transaction(transaction);
         Optional.ofNullable(purchaseDetailsManger.get(transaction)).ifPresent(builder::purchaseDetails);
         applicationEventPublisher.publishEvent(builder.build());
+    }
+
+    private String getLastSuccessTransactionId (Transaction transaction) {
+        if (transaction.getType() == PaymentEvent.RENEW) {
+            PaymentRenewal renewal =
+                    RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).findById(transaction.getIdStr())
+                            .orElse(null);
+            return Objects.nonNull(renewal) ? renewal.getLastSuccessTransactionId() : null;
+        }
+        return null;
     }
 
     private ResponseEntity<String> fetchDetailsAndUpdateGooglePlaySubscriptionOnConsole (Transaction refundTransaction, String uid, String transactionId, String action) {

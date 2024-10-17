@@ -456,7 +456,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
             throw new WynkRuntimeException(PaymentErrorType.PAY045);
         } catch (Exception e) {
             eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PaymentErrorType.PAY045.name()).description(PaymentErrorType.PAY045.getErrorMessage()).build());
-            throw new WynkRuntimeException(PaymentErrorType.PAY045, e);
+            return WynkResponseEntity.<Void>builder().success(false).build();
         } finally {
             transaction.setStatus(status.getValue());
             saveReceipt(transaction.getUid(), transaction.getMsisdn(), transaction.getPlanId(), receipt.getId(), receipt.getAmazonUserId(), transaction.getIdStr(), receipt.getService(), response.getRenewalDate());

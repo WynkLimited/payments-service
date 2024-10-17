@@ -207,7 +207,7 @@ public class PaymentGatewayManager
                         PaymentErrorEvent.builder(transaction.getIdStr()).code(PaymentErrorType.PAY302.getErrorCode()).description(PaymentErrorType.PAY302.getErrorMessage()).build());
             }
             if(request.getPaymentGateway().getId().equals(PaymentConstants.PAYU) || request.getPaymentGateway().getId().equals(ApsConstant.APS) ){
-                if(transaction.getType().equals(PaymentEvent.REFUND)){
+                if(transaction.getType().equals(PaymentEvent.REFUND) && transaction.getClientAlias().equals("music") && excludedAmounts.contains(transaction.getAmount())){
                     subscriptionServiceManager.unSubscribePlan(UnSubscribePlanAsyncRequest.builder().uid(transaction.getUid()).msisdn(transaction.getMsisdn()).planId(transaction.getPlanId()).transactionId(transaction.getIdStr()).paymentEvent(PaymentEvent.CANCELLED).transactionStatus(transaction.getStatus()).triggerDataRequest(getTriggerData()).build());
                 }
             }

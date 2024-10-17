@@ -116,6 +116,7 @@ public interface PaymentConstants extends BaseConstants {
 
     String TRANSACTION = "transaction";
     int MAXIMUM_RENEWAL_RETRY_ALLOWED = 3;
+    List<Integer> excludedAmounts = Arrays.asList(1, 49, 59, 69);
     ArrayList<String> ERROR_REASONS = new ArrayList<>(
             Arrays.asList("mandate status is: revoked", "|Mandate has been revoked", "mandate status is: pause", "Card has been classified as lost and has been blocked.",
                     "|Execution Request Already Initiated",

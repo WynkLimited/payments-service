@@ -821,7 +821,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                 eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(exception.getErrorCode())).description(exception.getErrorTitle()).build());
             }
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            throw new WynkRuntimeException(e);
+            return WynkResponseEntity.<Void>builder().success(false).build();
         }
     }
 

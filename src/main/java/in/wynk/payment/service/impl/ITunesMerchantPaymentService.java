@@ -597,7 +597,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             }
             log.error("Unable to do renewal for the transaction {}, error message {}", transaction.getId(), e.getMessage(), e);
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            throw new WynkRuntimeException(PaymentErrorType.PAY026, e);
+            return WynkResponseEntity.<Void>builder().success(false).build();
         }
     }
 

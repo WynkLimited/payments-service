@@ -429,7 +429,7 @@ public class PaymentGatewayManager
             refundInitResponse = refundService.doRefund(refundRequest);
             if(refundInitResponse.getTransactionStatus()== TransactionStatus.SUCCESS && originalTransaction.getClientAlias().equals("music") && refundTransaction.getPaymentChannel().getId().equals(PaymentConstants.GOOGLE_IAP)){
                 //sendNotificationToUser(refundTransaction);
-                subscriptionServiceManager.unSubscribePlan(UnSubscribePlanAsyncRequest.builder().uid(refundTransaction.getUid()).msisdn(refundTransaction.getMsisdn()).planId(refundTransaction.getPlanId()).transactionId(refundTransaction.getIdStr()).paymentEvent(PaymentEvent.CANCELLED).transactionStatus(refundInitResponse.getTransactionStatus()).triggerDataRequest(getTriggerData()).build());
+                subscriptionServiceManager.unSubscribePlan(UnSubscribePlanAsyncRequest.builder().uid(refundTransaction.getUid()).msisdn(refundTransaction.getMsisdn()).planId(refundTransaction.getPlanId()).transactionId(originalTransaction.getIdStr()).paymentEvent(PaymentEvent.CANCELLED).transactionStatus(refundInitResponse.getTransactionStatus()).triggerDataRequest(getTriggerData()).build());
             }
             return refundInitResponse;
         } catch (WynkRuntimeException e) {

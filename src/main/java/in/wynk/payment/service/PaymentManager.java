@@ -1,5 +1,6 @@
 package in.wynk.payment.service;
 
+import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.aspect.advice.ClientAware;
@@ -160,6 +161,7 @@ public class PaymentManager
 
     @Override
     @TransactionAware(txnId = "#request.transactionId")
+    @AnalyseTransaction(name= "handleCallback")
     public WynkResponseEntity<AbstractCallbackResponse> handleCallback (CallbackRequestWrapper<?> request) {
         final PaymentGateway paymentGateway = request.getPaymentGateway();
         final Transaction transaction = TransactionContext.get();

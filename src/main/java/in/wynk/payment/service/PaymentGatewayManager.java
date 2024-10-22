@@ -225,7 +225,6 @@ public class PaymentGatewayManager
             String lastSuccessTransactionId = getLastSuccessTransactionId(transaction);
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
-            transaction.setPlanId(2102);
             if( request.getPaymentGateway().getId().equals(PaymentConstants.PAYU) || request.getPaymentGateway().getId().equals(ApsConstant.APS) ){
                 if(finalStatus== TransactionStatus.SUCCESS && transaction.getType().equals(PaymentEvent.REFUND) && (transaction.getClientAlias().equals("music") || transaction.getClientAlias().equals("paymentApi")) && MUSIC_PLAN_IDS_OF_REFUND.contains(transaction.getPlanId())){
                     subscriptionServiceManager.unSubscribePlan(UnSubscribePlanAsyncRequest.builder().uid(transaction.getUid()).msisdn(transaction.getMsisdn()).planId(transaction.getPlanId()).transactionId(transaction.getIdStr()).paymentEvent(PaymentEvent.CANCELLED).transactionStatus(transaction.getStatus()).triggerDataRequest(getTriggerData()).build());

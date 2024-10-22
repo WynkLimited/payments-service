@@ -107,6 +107,7 @@ public interface PaymentConstants extends BaseConstants {
     String ADD_TO_BILL_USER_SUBSCRIPTION_STATUS_TASK = "AddToBillUserSubscriptionStatusTask";
     String EXTERNAL_TRANSACTION_TOKEN = "externalTransactionToken";
     List<Integer> MUSIC_PLAN_IDS = Arrays.asList(2102, 1103, 11002, 1107, 13011, 110011, 110012, 110021, 110022, 110041, 110042, 1100072, 1100073, 1100074, 1100075, 1100076, 110051, 1105, 11016, 11019, 11041, 11001, 1106, 111001, 1125, 1115, 13013, 2201, 2202, 2203, 2204, 2205, 2206, 8100357);
+    List<Integer> MUSIC_PLAN_IDS_OF_REFUND = Arrays.asList(2107, 11007, 11018, 11021, 13001, 21002, 21041, 1053, 2102, 12005, 130051);
     String E6002 = "E6002";
     String RENEWALS_INELIGIBLE_PLANS = "renewalsIneligiblePlans";
     String ERROR_DESCRIPTION_FOR_E6002 = "Invalid vpa ! please try again";

@@ -44,7 +44,7 @@ public class ApsRefundGatewayServiceImpl implements IPaymentRefund<ApsPaymentRef
                         .paymentEvent(refundTransaction.getType());
         try {
             final ApsPaymentRefundRequest refundRequest =
-                    ApsPaymentRefundRequest.builder().refundAmount(String.valueOf(refundTransaction.getAmount())).pgId(request.getPgId()).postingId(refundTransaction.getIdStr()).build();
+                    ApsPaymentRefundRequest.builder().refundAmount(String.valueOf(refundTransaction.getAmount())).pgId(request.getPgId()).postingId(refundTransaction.getIdStr()).overrideTimeLimit(true).build();
             ApsRefundStatusResponse body =
                     common.exchange(refundTransaction.getClientAlias(), REFUND_ENDPOINT, HttpMethod.POST, refundTransaction.getMsisdn(), refundRequest, ApsRefundStatusResponse.class);
 

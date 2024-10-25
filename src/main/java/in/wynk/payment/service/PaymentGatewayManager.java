@@ -226,7 +226,7 @@ public class PaymentGatewayManager
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
             if( request.getPaymentGateway().getId().equals(PaymentConstants.PAYU) || request.getPaymentGateway().getId().equals(ApsConstant.APS) ){
-                if(finalStatus== TransactionStatus.SUCCESS && transaction.getType().equals(PaymentEvent.REFUND) && (transaction.getClientAlias().equals("music") || transaction.getClientAlias().equals("paymentApi")) && MUSIC_PLAN_IDS_OF_REFUND.contains(transaction.getPlanId())){
+                if(finalStatus== TransactionStatus.REFUNDED && (transaction.getClientAlias().equals("music") || transaction.getClientAlias().equals("paymentApi")) && MUSIC_PLAN_IDS_OF_REFUND.contains(transaction.getPlanId())){
                     subscriptionServiceManager.unSubscribePlan(UnSubscribePlanAsyncRequest.builder().uid(transaction.getUid()).msisdn(transaction.getMsisdn()).planId(transaction.getPlanId()).transactionId(transaction.getIdStr()).paymentEvent(PaymentEvent.CANCELLED).transactionStatus(transaction.getStatus()).triggerDataRequest(getTriggerData()).build());
                 }
             }
@@ -429,7 +429,7 @@ public class PaymentGatewayManager
         AbstractPaymentRefundResponse refundInitResponse = null;
         try {
             refundInitResponse = refundService.doRefund(refundRequest);
-            if(refundInitResponse.getTransactionStatus()== TransactionStatus.SUCCESS && (originalTransaction.getClientAlias().equals("music") || originalTransaction.getClientAlias().equals("paymentApi")) && refundTransaction.getPaymentChannel().getId().equals(PaymentConstants.GOOGLE_IAP) && MUSIC_PLAN_IDS_OF_REFUND.contains(originalTransaction.getPlanId())){
+            if(refundInitResponse.getTransactionStatus()== TransactionStatus.SUCCESS && originalTransaction.getClientAlias().equals("music") && refundTransaction.getPaymentChannel().getId().equals(PaymentConstants.GOOGLE_IAP)){
                 //sendNotificationToUser(refundTransaction);
                 subscriptionServiceManager.unSubscribePlan(UnSubscribePlanAsyncRequest.builder().uid(refundTransaction.getUid()).msisdn(refundTransaction.getMsisdn()).planId(refundTransaction.getPlanId()).transactionId(originalTransaction.getIdStr()).paymentEvent(PaymentEvent.CANCELLED).transactionStatus(refundInitResponse.getTransactionStatus()).triggerDataRequest(getTriggerData()).build());
             }

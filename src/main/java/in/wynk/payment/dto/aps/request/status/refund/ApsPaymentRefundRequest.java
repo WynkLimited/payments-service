@@ -9,5 +9,4 @@ public class ApsPaymentRefundRequest {
     private String pgId;
     private String postingId;
     private String refundAmount;
-    private boolean overrideTimeLimit;
 }

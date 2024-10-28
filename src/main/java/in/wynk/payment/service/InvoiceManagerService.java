@@ -59,7 +59,7 @@ public class InvoiceManagerService implements InvoiceManager {
     private final GSTStateCodesCachingService stateCodesCachingService;
     private final InvoiceDetailsCachingService invoiceDetailsCachingService;
     private final InvoiceNumberGeneratorService invoiceNumberGenerator;
-    private final IKafkaEventPublisher<String, String> kafkaEventPublisher;
+    private final IKafkaEventPublisher<String, InformInvoiceKafkaMessage> kafkaEventPublisher;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final IPurchaseDetailsManger purchaseDetailsManager;
     private final WynkRedisLockService wynkRedisLockService;
@@ -188,7 +188,7 @@ public class InvoiceManagerService implements InvoiceManager {
                     request.getTransaction(), planTitle, amount, offerTitle);
             final String informInvoiceKafkaMessageStr = objectMapper.setSerializationInclusion(JsonInclude.Include.ALWAYS).writeValueAsString(informInvoiceKafkaMessage);
             AnalyticService.update(INFORM_INVOICE_MESSAGE, informInvoiceKafkaMessageStr);
-            kafkaEventPublisher.publish(informInvoiceTopic, informInvoiceKafkaMessageStr);
+            kafkaEventPublisher.publish(informInvoiceTopic, informInvoiceKafkaMessage);
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.KAFKA_PUBLISHER_FAILURE, "Unable to publish the inform invoice event in kafka due to {}", e.getMessage(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY452, e);

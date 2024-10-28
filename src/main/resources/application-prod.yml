@@ -518,7 +518,7 @@ http:
             factory:
               type: both
           request:
-            timeout: 2000
+            timeout: 5000
     externalServiceTemplate:
       pool:
         connection:

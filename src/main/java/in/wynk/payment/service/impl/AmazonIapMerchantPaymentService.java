@@ -441,26 +441,31 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         TransactionStatus status = TransactionStatus.FAILURE;
         final Transaction transaction = TransactionContext.get();
         final AmazonReceiptDetails receipt = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByPaymentTransactionId(paymentRenewalChargingRequest.getId());
-        final AmazonIapReceiptResponse response = getReceiptStatus(receipt.getId(), receipt.getAmazonUserId());
-        try {
-            if (Objects.nonNull(response)) {
-                boolean isEligible = isNotificationEligibleForRenewal(response, receipt);
-                if (isEligible && Objects.isNull(response.getCancelDate()) && response.getRenewalDate() > System.currentTimeMillis()) {
-                    status = TransactionStatus.SUCCESS;
-                    return WynkResponseEntity.<Void>builder().build();
+        if (Objects.nonNull(receipt)) {
+            final AmazonIapReceiptResponse response = getReceiptStatus(receipt.getId(), receipt.getAmazonUserId());
+            try {
+                if (Objects.nonNull(response)) {
+                    boolean isEligible = isNotificationEligibleForRenewal(response, receipt);
+                    if (isEligible && Objects.isNull(response.getCancelDate()) && response.getRenewalDate() > System.currentTimeMillis()) {
+                        status = TransactionStatus.SUCCESS;
+                        return WynkResponseEntity.<Void>builder().build();
+                    }
+                    if (Objects.nonNull(response.getCancelDate())) {
+                        eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PaymentErrorType.APS012.name()).description(CANCELLATION_REASON.get(response.getCancelReason())).build());
+                    }
                 }
-                if (Objects.nonNull(response.getCancelDate())) {
-                    eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PaymentErrorType.APS012.name()).description(CANCELLATION_REASON.get(response.getCancelReason())).build());
-                }
+                throw new WynkRuntimeException(PaymentErrorType.PAY045);
+            } catch (Exception e) {
+                eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PaymentErrorType.PAY045.name()).description(PaymentErrorType.PAY045.getErrorMessage()).build());
+                return WynkResponseEntity.<Void>builder().success(false).build();
+            } finally {
+                transaction.setStatus(status.getValue());
+                saveReceipt(transaction.getUid(), transaction.getMsisdn(), transaction.getPlanId(), receipt.getId(), receipt.getAmazonUserId(), transaction.getIdStr(), receipt.getService(), response.getRenewalDate());
             }
-            throw new WynkRuntimeException(PaymentErrorType.PAY045);
-        } catch (Exception e) {
-            eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PaymentErrorType.PAY045.name()).description(PaymentErrorType.PAY045.getErrorMessage()).build());
-            return WynkResponseEntity.<Void>builder().success(false).build();
-        } finally {
-            transaction.setStatus(status.getValue());
-            saveReceipt(transaction.getUid(), transaction.getMsisdn(), transaction.getPlanId(), receipt.getId(), receipt.getAmazonUserId(), transaction.getIdStr(), receipt.getService(), response.getRenewalDate());
         }
+        transaction.setStatus(status.getValue());
+        eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PaymentErrorType.PAY045.name()).description(PaymentErrorType.PAY045.getErrorMessage()).build());
+        return WynkResponseEntity.<Void>builder().success(false).build();
     }
 
     private boolean isNotificationEligibleForRenewal(AmazonIapReceiptResponse response, AmazonReceiptDetails receipt) {

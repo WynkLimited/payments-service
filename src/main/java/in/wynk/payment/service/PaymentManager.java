@@ -1,5 +1,6 @@
 package in.wynk.payment.service;
 
+import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.aspect.advice.ClientAware;
@@ -160,6 +161,7 @@ public class PaymentManager
 
     @Override
     @TransactionAware(txnId = "#request.transactionId")
+    @AnalyseTransaction(name= "handleCallback")
     public WynkResponseEntity<AbstractCallbackResponse> handleCallback (CallbackRequestWrapper<?> request) {
         final PaymentGateway paymentGateway = request.getPaymentGateway();
         final Transaction transaction = TransactionContext.get();
@@ -193,7 +195,7 @@ public class PaymentManager
             //publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_CALLBACK_EVENT).data(getEventsWrapperBuilder(transaction, TransactionContext.getPurchaseDetails())
             // .callbackRequest(request.getBody()).build()).build());
             if(request.getPaymentGateway().getId().equals(PaymentConstants.PAYU) || request.getPaymentGateway().getId().equals(ApsConstant.APS) ){
-                if(finalStatus== TransactionStatus.SUCCESS && transaction.getType().equals(PaymentEvent.REFUND) && transaction.getClientAlias().equals("music")){
+                if(finalStatus== TransactionStatus.REFUNDED && (transaction.getClientAlias().equals("music") || transaction.getClientAlias().equals("paymentApi")) && MUSIC_PLAN_IDS_OF_REFUND.contains(transaction.getPlanId())){
                     subscriptionServiceManager.unSubscribePlan(UnSubscribePlanAsyncRequest.builder().uid(transaction.getUid()).msisdn(transaction.getMsisdn()).planId(transaction.getPlanId()).transactionId(transaction.getIdStr()).paymentEvent(PaymentEvent.CANCELLED).transactionStatus(transaction.getStatus()).triggerDataRequest(getTriggerData()).build());
                 }
             }

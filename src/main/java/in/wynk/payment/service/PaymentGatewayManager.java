@@ -251,28 +251,36 @@ public class PaymentGatewayManager
         AnalyticService.update(wrapper.getDecodedNotification());
         if (wrapper.isEligible()) {
             final UserPlanMapping<?> mapping = receiptDetailService.getUserPlanMapping(wrapper);
+            String paymentTransactionId = receiptDetailService.getIdAndUpdateReceiptDetails(wrapper);
+            Transaction oldTransaction = transactionManager.get(paymentTransactionId);
             if (mapping != null) {
                 String productType = Objects.nonNull(mapping.getItemId()) ? BaseConstants.POINT : BaseConstants.PLAN;
                 final in.wynk.common.enums.PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper, productType);
-                if (event == PaymentEvent.UNSUBSCRIBE || event == PaymentEvent.CANCELLED) {
-                    String paymentTransactionId = receiptDetailService.getIdAndUpdateReceiptDetails(wrapper);
-                    Transaction transaction = transactionManager.get(paymentTransactionId);
+                if (event == PaymentEvent.UNSUBSCRIBE || event == PaymentEvent.CANCELLED ) {
                     if(event == PaymentEvent.UNSUBSCRIBE) {
-                        recurringTransactionUtils.cancelRenewalBasedOnRealtimeMandateForIAP("PaymentEvent Unsubscribed", transaction, event);
-                        transaction.setType(PaymentEvent.UNSUBSCRIBE.getValue());
-                        transaction.setStatus(PaymentEvent.CANCELLED.getValue());
+                        recurringTransactionUtils.cancelRenewalBasedOnRealtimeMandateForIAP("PaymentEvent Unsubscribed", oldTransaction, event);
+                        oldTransaction.setType(PaymentEvent.UNSUBSCRIBE.getValue());
+                        oldTransaction.setStatus(PaymentEvent.CANCELLED.getValue());
                     } else {
-                        recurringTransactionUtils.cancelRenewalBasedOnRealtimeMandateForIAP("PaymentEvent Cancelled", transaction, event);
-                        transaction.setStatus(PaymentEvent.CANCELLED.getValue());
+                        recurringTransactionUtils.cancelRenewalBasedOnRealtimeMandateForIAP("PaymentEvent Cancelled", oldTransaction, event);
+                        oldTransaction.setStatus(PaymentEvent.CANCELLED.getValue());
                     }
-                    publishTransactionSnapShotEvent(transaction);
+                    publishTransactionSnapShotEvent(oldTransaction);
                 } else {
-                    final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
-                            PlanRenewalRequest.builder().txnId(mapping.getLinkedTransactionId()).planId(mapping.getPlanId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentGateway(request.getPaymentGateway())
-                                    .clientAlias(mapping.getService().equalsIgnoreCase("music") ? "music" : "airtelxstream").build());
-                    transactionInitRequest.setEvent(event);
-                    final Transaction transaction = transactionManager.init(transactionInitRequest);
-                    handleNotification(transaction, mapping);
+                    if (oldTransaction.getPaymentChannel().getId().equals("GOOGLE_IAP") &&
+                            (oldTransaction.getClientAlias().equals("music") || oldTransaction.getClientAlias().equals("paymentApi")) && MUSIC_PLAN_IDS.contains(oldTransaction.getPlanId())) {
+                        eventPublisher.publishEvent(PaymentRefundInitEvent.builder()
+                                .originalTransactionId(oldTransaction.getIdStr())
+                                .reason("Refunding music transactions through Google IAP")
+                                .build());
+                    } else {
+                        final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
+                                PlanRenewalRequest.builder().txnId(mapping.getLinkedTransactionId()).planId(mapping.getPlanId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentGateway(request.getPaymentGateway())
+                                        .clientAlias(mapping.getService().equalsIgnoreCase("music") ? "music" : "airtelxstream").build());
+                        transactionInitRequest.setEvent(event);
+                        final Transaction transaction = transactionManager.init(transactionInitRequest);
+                        handleNotification(transaction, mapping);
+                    }
                     return WynkResponseEntity.<Void>builder().success(true).build();
                 }
             }

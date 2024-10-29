@@ -76,6 +76,9 @@ public class Transaction extends AuditableEntity {
     @Temporal(TemporalType.TIMESTAMP)
     private Calendar consent;
 
+    @Column(name = "original_transaction_id")
+    private String originalTransactionId;
+
     public PaymentEvent getType() {
         return PaymentEvent.valueOf(type);
     }

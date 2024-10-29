@@ -70,7 +70,7 @@ public class InvoiceManagerService implements InvoiceManager {
     public void generate(GenerateInvoiceRequest request) {
         try{
             Lock lock = wynkRedisLockService.getWynkRedisLock(request.getTxnId());
-            if (lock.tryLock(5, TimeUnit.SECONDS)) {
+            if (lock.tryLock(3, TimeUnit.SECONDS)) {
                 try {
                     final Transaction transaction = transactionManagerService.get(request.getTxnId());
                     final IPurchaseDetails purchaseDetails = purchaseDetailsManager.get(transaction);

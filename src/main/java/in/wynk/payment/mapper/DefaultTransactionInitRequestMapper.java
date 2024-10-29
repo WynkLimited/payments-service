@@ -60,9 +60,9 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
     public static AbstractTransactionInitRequest from(RefundTransactionRequestWrapper wrapper) {
         final Transaction originalTransaction = wrapper.getOriginalTransaction();
         if (originalTransaction.getType() == PaymentEvent.POINT_PURCHASE) {
-            return PointTransactionInitRequest.builder().uid(originalTransaction.getUid()).msisdn(originalTransaction.getMsisdn()).amount(originalTransaction.getAmount()).itemId(originalTransaction.getItemId()).clientAlias(originalTransaction.getClientAlias()).paymentGateway(originalTransaction.getPaymentChannel()).event(PaymentEvent.REFUND).build();
+            return PointTransactionInitRequest.builder().uid(originalTransaction.getUid()).msisdn(originalTransaction.getMsisdn()).amount(originalTransaction.getAmount()).itemId(originalTransaction.getItemId()).clientAlias(originalTransaction.getClientAlias()).paymentGateway(originalTransaction.getPaymentChannel()).event(PaymentEvent.REFUND).txnId(originalTransaction.getIdStr()).build();
         } else {
-            return PlanTransactionInitRequest.builder().uid(originalTransaction.getUid()).msisdn(originalTransaction.getMsisdn()).amount(originalTransaction.getAmount()).planId(originalTransaction.getPlanId()).clientAlias(originalTransaction.getClientAlias()).paymentGateway(originalTransaction.getPaymentChannel()).event(PaymentEvent.REFUND).build();
+            return PlanTransactionInitRequest.builder().uid(originalTransaction.getUid()).msisdn(originalTransaction.getMsisdn()).amount(originalTransaction.getAmount()).planId(originalTransaction.getPlanId()).clientAlias(originalTransaction.getClientAlias()).paymentGateway(originalTransaction.getPaymentChannel()).event(PaymentEvent.REFUND).txnId(originalTransaction.getIdStr()).build();
         }
     }
 

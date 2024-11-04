@@ -854,7 +854,7 @@ wynk:
       payment:
         appName: payment
         #nodes: 10.40.12.86,10.40.12.75,10.40.12.45
-        nodes: 10.40.12.101,10.40.12.75,10.40.12.45,10.160.88.30,10.160.88.31,10.160.88.32
+        nodes: 10.160.88.30,10.160.88.31,10.160.88.32
         username: user_payments
         password: tHdPNyp6Du
         database: payments
@@ -873,7 +873,7 @@ wynk:
       coupons:
         appName: coupon
         #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-        nodes: 10.40.12.101,10.40.12.75,10.40.12.45,10.160.88.30,10.160.88.31,10.160.88.32
+        nodes: 10.160.88.30,10.160.88.31,10.160.88.32
         username: user_coupons
         password: 6sSUZcp2gy
         database: coupons
@@ -904,7 +904,7 @@ wynk:
               source:
                 appName: payment
                 #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.40.12.101,10.40.12.75,10.40.12.45,10.160.88.30,10.160.88.31,10.160.88.32
+                nodes: 10.160.88.30,10.160.88.31,10.160.88.32
                 username: user_payments
                 password: tHdPNyp6Du
                 database: payments
@@ -927,7 +927,7 @@ wynk:
               source:
                 appName: coupon
                 #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.40.12.101,10.40.12.75,10.40.12.45,10.160.88.30,10.160.88.31,10.160.88.32
+                nodes: 10.160.88.30,10.160.88.31,10.160.88.32
                 username: user_coupons
                 password: 6sSUZcp2gy
                 database: coupons
@@ -953,7 +953,7 @@ wynk:
               source:
                 appName: payment
                 #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.40.12.101,10.40.12.75,10.40.12.45,10.160.88.30,10.160.88.31,10.160.88.32
+                nodes: 10.160.88.30,10.160.88.31,10.160.88.32
                 username: user_payments
                 password: tHdPNyp6Du
                 database: payments
@@ -976,7 +976,7 @@ wynk:
               source:
                 appName: coupon
                 #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.40.12.101,10.40.12.75,10.40.12.45,10.160.88.30,10.160.88.31,10.160.88.32
+                nodes: 10.160.88.30,10.160.88.31,10.160.88.32
                 username: user_coupons
                 password: 6sSUZcp2gy
                 database: coupons
@@ -1002,7 +1002,7 @@ wynk:
               source:
                 appName: payment
                 #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.40.12.101,10.40.12.75,10.40.12.45,10.160.88.30,10.160.88.31,10.160.88.32
+                nodes: 10.160.88.30,10.160.88.31,10.160.88.32
                 username: user_payments
                 password: tHdPNyp6Du
                 database: payments
@@ -1025,7 +1025,7 @@ wynk:
               source:
                 appName: coupon
                 #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.40.12.101,10.40.12.75,10.40.12.45,10.160.88.30,10.160.88.31,10.160.88.32
+                nodes: 10.160.88.30,10.160.88.31,10.160.88.32
                 username: user_coupons
                 password: 6sSUZcp2gy
                 database: coupons
@@ -1051,7 +1051,7 @@ wynk:
               source:
                 appName: payment
                 #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.40.12.101,10.40.12.75,10.40.12.45,10.160.88.30,10.160.88.31,10.160.88.32
+                nodes: 10.160.88.30,10.160.88.31,10.160.88.32
                 username: user_payments_rajtv
                 password: 91F306FC2BEBF8D2E75E699D74014
                 database: payments_rajtv
@@ -1074,7 +1074,7 @@ wynk:
               source:
                 appName: coupon
                 #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.40.12.101,10.40.12.75,10.40.12.45,10.160.88.30,10.160.88.31,10.160.88.32
+                nodes: 10.160.88.30,10.160.88.31,10.160.88.32
                 username: user_coupons_rajtv
                 password: BE750841543CCFC2F932478ED
                 database: coupons_rajtv
@@ -1100,7 +1100,7 @@ wynk:
               source:
                 appName: payment
                 #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.40.12.101,10.40.12.75,10.40.12.45,10.160.88.30,10.160.88.31,10.160.88.32
+                nodes: 10.160.88.30,10.160.88.31,10.160.88.32
                 username: user_payments_enterr10
                 password: 3217D9F83BF777888154
                 database: payments_enterr10
@@ -1123,7 +1123,7 @@ wynk:
               source:
                 appName: coupon
                 #nodes: 10.40.12.101,10.40.12.75,10.40.12.45
-                nodes: 10.40.12.101,10.40.12.75,10.40.12.45,10.160.88.30,10.160.88.31,10.160.88.32
+                nodes: 10.160.88.30,10.160.88.31,10.160.88.32
                 username: user_coupons_enterr10
                 password: E9504307BBE0251C1F4E87E
                 database: coupons_enterr10

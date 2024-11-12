@@ -717,11 +717,15 @@ public class PaymentEventListener {
                 if (!(EnumSet.of(PaymentEvent.UNSUBSCRIBE, PaymentEvent.CANCELLED, PaymentEvent.RESUMED, PaymentEvent.SUSPENDED, PaymentEvent.PROMOTION, PaymentEvent.FREE)
                         .contains(event.getTransaction().getType())) && (PaymentEvent.REFUND != event.getTransaction().getType() ||
                         (PaymentEvent.REFUND == event.getTransaction().getType() && event.getTransaction().getAmount() != MANDATE_FLOW_AMOUNT))) {
-                    eventPublisher.publishEvent(GenerateInvoiceEvent.builder()
-                            .msisdn(event.getTransaction().getMsisdn())
-                            .txnId(event.getTransaction().getIdStr())
-                            .clientAlias(event.getTransaction().getClientAlias())
-                            .build());
+                    if (PaymentEvent.REFUND == event.getTransaction().getType()){
+                        //todo: credit note generation
+                    } else {
+                        eventPublisher.publishEvent(GenerateInvoiceEvent.builder()
+                                .msisdn(event.getTransaction().getMsisdn())
+                                .txnId(event.getTransaction().getIdStr())
+                                .clientAlias(event.getTransaction().getClientAlias())
+                                .build());
+                    }
                 }
             }
         }

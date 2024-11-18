@@ -59,7 +59,7 @@ public class InvoiceManagerService implements InvoiceManager {
     private final GSTStateCodesCachingService stateCodesCachingService;
     private final InvoiceDetailsCachingService invoiceDetailsCachingService;
     private final InvoiceNumberGeneratorService invoiceNumberGenerator;
-    private final IKafkaEventPublisher<String, String> kafkaEventPublisher;
+    private final IKafkaEventPublisher<String, InvoiceKafkaMessage> kafkaEventPublisher;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final IPurchaseDetailsManger purchaseDetailsManager;
     private final WynkRedisLockService wynkRedisLockService;
@@ -70,7 +70,7 @@ public class InvoiceManagerService implements InvoiceManager {
     public void generate(GenerateInvoiceRequest request) {
         try{
             Lock lock = wynkRedisLockService.getWynkRedisLock(request.getTxnId());
-            if (lock.tryLock(2, TimeUnit.SECONDS)) {
+            if (lock.tryLock(3, TimeUnit.SECONDS)) {
                 try {
                     final Transaction transaction = transactionManagerService.get(request.getTxnId());
                     final IPurchaseDetails purchaseDetails = purchaseDetailsManager.get(transaction);
@@ -88,11 +88,11 @@ public class InvoiceManagerService implements InvoiceManager {
                     final TaxableResponse taxableResponse = taxManager.calculate(taxableRequest);
                     AnalyticService.update(TAXABLE_RESPONSE, String.valueOf(taxableResponse));
 
-                    final String invoiceID = getInvoiceNumber(request.getTxnId(), request.getClientAlias());
+                    final String invoiceID = getInvoiceNumber(request.getTxnId(), request.getClientAlias(), request.getType());
                     saveInvoiceDetails(transaction, invoiceID, taxableResponse);
                     publishInvoiceMessage(PublishInvoiceRequest.builder().transaction(transaction).operatorDetails(operatorDetails).purchaseDetails(purchaseDetails)
                             .taxableRequest(taxableRequest).taxableResponse(taxableResponse).invoiceDetails(invoiceDetails).uid(transaction.getUid())
-                            .invoiceId(invoiceID).build());
+                            .invoiceId(invoiceID).type(request.getType()).build());
                 } catch (WynkRuntimeException e) {
                     throw e;
                 } finally {
@@ -131,11 +131,11 @@ public class InvoiceManagerService implements InvoiceManager {
         }
     }
 
-    private String getInvoiceNumber(String txnId, String clientAlias){
+    private String getInvoiceNumber(String txnId, String clientAlias, String type){
         final Invoice invoice = invoiceService.getInvoiceByTransactionId(txnId);
         if(Objects.nonNull(invoice)) return invoice.getId();
         try{
-            final String invoiceID = invoiceNumberGenerator.generateInvoiceNumber(clientAlias);
+            final String invoiceID = invoiceNumberGenerator.generateInvoiceNumber(clientAlias, type);
             AnalyticService.update(invoiceID);
             return invoiceID;
         } catch(Exception e){
@@ -184,11 +184,21 @@ public class InvoiceManagerService implements InvoiceManager {
                 amount = plan.getPrice().getAmount();
             }
 
-            final InformInvoiceKafkaMessage informInvoiceKafkaMessage = InformInvoiceKafkaMessage.generateInformInvoiceEvent(request,
-                    request.getTransaction(), planTitle, amount, offerTitle);
-            final String informInvoiceKafkaMessageStr = objectMapper.setSerializationInclusion(JsonInclude.Include.ALWAYS).writeValueAsString(informInvoiceKafkaMessage);
-            AnalyticService.update(INFORM_INVOICE_MESSAGE, informInvoiceKafkaMessageStr);
-            kafkaEventPublisher.publish(informInvoiceTopic, informInvoiceKafkaMessageStr);
+            if (request.getType().equalsIgnoreCase(CREDIT_NOTE)) {
+                if (Objects.nonNull(request.getTransaction().getOriginalTransactionId())){
+                    final Transaction originalTransaction = transactionManagerService.getByOriginalTransactionId(request.getTransaction().getOriginalTransactionId());
+                    final Invoice originalInvoice = invoiceService.getInvoiceByTransactionId(originalTransaction.getIdStr());
+                    final CreditNoteKafkaMessage creditNoteKafkaMessage = CreditNoteKafkaMessage.generateCreditNoteEvent(request,
+                            request.getTransaction(), originalInvoice.getId(), originalInvoice.getCreatedOn(), planTitle, amount, offerTitle);
+                    AnalyticService.update(INFORM_INVOICE_MESSAGE, objectMapper.setSerializationInclusion(JsonInclude.Include.ALWAYS).writeValueAsString(creditNoteKafkaMessage));
+                    kafkaEventPublisher.publish(informInvoiceTopic, creditNoteKafkaMessage);
+                }
+            } else {
+                final InformInvoiceKafkaMessage informInvoiceKafkaMessage = InformInvoiceKafkaMessage.generateInformInvoiceEvent(request,
+                        request.getTransaction(), planTitle, amount, offerTitle);
+                AnalyticService.update(INFORM_INVOICE_MESSAGE, objectMapper.setSerializationInclusion(JsonInclude.Include.ALWAYS).writeValueAsString(informInvoiceKafkaMessage));
+                kafkaEventPublisher.publish(informInvoiceTopic, informInvoiceKafkaMessage);
+            }
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.KAFKA_PUBLISHER_FAILURE, "Unable to publish the inform invoice event in kafka due to {}", e.getMessage(), e);
             throw new WynkRuntimeException(PaymentErrorType.PAY452, e);

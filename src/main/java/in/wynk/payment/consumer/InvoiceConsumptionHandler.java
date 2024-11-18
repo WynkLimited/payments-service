@@ -29,13 +29,14 @@ public class InvoiceConsumptionHandler implements InvoiceHandler<InvoiceKafkaMes
         try {
             GenerateInvoiceKafkaMessage dto = (GenerateInvoiceKafkaMessage) message;
             AnalyticService.update(dto);
-            if (ObjectUtils.isEmpty(dto) || Objects.isNull(dto.getTxnId()) || Objects.isNull(dto.getMsisdn())) {
+            if (ObjectUtils.isEmpty(dto) || Objects.isNull(dto.getTxnId()) || Objects.isNull(dto.getMsisdn()) || Objects.isNull(dto.getType())) {
                 throw new WynkRuntimeException(PaymentErrorType.PAY440);
             }
             invoiceManager.generate(GenerateInvoiceRequest.builder()
                     .msisdn(dto.getMsisdn())
                     .clientAlias(dto.getClientAlias())
                     .txnId(dto.getTxnId())
+                    .type(dto.getType())
                     .build());
         } catch (Exception ex) {
             log.error(PaymentLoggingMarker.INVOICE_GENERATION_FAILED, ex.getMessage(), ex);

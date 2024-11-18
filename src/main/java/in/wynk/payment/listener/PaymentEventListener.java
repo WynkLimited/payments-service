@@ -200,7 +200,8 @@ public class PaymentEventListener {
     public void onRecurringPaymentEvent (RecurringPaymentEvent event) {
         AnalyticService.update(event);
         Transaction transaction = event.getTransaction();
-        if ((!cancelMandatePG.contains(transaction.getPaymentChannel().getId())) && (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.UNSUBSCRIBE) &&
+        if ((!cancelMandatePG.contains(transaction.getPaymentChannel().getId())) && ((transaction.getStatus() == TransactionStatus.SUCCESS || (transaction.getStatus()==TransactionStatus.REFUNDED && transaction.getType()== PaymentEvent.TRIAL_SUBSCRIPTION ))
+                && transaction.getType() != PaymentEvent.UNSUBSCRIBE) &&
                 event.getPaymentEvent() == PaymentEvent.UNSUBSCRIBE) {
             cancelMandateFromPG(transaction.getPaymentChannel().getId(), transaction.getPaymentChannel().getCode(), transaction.getIdStr(), event.getClientAlias());
         }
@@ -706,24 +707,31 @@ public class PaymentEventListener {
         AnalyticService.update(TRANSACTION_STATUS, event.getTransaction().getStatus().getValue());
         AnalyticService.update(PAYMENT_METHOD, event.getTransaction().getPaymentChannel().getCode());
         if (event.getTransaction().getStatus() == TransactionStatus.SUCCESS) {
-            /** from now payu will not send tdr value
             final BaseTDRResponse tdr = paymentGatewayManager.getTDR(event.getTransaction().getIdStr());
-             *  if ((tdr.getTdr() != -1) && (tdr.getTdr() != -2)) {
+            if ((tdr.getTdr() != -1) && (tdr.getTdr() != -2)) {
                 AnalyticService.update(TDR, tdr.getTdr());
-            } */
-            Double tdr = null;
-            AnalyticService.update(TDR, tdr);
+            }
             //Invoice should not be generated for Trial or mandate subscription WCF-4350
             if ((PaymentEvent.MANDATE != event.getTransaction().getType() && PaymentEvent.TRIAL_SUBSCRIPTION != event.getTransaction().getType()) &&
                     event.getTransaction().getPaymentChannel().isInvoiceSupported()) {
                 if (!(EnumSet.of(PaymentEvent.UNSUBSCRIBE, PaymentEvent.CANCELLED, PaymentEvent.RESUMED, PaymentEvent.SUSPENDED, PaymentEvent.PROMOTION, PaymentEvent.FREE)
                         .contains(event.getTransaction().getType())) && (PaymentEvent.REFUND != event.getTransaction().getType() ||
                         (PaymentEvent.REFUND == event.getTransaction().getType() && event.getTransaction().getAmount() != MANDATE_FLOW_AMOUNT))) {
-                    eventPublisher.publishEvent(GenerateInvoiceEvent.builder()
-                            .msisdn(event.getTransaction().getMsisdn())
-                            .txnId(event.getTransaction().getIdStr())
-                            .clientAlias(event.getTransaction().getClientAlias())
-                            .build());
+                    if (PaymentEvent.REFUND == event.getTransaction().getType() && event.getTransaction().getAmount() != MANDATE_FLOW_AMOUNT){
+                        eventPublisher.publishEvent(GenerateInvoiceEvent.builder()
+                                .msisdn(event.getTransaction().getMsisdn())
+                                .txnId(event.getTransaction().getIdStr())
+                                .clientAlias(event.getTransaction().getClientAlias())
+                                .type(CREDIT_NOTE)
+                                .build());
+                    } else {
+                        eventPublisher.publishEvent(GenerateInvoiceEvent.builder()
+                                .msisdn(event.getTransaction().getMsisdn())
+                                .txnId(event.getTransaction().getIdStr())
+                                .clientAlias(event.getTransaction().getClientAlias())
+                                .type(INVOICE)
+                                .build());
+                    }
                 }
             }
         }

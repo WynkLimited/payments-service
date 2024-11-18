@@ -26,4 +26,6 @@ public interface ITransactionManagerService {
 
     Transaction upsert (Transaction transaction);
 
+    Transaction getByOriginalTransactionId(String id);
+
 }

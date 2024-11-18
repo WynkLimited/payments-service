@@ -18,4 +18,13 @@ public class InvoiceSequence extends MongoBaseEntity<String> {
     @Field("sequence")
     private long sequenceNumber;
     private String identifier;
+    private CreditNote creditNote;
+    @Getter
+    @Setter
+    public static class CreditNote {
+        @Field("cnsequence")
+        private long cnSequence;
+        @Field("cnidentifier")
+        private String cnIdentifier;
+    }
 }

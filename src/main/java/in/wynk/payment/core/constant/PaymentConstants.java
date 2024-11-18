@@ -77,6 +77,8 @@ public interface PaymentConstants extends BaseConstants {
     String INVOICE_SEQUENCE_LOCK_KEY = "invoiceSequenceLockKey";
     String INVOICE_SEQUENCE_PREFIX = "ADL";
     String INFORM_INVOICE_MESSAGE = "informInvoiceMessage";
+    String CREDIT_NOTE = "CREDIT_NOTE";
+    String INVOICE = "INVOICE";
     String TAXABLE_REQUEST = "taxableRequest";
     String TAXABLE_RESPONSE = "taxableResponse";
     String OPTIMUS_GST_STATE_CODE = "optimusGSTStateCode";

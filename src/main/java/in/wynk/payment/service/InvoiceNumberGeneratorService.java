@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 
+import static in.wynk.payment.core.constant.PaymentConstants.CREDIT_NOTE;
+
 @Slf4j
 @Service(BeanConstant.INVOICE_SEQUENCE_GENERATOR)
 @RequiredArgsConstructor
@@ -22,21 +24,28 @@ public class InvoiceNumberGeneratorService {
     private final InvoiceSequenceDao invoiceSequenceDao;
     private final RedissonClient redissonClient;
 
-    public String generateInvoiceNumber(String clientAlias){
+    public String generateInvoiceNumber(String clientAlias, String type){
         final String monthYear = getCurrentMonthYear();
-        final String sequence = getNextSequenceValue(clientAlias);
+        final String sequence = getNextSequenceValue(clientAlias, type);
         return PaymentConstants.INVOICE_SEQUENCE_PREFIX + monthYear + sequence;
     }
 
-    private String getNextSequenceValue(String clientAlias) {
+    private String getNextSequenceValue(String clientAlias, String type) {
         final RLock lock = redissonClient.getLock(PaymentConstants.INVOICE_SEQUENCE_LOCK_KEY);
         lock.lock();
         try {
             final InvoiceSequence sequence = invoiceSequenceDao.findById(clientAlias).orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY453));
-            final long seqNumber = sequence.getSequenceNumber() + 1;
-            sequence.setSequenceNumber(seqNumber);
-            invoiceSequenceDao.save(sequence);
-            return sequence.getIdentifier() + seqNumber;
+            if (type.equalsIgnoreCase(CREDIT_NOTE)){
+                final long seqNumber = sequence.getCreditNote().getCnSequence() + 1;
+                sequence.getCreditNote().setCnSequence(seqNumber);
+                invoiceSequenceDao.save(sequence);
+                return sequence.getCreditNote().getCnIdentifier() + seqNumber;
+            } else {
+                final long seqNumber = sequence.getSequenceNumber() + 1;
+                sequence.setSequenceNumber(seqNumber);
+                invoiceSequenceDao.save(sequence);
+                return sequence.getIdentifier() + seqNumber;
+            }
         } finally {
             lock.unlock();
         }

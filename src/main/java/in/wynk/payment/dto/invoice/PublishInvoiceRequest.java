@@ -1,5 +1,6 @@
 package in.wynk.payment.dto.invoice;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.InvoiceDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -9,6 +10,7 @@ import lombok.experimental.SuperBuilder;
 
 @Getter
 @SuperBuilder
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class PublishInvoiceRequest {
     private Transaction transaction;
     private MsisdnOperatorDetails operatorDetails;
@@ -18,4 +20,5 @@ public class PublishInvoiceRequest {
     private InvoiceDetails invoiceDetails;
     private String invoiceId;
     private String uid;
+    private String type;
 }

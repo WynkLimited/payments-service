@@ -86,6 +86,12 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     }
 
     @Override
+    public Transaction getByOriginalTransactionId (String id) {
+        return RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).findByOriginalTxnId(id)
+                .orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY010, id));
+    }
+
+    @Override
     public Set<Transaction> getAll (Set<String> idList) {
         return idList.stream().map(this::get).collect(Collectors.toSet());
     }

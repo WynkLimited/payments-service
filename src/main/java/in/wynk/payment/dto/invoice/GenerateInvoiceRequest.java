@@ -15,4 +15,6 @@ public class GenerateInvoiceRequest {
     private final String clientAlias;
     @Analysed
     private final String txnId;
+    @Analysed
+    private final String type;
 }

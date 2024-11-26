@@ -893,10 +893,14 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                 baseUrl + gPlayReceipt.getPackageName() + subscriptionPurchase + gPlayReceipt.getSkuId() + TOKEN + gPlayReceipt.getId() + action + API_KEY_PARAM + getApiKey(gPlayReceipt.getService());
         HttpHeaders headers = getHeaders(gPlayReceipt.getService());
         try {
-              ResponseEntity<String> responseEntity= restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(null, headers), String.class);
-              AnalyticService.update(responseEntity);
-              refundTransaction.setStatus(String.valueOf(TransactionStatus.SUCCESS));
-              return responseEntity;
+            ResponseEntity<String> responseEntity= restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(null, headers), String.class);
+            AnalyticService.update(responseEntity);
+            if (action.equals(CANCEL)) {
+                refundTransaction.setStatus(String.valueOf(TransactionStatus.CANCELLED));
+            }  else {
+                refundTransaction.setStatus(String.valueOf(TransactionStatus.SUCCESS));
+            }
+            return responseEntity;
         } catch (Exception ex) {
             if (action.equalsIgnoreCase(CANCEL)) {
                 throw new WynkRuntimeException(PaymentErrorType.PLAY006, ex);

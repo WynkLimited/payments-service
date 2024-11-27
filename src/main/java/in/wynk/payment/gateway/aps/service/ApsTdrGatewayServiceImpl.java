@@ -37,6 +37,7 @@ public class ApsTdrGatewayServiceImpl implements IMerchantTDRService {
 
     @Override
     public BaseTDRResponse getTDR (String transactionId) {
+        /** Payu not sending tdr value
         try {
             final Transaction transaction = TransactionContext.get();
             final MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(transactionId);
@@ -46,7 +47,7 @@ public class ApsTdrGatewayServiceImpl implements IMerchantTDRService {
             return BaseTDRResponse.from(apsTdrResponse.getTdrAmount());
         } catch (Exception e) {
             log.error(APS_TDR_ERROR, e.getMessage());
-        }
-        return BaseTDRResponse.from(-2);
+        } */
+        return BaseTDRResponse.from(Double.valueOf(-2));
     }
 }

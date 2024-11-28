@@ -7,12 +7,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class BaseTDRResponse {
 
-    private final Double tdr;
+    private final double tdr;
 
-    public static BaseTDRResponse from(Double tdr) {
-        if (tdr == null) {
-            return null;
-        }
+    public static BaseTDRResponse from(double tdr) {
         return new BaseTDRResponse(tdr);
     }
 

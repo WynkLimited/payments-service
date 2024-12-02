@@ -186,7 +186,7 @@ public class InvoiceManagerService implements InvoiceManager {
 
             if (request.getType().equalsIgnoreCase(CREDIT_NOTE)) {
                 if (Objects.nonNull(request.getTransaction().getOriginalTransactionId())){
-                    final Transaction originalTransaction = transactionManagerService.getByOriginalTransactionId(request.getTransaction().getOriginalTransactionId());
+                    final Transaction originalTransaction = transactionManagerService.get(request.getTransaction().getOriginalTransactionId());
                     final Invoice originalInvoice = invoiceService.getInvoiceByTransactionId(originalTransaction.getIdStr());
                     final CreditNoteKafkaMessage creditNoteKafkaMessage = CreditNoteKafkaMessage.generateCreditNoteEvent(request,
                             request.getTransaction(), originalInvoice.getId(), originalInvoice.getCreatedOn(), planTitle, amount, offerTitle);

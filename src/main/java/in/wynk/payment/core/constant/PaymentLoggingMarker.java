@@ -158,4 +158,11 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker INVOICE_TRIGGER_RETRY_FAILURE = MarkerFactory.getMarker("INVOICE_TRIGGER_RETRY_FAILURE");
     Marker LOCK_ACQUIRE_FAILURE = MarkerFactory.getMarker("LOCK_ACQUIRE_FAILURE");
     Marker BEST_VALUE_PLAN_API_ERROR = MarkerFactory.getMarker("BEST_VALUE_PLAN_API_ERROR");
+    /* QR Code Generate Marker */
+    Marker QRCODE_PRODUCT_DETAILS_ERROR = MarkerFactory.getMarker("QRCODE_PRODUCT_DETAILS_ERROR");
+    Marker QRCODE_PRODUCT_ID_ERROR = MarkerFactory.getMarker("QRCODE_PRODUCT_ID_ERROR");
+    Marker QRCODE_PAYMENT_DETAILS_ERROR = MarkerFactory.getMarker("QRCODE_PAYMENT_DETAILS_ERROR");
+    Marker QRCODE_PAYMENT_METHOD_ERROR = MarkerFactory.getMarker("QRCODE_PAYMENT_METHOD_ERROR");
+    Marker QRCODE_REQUEST_TRANSFORM_ERROR = MarkerFactory.getMarker("QRCODE_REQUEST_TRANSFORM_ERROR");
+
 }

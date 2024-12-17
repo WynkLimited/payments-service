@@ -183,5 +183,11 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker KAFKA_CONSUMPTION_HANDLING_ERROR = MarkerFactory.getMarker("KAFKA_CONSUMPTION_HANDLING_ERROR");
     Marker KAFKA_PUBLISHER_FAILURE = MarkerFactory.getMarker("KAFKA_PUBLISHER_FAILURE");
     Marker LOCK_ACQUIRE_FAILURE = MarkerFactory.getMarker("LOCK_ACQUIRE_FAILURE");
+    /* QR Code Generate Marker */
+    Marker QRCODE_PRODUCT_DETAILS_ERROR = MarkerFactory.getMarker("QRCODE_PRODUCT_DETAILS_ERROR");
+    Marker QRCODE_PRODUCT_ID_ERROR = MarkerFactory.getMarker("QRCODE_PRODUCT_ID_ERROR");
+    Marker QRCODE_PAYMENT_DETAILS_ERROR = MarkerFactory.getMarker("QRCODE_PAYMENT_DETAILS_ERROR");
+    Marker QRCODE_PAYMENT_METHOD_ERROR = MarkerFactory.getMarker("QRCODE_PAYMENT_METHOD_ERROR");
+    Marker QRCODE_REQUEST_TRANSFORM_ERROR = MarkerFactory.getMarker("QRCODE_REQUEST_TRANSFORM_ERROR");
 
 }

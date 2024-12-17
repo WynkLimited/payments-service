@@ -9,4 +9,6 @@ import in.wynk.payment.dto.response.paymentoption.PaymentOptionsDTO;
  */
 public interface IPaymentOptionServiceV2 {
     FilteredPaymentOptionsResult getPaymentOptions(AbstractPaymentOptionsRequest<?> request);
+
+    FilteredPaymentOptionsResult getPaymentOptionsForQRCode(AbstractPaymentOptionsRequest<?> request);
 }

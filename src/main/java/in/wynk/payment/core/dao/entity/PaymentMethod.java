@@ -19,7 +19,7 @@ import java.util.Map;
 @Document("payment_methods")
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class PaymentMethod extends MongoBaseEntityMessage<String> implements Serializable {
-
+    private static final long serialVersionUID = 4079494594300141101L;
     private int hierarchy;
 
     private boolean trialSupported;

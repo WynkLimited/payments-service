@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static in.wynk.payment.constant.FlowType.*;
 import static in.wynk.payment.constant.UpiConstants.UPI_PREFIX;
@@ -99,65 +100,80 @@ public class QRCodePaymentChargingResponse implements IPaymentPresentationV2<QRC
                 public QRCodeIntentSeamlessUpiPaymentChargingResponse transform(Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse> payload) {
                     AbstractPaymentChargingRequest request = payload.getFirst();
                     UpiIntentChargingResponse response = (UpiIntentChargingResponse) payload.getSecond();
-                    final PaymentMethod method = paymentMethodCache.get(payload.getFirst().getPaymentDetails().getPaymentId());
+                    PaymentMethod paymentMethod = paymentMethodCache.get(request.getPaymentDetails().getPaymentId());
 
-                    final String prefix = (String) method.getMeta().getOrDefault(UPI_PREFIX, "upi");
-                    StringBuilder stringBuilder = new StringBuilder(prefix);
-                    if (!request.isAutoRenewOpted()) stringBuilder.append("://pay?");
-                    else {
-                        stringBuilder.append("://mandate?");
-                        if (!StringUtils.isEmpty(response.getMn()))
-                            stringBuilder.append("&mn=").append(response.getMn());
-                        if (!StringUtils.isEmpty(response.getRev()))
-                            stringBuilder.append("&rev=").append(response.getRev());
-                        if (!StringUtils.isEmpty(response.getMode()))
-                            stringBuilder.append("&mode=").append(response.getMode());
-                        if (!StringUtils.isEmpty(response.getRecur()))
-                            stringBuilder.append("&recur=").append(response.getRecur());
-                        if (!StringUtils.isEmpty(response.getOrgId()))
-                            stringBuilder.append("&orgid=").append(response.getOrgId());
-                        if (!StringUtils.isEmpty(response.getBlock()))
-                            stringBuilder.append("&block=").append(response.getBlock());
-                        if (!StringUtils.isEmpty(response.getAmRule()))
-                            stringBuilder.append("&amrule=").append(response.getAmRule());
-                        if (!StringUtils.isEmpty(response.getPurpose()))
-                            stringBuilder.append("&purpose=").append(response.getPurpose());
-                        if (!StringUtils.isEmpty(response.getTxnType()))
-                            stringBuilder.append("&txnType=").append(response.getTxnType());
-                        if (!StringUtils.isEmpty(response.getRecurType()))
-                            stringBuilder.append("&recurtype=").append(response.getRecurType());
-                        if (!StringUtils.isEmpty(response.getRecurValue()))
-                            stringBuilder.append("&recurvalue=").append(response.getRecurValue());
-                        if (!StringUtils.isEmpty(response.getValidityEnd()))
-                            stringBuilder.append("&validityend=").append(response.getValidityEnd());
-                        if (!StringUtils.isEmpty(response.getValidityStart()))
-                            stringBuilder.append("&validitystart=").append(response.getValidityStart());
-                        stringBuilder.append("&");
-                    }
-                    Calendar cal = Calendar.getInstance();
-                    long curTimeStamp = cal.getTimeInMillis();
-                    cal.add(Calendar.MINUTE, 5);
-                    long qrExpireTimeStamp = cal.getTimeInMillis();
+                    final String upiPrefix = (String) paymentMethod.getMeta().getOrDefault(UPI_PREFIX, "upi");
+                    String intentBasePath = request.isAutoRenewOpted() ? "mandate" : "pay";
 
-                    stringBuilder.append("pa=").append(response.getPa());
-                    stringBuilder.append("&qrts=").append(curTimeStamp);
-                    stringBuilder.append("&qrExpire=").append(qrExpireTimeStamp);
-                    stringBuilder.append("&pn=").append(response.getPn());
-                    stringBuilder.append("&tr=").append(response.getTr());
-                    stringBuilder.append("&am=").append(response.getAm());
-                    stringBuilder.append("&cu=").append(response.getCu());
-                    stringBuilder.append("&tn=").append(response.getTn());
-                    stringBuilder.append("&mc=").append(response.getMc());
-                    stringBuilder.append("&tid=").append(response.getTid().replaceAll("-", ""));
-                    logger.info("intentUrl to be send to client: {}", stringBuilder);
-                    final String form = EncryptionUtils.encrypt(stringBuilder.toString(), ENC_KEY);
+                    String intentUrl = buildIntentUrl(upiPrefix, intentBasePath, request, response);
+                    logger.info("Intent URL to be sent to client: {}", intentUrl);
+
+                    String encryptedDeepLink = EncryptionUtils.encrypt(intentUrl, ENC_KEY);
+                    long expiryTtl = calculateQrExpiryTime();
+
                     return QRCodeIntentSeamlessUpiPaymentChargingResponse.builder()
-                            .deepLink(form)
+                            .deepLink(encryptedDeepLink)
                             .action(PaymentChargingAction.INTENT.getAction())
-                            .expiryTtl(qrExpireTimeStamp)
-                            .appPackage((String) method.getMeta().get(APP_PACKAGE))
-                            .pollingConfig(buildPollingConfig(payload.getFirst().getPaymentId(), S2SChargingRequestV2.class.isAssignableFrom(payload.getFirst().getClass())))
+                            .expiryTtl(expiryTtl)
+                            .appPackage((String) paymentMethod.getMeta().get(APP_PACKAGE))
+                            .pollingConfig(buildPollingConfig(request.getPaymentId(), S2SChargingRequestV2.class.isAssignableFrom(request.getClass())))
                             .build();
+                }
+
+                private String buildIntentUrl(String upiPrefix, String basePath, AbstractPaymentChargingRequest request, UpiIntentChargingResponse response) {
+                    Map<String, String> queryParams = new LinkedHashMap<>();
+                    queryParams.put("pa", response.getPa());
+                    queryParams.put("pn", response.getPn());
+                    queryParams.put("tr", response.getTr());
+                    queryParams.put("am", response.getAm());
+                    queryParams.put("cu", response.getCu());
+                    queryParams.put("tn", response.getTn());
+                    queryParams.put("mc", response.getMc());
+                    queryParams.put("tid", response.getTid().replaceAll("-", ""));
+
+                    if (request.isAutoRenewOpted()) {
+                        queryParams.putAll(getAutoRenewParams(response));
+                    }
+
+                    long currentTimeStamp = System.currentTimeMillis();
+                    queryParams.put("qrts", String.valueOf(currentTimeStamp));
+                    queryParams.put("qrExpire", String.valueOf(calculateQrExpiryTime()));
+
+                    String baseIntentUrl = String.format("%s://%s?", upiPrefix, basePath);
+                    return queryParams.entrySet()
+                            .stream()
+                            .map(entry -> entry.getKey() + "=" + entry.getValue())
+                            .collect(Collectors.joining("&", baseIntentUrl, ""));
+                }
+
+                private Map<String, String> getAutoRenewParams(UpiIntentChargingResponse response) {
+                    Map<String, String> params = new LinkedHashMap<>();
+                    putIfNotEmpty(params, "mn", response.getMn());
+                    putIfNotEmpty(params, "rev", response.getRev());
+                    putIfNotEmpty(params, "mode", response.getMode());
+                    putIfNotEmpty(params, "recur", response.getRecur());
+                    putIfNotEmpty(params, "orgid", response.getOrgId());
+                    putIfNotEmpty(params, "block", response.getBlock());
+                    putIfNotEmpty(params, "amrule", response.getAmRule());
+                    putIfNotEmpty(params, "purpose", response.getPurpose());
+                    putIfNotEmpty(params, "txnType", response.getTxnType());
+                    putIfNotEmpty(params, "recurtype", response.getRecurType());
+                    putIfNotEmpty(params, "recurvalue", response.getRecurValue());
+                    putIfNotEmpty(params, "validityend", response.getValidityEnd());
+                    putIfNotEmpty(params, "validitystart", response.getValidityStart());
+                    return params;
+                }
+
+                private void putIfNotEmpty(Map<String, String> map, String key, String value) {
+                    if (!StringUtils.isEmpty(value)) {
+                        map.put(key, value);
+                    }
+                }
+
+                private long calculateQrExpiryTime() {
+                    Calendar calendar = Calendar.getInstance();
+                    calendar.add(Calendar.MINUTE, 5);
+                    return calendar.getTimeInMillis();
                 }
             }
         }

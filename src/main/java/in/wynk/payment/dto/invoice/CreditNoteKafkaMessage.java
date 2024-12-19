@@ -36,8 +36,6 @@ import java.util.Objects;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CreditNoteKafkaMessage extends InvoiceKafkaMessage {
 
-    private static InvoiceService invoice;
-    private static ITransactionManagerService transactionManagerService;
     @Analysed
     @JsonProperty("LOB")
     private String lob;

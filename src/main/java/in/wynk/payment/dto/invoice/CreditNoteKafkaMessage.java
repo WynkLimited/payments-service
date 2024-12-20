@@ -41,7 +41,7 @@ public class CreditNoteKafkaMessage extends InvoiceKafkaMessage {
     private String lob;
     @Analysed
     @JsonProperty("TYPE")
-    private boolean type;
+    private String type;
 
     @Analysed
     private CreditNoteKafkaMessage.CustomerDetails customerDetails;
@@ -149,6 +149,7 @@ public class CreditNoteKafkaMessage extends InvoiceKafkaMessage {
                 .customerInvoiceDetails(customerInvoiceDetails)
                 .customerRechargeRates(customerRechargeRates)
                 .taxDetails(taxDetails)
+                .type("WYNKCN")
                 .build();
 
     }

@@ -40,7 +40,7 @@ public class CreditNoteKafkaMessage extends InvoiceKafkaMessage {
     @JsonProperty("LOB")
     private String lob;
     @Analysed
-    @JsonProperty("TYPE")
+    @JsonProperty("type")
     private String type;
 
     @Analysed

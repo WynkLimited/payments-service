@@ -208,7 +208,7 @@ public class CreditNoteKafkaMessage extends InvoiceKafkaMessage {
     private static CreditNoteKafkaMessage.LobInvoice.CustomerDetails generateCustomerDetails(MsisdnOperatorDetails operatorDetails, TaxableRequest taxableRequest, String msisdn, String uid) {
         final String stateCode = taxableRequest.getConsumerStateCode();
         final String state = taxableRequest.getConsumerStateName();
-        final CreditNoteKafkaMessage.LobInvoice.CustomerDetails.CustomerDetailsBuilder customerDetailsBuilder = CreditNoteKafkaMessage.CustomerDetails.builder();
+        final CreditNoteKafkaMessage.LobInvoice.CustomerDetails.CustomerDetailsBuilder customerDetailsBuilder = CreditNoteKafkaMessage.LobInvoice.CustomerDetails.builder();
         if (Objects.nonNull(operatorDetails) && Objects.nonNull(operatorDetails.getUserMobilityInfo())) {
             final UserMobilityInfo userMobilityInfo = operatorDetails.getUserMobilityInfo();
             final String name = (Strings.isNullOrEmpty(userMobilityInfo.getMiddleName())) ?

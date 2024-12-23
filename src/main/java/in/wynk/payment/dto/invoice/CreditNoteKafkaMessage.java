@@ -37,131 +37,151 @@ import java.util.Objects;
 public class CreditNoteKafkaMessage extends InvoiceKafkaMessage {
 
     @Analysed
-    @JsonProperty("LOB")
-    private String lob;
-    @Analysed
-    @JsonProperty("type")
-    private String type;
+    private LobInvoice lobInvoice;
 
-    @Analysed
-    private CreditNoteKafkaMessage.CustomerDetails customerDetails;
-    @Analysed
-    private CreditNoteKafkaMessage.CustomerInvoiceDetails customerInvoiceDetails;
-    @Analysed
-    @JsonProperty("customerRechargeRate")
-    private List<CreditNoteKafkaMessage.CustomerRechargeRate> customerRechargeRates;
-    @Analysed
-    private CreditNoteKafkaMessage.TaxDetails taxDetails;
 
     @Getter
     @Builder
     @AnalysedEntity
-    public static class CustomerDetails {
-        @Analysed
-        @JsonProperty("KCINumber")
-        private String kciNumber;
-        @Analysed
-        private String customerAccountNo;
-        @Analysed
-        private String stateCode;
-        @Analysed
-        private String stateName;
-    }
+    public static class LobInvoice {
 
-    @Getter
-    @Builder
-    @AnalysedEntity
-    public static class CustomerInvoiceDetails {
         @Analysed
-        @JsonProperty("paymentTransactionID")
-        private String paymentTransactionID;
+        @JsonProperty("LOB")
+        private String lob;
         @Analysed
-        private double invoiceAmount;
-        @Analysed
-        private String invoiceDate;
-        @Analysed
-        private String invoiceNumber;
-        @Analysed
-        private String paymentDate;
-        @Analysed
-        private String paymentMode;
-        @Analysed
-        private String typeOfService;
-        @Analysed
-        private double discount;
-        @Analysed
-        private double discountedPrice;
-        @Analysed
-        private String cnInvoiceDate;
-        @Analysed
-        private String cnInvoiceNumber;
-    }
+        @JsonProperty("type")
+        private String type;
 
-    @Getter
-    @Builder
-    @AnalysedEntity
-    public static class CustomerRechargeRate {
         @Analysed
-        private String category;
+        private CreditNoteKafkaMessage.LobInvoice.CustomerDetails customerDetails;
         @Analysed
-        private String hsnCodeNo;
+        private CreditNoteKafkaMessage.LobInvoice.CustomerInvoiceDetails customerInvoiceDetails;
         @Analysed
-        private double rate;
+        @JsonProperty("customerRechargeRate")
+        private List<CreditNoteKafkaMessage.LobInvoice.CustomerRechargeRate> customerRechargeRates;
         @Analysed
-        private int unit;
-    }
-
-    @Getter
-    @Builder
-    @AnalysedEntity
-    public static class TaxDetails {
-        @Analysed
-        private String taxableValue;
-        @Analysed
-        private List<CreditNoteKafkaMessage.TaxDetails.SubRow> subRow;
-        @Analysed
-        private String taxAmount;
+        private CreditNoteKafkaMessage.LobInvoice.TaxDetails taxDetails;
+//        @Analysed
+//        private CustomerDetails customerDetails;
+//        @Analysed
+//        private CustomerInvoiceDetails customerInvoiceDetails;
+//        @Analysed
+//        @JsonProperty("customerRechargeRate")
+//        private List<CustomerRechargeRate> customerRechargeRates;
+//        @Analysed
+//        private TaxDetails taxDetails;
 
         @Getter
         @Builder
         @AnalysedEntity
-        public static class SubRow {
+        public static class CustomerDetails {
             @Analysed
-            private String taxType;
+            @JsonProperty("KCINumber")
+            private String kciNumber;
             @Analysed
-            private String rate;
+            private String customerAccountNo;
             @Analysed
-            private String amount;
+            private String stateCode;
+            @Analysed
+            private String stateName;
+        }
+
+        @Getter
+        @Builder
+        @AnalysedEntity
+        public static class CustomerInvoiceDetails {
+            @Analysed
+            @JsonProperty("paymentTransactionID")
+            private String paymentTransactionID;
+            @Analysed
+            private double invoiceAmount;
+            @Analysed
+            private String invoiceDate;
+            @Analysed
+            private String invoiceNumber;
+            @Analysed
+            private String paymentDate;
+            @Analysed
+            private String paymentMode;
+            @Analysed
+            private String typeOfService;
+            @Analysed
+            private double discount;
+            @Analysed
+            private double discountedPrice;
+            @Analysed
+            private String cnInvoiceDate;
+            @Analysed
+            private String cnInvoiceNumber;
+        }
+
+        @Getter
+        @Builder
+        @AnalysedEntity
+        public static class CustomerRechargeRate {
+            @Analysed
+            private String category;
+            @Analysed
+            private String hsnCodeNo;
+            @Analysed
+            private double rate;
+            @Analysed
+            private int unit;
+        }
+
+        @Getter
+        @Builder
+        @AnalysedEntity
+        public static class TaxDetails {
+            @Analysed
+            private String taxableValue;
+            @Analysed
+            private List<CreditNoteKafkaMessage.LobInvoice.TaxDetails.SubRow> subRow;
+            @Analysed
+            private String taxAmount;
+
+            @Getter
+            @Builder
+            @AnalysedEntity
+            public static class SubRow {
+                @Analysed
+                private String taxType;
+                @Analysed
+                private String rate;
+                @Analysed
+                private String amount;
+            }
         }
     }
 
-    public static CreditNoteKafkaMessage generateCreditNoteEvent(PublishInvoiceRequest request, Transaction transaction, String originalInvoiceId, Calendar originalInvoiceDate, String planTitle, double amount, String offerTitle){
-        final CreditNoteKafkaMessage.CustomerDetails customerDetails = generateCustomerDetails(request.getOperatorDetails(), request.getTaxableRequest(), transaction.getMsisdn(),
+    public static CreditNoteKafkaMessage generateCreditNoteEvent(PublishInvoiceRequest request, Transaction transaction, String originalInvoiceId, Calendar originalInvoiceDate, String planTitle, double amount, String offerTitle) {
+        final CreditNoteKafkaMessage.LobInvoice.CustomerDetails customerDetails = generateCustomerDetails(request.getOperatorDetails(), request.getTaxableRequest(), transaction.getMsisdn(),
                 request.getUid());
-        final CreditNoteKafkaMessage.CustomerInvoiceDetails customerInvoiceDetails = generateCustomerInvoiceDetails(request.getTaxableResponse(), transaction, originalInvoiceId, originalInvoiceDate, request.getInvoiceId(), offerTitle, amount,
+        final CreditNoteKafkaMessage.LobInvoice.CustomerInvoiceDetails customerInvoiceDetails = generateCustomerInvoiceDetails(request.getTaxableResponse(), transaction, originalInvoiceId, originalInvoiceDate, request.getInvoiceId(), offerTitle, amount,
                 request.getInvoiceDetails(), request.getPurchaseDetails());
-        final List<CreditNoteKafkaMessage.CustomerRechargeRate> customerRechargeRates = generateCustomerRechargeRate(request.getTaxableResponse(), request.getInvoiceDetails(), planTitle);
-        final CreditNoteKafkaMessage.TaxDetails taxDetails = generateTaxDetails(request.getTaxableResponse());
+        final List<CreditNoteKafkaMessage.LobInvoice.CustomerRechargeRate> customerRechargeRates = generateCustomerRechargeRate(request.getTaxableResponse(), request.getInvoiceDetails(), planTitle);
+        final CreditNoteKafkaMessage.LobInvoice.TaxDetails taxDetails = generateTaxDetails(request.getTaxableResponse());
 
         return CreditNoteKafkaMessage.builder()
-                .lob(request.getInvoiceDetails().getLob())
-                .customerDetails(customerDetails)
-                .customerInvoiceDetails(customerInvoiceDetails)
-                .customerRechargeRates(customerRechargeRates)
-                .taxDetails(taxDetails)
-                .type("WYNKCN")
+                .lobInvoice(LobInvoice.builder()
+                        .lob(request.getInvoiceDetails().getLob())
+                        .customerDetails(customerDetails)
+                        .customerInvoiceDetails(customerInvoiceDetails)
+                        .customerRechargeRates(customerRechargeRates)
+                        .taxDetails(taxDetails)
+                        .type("WYNKCN")
+                        .build())
                 .build();
-
     }
 
-    private static CreditNoteKafkaMessage.CustomerInvoiceDetails generateCustomerInvoiceDetails(TaxableResponse taxableResponse, Transaction transaction, String originalInvoiceId, Calendar originalInvoiceDate, String invoiceNumber, String title, double amount, InvoiceDetails invoiceDetails, IPurchaseDetails purchaseDetails) {
+    private static CreditNoteKafkaMessage.LobInvoice.CustomerInvoiceDetails generateCustomerInvoiceDetails(TaxableResponse taxableResponse, Transaction transaction, String originalInvoiceId, Calendar originalInvoiceDate, String invoiceNumber, String title, double amount, InvoiceDetails invoiceDetails, IPurchaseDetails purchaseDetails) {
         String paymentMode = null;
-        if(Objects.nonNull(purchaseDetails) && Objects.nonNull(purchaseDetails.getPaymentDetails()) && Objects.nonNull(purchaseDetails.getPaymentDetails().getPaymentMode())){
+        if (Objects.nonNull(purchaseDetails) && Objects.nonNull(purchaseDetails.getPaymentDetails()) && Objects.nonNull(purchaseDetails.getPaymentDetails().getPaymentMode())) {
             paymentMode = purchaseDetails.getPaymentDetails().getPaymentMode();
         }
         final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
 
-        return CustomerInvoiceDetails.builder()
+        return LobInvoice.CustomerInvoiceDetails.builder()
                 .invoiceDate(ZonedDateTime.ofInstant(originalInvoiceDate.toInstant(), originalInvoiceDate.getTimeZone().toZoneId()).format(formatter))
                 .cnInvoiceNumber(invoiceNumber)
                 .cnInvoiceDate(LocalDateTime.now().format(formatter))
@@ -176,27 +196,27 @@ public class CreditNoteKafkaMessage extends InvoiceKafkaMessage {
                 .build();
     }
 
-    private static String sanitize(String value){
-        if(Strings.isNullOrEmpty(value)){
+    private static String sanitize(String value) {
+        if (Strings.isNullOrEmpty(value)) {
             return "";
-        } else if(value.contains("null")){
-            return value.replaceAll("null","").trim();
+        } else if (value.contains("null")) {
+            return value.replaceAll("null", "").trim();
         }
         return value.trim();
     }
 
-    private static CreditNoteKafkaMessage.CustomerDetails generateCustomerDetails(MsisdnOperatorDetails operatorDetails, TaxableRequest taxableRequest, String msisdn, String uid) {
+    private static CreditNoteKafkaMessage.LobInvoice.CustomerDetails generateCustomerDetails(MsisdnOperatorDetails operatorDetails, TaxableRequest taxableRequest, String msisdn, String uid) {
         final String stateCode = taxableRequest.getConsumerStateCode();
         final String state = taxableRequest.getConsumerStateName();
-        final CreditNoteKafkaMessage.CustomerDetails.CustomerDetailsBuilder customerDetailsBuilder = CreditNoteKafkaMessage.CustomerDetails.builder();
-        if(Objects.nonNull(operatorDetails) && Objects.nonNull(operatorDetails.getUserMobilityInfo())){
+        final CreditNoteKafkaMessage.LobInvoice.CustomerDetails.CustomerDetailsBuilder customerDetailsBuilder = CreditNoteKafkaMessage.CustomerDetails.builder();
+        if (Objects.nonNull(operatorDetails) && Objects.nonNull(operatorDetails.getUserMobilityInfo())) {
             final UserMobilityInfo userMobilityInfo = operatorDetails.getUserMobilityInfo();
-            final String name = (Strings.isNullOrEmpty(userMobilityInfo.getMiddleName()))?
-                    sanitize(userMobilityInfo.getFirstName() + " " +userMobilityInfo.getLastName()) :
-                    sanitize(userMobilityInfo.getFirstName() + " " +userMobilityInfo.getMiddleName() + " " +userMobilityInfo.getLastName());
-            final String address = (Strings.isNullOrEmpty(userMobilityInfo.getResDistrict()))?
-                    sanitize(userMobilityInfo.getResCity() + " " +userMobilityInfo.getResState()) :
-                    sanitize(userMobilityInfo.getResCity() + " " +userMobilityInfo.getResDistrict() + " " +userMobilityInfo.getResState());
+            final String name = (Strings.isNullOrEmpty(userMobilityInfo.getMiddleName())) ?
+                    sanitize(userMobilityInfo.getFirstName() + " " + userMobilityInfo.getLastName()) :
+                    sanitize(userMobilityInfo.getFirstName() + " " + userMobilityInfo.getMiddleName() + " " + userMobilityInfo.getLastName());
+            final String address = (Strings.isNullOrEmpty(userMobilityInfo.getResDistrict())) ?
+                    sanitize(userMobilityInfo.getResCity() + " " + userMobilityInfo.getResState()) :
+                    sanitize(userMobilityInfo.getResCity() + " " + userMobilityInfo.getResDistrict() + " " + userMobilityInfo.getResState());
             final String kciNumber = sanitize(msisdn.replace("+91", ""));
             /*final String customerAccountNo = (Strings.isNullOrEmpty(userMobilityInfo.getCustomerID()))? msisdn.replace("+91", "") : sanitize(userMobilityInfo.getCustomerID());*/
             final String customerAccountNo = sanitize(uid);
@@ -208,26 +228,27 @@ public class CreditNoteKafkaMessage extends InvoiceKafkaMessage {
                 .build();
     }
 
-    private static List<CreditNoteKafkaMessage.CustomerRechargeRate> generateCustomerRechargeRate(TaxableResponse taxableResponse, InvoiceDetails invoiceDetails, String title) {
-        final List<CreditNoteKafkaMessage.CustomerRechargeRate> customerRechargeRatesList = new ArrayList<>();
-        customerRechargeRatesList.add(CustomerRechargeRate.builder()
+    private static List<CreditNoteKafkaMessage.LobInvoice.CustomerRechargeRate> generateCustomerRechargeRate(TaxableResponse taxableResponse, InvoiceDetails invoiceDetails, String title) {
+        final List<CreditNoteKafkaMessage.LobInvoice.CustomerRechargeRate> customerRechargeRatesList = new ArrayList<>();
+        customerRechargeRatesList.add(LobInvoice.CustomerRechargeRate.builder()
                 .rate(taxableResponse.getTaxableAmount())
                 .hsnCodeNo(invoiceDetails.getSACCode())
-                .category((Objects.isNull(title))? PaymentConstants.INVOICE_CATEGORY : title)
+                .category((Objects.isNull(title)) ? PaymentConstants.INVOICE_CATEGORY : title)
                 .unit(1)
                 .build());
         return customerRechargeRatesList;
     }
-    private static CreditNoteKafkaMessage.TaxDetails generateTaxDetails(TaxableResponse taxableResponse) {
-        final List<CreditNoteKafkaMessage.TaxDetails.SubRow> taxDetailsList = new ArrayList<>();
-        for(TaxDetailsDTO dto : taxableResponse.getTaxDetails()){
-            taxDetailsList.add(CreditNoteKafkaMessage.TaxDetails.SubRow.builder()
+
+    private static CreditNoteKafkaMessage.LobInvoice.TaxDetails generateTaxDetails(TaxableResponse taxableResponse) {
+        final List<CreditNoteKafkaMessage.LobInvoice.TaxDetails.SubRow> taxDetailsList = new ArrayList<>();
+        for (TaxDetailsDTO dto : taxableResponse.getTaxDetails()) {
+            taxDetailsList.add(CreditNoteKafkaMessage.LobInvoice.TaxDetails.SubRow.builder()
                     .amount(String.valueOf(dto.getAmount()))
                     .taxType(dto.getTaxType().getType())
                     .rate(String.valueOf(dto.getRate()))
                     .build());
         }
-        return CreditNoteKafkaMessage.TaxDetails.builder()
+        return CreditNoteKafkaMessage.LobInvoice.TaxDetails.builder()
                 .taxAmount(String.valueOf(taxableResponse.getTaxAmount()))
                 .taxableValue(String.valueOf(taxableResponse.getTaxableAmount()))
                 .subRow(taxDetailsList)

@@ -61,15 +61,6 @@ public class CreditNoteKafkaMessage extends InvoiceKafkaMessage {
         private List<CreditNoteKafkaMessage.LobInvoice.CustomerRechargeRate> customerRechargeRates;
         @Analysed
         private CreditNoteKafkaMessage.LobInvoice.TaxDetails taxDetails;
-//        @Analysed
-//        private CustomerDetails customerDetails;
-//        @Analysed
-//        private CustomerInvoiceDetails customerInvoiceDetails;
-//        @Analysed
-//        @JsonProperty("customerRechargeRate")
-//        private List<CustomerRechargeRate> customerRechargeRates;
-//        @Analysed
-//        private TaxDetails taxDetails;
 
         @Getter
         @Builder

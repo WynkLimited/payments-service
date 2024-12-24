@@ -155,10 +155,10 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
         }
     }
 
-    public static InformInvoiceKafkaMessage generateInformInvoiceEvent(PublishInvoiceRequest request, Transaction transaction, String planTitle, double amount, String offerTitle){
+        public static InformInvoiceKafkaMessage generateInformInvoiceEvent(PublishInvoiceRequest request, Transaction transaction, Transaction originalTransaction, String planTitle, double amount, String offerTitle){
         final InformInvoiceKafkaMessage.LobInvoice.CustomerDetails customerDetails = generateCustomerDetails(request.getOperatorDetails(), request.getTaxableRequest(), transaction.getMsisdn(),
                 request.getUid());
-        final InformInvoiceKafkaMessage.LobInvoice.CustomerInvoiceDetails customerInvoiceDetails = generateCustomerInvoiceDetails(request.getTaxableResponse(), transaction, request.getInvoiceId(), offerTitle, amount,
+        final InformInvoiceKafkaMessage.LobInvoice.CustomerInvoiceDetails customerInvoiceDetails = generateCustomerInvoiceDetails(request.getTaxableResponse(), transaction, originalTransaction, request.getInvoiceId(), offerTitle, amount,
                 request.getInvoiceDetails(), request.getPurchaseDetails());
         final List<InformInvoiceKafkaMessage.LobInvoice.CustomerRechargeRate> customerRechargeRates = generateCustomerRechargeRate(request.getTaxableResponse(), request.getInvoiceDetails(), planTitle);
         final InformInvoiceKafkaMessage.LobInvoice.TaxDetails taxDetails = generateTaxDetails(request.getTaxableResponse());
@@ -178,7 +178,7 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
                 .build();
     }
 
-    private static InformInvoiceKafkaMessage.LobInvoice.CustomerInvoiceDetails generateCustomerInvoiceDetails(TaxableResponse taxableResponse, Transaction transaction, String invoiceNumber, String title, double amount, InvoiceDetails invoiceDetails, IPurchaseDetails purchaseDetails) {
+    private static InformInvoiceKafkaMessage.LobInvoice.CustomerInvoiceDetails generateCustomerInvoiceDetails(TaxableResponse taxableResponse, Transaction transaction, Transaction originalTransaction, String invoiceNumber, String title, double amount, InvoiceDetails invoiceDetails, IPurchaseDetails purchaseDetails) {
         /*double CGST = 0.0;
         double SGST = 0.0;
         double IGST = 0.0;
@@ -198,7 +198,7 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
         }
         final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
         return LobInvoice.CustomerInvoiceDetails.builder()
-                .invoiceDate(LocalDateTime.now().format(formatter))
+                .invoiceDate(originalTransaction.getUpdatedAt().format(formatter))
                 .paymentTransactionID(transaction.getIdStr())
                 .invoiceNumber(invoiceNumber)
                 .invoiceAmount(amount)

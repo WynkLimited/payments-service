@@ -173,7 +173,7 @@ public class QRCodePaymentChargingResponse implements IPaymentPresentationV2<QRC
 
                 private long calculateQrExpiryTime() {
                     Calendar calendar = Calendar.getInstance();
-                    calendar.add(Calendar.MINUTE, 15);
+                    calendar.add(Calendar.MINUTE, 1);
                     return calendar.getTimeInMillis();
                 }
             }

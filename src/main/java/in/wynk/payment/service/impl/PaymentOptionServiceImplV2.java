@@ -96,7 +96,6 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
         if(PaymentConstants.MUSIC_PLAN_IDS.contains(NumberUtils.toInt(request.getProductDetails().getId()))){
             throw new WynkRuntimeException(PAY022);
         }
-        String planId = request.getProductDetails().getId();
         final PlanDTO paidPlan = paymentCachingService.getPlan(request.getProductDetails().getId());
         PaymentOptionsEligibilityRequest eligibilityRequest =
                 PaymentOptionsEligibilityRequest.from(
@@ -115,17 +114,16 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
         }
         final FilteredPaymentOptionsResult.FilteredPaymentOptionsResultBuilder builder = FilteredPaymentOptionsResult.builder().trialEligible(trialEligible).eligibilityRequest(eligibilityRequest);
         if (trialEligible)
-            return builder.methods(getFilteredPaymentGroups((PaymentMethod::isTrialSupported), (paidPlan::supportAutoRenew), eligibilityRequest, planId)).build();
+            return builder.methods(getFilteredPaymentGroups((PaymentMethod::isTrialSupported), (paidPlan::supportAutoRenew), eligibilityRequest)).build();
         if(Objects.nonNull(request.getPaymentDetails()) && request.getPaymentDetails().isMandate())
-            return builder.methods(getFilteredPaymentGroups((PaymentMethod::isMandateSupported), (paidPlan::supportAutoRenew), eligibilityRequest, planId)).build();
+            return builder.methods(getFilteredPaymentGroups((PaymentMethod::isMandateSupported), (paidPlan::supportAutoRenew), eligibilityRequest)).build();
         if((Objects.nonNull(request.getMiscellaneousDetails()) && request.getMiscellaneousDetails().isAutoRenew()) || (Objects.nonNull(request.getPaymentDetails()) && request.getPaymentDetails().isAutoRenew()))
-            return builder.methods(getFilteredPaymentGroups((PaymentMethod::isAutoRenewSupported), (paidPlan::supportAutoRenew), eligibilityRequest, planId)).build();
-        return builder.methods(getFilteredPaymentGroups((paymentMethod -> true), (paidPlan::supportAutoRenew), eligibilityRequest, planId)).build();
+            return builder.methods(getFilteredPaymentGroups((PaymentMethod::isAutoRenewSupported), (paidPlan::supportAutoRenew), eligibilityRequest)).build();
+        return builder.methods(getFilteredPaymentGroups((paymentMethod -> true), (paidPlan::supportAutoRenew), eligibilityRequest)).build();
     }
 
     private FilteredPaymentOptionsResult getPaymentOptionsDetailsForPoint(IPaymentOptionsRequest request) {
         ItemDTO item = paymentCachingService.getItem(request.getProductDetails().getId());
-        String pointId = request.getProductDetails().getId();
         if (Objects.isNull(item)) {
             PointDetails pointDetails = (PointDetails) request.getProductDetails();
             SessionDTO sessionDTO = SessionContextHolder.getBody();
@@ -150,12 +148,10 @@ public class PaymentOptionServiceImplV2 implements IPaymentOptionServiceV2 {
                 .si(request.getUserDetails().getSi())
                 .msisdn(request.getUserDetails().getMsisdn())
                 .build());
-        final List<in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentMethodDTO> filteredMethods = getFilteredPaymentGroups((PaymentMethod::isItemPurchaseSupported), (() -> false), eligibilityRequest, pointId);
+        final List<in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentMethodDTO> filteredMethods = getFilteredPaymentGroups((PaymentMethod::isItemPurchaseSupported), (() -> false), eligibilityRequest);
         return FilteredPaymentOptionsResult.builder().eligibilityRequest(eligibilityRequest).methods(filteredMethods).build();
     }
-
-    @Cacheable(cacheName = "FILTERED_PAYMENT_GROUPS", cacheKey = "'payment-methods:' +  #request.getMsisdn() +':' + #planId  ", l2CacheTtl = 60 * 10, cacheManager = L2CACHE_MANAGER)
-    private List<in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentMethodDTO> getFilteredPaymentGroups(Predicate<PaymentMethod> filterPredicate, Supplier<Boolean> autoRenewalSupplier, PaymentOptionsEligibilityRequest request, String planId) {
+    private List<in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentMethodDTO> getFilteredPaymentGroups(Predicate<PaymentMethod> filterPredicate, Supplier<Boolean> autoRenewalSupplier, PaymentOptionsEligibilityRequest request) {
         final List<in.wynk.payment.dto.response.PaymentOptionsDTO.PaymentMethodDTO> finalMethods = new ArrayList<>();
         final Map<String, List<PaymentMethod>> availableMethods = paymentCachingService.getGroupedPaymentMethods();
         for (PaymentGroup group : paymentCachingService.getPaymentGroups().values()) {

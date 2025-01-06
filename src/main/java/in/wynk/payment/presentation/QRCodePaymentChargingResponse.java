@@ -135,9 +135,10 @@ public class QRCodePaymentChargingResponse implements IPaymentPresentationV2<QRC
                         queryParams.putAll(getAutoRenewParams(response));
                     }
 
-                    long currentTimeStamp = System.currentTimeMillis();
-                    queryParams.put("qrts", String.valueOf(currentTimeStamp));
-                    queryParams.put("qrExpire", String.valueOf(calculateQrExpiryTime()));
+//                    long currentTimeStamp = System.currentTimeMillis();
+//                    queryParams.put("qrts", String.valueOf(currentTimeStamp));
+//                    queryParams.put("qrExpire", String.valueOf(calculateQrExpiryTime()));
+                    queryParams.put("expiresIn", String.valueOf(calculateQrExpiryTime()));
 
                     String baseIntentUrl = String.format("%s://%s?", upiPrefix, basePath);
                     return queryParams.entrySet()
@@ -172,7 +173,7 @@ public class QRCodePaymentChargingResponse implements IPaymentPresentationV2<QRC
 
                 private long calculateQrExpiryTime() {
                     Calendar calendar = Calendar.getInstance();
-                    calendar.add(Calendar.MINUTE, 5);
+                    calendar.add(Calendar.MINUTE, 15);
                     return calendar.getTimeInMillis();
                 }
             }

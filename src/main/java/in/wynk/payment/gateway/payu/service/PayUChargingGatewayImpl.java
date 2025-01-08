@@ -54,6 +54,7 @@ import static in.wynk.payment.constant.FlowType.UPI;
 import static in.wynk.payment.constant.FlowType.*;
 import static in.wynk.payment.constant.UpiConstants.ORG_ID;
 import static in.wynk.payment.constant.UpiConstants.*;
+import static in.wynk.payment.constant.UpiConstants.TRANSACTION_ID;
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.payment.core.constant.PaymentErrorType.PAYU006;
@@ -154,6 +155,11 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
                         } else {
                             offerTitle = paymentCachingService.getOffer(paymentCachingService.getPlan(TransactionContext.get().getPlanId()).getLinkedOfferId()).getTitle();
                         }
+
+                        final PaymentMethod method = methodCache.get(request.getPaymentDetails().getPaymentId());
+                        boolean isQRGenerationCall = isUpiIntentQrMethod(method);
+                        String transactionId = isQRGenerationCall ? map.get(TRANSACTION_ID) : transaction.getIdStr();
+
                         return UpiIntentChargingResponse.builder()
                                 .mn(map.get(MN))
                                 .rev(map.get(REV))
@@ -166,7 +172,7 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
                                 .purpose(map.get(PURPOSE))
                                 .txnType(map.get(TXN_TYPE))
                                 .pa(result.getMerchantVpa())
-                                .tid(transaction.getIdStr())
+                                .tid(transactionId)
                                 .recurType(map.get(RECUR_TYPE))
                                 .pn(PaymentConstants.DEFAULT_PN)
                                 .recurValue(map.get(RECUR_VALUE))
@@ -180,6 +186,9 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
                                 .build();
                     }
                     throw new WynkRuntimeException(PAYU006);
+                }
+                private boolean isUpiIntentQrMethod(PaymentMethod method) {
+                    return PaymentConstants.UPI_INTENT_QR_TAG.equals(method.getTag());
                 }
             }
 

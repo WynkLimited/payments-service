@@ -224,6 +224,9 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     } else {
                         offerTitle = paymentCachingService.getOffer(paymentCachingService.getPlan(TransactionContext.get().getPlanId()).getLinkedOfferId()).getTitle();
                     }
+                    boolean isQRGenerationCall = isUpiIntentQrMethod(method);
+                    String transactionId = isQRGenerationCall ? map.get(TRANSACTION_ID) : transaction.getIdStr();
+
                     return UpiIntentChargingResponse.builder()
                             .mn(map.get(MN))
                             .rev(map.get(REV))
@@ -235,7 +238,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                             .purpose(map.get(PURPOSE))
                             .txnType(map.get(TXN_TYPE))
                             .pa(map.get(PA))
-                            .tid(transaction.getIdStr())
+                            .tid(transactionId)
                             .recurType(map.get(RECUR_TYPE))
                             .pn(PaymentConstants.DEFAULT_PN)
                             .recurValue(map.get(RECUR_VALUE))
@@ -249,6 +252,9 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                             .tn(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get(TN))
                             .mc(PayUConstants.PAYU_MERCHANT_CODE)
                             .build();
+                }
+                private boolean isUpiIntentQrMethod(PaymentMethod method) {
+                    return PaymentConstants.UPI_INTENT_QR_TAG.equals(method.getTag());
                 }
             }
         }

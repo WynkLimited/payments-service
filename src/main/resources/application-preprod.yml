@@ -1446,7 +1446,7 @@ cache:
   enabled: true
   mode: composite
   redis:
-    refreshTokenDuration: 60
+    refreshTokenDuration: 600
     refreshTokenLifetime: 3600
     accountName: projects/-/serviceAccounts/gke-wynk-pre-wcf-app-sa@prj-wynk-pre-wcf-svc-01.iam.gserviceaccount.com
     cache:

@@ -140,7 +140,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
     public GooglePlayMerchantPaymentService (ITransactionManagerService transactionManager, RecurringTransactionUtils recurringTransactionUtils, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson,
                                              ApplicationEventPublisher eventPublisher, WynkRedisLockService wynkRedisLockService, IErrorCodesCacheService errorCodesCacheServiceImpl,
                                              GooglePlayCacheService googlePlayCacheService, PaymentCachingService cachingService,
-                                             ISqsManagerService sqsMessagePublisher, @Qualifier(AuditConstants.MONGO_AUDIT_LISTENER) IAuditableListener auditingListener,
+                                             ISqsManagerService sqsMessagePublisher,IKafkaPublisherService kafkaPublisherService, @Qualifier(AuditConstants.MONGO_AUDIT_LISTENER) IAuditableListener auditingListener,
                                              IUserDetailsService userDetailsService, IPurchaseDetailsManger purchaseDetailsManger, ApplicationEventPublisher applicationEventPublisher, ITaxManager taxManager,
                                              GSTStateCodesCachingService stateCodesCachingService, InvoiceDetailsCachingService invoiceDetailsCachingService) {
         super(cachingService, errorCodesCacheServiceImpl);

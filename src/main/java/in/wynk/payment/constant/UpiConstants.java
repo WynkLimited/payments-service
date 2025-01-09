@@ -32,5 +32,4 @@ public interface UpiConstants {
     String VALIDITY_END = "validityend";
     String VALIDITY_START = "validitystart";
     String DEFAULT_COLLECT = "DEFAULT_COLLECT";
-    String TRANSACTION_ID ="tid";
 }

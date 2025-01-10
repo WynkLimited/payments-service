@@ -130,6 +130,7 @@ public class QRCodePaymentChargingResponse implements IPaymentPresentationV2<QRC
                     queryParams.put("tn", response.getTn());
                     queryParams.put("mc", response.getMc());
                     queryParams.put("tid", response.getTid().replaceAll("-", ""));
+                    queryParams.put("fam", response.getFam());
 
                     if (request.isAutoRenewOpted()) {
                         queryParams.putAll(getAutoRenewParams(response));

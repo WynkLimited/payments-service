@@ -245,6 +245,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                             .transactionStatus(transaction.getStatus())
                             .tr(map.get(TR))
                             .am(map.get(AM))
+                            .fam(map.get(FAM))
                             .transactionType(transaction.getType().getValue())
                             .tn(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get(TN))
                             .mc(PayUConstants.PAYU_MERCHANT_CODE)

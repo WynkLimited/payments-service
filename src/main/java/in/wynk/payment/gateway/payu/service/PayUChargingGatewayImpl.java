@@ -175,6 +175,7 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
                                 .cu(map.getOrDefault(CU, PaymentConstants.CURRENCY_INR))
                                 .transactionStatus(transaction.getStatus())
                                 .tr(result.getPaymentId()).am(map.get(AM))
+                                .fam(map.get(FAM))
                                 .transactionType(transaction.getType().getValue())
                                 .tn(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get(TN)).mc(PayUConstants.PAYU_MERCHANT_CODE)
                                 .build();

@@ -31,6 +31,7 @@ public class UpiIntentChargingResponse extends AbstractSeamlessUpiChargingRespon
     private String recurValue;
     private String validityEnd;
     private String validityStart;
+    private String fam;
 
     public String toDeeplink(boolean autoRenewOpted, String upiPrefix) {
         StringBuilder stringBuilder = new StringBuilder(upiPrefix);

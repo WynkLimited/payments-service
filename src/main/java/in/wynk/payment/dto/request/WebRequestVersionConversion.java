@@ -48,7 +48,7 @@ public class WebRequestVersionConversion implements IPresentation<WebChargingReq
             if (Objects.isNull(methodDTO)) {
                 throw new WynkRuntimeException(PaymentErrorType.PAY853);
             }
-            UpiPaymentDetails paymentDetails = buildPaymentDetails(methodDTO);
+            UpiPaymentDetails paymentDetails = buildPaymentDetails(request, methodDTO);
             PlanDetails productDetails = buildProductDetails(request);
             GeoLocation geoLocation = SessionContextHolder.<SessionDTO>getBody().get(GEO_LOCATION);
 
@@ -72,7 +72,7 @@ public class WebRequestVersionConversion implements IPresentation<WebChargingReq
         }
     }
 
-    private UpiPaymentDetails buildPaymentDetails(PaymentOptionsDTO.PaymentMethodDTO methodDTO) {
+    private UpiPaymentDetails buildPaymentDetails(AbstractPaymentOptionsRequest<WebPaymentOptionsRequest> request, PaymentOptionsDTO.PaymentMethodDTO methodDTO) {
         return UpiPaymentDetails.builder()
                 .paymentMode(UpiConstants.UPI)
                 .paymentId(methodDTO.getPaymentId())
@@ -82,6 +82,7 @@ public class WebRequestVersionConversion implements IPresentation<WebChargingReq
                 .upiDetails(UpiDetails.builder()
                         .intent(true)
                         .build())
+                .couponId(request.getPaymentDetails().getCouponId())
                 .build();
     }
 

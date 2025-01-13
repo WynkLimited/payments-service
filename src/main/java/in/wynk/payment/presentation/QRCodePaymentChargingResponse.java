@@ -130,6 +130,7 @@ public class QRCodePaymentChargingResponse implements IPaymentPresentationV2<QRC
                     queryParams.put("tn", response.getTn());
                     queryParams.put("mc", response.getMc());
                     queryParams.put("tid", response.getTid().replaceAll("-", ""));
+                    queryParams.put("fam", response.getFam());
 
                     if (request.isAutoRenewOpted()) {
                         queryParams.putAll(getAutoRenewParams(response));
@@ -173,7 +174,7 @@ public class QRCodePaymentChargingResponse implements IPaymentPresentationV2<QRC
 
                 private long calculateQrExpiryTime() {
                     Calendar calendar = Calendar.getInstance();
-                    calendar.add(Calendar.MINUTE, 15);
+                    calendar.add(Calendar.MINUTE, 5);
                     return calendar.getTimeInMillis();
                 }
             }

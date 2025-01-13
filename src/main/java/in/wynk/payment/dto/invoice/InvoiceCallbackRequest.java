@@ -20,5 +20,7 @@ public class InvoiceCallbackRequest {
     @Analysed
     private String status;
     @Analysed
+    private String type;
+    @Analysed
     private String description;
 }

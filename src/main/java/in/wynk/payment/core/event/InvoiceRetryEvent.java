@@ -18,6 +18,8 @@ public class InvoiceRetryEvent {
     @Analysed
     private String clientAlias;
     @Analysed
+    private String type;
+    @Analysed
     @Builder.Default
     private int retryCount = 0;
     @Analysed

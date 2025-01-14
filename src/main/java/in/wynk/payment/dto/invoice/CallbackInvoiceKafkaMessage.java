@@ -30,6 +30,8 @@ public class CallbackInvoiceKafkaMessage extends InvoiceKafkaMessage implements 
     @Analysed
     private String status;
     @Analysed
+    private String type;
+    @Analysed
     @JsonProperty("statusDescription")
     private String description;
 }

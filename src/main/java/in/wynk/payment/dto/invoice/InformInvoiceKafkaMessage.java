@@ -43,6 +43,9 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
         @JsonProperty("LOB")
         private String lob;
         @Analysed
+        @JsonProperty("skip_delivery")
+        private String skip_delivery;
+        @Analysed
         @JsonProperty("SMS")
         private boolean sms;
         @Analysed
@@ -155,7 +158,7 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
         }
     }
 
-    public static InformInvoiceKafkaMessage generateInformInvoiceEvent(PublishInvoiceRequest request, Transaction transaction, String planTitle, double amount, String offerTitle){
+        public static InformInvoiceKafkaMessage generateInformInvoiceEvent(PublishInvoiceRequest request, Transaction transaction, String planTitle, double amount, String offerTitle, String skip_delivery){
         final InformInvoiceKafkaMessage.LobInvoice.CustomerDetails customerDetails = generateCustomerDetails(request.getOperatorDetails(), request.getTaxableRequest(), transaction.getMsisdn(),
                 request.getUid());
         final InformInvoiceKafkaMessage.LobInvoice.CustomerInvoiceDetails customerInvoiceDetails = generateCustomerInvoiceDetails(request.getTaxableResponse(), transaction, request.getInvoiceId(), offerTitle, amount,
@@ -170,6 +173,7 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
                         .lob(request.getInvoiceDetails().getLob())
                         .sms(true)
                         .email(sendEmail)
+                        .skip_delivery(skip_delivery)
                         .customerDetails(customerDetails)
                         .customerInvoiceDetails(customerInvoiceDetails)
                         .customerRechargeRates(customerRechargeRates)
@@ -198,7 +202,7 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
         }
         final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
         return LobInvoice.CustomerInvoiceDetails.builder()
-                .invoiceDate(LocalDateTime.now().format(formatter))
+                .invoiceDate(transaction.getUpdatedAt().format(formatter))
                 .paymentTransactionID(transaction.getIdStr())
                 .invoiceNumber(invoiceNumber)
                 .invoiceAmount(amount)

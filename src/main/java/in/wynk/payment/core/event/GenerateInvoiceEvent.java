@@ -21,4 +21,6 @@ public class GenerateInvoiceEvent {
     private String clientAlias;
     @Analysed
     private String type;
+    @Analysed
+    private String skipDelivery;
 }

@@ -4,12 +4,15 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.SessionDTO;
+import in.wynk.payment.core.event.GenerateInvoiceEvent;
 import in.wynk.payment.dto.invoice.CoreInvoiceDownloadResponse;
 import in.wynk.payment.service.InvoiceManagerService;
 import in.wynk.payment.utils.LoadClientUtils;
 import in.wynk.session.aspect.advice.ManageSession;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -43,4 +46,32 @@ public class InvoiceController {
         AnalyticService.update(responseEntity);
         return responseEntity;
     }
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
+
+    @PostMapping("/publish")
+    public ResponseEntity<String> publishInvoiceEvent(@RequestParam String msisdn,
+                                                      @RequestParam String txnId,
+                                                      @RequestParam String clientAlias,
+                                                      @RequestParam String type,
+                                                      @RequestParam(defaultValue = "NO_SKIP") String skipDelivery) {
+
+        try {
+            // Create and publish GenerateInvoiceEvent
+            GenerateInvoiceEvent invoiceEvent = GenerateInvoiceEvent.builder()
+                    .msisdn(msisdn)
+                    .txnId(txnId)
+                    .clientAlias(clientAlias)
+                    .type(type)
+                    .skipDelivery(skipDelivery)
+                    .build();
+            eventPublisher.publishEvent(invoiceEvent);
+
+            return ResponseEntity.ok("Invoice event published successfully!");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error while publishing invoice event: " + e.getMessage());
+        }
+    }
+
 }

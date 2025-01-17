@@ -24,6 +24,8 @@ public class InvoiceRetryTask implements ITaskEntity {
     @Analysed
     private String clientAlias;
     @Analysed
+    private String skipDelivery;
+    @Analysed
     private int retryCount = 0;
 
     @Override
@@ -41,12 +43,13 @@ public class InvoiceRetryTask implements ITaskEntity {
                 .clientAlias(event.getClientAlias())
                 .msisdn(event.getMsisdn())
                 .transactionId(event.getTxnId())
+                .skipDelivery(event.getSkipDelivery())
                 .retryCount(event.getRetryCount())
                 .build();
     }
 
     public InvoiceRetryTaskEvent fromSelf() {
-        return new InvoiceRetryTaskEvent(msisdn, transactionId, clientAlias, retryCount);
+        return new InvoiceRetryTaskEvent(msisdn, transactionId, clientAlias, skipDelivery, retryCount);
     }
 
 }

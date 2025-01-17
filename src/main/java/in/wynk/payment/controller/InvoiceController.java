@@ -46,32 +46,4 @@ public class InvoiceController {
         AnalyticService.update(responseEntity);
         return responseEntity;
     }
-
-    @Autowired
-    private ApplicationEventPublisher eventPublisher;
-
-    @PostMapping("/publish")
-    public ResponseEntity<String> publishInvoiceEvent(@RequestParam String msisdn,
-                                                      @RequestParam String txnId,
-                                                      @RequestParam String clientAlias,
-                                                      @RequestParam String type,
-                                                      @RequestParam(defaultValue = "NO_SKIP") String skipDelivery) {
-
-        try {
-            // Create and publish GenerateInvoiceEvent
-            GenerateInvoiceEvent invoiceEvent = GenerateInvoiceEvent.builder()
-                    .msisdn(msisdn)
-                    .txnId(txnId)
-                    .clientAlias(clientAlias)
-                    .type(type)
-                    .skipDelivery(skipDelivery)
-                    .build();
-            eventPublisher.publishEvent(invoiceEvent);
-
-            return ResponseEntity.ok("Invoice event published successfully!");
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error while publishing invoice event: " + e.getMessage());
-        }
-    }
-
 }

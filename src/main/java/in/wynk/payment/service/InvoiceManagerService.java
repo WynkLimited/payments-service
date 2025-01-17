@@ -211,13 +211,7 @@ public class InvoiceManagerService implements InvoiceManager {
                     kafkaEventPublisher.publish(informInvoiceTopic, creditNoteKafkaMessage);
                 }
             } else {
-//                final InformInvoiceKafkaMessage informInvoiceKafkaMessage = InformInvoiceKafkaMessage.generateInformInvoiceEvent(request,
-//                        request.getTransaction(), planTitle, amount, offerTitle);
-//                AnalyticService.update(INFORM_INVOICE_MESSAGE, objectMapper.setSerializationInclusion(JsonInclude.Include.ALWAYS).writeValueAsString(informInvoiceKafkaMessage));
-//                kafkaEventPublisher.publish(informInvoiceTopic, informInvoiceKafkaMessage);
-
                 final String skip_delivery = determineSkipDeliveryValue(request.getSkipDelivery());
-                //final Transaction originalTransaction = transactionManagerService.get(request.getTransaction().getOriginalTransactionId());
                 final InformInvoiceKafkaMessage informInvoiceKafkaMessage = InformInvoiceKafkaMessage.generateInformInvoiceEvent(request,
                         request.getTransaction(), planTitle, amount, offerTitle, skip_delivery);
                 AnalyticService.update(INFORM_INVOICE_MESSAGE, objectMapper.setSerializationInclusion(JsonInclude.Include.ALWAYS).writeValueAsString(informInvoiceKafkaMessage));

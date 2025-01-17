@@ -71,6 +71,8 @@ public interface PaymentConstants extends BaseConstants {
     String INFORM_INVOICE_MESSAGE = "informInvoiceMessage";
     String CREDIT_NOTE = "CREDIT_NOTE";
     String INVOICE = "INVOICE";
+    String NO_SKIP = "0";
+    String SKIP_SMS_EMAIL = "4";
     String TAXABLE_REQUEST = "taxableRequest";
     String TAXABLE_RESPONSE = "taxableResponse";
     String OPTIMUS_GST_STATE_CODE = "optimusGSTStateCode";

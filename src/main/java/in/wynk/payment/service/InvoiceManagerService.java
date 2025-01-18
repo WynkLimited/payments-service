@@ -29,6 +29,7 @@ import in.wynk.vas.client.dto.MsisdnOperatorDetails;
 import in.wynk.vas.client.service.InvoiceVasClientService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -102,7 +103,7 @@ public class InvoiceManagerService implements InvoiceManager {
                 throw new WynkRuntimeException(PaymentErrorType.PAY455);
             }
         } catch(Exception ex){
-            retryInvoiceGeneration(request.getMsisdn(), request.getClientAlias(), request.getTxnId());
+            retryInvoiceGeneration(request.getMsisdn(), request.getClientAlias(), request.getTxnId(), request.getType());
             throw new WynkRuntimeException(PaymentErrorType.PAY446, ex);
         }
     }
@@ -123,7 +124,7 @@ public class InvoiceManagerService implements InvoiceManager {
             invoiceService.upsert(invoice);
             final Transaction transaction = transactionManagerService.get(invoice.getTransactionId());
             if(request.getStatus().equalsIgnoreCase(InvoiceState.FAILED.name())){
-                retryInvoiceGeneration(transaction.getMsisdn(), transaction.getClientAlias(), invoice.getTransactionId());
+                retryInvoiceGeneration(transaction.getMsisdn(), transaction.getClientAlias(), invoice.getTransactionId(), request.getType());
             }
         } catch(Exception ex){
             log.error(PaymentLoggingMarker.INVOICE_PROCESS_CALLBACK_FAILED, ex.getMessage(), ex);
@@ -144,7 +145,7 @@ public class InvoiceManagerService implements InvoiceManager {
         }
     }
 
-    private void retryInvoiceGeneration (String msisdn, String clientAlias, String txnId) {
+    private void retryInvoiceGeneration (String msisdn, String clientAlias, String txnId, String type) {
         final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(clientAlias);
         final List<Long> retries = invoiceDetails.getRetries();
         if(Objects.nonNull(retries)){
@@ -152,6 +153,7 @@ public class InvoiceManagerService implements InvoiceManager {
                     .msisdn(msisdn)
                     .clientAlias(clientAlias)
                     .txnId(txnId)
+                    .type(type)
                     .retries(retries).build());
         } else {
             log.info(PaymentLoggingMarker.INVOICE_RETRIES_NOT_CONFIGURED, "Won't retry invoice generation as retries not configured for the client");
@@ -186,7 +188,7 @@ public class InvoiceManagerService implements InvoiceManager {
 
             if (request.getType().equalsIgnoreCase(CREDIT_NOTE)) {
                 if (Objects.nonNull(request.getTransaction().getOriginalTransactionId())){
-                    final Transaction originalTransaction = transactionManagerService.get(request.getTransaction().getOriginalTransactionId());
+                    final Transaction originalTransaction = transactionManagerService.getByOriginalTransactionId(request.getTransaction().getOriginalTransactionId());
                     final Invoice originalInvoice = invoiceService.getInvoiceByTransactionId(originalTransaction.getIdStr());
                     final CreditNoteKafkaMessage creditNoteKafkaMessage = CreditNoteKafkaMessage.generateCreditNoteEvent(request,
                             request.getTransaction(), originalInvoice.getId(), originalInvoice.getCreatedOn(), planTitle, amount, offerTitle);
@@ -194,8 +196,9 @@ public class InvoiceManagerService implements InvoiceManager {
                     kafkaEventPublisher.publish(informInvoiceTopic, creditNoteKafkaMessage);
                 }
             } else {
+                final Transaction originalTransaction = transactionManagerService.getByOriginalTransactionId(request.getTransaction().getOriginalTransactionId());
                 final InformInvoiceKafkaMessage informInvoiceKafkaMessage = InformInvoiceKafkaMessage.generateInformInvoiceEvent(request,
-                        request.getTransaction(), planTitle, amount, offerTitle);
+                        request.getTransaction(), originalTransaction, planTitle, amount, offerTitle);
                 AnalyticService.update(INFORM_INVOICE_MESSAGE, objectMapper.setSerializationInclusion(JsonInclude.Include.ALWAYS).writeValueAsString(informInvoiceKafkaMessage));
                 kafkaEventPublisher.publish(informInvoiceTopic, informInvoiceKafkaMessage);
             }

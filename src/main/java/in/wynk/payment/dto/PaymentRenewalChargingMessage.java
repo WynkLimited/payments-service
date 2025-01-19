@@ -15,9 +15,8 @@ import lombok.NoArgsConstructor;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
-//@WynkQueue(queueName = "${payment.pooling.queue.charging.name}", delaySeconds = "${payment.pooling.queue.charging.sqs.producer.delayInSecond}", queueType = QueueType.FIFO)
 @WynkKafkaMessage(topic = "${wynk.kafka.consumers.listenerFactory.paymentRenewalCharging[0].factoryDetails.topic}")
-public class PaymentRenewalChargingMessage implements FIFOQueueMessageMarker {
+public class PaymentRenewalChargingMessage {
 
     @Analysed
     private int attemptSequence;
@@ -35,15 +34,5 @@ public class PaymentRenewalChargingMessage implements FIFOQueueMessageMarker {
 
     @Analysed
     private Integer planId;
-
-    @Override
-    public String getMessageGroupId() {
-        return PaymentCodeCachingService.getFromPaymentCode(this.paymentCode).getCode();
-    }
-
-    @Override
-    public String getMessageDeDuplicationId() {
-        return id;
-    }
 
 }

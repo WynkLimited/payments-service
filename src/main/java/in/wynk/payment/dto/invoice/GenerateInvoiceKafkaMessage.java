@@ -24,6 +24,8 @@ public class GenerateInvoiceKafkaMessage extends InvoiceKafkaMessage {
     private String txnId;
     @Analysed
     private String type;
+    @Analysed
+    private String skip_delivery;
 
     public static GenerateInvoiceKafkaMessage from(GenerateInvoiceEvent event, String clientAlias){
         return GenerateInvoiceKafkaMessage.builder()
@@ -31,6 +33,7 @@ public class GenerateInvoiceKafkaMessage extends InvoiceKafkaMessage {
                 .txnId(event.getTxnId())
                 .clientAlias(clientAlias)
                 .type(event.getType())
+                .skip_delivery(event.getSkipDelivery())
                 .build();
     }
 }

@@ -17,4 +17,6 @@ public class GenerateInvoiceRequest {
     private final String txnId;
     @Analysed
     private final String type;
+    @Analysed
+    private String skipDelivery;
 }

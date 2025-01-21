@@ -8,18 +8,21 @@ import in.wynk.common.dto.WynkResponseEntity;
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
+import in.wynk.payment.dto.WebPaymentOptionsRequest;
 import in.wynk.payment.dto.WebPurchaseDetails;
-import in.wynk.payment.dto.request.AbstractChargingRequest;
-import in.wynk.payment.dto.request.CallbackRequestWrapper;
-import in.wynk.payment.dto.request.AbstractVerificationRequest;
-import in.wynk.payment.dto.request.WebVerificationRequest;
+import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.*;
+import in.wynk.payment.presentation.IPaymentPresentationV2;
+import in.wynk.payment.presentation.dto.qrCode.QRCodeChargingResponse;
 import in.wynk.payment.service.IMerchantVerificationService;
+import in.wynk.payment.service.PaymentGatewayManager;
 import in.wynk.payment.service.PaymentManager;
 import in.wynk.payment.utils.LoadClientUtils;
 import in.wynk.session.aspect.advice.ManageSession;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.data.util.Pair;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
@@ -27,6 +30,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,6 +45,8 @@ public class RevenuePaymentController {
 
     private final Gson gson;
     private final PaymentManager paymentManager;
+    private final WebRequestVersionConversion webRequestVersionConversion;
+    private final PaymentGatewayManager paymentGatewayManager;
 
     @PostMapping("/charge/{sid}")
     @ManageSession(sessionId = "#sid")
@@ -135,4 +141,17 @@ public class RevenuePaymentController {
         return paymentManager.handleCallback(request);
     }
 
+    @PostMapping("/qrcode/generate/{sid}")
+    @ManageSession(sessionId = "#sid")
+    @AnalyseTransaction(name = "generateQRCode")
+    public WynkResponseEntity<QRCodeChargingResponse> generateQRCode(@PathVariable String sid, @RequestBody AbstractPaymentOptionsRequest<WebPaymentOptionsRequest> request) throws URISyntaxException {
+        LoadClientUtils.loadClient(false);
+        AnalyticService.update(request);
+        final WebChargingRequestV2 webChargingRequestV2 = webRequestVersionConversion.transform(request);
+        final WynkResponseEntity<QRCodeChargingResponse> responseEntity =
+                BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPaymentPresentationV2<QRCodeChargingResponse, Pair<AbstractPaymentChargingRequest, AbstractPaymentChargingResponse>>>() {
+                }).transform(() -> Pair.of(webChargingRequestV2, paymentGatewayManager.charge(webChargingRequestV2)));
+        AnalyticService.update(responseEntity);
+        return responseEntity;
+    }
 }

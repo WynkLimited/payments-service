@@ -11,6 +11,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -93,7 +94,7 @@ public class PaymentOptionsDTO {
     @AllArgsConstructor
     @Builder
     @AnalysedEntity
-    public static class PaymentMethodDTO {
+    public static class PaymentMethodDTO implements Serializable {
         @Analysed
         private final String paymentId;
         @Analysed

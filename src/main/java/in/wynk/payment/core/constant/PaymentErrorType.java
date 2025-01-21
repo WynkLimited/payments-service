@@ -162,6 +162,14 @@ public enum PaymentErrorType implements IWynkErrorType {
     ITUNES001("Itunes Renewal Pipeline Failure", "Receipt entry is not Found in db While renewal", HttpStatus.NOT_FOUND, PaymentLoggingMarker.ITUNES_RENEWAL_ERROR),
     /* Itunes errorCodes end */
 
+    /*QR Code Generate ErrorCodes start */
+    PAY851("Product Details Empty", "Product Details can not be empty in request payload", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.QRCODE_PRODUCT_DETAILS_ERROR),
+    PAY852("Payment Details Empty", "Payment Details can not be empty in request payload", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.QRCODE_PAYMENT_DETAILS_ERROR),
+    PAY853("Payment Method Empty", "No payment methods available", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.QRCODE_PAYMENT_METHOD_ERROR),
+    PAY854("QR Code Generation Request Error", "Error while transforming request", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.QRCODE_REQUEST_TRANSFORM_ERROR),
+    PAY855("Product Id Empty", "No product Id present in Product Details", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.QRCODE_PRODUCT_ID_ERROR),
+    /*QR Code Generate ErrorCodes  end*/
+
     /*Add to bill errorCodes start*/
     PAY800("Fetching Plan page Url failure", "Unable to get the plan page for DTP", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.BEST_VALUE_PLAN_API_ERROR),
     ATB01("ATB Charging API Failure", "Could Not process transaction on addToBill", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.ADDTOBILL_API_FAILURE),

@@ -10,6 +10,7 @@ import lombok.experimental.SuperBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
@@ -17,8 +18,8 @@ import java.util.Map;
 @SuperBuilder
 @Document("payment_methods")
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class PaymentMethod extends MongoBaseEntityMessage<String> {
-
+public class PaymentMethod extends MongoBaseEntityMessage<String> implements Serializable {
+    private static final long serialVersionUID = 4079494594300141101L;
     private int hierarchy;
 
     private boolean trialSupported;

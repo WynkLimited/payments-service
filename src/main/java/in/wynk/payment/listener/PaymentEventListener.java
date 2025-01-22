@@ -713,7 +713,9 @@ public class PaymentEventListener {
                 AnalyticService.update(TDR, tdr.getTdr());
             }
             MerchantTransaction merchantTransaction=  merchantTransactionService.getMerchantTransaction(event.getTransaction().getIdStr());
-            AnalyticService.update(PAYUID , merchantTransaction.getExternalTransactionId());
+            if (merchantTransaction != null && merchantTransaction.getExternalTransactionId() != null) {
+                AnalyticService.update(PAYUID, merchantTransaction.getExternalTransactionId());
+            }
             //Invoice should not be generated for Trial or mandate subscription WCF-4350
             if ((PaymentEvent.MANDATE != event.getTransaction().getType() && PaymentEvent.TRIAL_SUBSCRIPTION != event.getTransaction().getType()) &&
                     event.getTransaction().getPaymentChannel().isInvoiceSupported()) {

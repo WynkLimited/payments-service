@@ -298,16 +298,16 @@ payment:
     payu:
       airtelxstream:
         id: aU2Uoi
-        secret: 6vbnfVtw
+        secret: H0zduycMzRG5W0mhsk8IJA1y8aInAk3i
       music:
         id: aU2Uoi
-        secret: 6vbnfVtw
+        secret: H0zduycMzRG5W0mhsk8IJA1y8aInAk3i
       webviewclient:
         id: aU2Uoi
-        secret: 6vbnfVtw
+        secret: H0zduycMzRG5W0mhsk8IJA1y8aInAk3i
       subscriptionApi:
         id: aU2Uoi
-        secret: 6vbnfVtw
+        secret: H0zduycMzRG5W0mhsk8IJA1y8aInAk3i
       rajtv:
         id: fJOBvL
         secret: Z4YXGVoZ9EKk5H48RGL09AsdRTMIiHCZ
@@ -315,7 +315,7 @@ payment:
         id: M6BDr5
         secret: LG1VW0paJvLOrfWKVO5wnOSXSkizhLJW
       key: aU2Uoi
-      salt: 6vbnfVtw
+      salt: H0zduycMzRG5W0mhsk8IJA1y8aInAk3i
       api:
         info: https://info.payu.in/merchant/postservice.php?form=2
         payment: https://secure.payu.in/_payment

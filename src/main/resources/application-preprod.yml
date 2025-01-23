@@ -481,16 +481,16 @@ http:
         connection:
           max: 20
           maxPerHost: 5
-          timeout: 10000
+          timeout: 20000
           defaultKeepAliveTime: 500
           closeIdleWaitTime: 500
           validateAfterInActivity: 100
           socket:
-            timeout: 10000
+            timeout: 20000
             factory:
               type: both
           request:
-            timeout: 10000
+            timeout: 20000
     apbPaytmHttpTemplate:
       pool:
         connection:

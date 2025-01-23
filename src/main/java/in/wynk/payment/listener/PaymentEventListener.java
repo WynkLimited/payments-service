@@ -370,6 +370,7 @@ public class PaymentEventListener {
                             .msisdn(event.getMsisdn())
                             .txnId(event.getTransactionId())
                             .clientAlias(event.getClientAlias())
+                            .type(event.getType())
                             .build();
                     final Transaction transaction = transactionManagerService.get(event.getTransactionId());
                     final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
@@ -385,6 +386,7 @@ public class PaymentEventListener {
                                 .msisdn(event.getMsisdn())
                                 .clientAlias(event.getClientAlias())
                                 .txnId(event.getTransactionId())
+                                .type(event.getType())
                                 .retries(invoiceDetails.getRetries())
                                 .retryCount(event.getRetryCount() + 1).build());
                     }
@@ -395,6 +397,7 @@ public class PaymentEventListener {
                         .msisdn(event.getMsisdn())
                         .txnId(event.getTransactionId())
                         .clientAlias(event.getClientAlias())
+                        .type(event.getType())
                         .build();
                 final Transaction transaction = transactionManagerService.get(event.getTransactionId());
                 final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
@@ -407,6 +410,7 @@ public class PaymentEventListener {
                             .msisdn(event.getMsisdn())
                             .clientAlias(event.getClientAlias())
                             .txnId(event.getTransactionId())
+                            .type(event.getType())
                             .retries(invoiceDetails.getRetries())
                             .retryCount(event.getRetryCount() + 1).build());
                 }

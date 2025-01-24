@@ -313,9 +313,9 @@ payment:
     #### Itunes props ######
     itunes:
       api:
-        url: https://buy.itunes.apple.com/verifyReceipt
+        url: https://sandbox.itunes.apple.com/verifyReceipt
         alt:
-          url: https://sandbox.itunes.apple.com/verifyReceipt
+          url: https://buy.itunes.apple.com/verifyReceipt
     #### AmazonIap props ######
     AmazonIap:
       airtelxstream:

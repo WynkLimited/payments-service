@@ -313,9 +313,9 @@ payment:
     #### Itunes props ######
     itunes:
       api:
-        url: https://sandbox.itunes.apple.com/verifyReceipt
+        url: https://buy.itunes.apple.com/verifyReceipt
         alt:
-          url: https://buy.itunes.apple.com/verifyReceipt
+          url: https://sandbox.itunes.apple.com/verifyReceipt
     #### AmazonIap props ######
     AmazonIap:
       airtelxstream:
@@ -481,16 +481,16 @@ http:
         connection:
           max: 20
           maxPerHost: 5
-          timeout: 20000
-          defaultKeepAliveTime: 500
-          closeIdleWaitTime: 500
-          validateAfterInActivity: 100
+          timeout: 60000
+          defaultKeepAliveTime: 2000
+          closeIdleWaitTime: 2000
+          validateAfterInActivity: 1000
           socket:
-            timeout: 20000
+            timeout: 60000
             factory:
               type: both
           request:
-            timeout: 20000
+            timeout: 60000
     apbPaytmHttpTemplate:
       pool:
         connection:

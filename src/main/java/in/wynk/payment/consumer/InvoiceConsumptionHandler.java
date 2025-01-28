@@ -57,6 +57,7 @@ public class InvoiceConsumptionHandler implements InvoiceHandler<InvoiceKafkaMes
                     .customerAccountNumber(dto.getCustomerAccountNumber())
                     .invoiceId(dto.getInvoiceId())
                     .status(dto.getStatus())
+                    .type(dto.getType())
                     .description(dto.getDescription()).build());
         } catch(Exception ex){
             log.error(PaymentLoggingMarker.INVOICE_PROCESS_CALLBACK_FAILED, ex.getMessage(), ex);

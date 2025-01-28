@@ -182,7 +182,7 @@ public class InformInvoiceKafkaMessage extends InvoiceKafkaMessage {
                 .build();
     }
 
-    private static InformInvoiceKafkaMessage.LobInvoice.CustomerInvoiceDetails generateCustomerInvoiceDetails(TaxableResponse taxableResponse, Transaction transaction, String invoiceNumber, String title, double amount, InvoiceDetails invoiceDetails, IPurchaseDetails purchaseDetails) {
+    private static InformInvoiceKafkaMessage.LobInvoice.CustomerInvoiceDetails generateCustomerInvoiceDetails(TaxableResponse taxableResponse, Transaction transaction, Transaction originalTransaction, String invoiceNumber, String title, double amount, InvoiceDetails invoiceDetails, IPurchaseDetails purchaseDetails) {
         /*double CGST = 0.0;
         double SGST = 0.0;
         double IGST = 0.0;

@@ -103,7 +103,7 @@ public class InvoiceManagerService implements InvoiceManager {
                 throw new WynkRuntimeException(PaymentErrorType.PAY455);
             }
         } catch(Exception ex){
-            retryInvoiceGeneration(request.getMsisdn(), request.getClientAlias(), request.getTxnId(), request.getSkipDelivery());
+            retryInvoiceGeneration(request.getMsisdn(), request.getClientAlias(), request.getTxnId(), request.getType(), request.getSkipDelivery());
             throw new WynkRuntimeException(PaymentErrorType.PAY446, ex);
         }
     }
@@ -124,7 +124,7 @@ public class InvoiceManagerService implements InvoiceManager {
             invoiceService.upsert(invoice);
             final Transaction transaction = transactionManagerService.get(invoice.getTransactionId());
             if(request.getStatus().equalsIgnoreCase(InvoiceState.FAILED.name())){
-                retryInvoiceGeneration(transaction.getMsisdn(), transaction.getClientAlias(), invoice.getTransactionId(), request.getSkipDelivery());
+                retryInvoiceGeneration(transaction.getMsisdn(), transaction.getClientAlias(), invoice.getTransactionId(), request.getType(), request.getSkipDelivery());
             }
         } catch(Exception ex){
             log.error(PaymentLoggingMarker.INVOICE_PROCESS_CALLBACK_FAILED, ex.getMessage(), ex);
@@ -145,7 +145,7 @@ public class InvoiceManagerService implements InvoiceManager {
         }
     }
 
-    private void retryInvoiceGeneration (String msisdn, String clientAlias, String txnId, String skipDelivery) {
+    private void retryInvoiceGeneration (String msisdn, String clientAlias, String txnId, String type, String skipDelivery) {
         final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(clientAlias);
         final List<Long> retries = invoiceDetails.getRetries();
         if(Objects.nonNull(retries)){
@@ -153,6 +153,7 @@ public class InvoiceManagerService implements InvoiceManager {
                     .msisdn(msisdn)
                     .clientAlias(clientAlias)
                     .txnId(txnId)
+                    .type(type)
                     .skipDelivery(skipDelivery)
                     .retries(retries).build());
         } else {

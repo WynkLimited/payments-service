@@ -18,6 +18,8 @@ public class InvoiceRetryEvent {
     @Analysed
     private String clientAlias;
     @Analysed
+    private String type;
+    @Analysed
     private String skipDelivery;
     @Analysed
     @Builder.Default

@@ -37,6 +37,7 @@ public class InvoiceConsumptionHandler implements InvoiceHandler<InvoiceKafkaMes
                     .clientAlias(dto.getClientAlias())
                     .txnId(dto.getTxnId())
                     .type(dto.getType())
+                    .skipDelivery(dto.getSkip_delivery())
                     .build());
         } catch (Exception ex) {
             log.error(PaymentLoggingMarker.INVOICE_GENERATION_FAILED, ex.getMessage(), ex);

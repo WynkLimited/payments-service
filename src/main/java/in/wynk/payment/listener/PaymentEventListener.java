@@ -370,6 +370,7 @@ public class PaymentEventListener {
                             .msisdn(event.getMsisdn())
                             .txnId(event.getTransactionId())
                             .clientAlias(event.getClientAlias())
+                            .skipDelivery(event.getSkipDelivery())
                             .type(event.getType())
                             .build();
                     final Transaction transaction = transactionManagerService.get(event.getTransactionId());
@@ -387,6 +388,7 @@ public class PaymentEventListener {
                                 .clientAlias(event.getClientAlias())
                                 .txnId(event.getTransactionId())
                                 .type(event.getType())
+                                .skipDelivery(event.getSkipDelivery())
                                 .retries(invoiceDetails.getRetries())
                                 .retryCount(event.getRetryCount() + 1).build());
                     }
@@ -398,6 +400,7 @@ public class PaymentEventListener {
                         .txnId(event.getTransactionId())
                         .clientAlias(event.getClientAlias())
                         .type(event.getType())
+                        .skipDelivery(event.getSkipDelivery())
                         .build();
                 final Transaction transaction = transactionManagerService.get(event.getTransactionId());
                 final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
@@ -411,6 +414,7 @@ public class PaymentEventListener {
                             .clientAlias(event.getClientAlias())
                             .txnId(event.getTransactionId())
                             .type(event.getType())
+                            .skipDelivery(event.getSkipDelivery())
                             .retries(invoiceDetails.getRetries())
                             .retryCount(event.getRetryCount() + 1).build());
                 }
@@ -739,6 +743,7 @@ public class PaymentEventListener {
                                 .txnId(event.getTransaction().getIdStr())
                                 .clientAlias(event.getTransaction().getClientAlias())
                                 .type(INVOICE)
+                                .skipDelivery(NO_SKIP)
                                 .build());
                     }
                 }

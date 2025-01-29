@@ -23,4 +23,6 @@ public class InvoiceCallbackRequest {
     private String type;
     @Analysed
     private String description;
+    @Analysed
+    private String skipDelivery;
 }

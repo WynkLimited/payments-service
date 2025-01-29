@@ -1,6 +1,7 @@
 package in.wynk.payment.dto.invoice;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.github.annotation.analytic.core.annotations.Analysed;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.InvoiceDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -21,4 +22,5 @@ public class PublishInvoiceRequest {
     private String invoiceId;
     private String uid;
     private String type;
+    private String skipDelivery;
 }

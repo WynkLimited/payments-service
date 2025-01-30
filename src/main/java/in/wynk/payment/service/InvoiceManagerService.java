@@ -70,8 +70,8 @@ public class InvoiceManagerService implements InvoiceManager {
     @ClientAware(clientAlias = "#request.clientAlias")
     public void generate(GenerateInvoiceRequest request) {
         try{
-            Lock lock = wynkRedisLockService.getWynkRedisLock(request.getTxnId());
-            if (lock.tryLock(3, TimeUnit.SECONDS)) {
+//            Lock lock = wynkRedisLockService.getWynkRedisLock(request.getTxnId());
+//            if (lock.tryLock(3, TimeUnit.SECONDS)) {
                 try {
                     final Transaction transaction = transactionManagerService.get(request.getTxnId());
                     final IPurchaseDetails purchaseDetails = purchaseDetailsManager.get(transaction);
@@ -96,11 +96,11 @@ public class InvoiceManagerService implements InvoiceManager {
                             .invoiceId(invoiceID).type(request.getType()).skipDelivery(request.getSkipDelivery()).build());
                 } catch (WynkRuntimeException e) {
                     throw e;
-                } finally {
-                    lock.unlock();
-                }
-            } else {
-                throw new WynkRuntimeException(PaymentErrorType.PAY455);
+//                } finally {
+//                    lock.unlock();
+//                }
+//            } else {
+//                throw new WynkRuntimeException(PaymentErrorType.PAY455);
             }
         } catch(Exception ex){
             retryInvoiceGeneration(request.getMsisdn(), request.getClientAlias(), request.getTxnId(), request.getSkipDelivery());

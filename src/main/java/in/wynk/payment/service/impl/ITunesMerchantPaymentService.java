@@ -548,8 +548,12 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
         PaymentEvent event;
         if (RENEWAL_NOTIFICATION.contains(notificationType)) {
             event = PaymentEvent.RENEW;
-        } else if (REACTIVATION_NOTIFICATION.contains(notificationType) && (!Boolean.parseBoolean(wrapper.getDecodedNotification().getAutoRenewStatus()))) {
+        } else if (REACTIVATION_NOTIFICATION.contains(notificationType)) {
+            if (Boolean.parseBoolean(wrapper.getDecodedNotification().getAutoRenewStatus())) {
+                event = PaymentEvent.NO_ACTION_EVENT;
+            } else {
                 event = PaymentEvent.UNSUBSCRIBE;
+            }
         } else if (REFUND_NOTIFICATION.contains(notificationType)) {
             event = PaymentEvent.CANCELLED;
         } else {

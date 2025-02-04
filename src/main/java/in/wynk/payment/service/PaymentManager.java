@@ -186,14 +186,9 @@ public class PaymentManager
             final TransactionStatus finalStatus = TransactionContext.get().getStatus();
             String lastSuccessTransactionId = getLastSuccessTransactionId(transaction);
             PaymentRenewal renewal= recurringPaymentManagerService.getRenewalById(transaction.getIdStr());
-            int attemptSequence = Optional.ofNullable(renewal)
-                    .map(ren -> ren.getAttemptSequence())
-                    .orElse(0);
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(existingStatus)
                     .finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
-            //publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_CALLBACK_EVENT).data(getEventsWrapperBuilder(transaction, TransactionContext.getPurchaseDetails())
-            // .callbackRequest(request.getBody()).build()).build());
             if(request.getPaymentGateway().getId().equals(PaymentConstants.PAYU) || request.getPaymentGateway().getId().equals(ApsConstant.APS) ){
                 if(finalStatus== TransactionStatus.REFUNDED && (transaction.getClientAlias().equals("music") || transaction.getClientAlias().equals("paymentApi")) && MUSIC_PLAN_IDS_OF_REFUND.contains(transaction.getPlanId())){
                     subscriptionServiceManager.unSubscribePlan(UnSubscribePlanAsyncRequest.builder().uid(transaction.getUid()).msisdn(transaction.getMsisdn()).planId(transaction.getPlanId()).transactionId(transaction.getIdStr()).paymentEvent(PaymentEvent.CANCELLED).transactionStatus(transaction.getStatus()).triggerDataRequest(getTriggerData()).build());

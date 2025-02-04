@@ -266,13 +266,12 @@ public class PaymentGatewayManager
                         oldTransaction.setStatus(PaymentEvent.CANCELLED.getValue());
                     }
                     publishTransactionSnapShotEvent(oldTransaction);
-                } else {
-                    if (oldTransaction.getPaymentChannel().getId().equals("GOOGLE_IAP") &&
-                            (oldTransaction.getClientAlias().equals("music") || oldTransaction.getClientAlias().equals("paymentApi")) && MUSIC_PLAN_IDS.contains(oldTransaction.getPlanId())) {
-                        eventPublisher.publishEvent(PaymentRefundInitEvent.builder()
-                                .originalTransactionId(oldTransaction.getIdStr())
-                                .reason("Refunding music transactions through Google IAP")
-                                .build());
+                }else if(event == PaymentEvent.NO_ACTION_EVENT) {
+                    log.info("No action needed as this is iTunes DID_CHANGE_RENEWAL_STATUS event; further processing will occur on the next callback.");
+                }
+                else {
+                    if (oldTransaction.getPaymentChannel().getId().equals("GOOGLE_IAP") && (oldTransaction.getClientAlias().equals("music") || oldTransaction.getClientAlias().equals("paymentApi")) && MUSIC_PLAN_IDS.contains(oldTransaction.getPlanId())) {
+                        eventPublisher.publishEvent(PaymentRefundInitEvent.builder().originalTransactionId(oldTransaction.getIdStr()).reason("Refunding music transactions through Google IAP").build());
                     } else {
                         final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
                                 PlanRenewalRequest.builder().txnId(mapping.getLinkedTransactionId()).planId(mapping.getPlanId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentGateway(request.getPaymentGateway())

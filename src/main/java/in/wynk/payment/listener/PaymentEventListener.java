@@ -218,6 +218,14 @@ public class PaymentEventListener {
         } catch (Exception e) {
             AnalyticService.update("isMandateCancelled", false);
             log.error(PaymentLoggingMarker.MANDATE_REVOKE_ERROR, e.getMessage(), e);
+            Transaction transaction= transactionManagerService.get(txnId);
+            SmsNotificationMessage notificationMessage = SmsNotificationMessage.builder()
+                    .messageId(message.getMessageId())
+                    .msisdn(transaction.getMsisdn())
+                    .service(transaction.getClientAlias())
+                    .contextMap(contextMap)
+                    .build();
+            kafkaPublisherService.publishKafkaMessage(notificationMessage);
         }
     }
 

@@ -25,6 +25,8 @@ import in.wynk.payment.gateway.*;
 import in.wynk.payment.gateway.aps.service.*;
 import in.wynk.payment.service.*;
 import in.wynk.payment.utils.RecurringTransactionUtils;
+import in.wynk.stream.producer.IKafkaEventPublisher;
+import in.wynk.subscription.common.message.CancelMandateEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -59,6 +61,7 @@ public class ApsGateway implements
     private final IPaymentCallback<AbstractPaymentCallbackResponse, ApsCallBackRequestPayload> callbackGateway;
     private final IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> statusGateway;
     private final IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest> chargeGateway;
+    private final IKafkaEventPublisher<String, CancelMandateEvent> kafkaPublisherService;
     private final IPaymentAccountVerification<AbstractVerificationResponse, AbstractVerificationRequest> verificationGateway;
     private final IPaymentSettlement<DefaultPaymentSettlementResponse, ApsGatewaySettlementRequest> settlementGateway;
     private final IPaymentAccountDeletion<AbstractPaymentAccountDeletionResponse, AbstractPaymentAccountDeletionRequest> deleteGateway;
@@ -70,7 +73,7 @@ public class ApsGateway implements
                       @Value("${aps.payment.option.api}") String payOptionEndpoint,
                       @Value("${aps.payment.delete.vpa}") String deleteVpaEndpoint,
                       @Value("${aps.payment.init.refund.api}") String refundEndpoint,
-                      @Value("${aps.payment.delete.card}") String deleteCardEndpoint,
+                      IKafkaEventPublisher<String, CancelMandateEvent> kafkaPublisherService, @Value("${aps.payment.delete.card}") String deleteCardEndpoint,
                       @Value("${aps.payment.verify.vpa.api}") String vpaVerifyEndpoint,
                       @Value("${aps.payment.verify.bin.api}") String binVerifyEndpoint,
                       @Value("${aps.payment.init.charge.api}") String chargeEndpoint,
@@ -91,6 +94,7 @@ public class ApsGateway implements
                       IRecurringPaymentManagerService recurringPaymentManagerService,
                       RecurringTransactionUtils recurringTransactionUtils,
                       @Qualifier("apsHttpTemplate") RestTemplate httpTemplate) {
+        this.kafkaPublisherService = kafkaPublisherService;
         this.eligibilityGateway = new ApsEligibilityGatewayServiceImpl();
         this.statusGateway = new ApsStatusGatewayServiceImpl(commonGateway);
         this.payOptionsGateway = new ApsPaymentOptionsServiceImpl(payOptionEndpoint, commonGateway);
@@ -101,7 +105,7 @@ public class ApsGateway implements
         this.chargeGateway = new ApsChargeGatewayServiceImpl(upiChargeEndpoint, chargeEndpoint, upiPayDigiChargeEndpoint, payDigiChargeEndpoint, paymentMethodCachingService, commonGateway);
         this.verificationGateway = new ApsVerificationGatewayImpl(vpaVerifyEndpoint, binVerifyEndpoint, httpTemplate, commonGateway);
         this.renewalGateway = new ApsRenewalGatewayServiceImpl(siPaymentApi, mapper, commonGateway, paymentCachingService, merchantTransactionService, eventPublisher, transactionManager, recurringPaymentManagerService);
-        this.mandateCancellationGateway = new ApsCancelMandateGatewayServiceImpl(mapper, transactionManager, merchantTransactionService, cancelMandateEndpoint, commonGateway, gson);
+        this.mandateCancellationGateway = new ApsCancelMandateGatewayServiceImpl(mapper, transactionManager, merchantTransactionService, cancelMandateEndpoint, commonGateway, gson, kafkaPublisherService);
         this.iMerchantTDRService = new ApsTdrGatewayServiceImpl(tdrEndPoint, httpTemplate, commonGateway, merchantTransactionService);
     }
 

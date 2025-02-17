@@ -13,6 +13,8 @@ import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
 import in.wynk.payment.service.ICancellingRecurringService;
 import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.ITransactionManagerService;
+import in.wynk.stream.producer.IKafkaEventPublisher;
+import in.wynk.subscription.common.message.CancelMandateEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpMethod;
 
@@ -33,15 +35,17 @@ public class ApsCancelMandateGatewayServiceImpl implements ICancellingRecurringS
     private final IMerchantTransactionService merchantTransactionService;
     private final Gson gson;
     private final ObjectMapper mapper;
+    private final IKafkaEventPublisher<String, CancelMandateEvent> kafkaPublisherService;
 
     public ApsCancelMandateGatewayServiceImpl (ObjectMapper mapper, ITransactionManagerService transactionManager, IMerchantTransactionService merchantTransactionService, String cancelMandateEndpoint,
-                                               ApsCommonGatewayService common, Gson gson) {
+                                               ApsCommonGatewayService common, Gson gson, IKafkaEventPublisher<String, CancelMandateEvent> kafkaPublisherService) {
         this.gson = gson;
         this.mapper = mapper;
         this.common = common;
         this.transactionManager = transactionManager;
         this.CANCEL_MANDATE_ENDPOINT = cancelMandateEndpoint;
         this.merchantTransactionService = merchantTransactionService;
+        this.kafkaPublisherService = kafkaPublisherService;
     }
 
     @Override
@@ -70,6 +74,12 @@ public class ApsCancelMandateGatewayServiceImpl implements ICancellingRecurringS
                     common.exchange(transaction.getClientAlias(), CANCEL_MANDATE_ENDPOINT, HttpMethod.POST, transaction.getMsisdn(), mandateCancellationRequest,
                             MandateCancellationResponse.class);
             AnalyticService.update(PaymentConstants.MANDATE_REVOKE_RESPONSE, gson.toJson(mandateCancellationResponse));
+            CancelMandateEvent mandateEvent= CancelMandateEvent.builder().apsCancellationResponse(CancelMandateEvent.MandateCancellationResponse.builder()
+                            .mandateTransactionId(mandateCancellationResponse.getMandateTransactionId()).
+                            cancellationRequestId(mandateCancellationResponse.getCancellationRequestId())
+                            .autopayStatus(CancelMandateEvent.MandateCancellationResponse.AutopayStatus.builder().siRegistrationStatus(mandateCancellationResponse.getAutopayStatus().getSiRegistrationStatus()).build()).build())
+                    .build();
+            kafkaPublisherService.publish(mandateEvent);
         } catch (WynkRuntimeException ex) {
             log.error(APS_MANDATE_REVOKE_ERROR, ex.getMessage());
             throw ex;

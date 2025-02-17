@@ -1,5 +1,6 @@
 package in.wynk.payment.service.impl;
 
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.cache.aspect.advice.CacheEvict;
 import in.wynk.cache.aspect.advice.Cacheable;
@@ -42,8 +43,10 @@ import in.wynk.payment.eligibility.request.PaymentOptionsItemEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
 import in.wynk.payment.gateway.IPaymentInstrumentsProxy;
 import in.wynk.payment.service.*;
+import in.wynk.stream.producer.IKafkaEventPublisher;
 import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
+import in.wynk.subscription.common.message.CancelMandateEvent;
 import in.wynk.vas.client.dto.atb.*;
 import in.wynk.vas.client.service.CatalogueVasClientService;
 import lombok.Getter;
@@ -76,12 +79,15 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
     private final ApplicationEventPublisher eventPublisher;
     private final CatalogueVasClientService catalogueVasClientService;
 
-    public AddToBillPaymentService(PaymentCachingService cachingService, IErrorCodesCacheService errorCodesCacheServiceImpl, PaymentMethodCachingService payCache, ApplicationEventPublisher eventPublisher, CatalogueVasClientService catalogueVasClientService) {
+    private final IKafkaEventPublisher<String, CancelMandateEvent> kafkaPublisherService;
+
+    public AddToBillPaymentService(PaymentCachingService cachingService, IErrorCodesCacheService errorCodesCacheServiceImpl, PaymentMethodCachingService payCache, ApplicationEventPublisher eventPublisher, CatalogueVasClientService catalogueVasClientService, IKafkaEventPublisher<String, CancelMandateEvent> kafkaPublisherService) {
         super(cachingService, errorCodesCacheServiceImpl);
         this.payCache = payCache;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
         this.catalogueVasClientService = catalogueVasClientService;
+        this.kafkaPublisherService = kafkaPublisherService;
     }
 
     @Override
@@ -287,6 +293,23 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                 final UserBillingDetail userDetails = (UserBillingDetail) purchaseDetails.get().getUserDetails();
                 final AddToBillUnsubscribeRequest unsubscribeRequest = AddToBillUnsubscribeRequest.builder().msisdn(userDetails.getBillingSiDetail().getBillingSi()).productCode(plan.getSku().get(ATB)).provisionSi(userDetails.getSi()).source(DIGITAL_STORE).build();
                 final AddToBillUnsubscribeResponse response = catalogueVasClientService.unsubscribe(unsubscribeRequest);
+                AnalyticService.update(response);
+                CancelMandateEvent mandateEvent= CancelMandateEvent.builder().addToBillUnsubscribeResponse(CancelMandateEvent.AddToBillUnsubscribeResponse.builder()
+                        .lob(response.getLob())
+                        .chargingCycle(response.getChargingCycle())
+                        .chargingPrice(response.getChargingPrice())
+                        .isIsMarkedForCancel(response.isIsMarkedForCancel())
+                        .optin(response.isOptin())
+                        .productPrice(response.getProductPrice())
+                        .si(response.getSi())
+                        .markedForCancel(response.isMarkedForCancel())
+                        .provisionSi(response.getProvisionSi())
+                        .subProductCode(response.getSubProductCode())
+                        .unsubscriptionReason(response.getUnsubscriptionReason())
+                        .waiverEligible(response.isWaiverEligible())
+                        .productCode(response.getProductCode()).build())
+                        .build();
+                kafkaPublisherService.publish(mandateEvent);
                 if (plan.getSku().get(ATB).equalsIgnoreCase(response.getProductCode()) && response.isMarkedForCancel()) {
                     finalTransactionStatus = TransactionStatus.SUCCESS;
                     log.info("unsubscribe order details si: {},service :{}, markedForCanceled {} :", response.getSi(), response.getProductCode(), response.isIsMarkedForCancel());

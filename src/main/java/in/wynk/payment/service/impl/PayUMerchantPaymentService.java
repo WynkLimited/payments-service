@@ -878,7 +878,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     }
 
     @Override
-    public void cancelRecurring (String transactionId) {
+    public void cancelRecurring (String transactionId, PaymentEvent paymentEvent) {
         try {
             LinkedHashMap<String, String> orderedMap = new LinkedHashMap<>();
             PaymentRenewal lastRenewal = recurringPaymentManagerService.getRenewalById(transactionId);
@@ -889,11 +889,12 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             orderedMap.put(PAYU_REQUEST_ID, transactionId.replace("-", ""));
             String variable = gson.toJson(orderedMap);
             ITransactionManagerService transactionManagerService = BeanLocatorFactory.getBean(ITransactionManagerService.class);
+            Transaction transaction= transactionManagerService.get(transactionId);
             MultiValueMap<String, String> requestMap = buildPayUInfoRequest(transactionManagerService.get(transactionId).getClientAlias(), UPI_MANDATE_REVOKE.getCode(), variable);
             PayUBaseResponse response = this.getInfoFromPayU(requestMap, new TypeReference<PayUBaseResponse>() {
             });
             AnalyticService.update(MANDATE_REVOKE_RESPONSE, gson.toJson(response));
-            CancelMandateEvent mandateEvent= CancelMandateEvent.builder().payUCancellationResponse(CancelMandateEvent.PayUBaseResponse.builder().action(response.getAction()).status(response.getStatus()).message(response.getMessage()).build()).build();
+            CancelMandateEvent mandateEvent= CancelMandateEvent.builder().paymentEvent(paymentEvent).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).payUCancellationResponse(CancelMandateEvent.PayUBaseResponse.builder().action(response.getAction()).status(response.getStatus()).message(response.getMessage()).build()).build();
             kafkaPublisherService.publish(mandateEvent);
         } catch (Exception e) {
             log.error(PAYU_UPI_MANDATE_REVOKE_ERROR, e.getMessage());

@@ -10,6 +10,7 @@ import in.wynk.client.data.utils.RepositoryUtils;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.dto.TechnicalErrorDetails;
 import in.wynk.common.dto.WynkResponseEntity;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.data.enums.State;
 import in.wynk.error.codes.core.service.IErrorCodesCacheService;
@@ -282,7 +283,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
 
     @Override
     @TransactionAware(txnId = "#transactionId")
-    public void cancelRecurring(String transactionId) {
+    public void cancelRecurring(String transactionId, PaymentEvent paymentEvent) {
         TransactionStatus finalTransactionStatus = TransactionStatus.INPROGRESS;
         Transaction transaction = TransactionContext.get();
         final PlanDTO plan = cachingService.getPlan(transaction.getPlanId());
@@ -294,7 +295,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                 final AddToBillUnsubscribeRequest unsubscribeRequest = AddToBillUnsubscribeRequest.builder().msisdn(userDetails.getBillingSiDetail().getBillingSi()).productCode(plan.getSku().get(ATB)).provisionSi(userDetails.getSi()).source(DIGITAL_STORE).build();
                 final AddToBillUnsubscribeResponse response = catalogueVasClientService.unsubscribe(unsubscribeRequest);
                 AnalyticService.update(response);
-                CancelMandateEvent mandateEvent= CancelMandateEvent.builder().addToBillUnsubscribeResponse(CancelMandateEvent.AddToBillUnsubscribeResponse.builder()
+                CancelMandateEvent mandateEvent= CancelMandateEvent.builder().planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).paymentEvent(paymentEvent).addToBillUnsubscribeResponse(CancelMandateEvent.AddToBillUnsubscribeResponse.builder()
                         .lob(response.getLob())
                         .chargingCycle(response.getChargingCycle())
                         .chargingPrice(response.getChargingPrice())

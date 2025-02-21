@@ -3,6 +3,7 @@ package in.wynk.payment.gateway.aps.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
@@ -49,7 +50,7 @@ public class ApsCancelMandateGatewayServiceImpl implements ICancellingRecurringS
     }
 
     @Override
-    public void cancelRecurring (String transactionId) {
+    public void cancelRecurring (String transactionId, PaymentEvent event) {
         try {
             MerchantTransaction merchantTransaction = getMerchantData(transactionId);
             //retry getting data from database
@@ -78,6 +79,10 @@ public class ApsCancelMandateGatewayServiceImpl implements ICancellingRecurringS
                             .mandateTransactionId(mandateCancellationResponse.getMandateTransactionId()).
                             cancellationRequestId(mandateCancellationResponse.getCancellationRequestId())
                             .autopayStatus(CancelMandateEvent.MandateCancellationResponse.AutopayStatus.builder().siRegistrationStatus(mandateCancellationResponse.getAutopayStatus().getSiRegistrationStatus()).build()).build())
+                    .planId(transaction.getPlanId())
+                    .msisdn(transaction.getMsisdn())
+                    .uid(transaction.getUid())
+                    .paymentEvent(event)
                     .build();
             kafkaPublisherService.publish(mandateEvent);
         } catch (WynkRuntimeException ex) {

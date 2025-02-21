@@ -3,6 +3,7 @@ package in.wynk.payment.gateway.aps;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import in.wynk.cache.aspect.advice.CacheEvict;
+import in.wynk.common.enums.PaymentEvent;
 import in.wynk.payment.core.dao.entity.PaymentMethod;
 import in.wynk.payment.core.service.PaymentMethodCachingService;
 import in.wynk.payment.dto.ApsPaymentRefundRequest;
@@ -172,8 +173,8 @@ public class ApsGateway implements
     }
 
     @Override
-    public void cancelRecurring (String transactionId) {
-        mandateCancellationGateway.cancelRecurring(transactionId);
+    public void cancelRecurring (String transactionId, PaymentEvent paymentEvent) {
+        mandateCancellationGateway.cancelRecurring(transactionId, paymentEvent);
     }
 
     @Override

@@ -24,7 +24,6 @@ import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.BaseTDRResponse;
-import in.wynk.payment.dto.PreDebitNotificationMessage;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.payu.PayUUpiCollectResponse;
 import in.wynk.payment.dto.payu.*;
@@ -37,9 +36,7 @@ import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.*;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.payment.utils.RecurringTransactionUtils;
-import in.wynk.stream.producer.IKafkaEventPublisher;
 import in.wynk.subscription.common.dto.PlanDTO;
-import in.wynk.subscription.common.message.CancelMandateEvent;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
@@ -75,11 +72,9 @@ import static in.wynk.payment.dto.payu.PayUConstants.*;
 public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusService implements
         IMerchantPaymentChargingService<PayUChargingResponse, PayUChargingRequest<?>>,
         IMerchantPaymentCallbackService<AbstractCallbackResponse, PayUCallbackRequestPayload>,
-        IMerchantPaymentRenewalService<PaymentRenewalChargingRequest>,
         IMerchantVerificationService, IMerchantTransactionDetailsService,
         IUserPreferredPaymentService<UserCardDetails, PreferredPaymentDetailsRequest<?>>,
         IMerchantPaymentRefundService<PayUPaymentRefundResponse, PayUPaymentRefundRequest>,
-        IPreDebitNotificationService,
         ICancellingRecurringService,
         IMerchantTDRService {
 
@@ -93,8 +88,6 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     private final ITransactionManagerService transactionManagerService;
     private final IRecurringPaymentManagerService recurringPaymentManagerService;
     private final IMerchantPaymentCallbackService<AbstractCallbackResponse, PayUCallbackRequestPayload> callbackHandler;
-
-    private final IKafkaEventPublisher<String, CancelMandateEvent> kafkaPublisherService;
     private final RecurringTransactionUtils recurringTransactionUtils;
 
     @Value("${payment.merchant.payu.api.info}")
@@ -114,14 +107,13 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                                        IMerchantTransactionService merchantTransactionService, IErrorCodesCacheService errorCodesCacheServiceImpl,
                                        @Qualifier(EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ITransactionManagerService transactionManagerService,
                                        IRecurringPaymentManagerService recurringPaymentManagerService,
-                                       IKafkaEventPublisher<String, CancelMandateEvent> kafkaPublisherService, RecurringTransactionUtils recurringTransactionUtils) {
+                                       RecurringTransactionUtils recurringTransactionUtils) {
         super(cachingService, errorCodesCacheServiceImpl);
         this.gson = gson;
         this.objectMapper = objectMapper;
         this.restTemplate = restTemplate;
         this.eventPublisher = eventPublisher;
         this.cachingService = cachingService;
-        this.kafkaPublisherService = kafkaPublisherService;
         this.callbackHandler = new DelegatePayUCallbackHandler();
         this.merchantTransactionService = merchantTransactionService;
         this.transactionManagerService = transactionManagerService;
@@ -167,7 +159,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             }
             builder.data(PayUChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).info(encryptedParams).build());
         } catch (Exception e) {
-            final PaymentErrorType errorType = PAY015;
+            final PaymentErrorType errorType = PAYU006;
             builder.error(TechnicalErrorDetails.builder().code(errorType.getErrorCode()).description(errorType.getErrorMessage()).build()).status(errorType.getHttpResponseStatusCode()).success(false);
             log.error(errorType.getMarker(), e.getMessage(), e);
         }
@@ -670,8 +662,6 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             PayUBaseResponse response = this.getInfoFromPayU(requestMap, new TypeReference<PayUBaseResponse>() {
             });
             AnalyticService.update(MANDATE_REVOKE_RESPONSE, gson.toJson(response));
-            CancelMandateEvent mandateEvent= CancelMandateEvent.builder().payUCancellationResponse(CancelMandateEvent.PayUBaseResponse.builder().action(response.getAction()).status(response.getStatus()).message(response.getMessage()).build()).build();
-            kafkaPublisherService.publish(mandateEvent);
         } catch (Exception e) {
             log.error(PAYU_UPI_MANDATE_REVOKE_ERROR, e.getMessage());
             throw new WynkRuntimeException(PAY112);
@@ -680,6 +670,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
 
     @Override
     public BaseTDRResponse getTDR (String transactionId) {
+        /** payu not sending tdr value
         try {
             final Transaction transaction = TransactionContext.get();
             final MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(transactionId);
@@ -691,8 +682,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             return BaseTDRResponse.from(response.getMessage().getTdr());
         } catch (Exception e) {
             log.error(PAYU_TDR_ERROR, e.getMessage());
-        }
-        return BaseTDRResponse.from(-2);
+        } */
+        return BaseTDRResponse.from(Double.valueOf(-2));
     }
 
     private class DelegatePayUCallbackHandler implements IMerchantPaymentCallbackService<AbstractCallbackResponse, PayUCallbackRequestPayload> {

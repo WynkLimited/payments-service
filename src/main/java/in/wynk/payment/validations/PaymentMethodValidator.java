@@ -67,7 +67,7 @@ public class PaymentMethodValidator<T extends IPaymentMethodValidatorRequest> ex
             EligibilityResult<PaymentMethod> eligibilityResult = BeanLocatorFactory.getBean(AbstractEligibilityService.class).evaluate(abstractEligibilityEvaluation);
             eligible = eligibilityResult.isEligible();
         }
-        if (!eligible) throw new WynkRuntimeException(PAY601);
+        //if (!eligible) throw new WynkRuntimeException(PAY601);
         if ((request.getPaymentDetails().isMandate() || request.getPaymentDetails().isTrialOpted()) && !paymentMethod.isAutoRenewSupported())
             throw new WynkRuntimeException(PAY603);
         if (request.getPaymentDetails().isMandate() && request.getPaymentDetails().isTrialOpted())

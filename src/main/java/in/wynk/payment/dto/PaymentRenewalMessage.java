@@ -20,6 +20,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
+//@WynkQueue(queueName = "${payment.pooling.queue.renewal.name}", delaySeconds = "${payment.pooling.queue.renewal.sqs.producer.delayInSecond}")
 @WynkKafkaMessage(topic = "${wynk.kafka.consumers.listenerFactory.paymentRenewal[0].factoryDetails.topic}")
 public class PaymentRenewalMessage implements MessageToEventMapper<PaymentRenewalMessageThresholdExceedEvent> {
 

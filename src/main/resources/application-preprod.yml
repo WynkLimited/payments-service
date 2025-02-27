@@ -324,7 +324,7 @@ payment:
         secret: 2:ZkyH7bPlE7oS-7Ak2YQd98DpZOMJIi4AtXYoC4NctXAqcNFTBH86SNO0kCD2722nnQ_WXT10zaWm3UQ1W1FG7Q==:fnW_5qS9s0YMsK-bVEcL7g==
       secret: 2:IJfTI-o1TsAxo1MRxwTUlOprySfH_G5qDlZXvlenFE_MSxEkckfQ70hwHwKC7cbB:3ot0eUrg4XOyFFQdKv5L4Q==
       status:
-        ##baseUrl: http://rvssandbox.wynk.in/RVSSandbox/version/1.0/verifyReceiptId/developer/
+        #baseUrl: http://rvssandbox.wynk.in/RVSSandbox/version/1.0/verifyReceiptId/developer/
         baseUrl: https://appstore-sdk.amazon.com/version/1.0/verifyReceiptId/developer/
     #### PhonePe props ######
     phonepe:
@@ -335,6 +335,9 @@ payment:
         id: WYNK
         secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
       rajtv:
+        id: WYNK
+        secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
+      iqvideo:
         id: WYNK
         secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
       enterr10:
@@ -355,6 +358,9 @@ payment:
       rajtv:
         id: WYNK
         secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
+      iqvideo:
+        id: WYNK
+        secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
       enterr10:
         id: WYNK
         secret: 96229dff-07f5-4f92-9348-81bb7fc495b4
@@ -363,6 +369,9 @@ payment:
         id: 180704
         secret: d41d8cd98f00a
       music:
+        id: 180704
+        secret: d41d8cd98f00a
+      iqvideo:
         id: 180704
         secret: d41d8cd98f00a
       rajtv:
@@ -383,6 +392,8 @@ payment:
         token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
       music:
         token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
+      iqvideo:
+        token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
       rajtv:
         token: Basic cGF5bWVudDpwYXlAcWNrc2x2cg==
       enterr10:
@@ -394,6 +405,11 @@ payment:
         token: 653fe766-5864-4e16-a288-68ebcccffbd0
         clientId: merchant-wynk-staging
       music:
+        id: WYNKLI36809118294255
+        secret: 6UePBAcq7LTfdGJI
+        token: 653fe766-5864-4e16-a288-68ebcccffbd0
+        clientId: merchant-wynk-staging
+      iqvideo:
         id: WYNKLI36809118294255
         secret: 6UePBAcq7LTfdGJI
         token: 653fe766-5864-4e16-a288-68ebcccffbd0
@@ -418,6 +434,17 @@ subscription:
         sqs:
           producer:
             delayInSecond: 1
+    pubSub:
+      provisioning:
+        enabled: true
+        projectName: prj-wynk-pre-wcf-svc-01
+        topicName: wcf-preprod-subscription
+        subscriptionName: wcf-preprod-subscription-sub
+        bufferInterval: 1
+    kafka:
+      provisioning:
+        topic: wcf_preprod.subscription
+
 
 
 ####### sms props #######
@@ -426,6 +453,9 @@ sms:
     queue:
       name: wcf-preprod-notification
       delayInSecond: 0
+    kafka:
+      provisioning:
+        topic: wcf_preprod.sms_notification_message
 
 ####### Http Client Props #######
 http:
@@ -451,16 +481,16 @@ http:
         connection:
           max: 20
           maxPerHost: 5
-          timeout: 2000
-          defaultKeepAliveTime: 500
-          closeIdleWaitTime: 500
-          validateAfterInActivity: 100
+          timeout: 60000
+          defaultKeepAliveTime: 2000
+          closeIdleWaitTime: 2000
+          validateAfterInActivity: 1000
           socket:
-            timeout: 2500
+            timeout: 60000
             factory:
               type: both
           request:
-            timeout: 1000
+            timeout: 60000
     apbPaytmHttpTemplate:
       pool:
         connection:
@@ -525,7 +555,7 @@ http:
 service:
   subscription:
     api:
-      root: http://subscription-preprod.prd.wcf.internal
+      root: http://subscription-preprod.wcf.internal
       purchase:
         url: /subscriptions/
       manage:
@@ -1099,7 +1129,7 @@ wynk:
                 basePackages: in.wynk.coupon.core.dao
               source:
                 appName: coupon
-                nodes: 10.80.0.128,10.80.0.240
+                nodes: 10.168.88.13,10.168.88.14
                 username: user_coupon_rajtv_preprod
                 password: BE75084154378ED34520AFC887A70E
                 database: coupon_rajtv_preprod
@@ -1416,7 +1446,7 @@ cache:
   enabled: true
   mode: composite
   redis:
-    refreshTokenDuration: 60
+    refreshTokenDuration: 600
     refreshTokenLifetime: 3600
     accountName: projects/-/serviceAccounts/gke-wynk-pre-wcf-app-sa@prj-wynk-pre-wcf-svc-01.iam.gserviceaccount.com
     cache:
@@ -1469,13 +1499,12 @@ lock:
 ######## lib-auth props #######
 security:
   exempt:
-    paths: /wynk/v1/**,/wynk/v2/**,/wynk/v3/**,/actuator/**,/v2/api-docs,/configuration/ui,/swagger-resources/**,/configuration/security,/swagger-ui.html,/webjars/**,/wynk/v1/**
+    paths: /wynk/v1/**,/wynk/v2/**,/wynk/v3/**,/actuator/**,/v2/api-docs,/configuration/ui,/swagger-resources/**,/configuration/security,/webjars/**,/wynk/v1/**
 
 event:
   stream:
     dp: data-science-subscription-funnel-information
 
-api.get.endPoint: http://subscription-preprod.wcf.internal
 
 ########## PUBSUB CONFIGS ###########
 

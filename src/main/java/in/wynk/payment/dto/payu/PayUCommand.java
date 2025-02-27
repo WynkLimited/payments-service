@@ -15,6 +15,7 @@ public enum PayUCommand {
     SI_TRANSACTION("si_transaction"),
     USER_CARD_DETAILS("get_user_cards"),
     UPI_MANDATE_STATUS("upi_mandate_status"),
+    CHECK_MANDATE_STATUS("check_mandate_status"),
     UPI_MANDATE_REVOKE("upi_mandate_revoke"),
     CHECK_ACTION_STATUS("check_action_status"),
     CANCEL_REFUND_TRANSACTION("cancel_refund_transaction");

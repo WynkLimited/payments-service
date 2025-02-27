@@ -19,6 +19,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 @AnalysedEntity
 @NoArgsConstructor
 @AllArgsConstructor
+//@WynkQueue(queueName = "${payment.pooling.queue.refund.name}", delaySeconds = "${payment.pooling.queue.refund.sqs.producer.delayInSecond}")
 @WynkKafkaMessage(topic = "${wynk.kafka.consumers.listenerFactory.paymentRefundMessage[0].factoryDetails.topic}")
 public class PaymentRefundInitMessage {
 

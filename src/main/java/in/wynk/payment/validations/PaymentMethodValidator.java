@@ -1,6 +1,5 @@
 package in.wynk.payment.validations;
 
-
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.validations.BaseHandler;
 import in.wynk.eligibility.dto.AbstractEligibilityEvaluation;

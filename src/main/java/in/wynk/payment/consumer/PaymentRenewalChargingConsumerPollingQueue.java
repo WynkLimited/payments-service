@@ -25,6 +25,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
+import static in.wynk.payment.core.constant.BeanConstant.AIRTEL_PAY_STACK;
+
 @Slf4j
 public class PaymentRenewalChargingConsumerPollingQueue extends AbstractSQSMessageConsumerPollingQueue<PaymentRenewalChargingMessage> {
 
@@ -82,11 +85,11 @@ public class PaymentRenewalChargingConsumerPollingQueue extends AbstractSQSMessa
     @TransactionAware(txnId = "#message.id")
     public void consume(PaymentRenewalChargingMessage message) {
         AnalyticService.update(message);
-        log.info(PaymentLoggingMarker.PAYMENT_CHARGING_QUEUE, "processing PaymentChargingMessage for transaction {}", message);
+        log.info(PaymentLoggingMarker.PAYMENT_CHARGING_QUEUE, "processing PaymentChargingMessage for transaction {}", message.getId());
         Transaction transaction = TransactionContext.get();
         //TODO: move payu also to new version after testing and remove check
         if(TransactionStatus.CANCELLED != transaction.getStatus()) {
-            if (ApsConstant.AIRTEL_PAY_STACK.equalsIgnoreCase(message.getPaymentCode())) {
+            if (ApsConstant.AIRTEL_PAY_STACK.equalsIgnoreCase(message.getPaymentCode()) || PAYU_MERCHANT_PAYMENT_SERVICE.equalsIgnoreCase(message.getPaymentCode())) {
                 manager.renew(PaymentRenewalChargingRequest.builder()
                         .id(message.getId())
                         .uid(message.getUid())

@@ -1,0 +1,74 @@
+pipeline {
+    agent {
+        node {
+            label "jenkins-nprd"
+        }
+    }
+    options {
+    buildDiscarder(logRotator(numToKeepStr: '5', artifactNumToKeepStr: '5'))
+    }
+    parameters {
+        string(name: 'BRANCH_NAME', defaultValue: 'staging', description: 'Enter the branch to be deployed')
+    }
+    environment {
+        region = 'asia-south1-docker.pkg.dev'
+        projet_name = 'prj-wynk-stg-wcf-svc-01'
+        repo_name = 'stg-wcf-payment-starter'
+        working_dir = 'infra'
+        env_e  = 'dev'
+        git_url = "https://github.com/WynkLimited/revenue-backend.git"
+        jar_name = "payments-0.0.1.jar"
+        // Argo Deploy specific var's
+        service_name = "payment-starter"
+        app_env = "stag"
+        build_job = "wcf-cmn-deployment"
+        image_repo = "${region}\\/${projet_name}\\/${repo_name}\\/${repo_name}"
+        
+    }
+
+    stages {
+        stage('Code Checkout') {
+            steps {
+                checkout([$class: 'GitSCM', branches: [[name: '${BRANCH_NAME}']], extensions: [], userRemoteConfigs: [[credentialsId: 'wynkdeployment', url: git_url]]])
+            }
+        }
+        
+        stage('Code Build ') {
+            steps {
+                sh """
+                echo "build_job: $build_job || service_name: $service_name || app_env: $app_env || repo_name: $repo_name"
+                export JAVA_HOME=/opt/JavaVersions/jdk1.8.0_202
+                export PATH=/opt/JavaVersions/jdk1.8.0_202/bin:$PATH
+                PATH=$PATH:/opt/MavenVersions/apache-maven-3.3.9/bin/
+                echo $PATH
+                /opt/MavenVersions/apache-maven-3.3.9/bin/mvn -Denv=dev -s /opt/ConfigWCF/settings.xml clean install -P revenue-payment
+                """
+            }
+        }
+        stage('Image Build & GAR push') {
+            steps {
+                sh '''
+                pwd
+                cd /mnt/jenkins/workspace/${JOB_NAME}/payments/infra-gcp/docker
+                cp /mnt/jenkins/workspace/${JOB_NAME}/payments/build/${jar_name} /mnt/jenkins/workspace/${JOB_NAME}/payments/infra-gcp/docker
+                cp /opt/ConfigWCF/authkeystore.jks /mnt/jenkins/workspace/${JOB_NAME}/payments/infra-gcp/docker
+                cp /opt/ConfigWCF/public.key /mnt/jenkins/workspace/${JOB_NAME}/payments/infra-gcp/docker
+                gcloud auth configure-docker ${region}
+                docker build --build-arg profile=$env_e -t ${region}/${projet_name}/${repo_name}/${repo_name}:${BUILD_NUMBER} -f Dockerfile .
+                docker login ${region}/${projet_name}/${repo_name}
+                docker push ${region}/${projet_name}/${repo_name}/${repo_name}:${BUILD_NUMBER}
+                '''
+            }
+        }
+        stage('ArgoCD Deployment') {
+            steps {
+                build job: "$build_job", parameters: [[$class: 'StringParameterValue', name: 'APP_ENV', value: "${app_env}"], [$class: 'StringParameterValue', name: 'SERVICE_NAME', value: "${service_name}"], [$class: 'StringParameterValue', name: 'IMAGE_REPO', value: "${image_repo}"], [$class: 'StringParameterValue', name: 'IMAGE_TAG', value: "${BUILD_NUMBER}"]] , wait: true
+            }
+        }
+    }
+    post {
+        always {
+            cleanWs()
+        }
+    }
+}

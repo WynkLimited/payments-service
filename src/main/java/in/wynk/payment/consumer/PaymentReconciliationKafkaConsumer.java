@@ -128,7 +128,7 @@ public class PaymentReconciliationKafkaConsumer extends AbstractKafkaEventConsum
                 } catch (Exception e) {
                     kafkaRetryHandlerService.retry(consumerRecord, lastAttemptedSequence, createdAt, lastProcessedAt, retryCount);
                     if (!(e instanceof WynkRuntimeException)) {
-                        log.error(StreamMarker.KAFKA_POLLING_CONSUMPTION_ERROR, "Something went wrong while processing message for PaymentReconciliationMessage kafka consumer : txnId - {} , error - {}", consumerRecord.value().getTransactionId(), e.getMessage(), e);
+                        log.error(StreamMarker.KAFKA_POLLING_CONSUMPTION_ERROR, "Something went wrong while processing message {} for kafka consumer : {}", consumerRecord.value(), ", PaymentReconciliationMessage - ", e);
                     }
                 }
             }), Optional.ofNullable(delayInMs).map(Integer::parseInt).orElse(0), TimeUnit.MILLISECONDS);

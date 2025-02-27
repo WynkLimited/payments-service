@@ -12,7 +12,7 @@ public class PayUTdrResponse {
     @Getter
     public static class PayUTdDetails {
         @JsonProperty("TDR")
-        private double tdr;
+        private Double tdr;
     }
 
 }

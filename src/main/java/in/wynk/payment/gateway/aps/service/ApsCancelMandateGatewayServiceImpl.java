@@ -80,6 +80,7 @@ public class ApsCancelMandateGatewayServiceImpl implements ICancellingRecurringS
                             cancellationRequestId(mandateCancellationResponse.getCancellationRequestId())
                             .autopayStatus(CancelMandateEvent.MandateCancellationResponse.AutopayStatus.builder().siRegistrationStatus(mandateCancellationResponse.getAutopayStatus().getSiRegistrationStatus()).build()).build())
                     .planId(transaction.getPlanId())
+                    .paymentCode(transaction.getPaymentChannel().getCode().toUpperCase())
                     .msisdn(transaction.getMsisdn())
                     .uid(transaction.getUid())
                     .paymentEvent(event)

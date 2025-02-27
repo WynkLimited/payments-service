@@ -603,6 +603,9 @@ wynk:
          topic: wcf_preprod.pay_state_retry_resp
        dlt:
          topic: wcf_preprod.pay_state_dlt_resp
+      cancel:
+       mandate:
+         topic: wcf_preprod.cancel_mandate
     consumers:
       enabled: true
       listenerFactory:

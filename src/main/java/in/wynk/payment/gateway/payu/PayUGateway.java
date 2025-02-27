@@ -23,6 +23,8 @@ import in.wynk.payment.gateway.payu.service.*;
 import in.wynk.payment.service.*;
 import in.wynk.payment.service.impl.PayUMerchantPaymentService;
 import in.wynk.payment.utils.RecurringTransactionUtils;
+import in.wynk.stream.producer.IKafkaEventPublisher;
+import in.wynk.subscription.common.message.CancelMandateEvent;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -55,6 +57,8 @@ public class PayUGateway extends PayUMerchantPaymentService implements
     private final PayUPreDebitGatewayServiceImpl preDebitGatewayService;
     private final IMerchantTDRService iMerchantTDRService;
 
+    private final IKafkaEventPublisher<String, CancelMandateEvent> kafkaPublisherService;
+
 
     public PayUGateway(@Value("${payment.merchant.payu.api.payment}") String paymentApi,
                        @Value("${payment.merchant.payu.api.info}") String payuInfoApi,
@@ -69,9 +73,10 @@ public class PayUGateway extends PayUMerchantPaymentService implements
                        IMerchantTransactionService merchantTransactionService,
                        IRecurringPaymentManagerService recurringPaymentManagerService,
                        RecurringTransactionUtils recurringTransactionUtils,
-                       @Qualifier(EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate) {
-        super(gson, mapper, eventPublisher, payCache, merchantTransactionService, errorCodeCache, restTemplate, transactionManagerService, recurringPaymentManagerService, recurringTransactionUtils);
+                       @Qualifier(EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, IKafkaEventPublisher<String, CancelMandateEvent> kafkaPublisherService) {
+        super(gson, mapper, eventPublisher, payCache, merchantTransactionService, errorCodeCache, restTemplate, transactionManagerService, recurringPaymentManagerService, kafkaPublisherService,recurringTransactionUtils);
         this.statusGateway = new PayUStatusGatewayImpl(commonGateway);
+        this.kafkaPublisherService = kafkaPublisherService;
         this.callbackGateway = new PayUCallbackGatewayImpl(commonGateway, mapper, merchantTransactionService, recurringTransactionUtils);
         this.refundGateway = new PayURefundGatewayImpl(commonGateway, eventPublisher, transactionManagerService);
         this.verificationGateway = new PayUVerificationGatewayImpl(commonGateway, mapper);

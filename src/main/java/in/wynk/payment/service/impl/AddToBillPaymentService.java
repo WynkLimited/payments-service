@@ -295,7 +295,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                 final AddToBillUnsubscribeRequest unsubscribeRequest = AddToBillUnsubscribeRequest.builder().msisdn(userDetails.getBillingSiDetail().getBillingSi()).productCode(plan.getSku().get(ATB)).provisionSi(userDetails.getSi()).source(DIGITAL_STORE).build();
                 final AddToBillUnsubscribeResponse response = catalogueVasClientService.unsubscribe(unsubscribeRequest);
                 AnalyticService.update(response);
-                CancelMandateEvent mandateEvent= CancelMandateEvent.builder().planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).paymentEvent(paymentEvent).addToBillUnsubscribeResponse(CancelMandateEvent.AddToBillUnsubscribeResponse.builder()
+                CancelMandateEvent mandateEvent= CancelMandateEvent.builder().planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).paymentEvent(paymentEvent).paymentCode(transaction.getPaymentChannel().getCode().toUpperCase()).addToBillUnsubscribeResponse(CancelMandateEvent.AddToBillUnsubscribeResponse.builder()
                         .lob(response.getLob())
                         .chargingCycle(response.getChargingCycle())
                         .chargingPrice(response.getChargingPrice())

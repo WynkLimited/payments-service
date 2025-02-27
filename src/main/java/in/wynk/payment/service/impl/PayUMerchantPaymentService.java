@@ -894,7 +894,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             PayUBaseResponse response = this.getInfoFromPayU(requestMap, new TypeReference<PayUBaseResponse>() {
             });
             AnalyticService.update(MANDATE_REVOKE_RESPONSE, gson.toJson(response));
-            CancelMandateEvent mandateEvent= CancelMandateEvent.builder().paymentEvent(paymentEvent).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).payUCancellationResponse(CancelMandateEvent.PayUBaseResponse.builder().action(response.getAction()).status(response.getStatus()).message(response.getMessage()).build()).build();
+            CancelMandateEvent mandateEvent= CancelMandateEvent.builder().paymentEvent(paymentEvent).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).paymentCode(transaction.getPaymentChannel().getCode().toUpperCase()).payUCancellationResponse(CancelMandateEvent.PayUBaseResponse.builder().action(response.getAction()).status(response.getStatus()).message(response.getMessage()).build()).build();
             kafkaPublisherService.publish(mandateEvent);
         } catch (Exception e) {
             log.error(PAYU_UPI_MANDATE_REVOKE_ERROR, e.getMessage());

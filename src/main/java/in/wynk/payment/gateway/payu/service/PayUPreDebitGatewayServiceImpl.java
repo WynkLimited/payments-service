@@ -91,7 +91,7 @@ public class PayUPreDebitGatewayServiceImpl implements IPreDebitNotificationServ
                     String variable = gson.toJson(orderedMap);
                     MultiValueMap<String, String> requestMap = payUCommonGateway.buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.PRE_DEBIT_SI.getCode(), variable);
 
-                    PayUPreDebitNotificationResponse response = payUCommonGateway.exchange(payUCommonGateway.INFO_API, requestMap, new TypeReference<PayUPreDebitNotificationResponse>() {
+                    PayUPreDebitNotificationResponse response = payUCommonGateway.exchange("https://infoinfo.payu.in/merchant/postservice.php?form=2", requestMap, new TypeReference<PayUPreDebitNotificationResponse>() {
                     });
                     if (response.getStatus().equalsIgnoreCase(INTEGER_VALUE) && !Objects.equals(request.getUid(), "WY80bpcN4JO_2DTfD0")) {
                         AnalyticService.update("PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS", String.valueOf(response));

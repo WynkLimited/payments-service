@@ -308,7 +308,7 @@ payment:
       key: aU2Uoi
       salt: H0zduycMzRG5W0mhsk8IJA1y8aInAk3i
       api:
-        info: https://infoinfo.payu.in/merchant/postservice.php?form=2
+        info: https://info.payu.in/merchant/postservice.php?form=2
         payment: https://secure.payu.in/_payment
     #### Itunes props ######
     itunes:

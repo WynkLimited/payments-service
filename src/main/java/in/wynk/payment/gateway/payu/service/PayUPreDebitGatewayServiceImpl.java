@@ -93,7 +93,7 @@ public class PayUPreDebitGatewayServiceImpl implements IPreDebitNotificationServ
 
                     PayUPreDebitNotificationResponse response = payUCommonGateway.exchange(payUCommonGateway.INFO_API, requestMap, new TypeReference<PayUPreDebitNotificationResponse>() {
                     });
-                    if (response.getStatus().equalsIgnoreCase(INTEGER_VALUE) && !Objects.equals(request.getUid(), "WY80bpcN4JO_2DTfD0")) {
+                    if (response.getStatus().equalsIgnoreCase(INTEGER_VALUE)) {
                         AnalyticService.update("PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS", String.valueOf(response));
                         if (renewalUpdateRequired) {
                             recurringPaymentManagerService.updateRenewalSchedule(request.getClientAlias(), request.getTransactionId(), cal, cal.getTime());

@@ -331,6 +331,8 @@ public class PayUTestData {
 
     public static PaymentRenewalChargingRequest buildPaymentRenewalChargingRequest() {
         return PaymentRenewalChargingRequest.builder()
+                .paymentCode("payu").clientAlias("music").attemptSequence(1)
+                .paymentGateway(PaymentGateway.builder().internalRecurring(true).code("payu").preDebit(true).id("PAYU").build())
                 .uid(PayUDataConstant.UID)
                 .msisdn(PayUDataConstant.MSISDN)
                 .planId(PayUDataConstant.RECURRING_PLAN_ID)

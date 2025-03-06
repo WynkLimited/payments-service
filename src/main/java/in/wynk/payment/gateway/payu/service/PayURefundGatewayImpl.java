@@ -19,6 +19,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.util.MultiValueMap;
 
 import java.util.EnumSet;
+import java.util.Optional;
 
 @Slf4j
 public class PayURefundGatewayImpl implements IPaymentRefund<PayUPaymentRefundResponse, PayUPaymentRefundRequest> {
@@ -68,7 +69,7 @@ public class PayURefundGatewayImpl implements IPaymentRefund<PayUPaymentRefundRe
         }
         Transaction transaction = transactionManagerService.get(request.getOriginalTransactionId());
         if (EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION, PaymentEvent.MANDATE).contains(transaction.getType())) {
-            common.syncChargingTransactionFromSource(transaction);
+            common.syncChargingTransactionFromSource(transaction, Optional.empty());
         } else {
             eventPublisher.publishEvent(merchantTransactionBuilder.build());
         }

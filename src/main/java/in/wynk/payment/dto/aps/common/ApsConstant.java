@@ -1,6 +1,8 @@
 package in.wynk.payment.dto.aps.common;
 
-public interface ApsConstant {
+import in.wynk.payment.core.constant.PaymentConstants;
+
+public interface ApsConstant extends PaymentConstants {
     String SIGNATURE = "signature";
     String CHANNEL_ID = "channel-id";
     String AUTH_TYPE_WEB_UNAUTH = "WEB_UNAUTH";

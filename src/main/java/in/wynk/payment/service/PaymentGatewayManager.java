@@ -353,10 +353,8 @@ public class PaymentGatewayManager
     }
 
     @Override
-    public AbstractPreDebitNotificationResponse notify(PreDebitNotificationMessage message) {
-        log.info(PaymentLoggingMarker.PRE_DEBIT_NOTIFICATION_QUEUE, "processing PreDebitNotificationMessage for transactionId {}", message.getTransactionId());
-        Transaction transaction = transactionManager.get(message.getTransactionId());
-        AbstractPreDebitNotificationResponse preDebitResponse = BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), IPreDebitNotificationService.class).notify(message);
+    public AbstractPreDebitNotificationResponse notify(PreDebitRequest request) {
+        AbstractPreDebitNotificationResponse preDebitResponse = BeanLocatorFactory.getBean(request.getPaymentCode(), IPreDebitNotificationService.class).notify(request);
         AnalyticService.update(ApsConstant.PRE_DEBIT_SI, gson.toJson(preDebitResponse));
         return preDebitResponse;
     }
@@ -447,7 +445,7 @@ public class PaymentGatewayManager
             throw new WynkRuntimeException(PaymentErrorType.PAY020, e);
         } finally {
             assert refundInitResponse != null;
-            if (ApsConstant.AIRTEL_PAY_STACK.equalsIgnoreCase(originalTransaction.getPaymentChannel().getCode()) ||
+            if (BeanConstant.AIRTEL_PAY_STACK.equalsIgnoreCase(originalTransaction.getPaymentChannel().getCode()) ||
                     BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE.equalsIgnoreCase(originalTransaction.getPaymentChannel().getCode()) &&
                             refundInitResponse.getTransactionStatus() != TransactionStatus.FAILURE) {
                 kafkaPublisherService.publishKafkaMessage(

@@ -14,6 +14,7 @@ import in.wynk.payment.gateway.IPaymentSettlement;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.subscription.common.dto.PlanDTO;
+import static in.wynk.payment.core.constant.BeanConstant.AIRTEL_PAY_STACK;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.config.AuthSchemes;

@@ -434,13 +434,6 @@ subscription:
         sqs:
           producer:
             delayInSecond: 1
-    pubSub:
-      provisioning:
-        enabled: true
-        projectName: prj-wynk-pre-wcf-svc-01
-        topicName: wcf-preprod-subscription
-        subscriptionName: wcf-preprod-subscription-sub
-        bufferInterval: 1
     kafka:
       provisioning:
         topic: wcf_preprod.subscription

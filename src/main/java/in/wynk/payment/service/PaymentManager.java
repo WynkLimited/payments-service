@@ -1,6 +1,5 @@
 package in.wynk.payment.service;
 
-import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.aspect.advice.ClientAware;
@@ -37,7 +36,6 @@ import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.*;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.mapper.DefaultTransactionInitRequestMapper;
-import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.stream.producer.IKafkaPublisherService;
 import lombok.RequiredArgsConstructor;
@@ -48,7 +46,6 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static in.wynk.common.constant.BaseConstants.MIGRATED;
 import static in.wynk.payment.core.constant.BeanConstant.CHARGING_FRAUD_DETECTION_CHAIN;
@@ -69,7 +66,6 @@ public class PaymentManager
     private final ICouponManager couponManager;
     private final PaymentCachingService cachingService;
     private final ApplicationEventPublisher eventPublisher;
-    private final ISqsManagerService<Object> sqsManagerService;
     private final IKafkaPublisherService<String, Object> kafkaPublisherService;
     private final ITransactionManagerService transactionManager;
     private final IMerchantTransactionService merchantTransactionService;
@@ -161,7 +157,6 @@ public class PaymentManager
 
     @Override
     @TransactionAware(txnId = "#request.transactionId")
-    @AnalyseTransaction(name= "handleCallback")
     public WynkResponseEntity<AbstractCallbackResponse> handleCallback (CallbackRequestWrapper<?> request) {
         final PaymentGateway paymentGateway = request.getPaymentGateway();
         final Transaction transaction = TransactionContext.get();
@@ -178,6 +173,11 @@ public class PaymentManager
                     eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(errorDetails.getCode()).description(errorDetails.getDescription()).build());
                 }
             }
+            if(request.getPaymentGateway().getId().equals(PaymentConstants.PAYU) || request.getPaymentGateway().getId().equals(ApsConstant.APS) ){
+                if(transaction.getType().equals(PaymentEvent.REFUND)){
+                    subscriptionServiceManager.unSubscribePlan(UnSubscribePlanAsyncRequest.builder().uid(transaction.getUid()).msisdn(transaction.getMsisdn()).planId(transaction.getPlanId()).transactionId(transaction.getIdStr()).paymentEvent(PaymentEvent.CANCELLED).transactionStatus(transaction.getStatus()).triggerDataRequest(getTriggerData()).build());
+                }
+            }
             return response;
         } catch (WynkRuntimeException e) {
             eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(e.getErrorCode())).description(e.getErrorTitle()).build());
@@ -187,13 +187,10 @@ public class PaymentManager
             String lastSuccessTransactionId = getLastSuccessTransactionId(transaction);
             PaymentRenewal renewal= recurringPaymentManagerService.getRenewalById(transaction.getIdStr());
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(existingStatus)
-                    .finalTransactionStatus(finalStatus).build());
+                    .finalTransactionStatus(finalStatus).attemptSequence(renewal.getAttemptSequence()).build());
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
-            if(request.getPaymentGateway().getId().equals(PaymentConstants.PAYU) || request.getPaymentGateway().getId().equals(ApsConstant.APS) ){
-                if(finalStatus== TransactionStatus.REFUNDED && (transaction.getClientAlias().equals("music") || transaction.getClientAlias().equals("paymentApi")) && MUSIC_PLAN_IDS_OF_REFUND.contains(transaction.getPlanId())){
-                    subscriptionServiceManager.unSubscribePlan(UnSubscribePlanAsyncRequest.builder().uid(transaction.getUid()).msisdn(transaction.getMsisdn()).planId(transaction.getPlanId()).transactionId(transaction.getIdStr()).paymentEvent(PaymentEvent.CANCELLED).transactionStatus(transaction.getStatus()).triggerDataRequest(getTriggerData()).build());
-                }
-            }
+            //publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_CALLBACK_EVENT).data(getEventsWrapperBuilder(transaction, TransactionContext.getPurchaseDetails())
+            // .callbackRequest(request.getBody()).build()).build());
         }
     }
 
@@ -421,13 +418,13 @@ public class PaymentManager
                     .txnId(txnId)
                     .build();
         }
-       throw new WynkRuntimeException("Exception occurred as type is missing");
+        throw new WynkRuntimeException("Exception occurred as type is missing");
     }
 
     @Override
     public WynkResponseEntity<Void> doRenewal (PaymentRenewalChargingRequest request) {
         Optional<Transaction> originalTransaction = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).findById(request.getId());
-        if (request.getPaymentGateway().getId().equals(ITUNES) && originalTransaction.get().getStatus() != TransactionStatus.SUCCESS && !isEligibleForRenewal(originalTransaction.get())) {
+        if ((request.getPaymentGateway().getId().equals(ITUNES) || request.getPaymentGateway().getId().equals(AMAZON_IAP) || request.getPaymentGateway().getId().equals(GOOGLE_IAP)) && originalTransaction.get().getStatus() != TransactionStatus.SUCCESS && !isEligibleForRenewal(originalTransaction.get())) {
             log.info("User already renewed through callback: {} ", request.getId());
             return null;
         }
@@ -442,6 +439,13 @@ public class PaymentManager
                 });
         try {
             return merchantPaymentRenewalService.doRenewal(request);
+        } catch (Exception e) {
+            if (WynkRuntimeException.class.isAssignableFrom(e.getClass())) {
+                final WynkRuntimeException exception = (WynkRuntimeException) e;
+                eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(exception.getErrorCode())).description(exception.getErrorTitle()).build());
+            }
+            log.error("Unable to do renewal for the transaction {}, error message {}", transaction.getId(), e.getMessage(), e);
+            return WynkResponseEntity.<Void>builder().success(false).build();
         } finally {
             if (merchantPaymentRenewalService.supportsRenewalReconciliation()) {
                 kafkaPublisherService.publishKafkaMessage(
@@ -571,7 +575,7 @@ public class PaymentManager
     @TransactionAware(txnId = "#transactionId", lock = false)
     public BaseTDRResponse getTDR (String transactionId) {
         final Transaction transaction = TransactionContext.get();
-        return BeanLocatorFactory.getBeanOrDefault(transaction.getPaymentChannel().getCode(), IMerchantTDRService.class, nope -> BaseTDRResponse.from(-1)).getTDR(transactionId);
+        return BeanLocatorFactory.getBeanOrDefault(transaction.getPaymentChannel().getCode(), IMerchantTDRService.class, nope -> BaseTDRResponse.from(Double.valueOf(-1))).getTDR(transactionId);
     }
 
 

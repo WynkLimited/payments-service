@@ -27,7 +27,7 @@ public interface ISubscriptionServiceManager {
 
     ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> renewalPlanEligibilityResponse (int planId, String uid);
 
-    boolean isDeferred (String paymentMethod, long furtherDefer);
+    boolean isDeferred (String paymentMethod, long furtherDefer, boolean isPreDebitFlow);
 
     default void unSubscribePlan (AbstractUnSubscribePlanRequest request) {
         if (UnSubscribePlanSyncRequest.class.isAssignableFrom(request.getClass())) {

@@ -40,12 +40,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 
-import static in.wynk.common.constant.BaseConstants.HTTP_STATUS;
 import static in.wynk.payment.constant.UpiConstants.UPI;
 import static in.wynk.payment.constant.UpiConstants.UPI_PREFIX;
 
@@ -89,7 +87,9 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
         this.wynkServiceDetailsCachingService = wynkServiceDetailsCachingService;
     }
 
+    //@Async
     @Override
+    //@Retryable(maxAttempts = 4, backoff = @Backoff(delay = 100, multiplier = 2))
     public void charge(PaymentChargeRequestMessage requestMessage) {
         final PayChargeReqMessage request = requestMessage.getMessage();
         final WynkService service = wynkServiceDetailsCachingService.get(requestMessage.getServiceId());
@@ -113,6 +113,7 @@ public class PaymentChargeConsumptionHandler implements PaymentChargeHandler<Pay
         } catch (Exception e) {
             final WaPayChargeRespEvent<WaFailedOrderDetails> payChargeRespEvent =  toPaymentChargeEvent(e, requestMessage);
             kafkaPublisher.publish(topic, null, System.currentTimeMillis(), null, payChargeRespEvent, headers);
+            log.error("something went wrong ", e);
             throw new WynkRuntimeException(e);
         }
     }

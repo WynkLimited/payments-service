@@ -1,6 +1,8 @@
 package in.wynk.payment.dto.aps.common;
 
-public interface ApsConstant {
+import in.wynk.payment.core.constant.PaymentConstants;
+
+public interface ApsConstant extends PaymentConstants {
     String SIGNATURE = "signature";
     String CHANNEL_ID = "channel-id";
     String AUTH_TYPE_WEB_UNAUTH = "WEB_UNAUTH";
@@ -21,4 +23,5 @@ public interface ApsConstant {
     String APS_CARD_TYPE = "cardType";
     String PAY_DIGI = "paydigi";
     String INT_PAY = "intpay";
+    String APS_RECHARGE_REDIRECTION_URL = "https://www.airtel.in/pay/status?omv=v2";
 }

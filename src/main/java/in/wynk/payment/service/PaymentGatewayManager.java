@@ -1,6 +1,5 @@
 package in.wynk.payment.service;
 
-import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import com.google.gson.Gson;
 import in.wynk.auth.dao.entity.Client;
@@ -19,7 +18,6 @@ import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
-import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.PaymentGateway;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -44,8 +42,9 @@ import in.wynk.payment.mapper.DefaultTransactionInitRequestMapper;
 import in.wynk.payment.utils.RecurringTransactionUtils;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.session.context.SessionContextHolder;
-import in.wynk.stream.producer.IKafkaPublisherService;
 import in.wynk.sms.common.message.SmsNotificationMessage;
+import in.wynk.stream.producer.IKafkaPublisherService;
+import io.netty.channel.ConnectTimeoutException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -78,7 +77,6 @@ public class PaymentGatewayManager
 
     private final ICouponManager couponManager;
     private final ApplicationEventPublisher eventPublisher;
-    private final ISqsManagerService<Object> sqsManagerService;
     private final IKafkaPublisherService<String, Object> kafkaPublisherService;
     private final ITransactionManagerService transactionManager;
     private final PaymentMethodCachingService paymentMethodCachingService;
@@ -193,7 +191,6 @@ public class PaymentGatewayManager
 
     @Override
     @TransactionAware(txnId = "#request.transactionId")
-    @AnalyseTransaction(name= "handleCallback")
     public CallbackResponseWrapper<AbstractPaymentCallbackResponse> handle(CallbackRequestWrapperV2<?> request) {
         final PaymentGateway pg = request.getPaymentGateway();
         final Transaction transaction = TransactionContext.get();
@@ -207,6 +204,11 @@ public class PaymentGatewayManager
                 eventPublisher.publishEvent(
                         PaymentErrorEvent.builder(transaction.getIdStr()).code(PaymentErrorType.PAY302.getErrorCode()).description(PaymentErrorType.PAY302.getErrorMessage()).build());
             }
+            if(request.getPaymentGateway().getId().equals(PaymentConstants.PAYU) || request.getPaymentGateway().getId().equals(ApsConstant.APS) ){
+                if(transaction.getType().equals(PaymentEvent.REFUND)){
+                    subscriptionServiceManager.unSubscribePlan(UnSubscribePlanAsyncRequest.builder().uid(transaction.getUid()).msisdn(transaction.getMsisdn()).planId(transaction.getPlanId()).transactionId(transaction.getIdStr()).paymentEvent(PaymentEvent.CANCELLED).transactionStatus(transaction.getStatus()).triggerDataRequest(getTriggerData()).build());
+                }
+            }
             return CallbackResponseWrapper.builder().callbackResponse(response).transaction(transaction).build();
         } catch (WynkRuntimeException e) {
             eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(String.valueOf(e.getErrorCode())).description(e.getErrorTitle()).build());
@@ -216,11 +218,6 @@ public class PaymentGatewayManager
             String lastSuccessTransactionId = getLastSuccessTransactionId(transaction);
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(existingStatus).finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
-            if( request.getPaymentGateway().getId().equals(PaymentConstants.PAYU) || request.getPaymentGateway().getId().equals(ApsConstant.APS) ){
-                if(finalStatus== TransactionStatus.REFUNDED && (transaction.getClientAlias().equals("music") || transaction.getClientAlias().equals("paymentApi")) && MUSIC_PLAN_IDS_OF_REFUND.contains(transaction.getPlanId())){
-                    subscriptionServiceManager.unSubscribePlan(UnSubscribePlanAsyncRequest.builder().uid(transaction.getUid()).msisdn(transaction.getMsisdn()).planId(transaction.getPlanId()).transactionId(transaction.getIdStr()).paymentEvent(PaymentEvent.CANCELLED).transactionStatus(transaction.getStatus()).triggerDataRequest(getTriggerData()).build());
-                }
-            }
         }
     }
 
@@ -242,35 +239,25 @@ public class PaymentGatewayManager
         AnalyticService.update(wrapper.getDecodedNotification());
         if (wrapper.isEligible()) {
             final UserPlanMapping<?> mapping = receiptDetailService.getUserPlanMapping(wrapper);
-            String paymentTransactionId = receiptDetailService.getIdAndUpdateReceiptDetails(wrapper);
-            Transaction oldTransaction = transactionManager.get(paymentTransactionId);
             if (mapping != null) {
                 String productType = Objects.nonNull(mapping.getItemId()) ? BaseConstants.POINT : BaseConstants.PLAN;
                 final in.wynk.common.enums.PaymentEvent event = receiptDetailService.getPaymentEvent(wrapper, productType);
-                if (event == PaymentEvent.UNSUBSCRIBE || event == PaymentEvent.CANCELLED ) {
+                if (event == PaymentEvent.UNSUBSCRIBE || event == PaymentEvent.CANCELLED) {
+                    String paymentTransactionId = receiptDetailService.getIdAndUpdateReceiptDetails(wrapper);
+                    Transaction transaction = transactionManager.get(paymentTransactionId);
                     if(event == PaymentEvent.UNSUBSCRIBE) {
-                        recurringTransactionUtils.cancelRenewalBasedOnRealtimeMandateForIAP("PaymentEvent Unsubscribed", oldTransaction, event);
-                        oldTransaction.setType(PaymentEvent.UNSUBSCRIBE.getValue());
-                        oldTransaction.setStatus(PaymentEvent.CANCELLED.getValue());
+                        recurringTransactionUtils.cancelRenewalBasedOnRealtimeMandateForIAP("PaymentEvent Unsubscribed", transaction, event);
                     } else {
-                        recurringTransactionUtils.cancelRenewalBasedOnRealtimeMandateForIAP("PaymentEvent Cancelled", oldTransaction, event);
-                        oldTransaction.setStatus(PaymentEvent.CANCELLED.getValue());
+                        recurringTransactionUtils.cancelRenewalBasedOnRealtimeMandateForIAP("PaymentEvent Cancelled", transaction, event);
                     }
-                    publishTransactionSnapShotEvent(oldTransaction);
-                }else if(event == PaymentEvent.NO_ACTION_EVENT) {
-                    log.info("No action needed as this is iTunes DID_CHANGE_RENEWAL_STATUS event; further processing will occur on the next callback.");
-                }
-                else {
-                    if (oldTransaction.getPaymentChannel().getId().equals("GOOGLE_IAP") && (oldTransaction.getClientAlias().equals("music") || oldTransaction.getClientAlias().equals("paymentApi")) && MUSIC_PLAN_IDS.contains(oldTransaction.getPlanId())) {
-                        eventPublisher.publishEvent(PaymentRefundInitEvent.builder().originalTransactionId(oldTransaction.getIdStr()).reason("Refunding music transactions through Google IAP").build());
-                    } else {
-                        final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
-                                PlanRenewalRequest.builder().txnId(mapping.getLinkedTransactionId()).planId(mapping.getPlanId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentGateway(request.getPaymentGateway())
-                                        .clientAlias(mapping.getService().equalsIgnoreCase("music") ? "music" : "airtelxstream").build());
-                        transactionInitRequest.setEvent(event);
-                        final Transaction transaction = transactionManager.init(transactionInitRequest);
-                        handleNotification(transaction, mapping);
-                    }
+                    publishTransactionSnapShotEvent(transaction);
+                } else {
+                    final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
+                            PlanRenewalRequest.builder().txnId(mapping.getLinkedTransactionId()).planId(mapping.getPlanId()).uid(mapping.getUid()).msisdn(mapping.getMsisdn()).paymentGateway(request.getPaymentGateway())
+                                    .clientAlias(mapping.getService().equalsIgnoreCase("music") ? "music" : "airtelxstream").build());
+                    transactionInitRequest.setEvent(event);
+                    final Transaction transaction = transactionManager.init(transactionInitRequest);
+                    handleNotification(transaction, mapping);
                     return WynkResponseEntity.<Void>builder().success(true).build();
                 }
             }
@@ -344,10 +331,8 @@ public class PaymentGatewayManager
     }
 
     @Override
-    public AbstractPreDebitNotificationResponse notify(PreDebitNotificationMessage message) {
-        log.info(PaymentLoggingMarker.PRE_DEBIT_NOTIFICATION_QUEUE, "processing PreDebitNotificationMessage for transactionId {}", message.getTransactionId());
-        Transaction transaction = transactionManager.get(message.getTransactionId());
-        AbstractPreDebitNotificationResponse preDebitResponse = BeanLocatorFactory.getBean(transaction.getPaymentChannel().getCode(), IPreDebitNotificationService.class).notify(message);
+    public AbstractPreDebitNotificationResponse notify(PreDebitRequest request) {
+        AbstractPreDebitNotificationResponse preDebitResponse = BeanLocatorFactory.getBean(request.getPaymentCode(), IPreDebitNotificationService.class).notify(request);
         AnalyticService.update(ApsConstant.PRE_DEBIT_SI, gson.toJson(preDebitResponse));
         return preDebitResponse;
     }
@@ -363,7 +348,7 @@ public class PaymentGatewayManager
     @TransactionAware(txnId = "#transactionId", lock = false)
     public BaseTDRResponse getTDR(String transactionId) {
         final Transaction transaction = TransactionContext.get();
-        return BeanLocatorFactory.getBeanOrDefault(transaction.getPaymentChannel().getCode(), IMerchantTDRService.class, nope -> BaseTDRResponse.from(-1)).getTDR(transactionId);
+        return BeanLocatorFactory.getBeanOrDefault(transaction.getPaymentChannel().getCode(), IMerchantTDRService.class, nope -> BaseTDRResponse.from(Double.valueOf(-1))).getTDR(transactionId);
     }
 
     @Override
@@ -420,6 +405,7 @@ public class PaymentGatewayManager
         final Transaction refundTransaction =
                 transactionManager.init(DefaultTransactionInitRequestMapper.from(
                         RefundTransactionRequestWrapper.builder().request(request).txnId(originalTransaction.getIdStr()).originalTransaction(originalTransaction).build()));
+        final TransactionStatus initialStatus = refundTransaction.getStatus();
         final AbstractPaymentRefundRequest refundRequest = AbstractPaymentRefundRequest.from(originalTransaction, externalReferenceId, request.getReason());
         IPaymentRefund<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest> refundService = BeanLocatorFactory.getBean(refundTransaction.getPaymentChannel().getCode(),
                 new ParameterizedTypeReference<IPaymentRefund<AbstractPaymentRefundResponse, AbstractPaymentRefundRequest>>() {
@@ -427,9 +413,8 @@ public class PaymentGatewayManager
         AbstractPaymentRefundResponse refundInitResponse = null;
         try {
             refundInitResponse = refundService.doRefund(refundRequest);
-            if(refundInitResponse.getTransactionStatus()== TransactionStatus.SUCCESS && (originalTransaction.getClientAlias().equals("music") || originalTransaction.getClientAlias().equals("paymentApi")) && refundTransaction.getPaymentChannel().getId().equals(PaymentConstants.GOOGLE_IAP) && MUSIC_PLAN_IDS_OF_REFUND.contains(originalTransaction.getPlanId())){
-                //sendNotificationToUser(refundTransaction);
-                subscriptionServiceManager.unSubscribePlan(UnSubscribePlanAsyncRequest.builder().uid(refundTransaction.getUid()).msisdn(refundTransaction.getMsisdn()).planId(refundTransaction.getPlanId()).transactionId(originalTransaction.getIdStr()).paymentEvent(PaymentEvent.CANCELLED).transactionStatus(refundInitResponse.getTransactionStatus()).triggerDataRequest(getTriggerData()).build());
+            if((originalTransaction.getType().equals(PaymentEvent.SUBSCRIBE) || originalTransaction.getType().equals(PaymentEvent.RENEW) || originalTransaction.getType().equals(PaymentEvent.PURCHASE)) && refundTransaction.getPaymentChannel().getId().equals(PaymentConstants.GOOGLE_IAP)){
+                subscriptionServiceManager.unSubscribePlan(UnSubscribePlanAsyncRequest.builder().uid(refundTransaction.getUid()).msisdn(refundTransaction.getMsisdn()).planId(refundTransaction.getPlanId()).transactionId(refundTransaction.getIdStr()).paymentEvent(PaymentEvent.CANCELLED).transactionStatus(refundInitResponse.getTransactionStatus()).triggerDataRequest(getTriggerData()).build());
             }
             return refundInitResponse;
         } catch (WynkRuntimeException e) {
@@ -438,7 +423,7 @@ public class PaymentGatewayManager
             throw new WynkRuntimeException(PaymentErrorType.PAY020, e);
         } finally {
             assert refundInitResponse != null;
-            if (ApsConstant.AIRTEL_PAY_STACK.equalsIgnoreCase(originalTransaction.getPaymentChannel().getCode()) ||
+            if (BeanConstant.AIRTEL_PAY_STACK.equalsIgnoreCase(originalTransaction.getPaymentChannel().getCode()) || BeanConstant.AIRTEL_PAY_STACK_V2.equalsIgnoreCase(originalTransaction.getPaymentChannel().getCode()) ||
                     BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE.equalsIgnoreCase(originalTransaction.getPaymentChannel().getCode()) &&
                             refundInitResponse.getTransactionStatus() != TransactionStatus.FAILURE) {
                 kafkaPublisherService.publishKafkaMessage(
@@ -450,38 +435,11 @@ public class PaymentGatewayManager
         }
     }
 
-    private void sendNotificationToUser( Transaction refundTransaction){
-        final String messageId= (String) Optional.ofNullable(refundTransaction.getPaymentChannel())
-                .map(channel -> channel.getMeta())
-                .map(meta -> meta.get(REFUND_TEMPLATE_ID))
-                .orElse(null);
-        if(!messageId.isEmpty()){
-            Map<String, Object> contextMap = new HashMap<String, Object>() {{
-                put(TRANSACTION, refundTransaction);
-            }};
-            SmsNotificationMessage notificationMessage = SmsNotificationMessage.builder()
-                    .messageId(messageId)
-                    .msisdn(refundTransaction.getMsisdn())
-                    .service(refundTransaction.getClientAlias())
-                    .contextMap(contextMap)
-                    .build();
-            sqsManagerService.publishSQSMessage(notificationMessage);
-        }else{
-            log.info("Skipping to send refund notification for msisdn {} as it has been disabled", refundTransaction.getMsisdn());
-        }
-    }
-
     private void publishEventsOnReconcileCompletion(TransactionStatus existingStatus, TransactionStatus finalStatus, Transaction transaction) {
         eventPublisher.publishEvent(PaymentReconciledEvent.from(transaction));
         if (!EnumSet.of(in.wynk.common.enums.PaymentEvent.REFUND).contains(transaction.getType()) && existingStatus != TransactionStatus.SUCCESS && finalStatus == TransactionStatus.SUCCESS) {
             eventPublisher.publishEvent(ClientCallbackEvent.from(transaction));
         }
-    }
-
-    private void publishTransactionSnapShotEvent (Transaction transaction) {
-        final TransactionSnapshotEvent.TransactionSnapshotEventBuilder builder = TransactionSnapshotEvent.builder().transaction(transaction);
-        Optional.ofNullable(purchaseDetailsManger.get(transaction)).ifPresent(builder::purchaseDetails);
-        eventPublisher.publishEvent(builder.build());
     }
 
     private void reviseTransactionAndExhaustCoupon(Transaction transaction, TransactionStatus existingStatus,
@@ -492,5 +450,11 @@ public class PaymentGatewayManager
         }
         transactionManager.revision(abstractTransactionRevisionRequest);
         exhaustCouponIfApplicable(existingStatus, transaction.getStatus(), transaction);
+    }
+
+    private void publishTransactionSnapShotEvent (Transaction transaction) {
+        final TransactionSnapshotEvent.TransactionSnapshotEventBuilder builder = TransactionSnapshotEvent.builder().transaction(transaction);
+        Optional.ofNullable(purchaseDetailsManger.get(transaction)).ifPresent(builder::purchaseDetails);
+        eventPublisher.publishEvent(builder.build());
     }
 }

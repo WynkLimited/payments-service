@@ -56,7 +56,7 @@ import static in.wynk.payment.constant.UpiConstants.ORG_ID;
 import static in.wynk.payment.constant.UpiConstants.*;
 import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
-import static in.wynk.payment.core.constant.PaymentErrorType.PAY015;
+import static in.wynk.payment.core.constant.PaymentErrorType.PAYU006;
 import static in.wynk.payment.dto.payu.PayUConstants.*;
 
 @Slf4j
@@ -127,7 +127,7 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
                         });
                         return UpiCollectInAppChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).build();
                     } catch (Exception e) {
-                        throw new WynkRuntimeException(PAY015, e);
+                        throw new WynkRuntimeException(PAYU006, e);
                     }
                 }
             }
@@ -180,7 +180,7 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
                                 .tn(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get(TN)).mc(PayUConstants.PAYU_MERCHANT_CODE)
                                 .build();
                     }
-                    throw new WynkRuntimeException(PAY015);
+                    throw new WynkRuntimeException(PAYU006);
                 }
             }
 
@@ -224,7 +224,7 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
                         form.put(PAYU_VPA, upiDetails.getUpiDetails().getVpa());
                         return UpiCollectChargingResponse.builder().form(form).tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).build();
                     } catch (Exception e) {
-                        throw new WynkRuntimeException(PAY015, e);
+                        throw new WynkRuntimeException(PAYU006, e);
                     }
                 }
             }

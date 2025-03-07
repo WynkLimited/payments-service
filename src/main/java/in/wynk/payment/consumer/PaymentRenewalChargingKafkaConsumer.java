@@ -3,16 +3,11 @@ package in.wynk.payment.consumer;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.client.aspect.advice.ClientAware;
-import in.wynk.common.enums.TransactionStatus;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.aspect.advice.TransactionAware;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
-import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.PaymentReconciliationMessage;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
-import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.service.PaymentGatewayManager;
 import in.wynk.payment.service.PaymentManager;
@@ -31,6 +26,8 @@ import org.springframework.kafka.config.KafkaListenerEndpointRegistry;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
 
+import static in.wynk.payment.core.constant.BeanConstant.AIRTEL_PAY_STACK;
+import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
 
 @Slf4j
 @Service
@@ -55,34 +52,30 @@ public class PaymentRenewalChargingKafkaConsumer extends AbstractKafkaEventConsu
     @Override
     @ClientAware(clientAlias = "#message.clientAlias")
     @AnalyseTransaction(name = "paymentRenewalChargingMessage")
-    @TransactionAware(txnId = "#message.id")
-    public void consume(PaymentRenewalChargingMessage message) {
+    public void consume(PaymentRenewalChargingMessage message) throws WynkRuntimeException {
         AnalyticService.update(message);
-        log.info(PaymentLoggingMarker.PAYMENT_CHARGING_QUEUE, "processing PaymentChargingMessage for transaction {}", message);
-        Transaction transaction = TransactionContext.get();
+        log.info(PaymentLoggingMarker.PAYMENT_CHARGING_QUEUE, "processing PaymentChargingMessage for transaction {}", message.getId());
         //TODO: move payu also to new version after testing and remove check
-        if(TransactionStatus.CANCELLED != transaction.getStatus()) {
-            if (ApsConstant.AIRTEL_PAY_STACK.equalsIgnoreCase(message.getPaymentCode())) {
-                manager.renew(PaymentRenewalChargingRequest.builder()
-                        .id(message.getId())
-                        .uid(message.getUid())
-                        .planId(message.getPlanId())
-                        .msisdn(message.getMsisdn())
-                        .attemptSequence(message.getAttemptSequence())
-                        .clientAlias(message.getClientAlias())
-                        .paymentGateway(PaymentCodeCachingService.getFromPaymentCode(message.getPaymentCode()))
-                        .build());
-            } else {
-                paymentManager.doRenewal(PaymentRenewalChargingRequest.builder()
-                        .id(message.getId())
-                        .uid(message.getUid())
-                        .planId(message.getPlanId())
-                        .msisdn(message.getMsisdn())
-                        .attemptSequence(message.getAttemptSequence())
-                        .clientAlias(message.getClientAlias())
-                        .paymentGateway(PaymentCodeCachingService.getFromPaymentCode(message.getPaymentCode()))
-                        .build());
-            }
+        if (AIRTEL_PAY_STACK.equalsIgnoreCase(message.getPaymentCode()) || PAYU_MERCHANT_PAYMENT_SERVICE.equalsIgnoreCase(message.getPaymentCode())) {
+            manager.renew(PaymentRenewalChargingRequest.builder()
+                    .id(message.getId())
+                    .uid(message.getUid())
+                    .planId(message.getPlanId())
+                    .msisdn(message.getMsisdn())
+                    .attemptSequence(message.getAttemptSequence())
+                    .clientAlias(message.getClientAlias())
+                    .paymentGateway(PaymentCodeCachingService.getFromPaymentCode(message.getPaymentCode()))
+                    .build());
+        } else {
+            paymentManager.doRenewal(PaymentRenewalChargingRequest.builder()
+                    .id(message.getId())
+                    .uid(message.getUid())
+                    .planId(message.getPlanId())
+                    .msisdn(message.getMsisdn())
+                    .attemptSequence(message.getAttemptSequence())
+                    .clientAlias(message.getClientAlias())
+                    .paymentGateway(PaymentCodeCachingService.getFromPaymentCode(message.getPaymentCode()))
+                    .build());
         }
     }
 

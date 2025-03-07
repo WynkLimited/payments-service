@@ -84,6 +84,8 @@ public class PurchaseDetailsManager implements IPurchaseDetailsManger {
     @Cacheable(cacheName = "PAYMENT_DETAILS_KEY", cacheKey = "#transaction.getIdStr()", l2CacheTtl = 24 * 60 * 60, cacheManager = L2CACHE_MANAGER)
     public IPurchaseDetails get(Transaction transaction) {
         final Optional<? extends IPurchaseDetails> purchaseDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), IPurchasingDetailsDao.class).findById(transaction.getIdStr());
+        Optional<Client> abc = ClientContext.getClient();
+
         if (purchaseDetails.isPresent()) return purchaseDetails.get();
         return getOldData(transaction).orElse(null);
     }

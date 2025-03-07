@@ -49,8 +49,9 @@ logging:
   appName: payment
   profile: ${env}
   level:
-    org.apache.catalina: off
     org.quartz: DEBUG
+    org.apache.catalina: off
+    in.wynk: DEBUG
     in.wynk.scheduler.core: DEBUG
   path: /data
   path.analytics: /logs
@@ -338,6 +339,8 @@ aps:
     cancel:
         mandate:
          api: ${payment.merchant.aps.api.base}/pg-service/v2/payment/cancel-mandate
+    predebit:
+        api: ${payment.merchant.aps.api.base}/pg-service/v1/pre-debit/initiate
     delete:
       card: ${payment.merchant.aps.api.base}/pg-service/v1/saved-options/cards/delete
       vpa:  ${payment.merchant.aps.api.base}/pg-service/v1/upi/delete-vpa

@@ -59,15 +59,23 @@ public class PreDebitNotificationKafkaConsumer extends AbstractKafkaEventConsume
     @TransactionAware(txnId = "#message.transactionId")
     public void consume(PreDebitNotificationMessageManager message) throws WynkRuntimeException {
         Transaction transaction = TransactionContext.get();
-        PaymentRenewal paymentRenewal = recurringPaymentManager.getRenewalById(message.getTransactionId());
-        if (Objects.nonNull(paymentRenewal) && (paymentRenewal.getTransactionEvent() == RENEW || paymentRenewal.getTransactionEvent() == SUBSCRIBE || paymentRenewal.getTransactionEvent() == DEFERRED)) {
-            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
-            PreDebitRequest request = PreDebitRequest.builder().planId(transaction.getPlanId()).transactionId(transaction.getIdStr()).renewalDay(format.format(paymentRenewal.getDay().getTime()))
-                    .renewalHour(paymentRenewal.getHour())
-                    .initialTransactionId(paymentRenewal.getInitialTransactionId()).lastSuccessTransactionId(paymentRenewal.getLastSuccessTransactionId()).uid(transaction.getUid())
-                    .paymentCode(transaction.getPaymentChannel().getCode()).clientAlias(message.getClientAlias()).build();
-            AnalyticService.update(request);
-            manager.notify(request);
+        log.info("PreDebitNotificationMessageManager: {} ",message);
+        try{
+            PaymentRenewal paymentRenewal = recurringPaymentManager.getRenewalById(message.getTransactionId());
+            if (Objects.nonNull(paymentRenewal) && (paymentRenewal.getTransactionEvent() == RENEW || paymentRenewal.getTransactionEvent() == SUBSCRIBE || paymentRenewal.getTransactionEvent() == DEFERRED)) {
+                SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+                PreDebitRequest request = PreDebitRequest.builder().planId(transaction.getPlanId()).transactionId(transaction.getIdStr()).renewalDay(format.format(paymentRenewal.getDay().getTime()))
+                        .renewalHour(paymentRenewal.getHour())
+                        .initialTransactionId(paymentRenewal.getInitialTransactionId()).lastSuccessTransactionId(paymentRenewal.getLastSuccessTransactionId()).uid(transaction.getUid())
+                        .paymentCode(transaction.getPaymentChannel().getCode()).clientAlias(message.getClientAlias()).build();
+                AnalyticService.update(request);
+                manager.notify(request);
+            }
+            else {
+                log.info("Something went wrong while processing message {} for kafka consumer ", message);
+            }
+        }catch(Error e){
+            log.error(StreamMarker.KAFKA_POLLING_CONSUMPTION_ERROR, "Something went wrong while processing message {} for kafka consumer", message);
         }
     }
 

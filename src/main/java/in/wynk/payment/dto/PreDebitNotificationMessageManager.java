@@ -26,7 +26,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
         quartz = @WynkQueue.QuartzConfiguration(expression = "T(java.util.Arrays).asList(60, 240, 1500, 1800, 18000, 64800, 21600, 21600).get(#n)", publishUntil = 2,
                 publishUntilUnit = TimeUnit.DAYS))*/
 @WynkKafkaMessage(topic = "${wynk.kafka.consumers.listenerFactory.preDebitNotification[0].factoryDetails.topic}", producerType = ProducerType.QUARTZ_MESSAGE_PRODUCER,
-        quartz = @WynkKafkaMessage.QuartzConfiguration(expression = "T(java.util.Arrays).asList(60, 240, 1500, 1800, 18000, 64800, 21600, 21600).get(#n)", publishUntil = 2,
+        quartz = @WynkKafkaMessage.QuartzConfiguration(expression = "T(java.util.Arrays).asList(60, 360, 1500, 1800, 18000, 64800, 21600, 21600).get(#n)", publishUntil = 2,
                 publishUntilUnit = TimeUnit.DAYS))
 public class PreDebitNotificationMessageManager extends AbstractPreDebitNotificationMessage implements MessageToEventMapper<PreDebitNotificationMessageThresholdEvent> {
 

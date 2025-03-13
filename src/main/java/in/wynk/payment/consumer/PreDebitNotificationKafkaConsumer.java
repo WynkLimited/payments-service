@@ -72,10 +72,10 @@ public class PreDebitNotificationKafkaConsumer extends AbstractKafkaEventConsume
                 manager.notify(request);
             }
             else {
-                log.info("Something went wrong while processing message {} for kafka consumer ", message);
+                log.info("Something went wrong while processing record {} for kafka consumer ", message);
             }
         }catch(Error e){
-            log.error(StreamMarker.KAFKA_POLLING_CONSUMPTION_ERROR, "Something went wrong while processing message {} for kafka consumer", message);
+            log.error(StreamMarker.KAFKA_POLLING_CONSUMPTION_ERROR, "Something went wrong while processing records {} for kafka consumer", message);
         }
     }
 

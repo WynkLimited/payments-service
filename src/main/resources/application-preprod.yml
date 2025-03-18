@@ -1209,7 +1209,7 @@ wynk:
                   connectionTimeout: 2000
                   idleTimeout: 10000
                   maxLifetime: 30000
-                  poolName: payment-datasource-pool-dev
+                  poolName: payment-datasource-pool-dev-paymentApi
                   minimum-idle: 5
                   maximumPoolSize: 20
                 jpa:
@@ -1248,7 +1248,7 @@ wynk:
                   connectionTimeout: 2000
                   idleTimeout: 10000
                   maxLifetime: 30000
-                  poolName: payment-datasource-pool-dev
+                  poolName: payment-datasource-pool-dev-airtelxstream
                   minimum-idle: 5
                   maximumPoolSize: 20
                 jpa:
@@ -1287,7 +1287,7 @@ wynk:
                   connectionTimeout: 2000
                   idleTimeout: 10000
                   maxLifetime: 30000
-                  poolName: payment-datasource-pool-dev
+                  poolName: payment-datasource-pool-dev-music
                   minimum-idle: 5
                   maximumPoolSize: 20
                 jpa:
@@ -1326,7 +1326,7 @@ wynk:
                   connectionTimeout: 2000
                   idleTimeout: 10000
                   maxLifetime: 30000
-                  poolName: payment-datasource-pool-dev
+                  poolName: payment-datasource-pool-dev-iqvideo
                   minimum-idle: 5
                   maximumPoolSize: 20
                 jpa:
@@ -1365,7 +1365,7 @@ wynk:
                   connectionTimeout: 2000
                   idleTimeout: 10000
                   maxLifetime: 30000
-                  poolName: payment-datasource-pool-dev
+                  poolName: payment-datasource-pool-dev-rajtv
                   minimum-idle: 5
                   maximumPoolSize: 20
                 jpa:
@@ -1404,7 +1404,7 @@ wynk:
                   connectionTimeout: 2000
                   idleTimeout: 10000
                   maxLifetime: 30000
-                  poolName: payment-datasource-pool-dev
+                  poolName: payment-datasource-pool-dev-enterr10
                   minimum-idle: 10
                   maximumPoolSize: 100
                 jpa:

@@ -25,6 +25,7 @@ import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.BaseTDRResponse;
+import in.wynk.payment.dto.PreDebitNotificationMessage;
 import in.wynk.payment.dto.TransactionContext;
 import in.wynk.payment.dto.common.AbstractPreDebitNotificationResponse;
 import in.wynk.payment.dto.payu.PayUUpiCollectResponse;
@@ -658,40 +659,6 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         return responseBuilder.data(refundResponseBuilder.build()).build();
     }
 
-    @Override
-    public AbstractPreDebitNotificationResponse notify (PreDebitNotificationMessage message) {
-        try {
-            LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
-            PaymentRenewal lastRenewal = recurringPaymentManagerService.getRenewalById(message.getTransactionId());
-            String txnId = getUpdatedTransactionId(message.getTransactionId(), lastRenewal);
-            MerchantTransaction merchantTransaction = getMerchantData(txnId);
-            if(merchantTransaction == null) {
-                throw new WynkRuntimeException(PAY111, "merchant data is null");
-            }
-            Transaction transaction = transactionManagerService.get(message.getTransactionId());
-            orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, merchantTransaction.getExternalTransactionId());
-            orderedMap.put(PAYU_REQUEST_ID, UUIDs.timeBased());
-            orderedMap.put(PAYU_DEBIT_DATE, message.getDate());
-            orderedMap.put(PAYU_INVOICE_DISPLAY_NUMBER, message.getTransactionId());
-            orderedMap.put(PAYU_TRANSACTION_AMOUNT, cachingService.getPlan(transaction.getPlanId()).getFinalPrice());
-            String variable = gson.toJson(orderedMap);
-            MultiValueMap<String, String> requestMap = buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.PRE_DEBIT_SI.getCode(), variable);
-            PayUPreDebitNotificationResponse response = this.getInfoFromPayU(requestMap, new TypeReference<PayUPreDebitNotificationResponse>() {
-            });
-            if (response.getStatus().equalsIgnoreCase(INTEGER_VALUE)) {
-                log.info(PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS, "invoiceId: " + response.getInvoiceId() + " invoiceStatus: " + response.getInvoiceStatus());
-            } else {
-                throw new WynkRuntimeException(PAY111, response.getMessage());
-            }
-            return PayUPreDebitNotification.builder().tid(message.getTransactionId()).transactionStatus(TransactionStatus.SUCCESS).build();
-        } catch (Exception e) {
-            log.error(PAYU_PRE_DEBIT_NOTIFICATION_ERROR, e.getMessage());
-            if (e instanceof WynkRuntimeException) {
-                throw e;
-            }
-            throw new WynkRuntimeException(PAY111);
-        }
-    }
 
     @Override
     public void cancelRecurring (String transactionId, PaymentEvent paymentEvent) {

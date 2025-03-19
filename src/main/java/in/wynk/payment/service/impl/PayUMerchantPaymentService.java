@@ -38,8 +38,10 @@ import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.*;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.payment.utils.RecurringTransactionUtils;
+import in.wynk.stream.producer.IKafkaEventPublisher;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
+import in.wynk.subscription.common.message.CancelMandateEvent;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
@@ -94,6 +96,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     private final ITransactionManagerService transactionManagerService;
     private final IRecurringPaymentManagerService recurringPaymentManagerService;
     private final IMerchantPaymentCallbackService<AbstractCallbackResponse, PayUCallbackRequestPayload> callbackHandler;
+
+    private final IKafkaEventPublisher<String, CancelMandateEvent> kafkaPublisherService;
     private final RecurringTransactionUtils recurringTransactionUtils;
 
     @Value("${payment.merchant.payu.api.info}")
@@ -113,13 +117,14 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                                        IMerchantTransactionService merchantTransactionService, IErrorCodesCacheService errorCodesCacheServiceImpl,
                                        @Qualifier(EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ITransactionManagerService transactionManagerService,
                                        IRecurringPaymentManagerService recurringPaymentManagerService,
-                                       RecurringTransactionUtils recurringTransactionUtils) {
+                                       IKafkaEventPublisher<String, CancelMandateEvent> kafkaPublisherService, RecurringTransactionUtils recurringTransactionUtils) {
         super(cachingService, errorCodesCacheServiceImpl);
         this.gson = gson;
         this.objectMapper = objectMapper;
         this.restTemplate = restTemplate;
         this.eventPublisher = eventPublisher;
         this.cachingService = cachingService;
+        this.kafkaPublisherService = kafkaPublisherService;
         this.callbackHandler = new DelegatePayUCallbackHandler();
         this.merchantTransactionService = merchantTransactionService;
         this.transactionManagerService = transactionManagerService;
@@ -654,7 +659,42 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
     }
 
     @Override
-    public void cancelRecurring (String transactionId) {
+    public AbstractPreDebitNotificationResponse notify (PreDebitNotificationMessage message) {
+        try {
+            LinkedHashMap<String, Object> orderedMap = new LinkedHashMap<>();
+            PaymentRenewal lastRenewal = recurringPaymentManagerService.getRenewalById(message.getTransactionId());
+            String txnId = getUpdatedTransactionId(message.getTransactionId(), lastRenewal);
+            MerchantTransaction merchantTransaction = getMerchantData(txnId);
+            if(merchantTransaction == null) {
+                throw new WynkRuntimeException(PAY111, "merchant data is null");
+            }
+            Transaction transaction = transactionManagerService.get(message.getTransactionId());
+            orderedMap.put(PAYU_RESPONSE_AUTH_PAYUID, merchantTransaction.getExternalTransactionId());
+            orderedMap.put(PAYU_REQUEST_ID, UUIDs.timeBased());
+            orderedMap.put(PAYU_DEBIT_DATE, message.getDate());
+            orderedMap.put(PAYU_INVOICE_DISPLAY_NUMBER, message.getTransactionId());
+            orderedMap.put(PAYU_TRANSACTION_AMOUNT, cachingService.getPlan(transaction.getPlanId()).getFinalPrice());
+            String variable = gson.toJson(orderedMap);
+            MultiValueMap<String, String> requestMap = buildPayUInfoRequest(transaction.getClientAlias(), PayUCommand.PRE_DEBIT_SI.getCode(), variable);
+            PayUPreDebitNotificationResponse response = this.getInfoFromPayU(requestMap, new TypeReference<PayUPreDebitNotificationResponse>() {
+            });
+            if (response.getStatus().equalsIgnoreCase(INTEGER_VALUE)) {
+                log.info(PAYU_PRE_DEBIT_NOTIFICATION_SUCCESS, "invoiceId: " + response.getInvoiceId() + " invoiceStatus: " + response.getInvoiceStatus());
+            } else {
+                throw new WynkRuntimeException(PAY111, response.getMessage());
+            }
+            return PayUPreDebitNotification.builder().tid(message.getTransactionId()).transactionStatus(TransactionStatus.SUCCESS).build();
+        } catch (Exception e) {
+            log.error(PAYU_PRE_DEBIT_NOTIFICATION_ERROR, e.getMessage());
+            if (e instanceof WynkRuntimeException) {
+                throw e;
+            }
+            throw new WynkRuntimeException(PAY111);
+        }
+    }
+
+    @Override
+    public void cancelRecurring (String transactionId, PaymentEvent paymentEvent) {
         try {
             LinkedHashMap<String, String> orderedMap = new LinkedHashMap<>();
             PaymentRenewal lastRenewal = recurringPaymentManagerService.getRenewalById(transactionId);
@@ -665,10 +705,13 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             orderedMap.put(PAYU_REQUEST_ID, transactionId.replace("-", ""));
             String variable = gson.toJson(orderedMap);
             ITransactionManagerService transactionManagerService = BeanLocatorFactory.getBean(ITransactionManagerService.class);
+            Transaction transaction= transactionManagerService.get(transactionId);
             MultiValueMap<String, String> requestMap = buildPayUInfoRequest(transactionManagerService.get(transactionId).getClientAlias(), UPI_MANDATE_REVOKE.getCode(), variable);
             PayUBaseResponse response = this.getInfoFromPayU(requestMap, new TypeReference<PayUBaseResponse>() {
             });
             AnalyticService.update(MANDATE_REVOKE_RESPONSE, gson.toJson(response));
+            CancelMandateEvent mandateEvent= CancelMandateEvent.builder().paymentEvent(paymentEvent).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).paymentCode(transaction.getPaymentChannel().getCode().toUpperCase()).payUCancellationResponse(CancelMandateEvent.PayUBaseResponse.builder().action(response.getAction()).status(response.getStatus()).message(response.getMessage()).build()).build();
+            kafkaPublisherService.publish(mandateEvent);
         } catch (Exception e) {
             log.error(PAYU_UPI_MANDATE_REVOKE_ERROR, e.getMessage());
             throw new WynkRuntimeException(PAY112);

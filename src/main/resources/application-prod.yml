@@ -577,6 +577,9 @@ wynk:
           topic: wcf_prod.pay_state_retry_resp
         dlt:
           topic: wcf_prod.pay_state_dlt_resp
+        cancel:
+         mandate:
+          topic: wcf_prod.cancel_mandate
       item:
         generate:
           topic: wcf_local.generate_item

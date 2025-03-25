@@ -31,6 +31,9 @@ import org.springframework.kafka.config.KafkaListenerEndpointRegistry;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
 
+import static in.wynk.payment.core.constant.BeanConstant.AIRTEL_PAY_STACK;
+import static in.wynk.payment.core.constant.BeanConstant.PAYU_MERCHANT_PAYMENT_SERVICE;
+
 
 @Slf4j
 @Service
@@ -62,7 +65,7 @@ public class PaymentRenewalChargingKafkaConsumer extends AbstractKafkaEventConsu
         Transaction transaction = TransactionContext.get();
         //TODO: move payu also to new version after testing and remove check
         if(TransactionStatus.CANCELLED != transaction.getStatus()) {
-            if (ApsConstant.AIRTEL_PAY_STACK.equalsIgnoreCase(message.getPaymentCode())) {
+            if (AIRTEL_PAY_STACK.equalsIgnoreCase(message.getPaymentCode()) || PAYU_MERCHANT_PAYMENT_SERVICE.equalsIgnoreCase(message.getPaymentCode())) {
                 manager.renew(PaymentRenewalChargingRequest.builder()
                         .id(message.getId())
                         .uid(message.getUid())

@@ -36,5 +36,6 @@ public interface BeanConstant {
     String EXTERNAL_PAYMENT_CLIENT_S2S_TEMPLATE = "paymentClientHttpTemplate";
     String EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE = "paymentGatewayHttpTemplate";
     String RECURRING_PAYMENT_RENEWAL_SERVICE = "recurringPaymentRenewalManagerBean";
+    String PAYMENT_TDR_DETAILS = "paymentTdrDeatilsBean";
 
 }

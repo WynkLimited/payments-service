@@ -25,6 +25,7 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.repository.PaymentTDRDetailsDao;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.core.service.InvoiceDetailsCachingService;
 import in.wynk.payment.dto.*;
@@ -666,6 +667,7 @@ public class PaymentEventListener {
         AnalyticService.update(AMOUNT_PAID, event.getTransaction().getAmount());
         AnalyticService.update(CLIENT, event.getTransaction().getClientAlias());
         AnalyticService.update(COUPON_CODE, event.getTransaction().getCoupon());
+        String referenceTransactionId = event.getTransaction().getIdStr();
         if (Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getGeoLocation())) {
             AnalyticService.update(ACCESS_COUNTRY_CODE, event.getPurchaseDetails().getGeoLocation().getAccessCountryCode());
             AnalyticService.update(STATE_CODE, event.getPurchaseDetails().getGeoLocation().getStateCode());
@@ -673,7 +675,7 @@ public class PaymentEventListener {
         }
         if (EnumSet.of(PaymentEvent.SUBSCRIBE, PaymentEvent.RENEW).contains(event.getTransaction().getType()) && !IAP_PAYMENT_METHODS.contains(event.getTransaction().getPaymentChannel().name())) {
             AnalyticService.update(MANDATE_AMOUNT, event.getTransaction().getMandateAmount());
-            String referenceTransactionId = event.getTransaction().getIdStr();
+            //String referenceTransactionId = event.getTransaction().getIdStr();
             int renewalAttemptSequence = 0;
             if (PaymentEvent.RENEW == event.getTransaction().getType()) {
                 PaymentRenewal renewal = recurringPaymentManagerService.getRenewalById(event.getTransaction().getIdStr());
@@ -716,10 +718,14 @@ public class PaymentEventListener {
         AnalyticService.update(TRANSACTION_STATUS, event.getTransaction().getStatus().getValue());
         AnalyticService.update(PAYMENT_METHOD, event.getTransaction().getPaymentChannel().getCode());
         if (event.getTransaction().getStatus() == TransactionStatus.SUCCESS) {
-            final BaseTDRResponse tdr = paymentGatewayManager.getTDR(event.getTransaction().getIdStr());
+            delayfetchTDRDetails(PaymentTDRDetailsDto.builder().planId(event.getTransaction().getPlanId())
+                    .uid(event.getTransaction().getUid()).transactionId(event.getTransaction().getIdStr())
+                    .reference_id(referenceTransactionId).build());
+
+            /*final BaseTDRResponse tdr = paymentGatewayManager.getTDR(event.getTransaction().getIdStr());
             if ((tdr.getTdr() != -1) && (tdr.getTdr() != -2)) {
                 AnalyticService.update(TDR, tdr.getTdr());
-            }
+            }*/
             MerchantTransaction merchantTransaction=  merchantTransactionService.getMerchantTransaction(event.getTransaction().getIdStr());
             if (merchantTransaction != null && merchantTransaction.getExternalTransactionId() != null) {
                 AnalyticService.update(PAYUID, merchantTransaction.getExternalTransactionId());
@@ -887,5 +893,13 @@ public class PaymentEventListener {
         } catch (Exception e) {
             log.error("error occurred while trying to build BranchRawDataEvent from payment Service", e);
         }
+    }
+
+    private void delayfetchTDRDetails(PaymentTDRDetailsDto paymentTDRDetailsDto){
+        Calendar delayedTime = Calendar.getInstance();
+        delayedTime.add(Calendar.MINUTE, 10);
+        BeanLocatorFactory.getBean(PaymentTDRDetailsDao.class).save(PaymentTDRDetails.builder().planId(paymentTDRDetailsDto.getPlanId())
+                .transactionId(paymentTDRDetailsDto.getTransactionId())
+                .reference_id(paymentTDRDetailsDto.getReference_id()).executionTime(delayedTime.getTime()).processed(false).build());
     }
 }

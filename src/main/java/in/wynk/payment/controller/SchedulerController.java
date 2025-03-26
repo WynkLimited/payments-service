@@ -4,8 +4,10 @@ import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.dto.EmptyResponse;
 import in.wynk.payment.scheduler.PaymentRenewalsScheduler;
+import in.wynk.payment.scheduler.PaymentTDRScheduler;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,6 +25,9 @@ public class SchedulerController {
     private final ExecutorService executorService;
     private final ClientDetailsCachingService cachingService;
     private final PaymentRenewalsScheduler paymentRenewalsScheduler;
+
+    @Autowired
+    private final PaymentTDRScheduler paymentTDRScheduler;
 
     @GetMapping("/start/renewals")
     @AnalyseTransaction(name = "paymentRenew")
@@ -48,6 +53,15 @@ public class SchedulerController {
         String requestId = MDC.get(REQUEST_ID);
         String clientId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
         executorService.submit(() -> paymentRenewalsScheduler.sendNotifications(requestId, cachingService.getClientById(clientId).getAlias()));
+        return EmptyResponse.response();
+    }
+
+    @GetMapping("/start/fetchingTdr")
+    @AnalyseTransaction(name = "fetchTdrAfterDelay")
+    public EmptyResponse fetchTDR() {
+        String requestId = MDC.get(REQUEST_ID);
+        String clientId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        paymentTDRScheduler.fecthTDR(requestId, cachingService.getClientById(clientId).getAlias());
         return EmptyResponse.response();
     }
 

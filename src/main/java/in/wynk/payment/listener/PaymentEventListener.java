@@ -205,17 +205,17 @@ public class PaymentEventListener {
         if ((!cancelMandatePG.contains(transaction.getPaymentChannel().getId())) && ((transaction.getStatus() == TransactionStatus.SUCCESS || (transaction.getStatus()==TransactionStatus.REFUNDED && transaction.getType()== PaymentEvent.TRIAL_SUBSCRIPTION ))
                 && transaction.getType() != PaymentEvent.UNSUBSCRIBE) &&
                 event.getPaymentEvent() == PaymentEvent.UNSUBSCRIBE) {
-            cancelMandateFromPG(transaction.getPaymentChannel().getId(), transaction.getPaymentChannel().getCode(), transaction.getIdStr(), event.getClientAlias());
+            cancelMandateFromPG(transaction.getPaymentChannel().getId(), transaction.getPaymentChannel().getCode(), transaction.getIdStr(), event.getClientAlias(), event.getPaymentEvent());
         }
     }
 
     @ClientAware(clientAlias = "#clientAlias")
     @AnalyseTransaction(name = "cancelMandateFromPGEvent")
-    private void cancelMandateFromPG (String paymentCode, String paymentMethod, String txnId, String clientAlias) {
+    private void cancelMandateFromPG (String paymentCode, String paymentMethod, String txnId,String clientAlias, PaymentEvent paymentEvent) {
         try {
             AnalyticService.update("paymentCode", paymentCode);
             AnalyticService.update("txnId", txnId);
-            BeanLocatorFactory.getBean(paymentMethod, ICancellingRecurringService.class).cancelRecurring(txnId);
+            BeanLocatorFactory.getBean(paymentMethod, ICancellingRecurringService.class).cancelRecurring(txnId,paymentEvent);
         } catch (Exception e) {
             AnalyticService.update("isMandateCancelled", false);
             log.error(PaymentLoggingMarker.MANDATE_REVOKE_ERROR, e.getMessage(), e);

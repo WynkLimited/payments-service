@@ -558,11 +558,14 @@ webview:
 wynk:
   kafka:
     enabled: true
-    #nodes: 10.40.12.120:9092,10.40.12.157:9092,10.40.12.18:9092
+    #nodes: 10.40.12.120:9092,10.40.12.157:9092,10.40.12.18: 9092
     nodes: 10.160.88.23:9092,10.160.88.24:9092,10.160.88.25:9092
     username: appuser
     password: uJK67dC1Ax
     producers:
+      cancel:
+        mandate:
+          topic: wcf_prod.cancel_mandate
       invoice:
         generate:
           topic: wcf_prod.generate_invoice

@@ -120,7 +120,7 @@ public class PaymentRenewalKafkaConsumer extends AbstractKafkaEventConsumer<Stri
                 RenewalPlanEligibilityResponse renewalPlanEligibilityResponse = response.getBody().getData();
                 long today = System.currentTimeMillis();
                 long furtherDefer = renewalPlanEligibilityResponse.getDeferredUntil() - today;
-                if (subscriptionServiceManager.isDeferred(transaction.getPaymentChannel().getCode(), furtherDefer)) {
+                if (subscriptionServiceManager.isDeferred(transaction.getPaymentChannel().getCode(), furtherDefer, false)) {
                     if (Objects.equals(transaction.getPaymentChannel().getCode(), ApsConstant.AIRTEL_PAY_STACK)) {
                         furtherDefer = furtherDefer - ((long) 2 * 24 * 60 * 60 * 1000);
                     }

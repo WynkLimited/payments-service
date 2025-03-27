@@ -16,8 +16,6 @@ public class InvoiceRetryTaskEvent {
     @Analysed
     private final String clientAlias;
     @Analysed
-    private final String type;
-    @Analysed
     private final String skipDelivery;
     @Analysed
     private final int retryCount;

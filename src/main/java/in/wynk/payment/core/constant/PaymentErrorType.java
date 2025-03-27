@@ -69,7 +69,6 @@ public enum PaymentErrorType implements IWynkErrorType {
     /*IAP Specific errorCodes end*/
 
     /*PAYU Specific errorCodes*/
-    PAY045("Payment Renewal Failure", "Unable to renew amazon iap subscription", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.AMAZON_IAP_RENEWAL_ERROR),
     PAYU002("Charging Failure", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYU_CHARGING_FAILURE),
     PAYU003("Recon Transaction Status Unmatched", "No matching status found for payU side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
     PAYU004("Recon Transaction Status Pending", "Transaction is still pending from payU side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
@@ -78,6 +77,8 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAYU007("Pre Debit Notification Failure", "Pre Debit Notification Failed at PayU side.", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYU_PRE_DEBIT_NOTIFICATION_ERROR),
     PAYU008("Payment Renewal Timeout", "Timeout occurred while making SI payment on payU", HttpStatus.REQUEST_TIMEOUT, PaymentLoggingMarker.PAYU_RENEWAL_TIMEOUT_ERROR),
     PAYU009("Payment Renewal Failure", "An Error occurred while making SI payment on payU", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYU_RENEWAL_STATUS_ERROR),
+    PAY014("Payment Renewal Timeout", "Timeout occurred while making SI payment on payU", HttpStatus.REQUEST_TIMEOUT, PaymentLoggingMarker.PAYU_RENEWAL_TIMEOUT_ERROR),
+    PAY045("Payment Renewal Failure", "Unable to renew amazon iap subscription", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.AMAZON_IAP_RENEWAL_ERROR),
     PAYU010("PayU Callback Parse Failure", "Unable to parse the request", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYU_CALLBACK_FAILURE),
     PAYU011("Payment Callback Failure", "PayU payment callback failed.", "${payment.failure.page}", HttpStatus.FOUND, PaymentLoggingMarker.PAYU_CALLBACK_FAILURE),
     /*PAYU Specific errorCodes end*/
@@ -93,7 +94,9 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY105("Renewal Eligibility API Failure", "Renewal Eligibility API Failure", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.RENEWAL_ELIGIBILITY_API_ERROR),
     PAY106("Invalid Item", "Invalid item is is supplied", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_RECONCILIATION_FAILURE),
     PAY107("Selective Computation Failed", "Unable to compute selective eligibility for purchase", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.PAYMENT_ERROR),
+
     PAY002("Charging Failure", "Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PHONEPE_CHARGING_FAILURE),
+
     PAY111("PayU Pre Debit Notification Failure", "Pre Debit Notification Failed at PayU side.", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYU_PRE_DEBIT_NOTIFICATION_ERROR),
     PAY112("PayU UPI Mandate Revoke Failure", "Cancelling Recurring failed at PayU side.", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PAYU_UPI_MANDATE_REVOKE_ERROR),
     PAY201("Saved Payment Option Failure", "Either this payment option is not currently supported to fetch user saved payments or we are getting timeout from external server",
@@ -156,8 +159,7 @@ public enum PaymentErrorType implements IWynkErrorType {
     PAY999("Charging Failure", "Fraud Charging Request for AutoRenew in Direct Payment API", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.CHARGING_API_FAILURE),
 
     /*Realtime Mandate start*/
-    RTMANDATE001("Realtime Mandate Processing Failure", "Could not stop renewal based on realtime mandate as we don't have record for initial transaction id", HttpStatus.INTERNAL_SERVER_ERROR,
-            PaymentLoggingMarker.STOP_RENEWAL_FAILURE),
+    RTMANDATE001("Realtime Mandate Processing Failure", "Could not stop renewal based on realtime mandate as we don't have record for initial transaction id",HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.STOP_RENEWAL_FAILURE),
     RTMANDATE002("Realtime Mandate Processing Failure", "Could not stop renewal based on realtime mandate for IAP",HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.STOP_RENEWAL_FAILURE),
     /*Realtime Mandate start*/
 
@@ -181,6 +183,7 @@ public enum PaymentErrorType implements IWynkErrorType {
     /*Add to bill errorCodes end*/
 
     PAY099("Renewal Schedule Failure", "Error occurred while scheduling renewal", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.RENEWAL_SCHEDULE_ERROR);
+
     /**
      * The error title.
      */

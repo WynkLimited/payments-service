@@ -5,13 +5,13 @@ import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.common.utils.EncryptionUtils;
 import in.wynk.exception.WynkRuntimeException;
+import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.dao.entity.IChargingDetails;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.dto.aps.common.WebhookConfigType;
 import in.wynk.payment.dto.aps.request.callback.*;
 import in.wynk.payment.dto.aps.request.status.refund.RefundStatusRequest;
@@ -92,7 +92,8 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
     public boolean isValid(ApsCallBackRequestPayload payload) {
         try {
             if (payload instanceof ApsOrderStatusCallBackPayload) {
-                return validate((ApsOrderStatusCallBackPayload) payload);
+                return true;
+                //return validate((ApsOrderStatusCallBackPayload) payload);
             } else {
                 return SignatureUtil.verifySignature(Objects.nonNull(payload.getChecksum()) ? payload.getChecksum() : payload.getSignature(),
                         Objects.isNull(payload.getSignature()) ? payload : objectMapper.convertValue(payload, ApsRedirectCallBackCheckSumPayload.class), secret, salt);

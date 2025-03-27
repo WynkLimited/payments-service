@@ -86,6 +86,7 @@ public class IapVerificationWrapperRequest implements IProductValidatorRequest, 
         return PlanDetails.builder().planId(this.latestReceiptResponse.getPlanId()).build();
     }
 
+
     @Override
     public LatestReceiptResponse getLatestReceiptInfo() {
         return latestReceiptResponse;

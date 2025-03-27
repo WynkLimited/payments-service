@@ -12,6 +12,7 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.PaymentRenewalChargingMessage;
 import in.wynk.payment.dto.TransactionContext;
+import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.service.PaymentGatewayManager;
 import in.wynk.payment.service.PaymentManager;
@@ -88,7 +89,7 @@ public class PaymentRenewalChargingConsumerPollingQueue extends AbstractSQSMessa
         Transaction transaction = TransactionContext.get();
         //TODO: move payu also to new version after testing and remove check
         if(TransactionStatus.CANCELLED != transaction.getStatus()) {
-            if (AIRTEL_PAY_STACK.equalsIgnoreCase(message.getPaymentCode()) || PAYU_MERCHANT_PAYMENT_SERVICE.equalsIgnoreCase(message.getPaymentCode())) {
+            if (ApsConstant.AIRTEL_PAY_STACK.equalsIgnoreCase(message.getPaymentCode()) || PAYU_MERCHANT_PAYMENT_SERVICE.equalsIgnoreCase(message.getPaymentCode())) {
                 manager.renew(PaymentRenewalChargingRequest.builder()
                         .id(message.getId())
                         .uid(message.getUid())

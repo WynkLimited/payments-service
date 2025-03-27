@@ -40,7 +40,6 @@ import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
 import in.wynk.payment.dto.response.*;
 import in.wynk.payment.service.*;
-import in.wynk.payment.utils.RecurringTransactionUtils;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.subscription.common.dto.PlanDTO;
 import lombok.SneakyThrows;
@@ -83,8 +82,6 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     private static final List<String> RENEWAL_NOTIFICATION = Arrays.asList("DID_RENEW", "INTERACTIVE_RENEWAL", "DID_RECOVER");
     private static final List<String> REACTIVATION_NOTIFICATION = Collections.singletonList("DID_CHANGE_RENEWAL_STATUS");
     private static final List<String> REFUND_NOTIFICATION = Collections.singletonList("CANCEL");
-    private final ITransactionManagerService transactionManager;
-    private final RecurringTransactionUtils recurringTransactionUtils;
 
     @Value("${payment.merchant.itunes.api.url}")
     private String itunesApiUrl;
@@ -99,10 +96,8 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     private final WynkRedisLockService wynkRedisLockService;
     private final IAuditableListener auditingListener;
 
-    public ITunesMerchantPaymentService(ITransactionManagerService transactionManager, RecurringTransactionUtils recurringTransactionUtils, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson, ObjectMapper mapper, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, WynkRedisLockService wynkRedisLockService, IErrorCodesCacheService errorCodesCacheServiceImpl, @Qualifier(AuditConstants.MONGO_AUDIT_LISTENER) IAuditableListener auditingListener) {
+    public ITunesMerchantPaymentService(@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson, ObjectMapper mapper, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, WynkRedisLockService wynkRedisLockService, IErrorCodesCacheService errorCodesCacheServiceImpl, @Qualifier(AuditConstants.MONGO_AUDIT_LISTENER) IAuditableListener auditingListener) {
         super(cachingService, errorCodesCacheServiceImpl);
-        this.transactionManager = transactionManager;
-        this.recurringTransactionUtils = recurringTransactionUtils;
         this.gson = gson;
         this.mapper = mapper;
         this.restTemplate = restTemplate;
@@ -550,8 +545,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             event = PaymentEvent.RENEW;
         } else if (REACTIVATION_NOTIFICATION.contains(notificationType)) {
             if (Boolean.parseBoolean(wrapper.getDecodedNotification().getAutoRenewStatus())) {
-                event = PaymentEvent.NO_ACTION_EVENT;
-                AnalyticService.update(PAYMENT_EVENT, String.valueOf(event));
+                event = PaymentEvent.SUBSCRIBE;
             } else {
                 event = PaymentEvent.UNSUBSCRIBE;
             }
@@ -589,7 +583,9 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                 return WynkResponseEntity.<Void>builder().success(true).build();
             }
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(ITUNES001.getErrorCode()).description(ITUNES001.getErrorMessage()).build());
+            if (Objects.isNull(receiptDetails)) {
+                throw new WynkRuntimeException(ITUNES001);
+            }
             return WynkResponseEntity.<Void>builder().success(false).build();
         } catch (Exception e) {
             if (WynkRuntimeException.class.isAssignableFrom(e.getClass())) {
@@ -598,7 +594,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             }
             log.error("Unable to do renewal for the transaction {}, error message {}", transaction.getId(), e.getMessage(), e);
             transaction.setStatus(TransactionStatus.FAILURE.getValue());
-            return WynkResponseEntity.<Void>builder().success(false).build();
+            throw new WynkRuntimeException(PaymentErrorType.PAY026, e);
         }
     }
 

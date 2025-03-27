@@ -69,6 +69,7 @@ public class PaymentCachingService {
     private final Map<String, PlanDTO> skuToPlan = new ConcurrentHashMap<>();
     private final Map<String, PartnerDTO> partners = new ConcurrentHashMap<>();
     private final Map<String, ProductDTO> products = new ConcurrentHashMap<>();
+    private final Map<Integer, PlanDTO> dataPlanMap = new ConcurrentHashMap<>();
 
     private final Map<String, PaymentOptionsResponse> savedOptions = new ConcurrentHashMap<>();
 
@@ -88,7 +89,7 @@ public class PaymentCachingService {
         this.myApplicationContext=myApplicationContext;
     }
 
-    @Value("${api.get.endPoint}")
+    @Value("${service.subscription.api.root}")
     private String subscriptionEndPoint;
 
     @PostConstruct
@@ -99,6 +100,7 @@ public class PaymentCachingService {
         AnalyticService.update("cacheLoadInit", true);
         loadProducts();
         loadPlans();
+        loadDataPlans();
         loadOffers();
         loadPartners();
         AnalyticService.update("cacheLoadCompleted", true);
@@ -144,6 +146,15 @@ public class PaymentCachingService {
                 writeLock.unlock();
             }
         }
+    }
+
+    private void loadDataPlans() {
+        Collection<PlanDTO> planList = planDtoCachingService.getAll();
+        Map<Integer, PlanDTO> planMap =  planList.stream()
+                .filter(plan -> MapUtils.isNotEmpty(plan.getMeta()) && plan.getMeta().containsKey("airtelPlan"))
+                .collect(Collectors.toMap(PlanDTO::getId, Function.identity()));
+        dataPlanMap.clear();
+        dataPlanMap.putAll(planMap);
     }
 
     private void loadOffers() {

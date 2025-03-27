@@ -1,4 +1,5 @@
 package in.wynk.payment.dto.request;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.payment.dto.IPaymentOptionsRequest;
@@ -18,5 +19,3 @@ import lombok.experimental.SuperBuilder;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class DefaultPaymentOptionRequest<T extends IPaymentOptionsRequest> extends AbstractPaymentOptionsRequest<T>  {
 }
-
-

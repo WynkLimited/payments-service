@@ -54,8 +54,8 @@ public class PayUGateway extends PayUMerchantPaymentService implements
     private final PayURenewalGatewayImpl renewalGateway;
     private final PayUCallbackGatewayImpl callbackGateway;
     private final PayUVerificationGatewayImpl verificationGateway;
-    private final IMerchantTDRService iMerchantTDRService;
     private final PayUPreDebitGatewayServiceImpl preDebitGatewayService;
+    private final IMerchantTDRService iMerchantTDRService;
 
     private final IKafkaEventPublisher<String, CancelMandateEvent> kafkaPublisherService;
 
@@ -125,6 +125,7 @@ public class PayUGateway extends PayUMerchantPaymentService implements
     public BaseTDRResponse getTDR (String transactionId) {
         return iMerchantTDRService.getTDR(transactionId);
     }
+
     @Override
     public AbstractPreDebitNotificationResponse notify (PreDebitRequest request) {
         return preDebitGatewayService.notify(request);

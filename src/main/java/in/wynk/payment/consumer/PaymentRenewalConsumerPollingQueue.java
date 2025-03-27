@@ -106,6 +106,7 @@ public class PaymentRenewalConsumerPollingQueue extends AbstractSQSMessageConsum
         }
     }
 
+
     @Override
     public Class<PaymentRenewalMessage> messageType () {
         return PaymentRenewalMessage.class;

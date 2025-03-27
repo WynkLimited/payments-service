@@ -1,6 +1,7 @@
 package in.wynk.payment.dto.payu;
 
 
+import in.wynk.common.constant.BaseConstants;
 import in.wynk.payment.core.constant.PaymentConstants;
 
 public interface PayUConstants extends PaymentConstants {

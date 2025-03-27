@@ -1,6 +1,5 @@
 package in.wynk.payment.validations;
 
-
 import in.wynk.common.utils.BeanLocatorFactory;
 import in.wynk.common.validations.BaseHandler;
 import in.wynk.eligibility.dto.AbstractEligibilityEvaluation;
@@ -17,20 +16,26 @@ import in.wynk.payment.eligibility.evaluation.PaymentMethodsPlanEligibilityEvalu
 import in.wynk.payment.eligibility.request.PaymentOptionsEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsItemEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
+import in.wynk.payment.service.IExternalPaymentEligibilityService;
+import org.springframework.core.ParameterizedTypeReference;
 
 import java.util.Objects;
 
+import static in.wynk.common.constant.BaseConstants.ADDTOBILL;
 import static in.wynk.common.constant.BaseConstants.PLAN;
+import static in.wynk.payment.core.constant.BeanConstant.ADD_TO_BILL_PAYMENT_SERVICE;
+import static in.wynk.payment.core.constant.PaymentConstants.ADD_TO_BILL;
 import static in.wynk.payment.core.constant.PaymentErrorType.*;
 
 public class PaymentMethodValidator<T extends IPaymentMethodValidatorRequest> extends BaseHandler<T> {
     @Override
     public void handle(T request) {
         PaymentMethod paymentMethod = BeanLocatorFactory.getBean(PaymentMethodCachingService.class).get(request.getPaymentId());
-        if(CardConstants.CARD.equals(paymentMethod.getGroup())) {
+        if (CardConstants.CARD.equals(paymentMethod.getGroup())) {
             IPaymentDetails paymentDetails = request.getPaymentDetails();
             final CardPaymentDetails cardPaymentDetails = (CardPaymentDetails) paymentDetails;
-            if(CardConstants.SAVED_CARD_TYPE.equals(cardPaymentDetails.getCardDetails().getType()) && (paymentDetails.isAutoRenew() || paymentDetails.isTrialOpted() || paymentDetails.isMandate())) throw new WynkRuntimeException(PAY609);
+            if (CardConstants.SAVED_CARD_TYPE.equals(cardPaymentDetails.getCardDetails().getType()) && (paymentDetails.isAutoRenew() || paymentDetails.isTrialOpted() || paymentDetails.isMandate()))
+                throw new WynkRuntimeException(PAY609);
         }
         PaymentOptionsEligibilityRequest paymentOptionsEligibilityRequest = (Objects.equals(request.getProductDetails().getType(), PLAN) ?
                 PaymentOptionsPlanEligibilityRequest.builder().planId(request.getProductDetails().getId()) :
@@ -51,10 +56,22 @@ public class PaymentMethodValidator<T extends IPaymentMethodValidatorRequest> ex
                 .root(paymentOptionsEligibilityRequest)
                 .entity(paymentMethod)
                 .build();
-        EligibilityResult<PaymentMethod> eligibilityResult = BeanLocatorFactory.getBean(AbstractEligibilityService.class).evaluate(abstractEligibilityEvaluation);
-       if (!eligibilityResult.isEligible()) throw new WynkRuntimeException(PAY601);
-        if((request.getPaymentDetails().isMandate() || request.getPaymentDetails().isTrialOpted()) && !paymentMethod.isAutoRenewSupported()) throw new WynkRuntimeException(PAY603);
-        if(request.getPaymentDetails().isMandate() && request.getPaymentDetails().isTrialOpted()) throw new WynkRuntimeException(PAY608);
-       super.handle(request);
+        /*
+        Adding the below if condition to support backward compatibility through build checks in atb
+         */
+        boolean eligible;
+        if (paymentMethod.getGroup().equalsIgnoreCase(ADDTOBILL)) {
+            eligible = BeanLocatorFactory.getBean(ADD_TO_BILL_PAYMENT_SERVICE, new ParameterizedTypeReference<IExternalPaymentEligibilityService>() {
+            }).isEligible(paymentMethod, (PaymentOptionsPlanEligibilityRequest) paymentOptionsEligibilityRequest);
+        } else {
+            EligibilityResult<PaymentMethod> eligibilityResult = BeanLocatorFactory.getBean(AbstractEligibilityService.class).evaluate(abstractEligibilityEvaluation);
+            eligible = eligibilityResult.isEligible();
+        }
+        //if (!eligible) throw new WynkRuntimeException(PAY601);
+        if ((request.getPaymentDetails().isMandate() || request.getPaymentDetails().isTrialOpted()) && !paymentMethod.isAutoRenewSupported())
+            throw new WynkRuntimeException(PAY603);
+        if (request.getPaymentDetails().isMandate() && request.getPaymentDetails().isTrialOpted())
+            throw new WynkRuntimeException(PAY608);
+        super.handle(request);
     }
 }

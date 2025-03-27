@@ -48,7 +48,7 @@ public class PaymentRenewalsScheduler {
     @ClientAware(clientAlias = "#clientAlias")
     @AnalyseTransaction(name = "paymentRenewals")
     @Transactional(transactionManager = "#clientAlias", source = "payments")
-    public void paymentRenew(String requestId, String clientAlias) {
+    public void paymentRenew (String requestId, String clientAlias) {
         MDC.put(REQUEST_ID, requestId);
         AnalyticService.update(REQUEST_ID, requestId);
         AnalyticService.update("class", this.getClass().getSimpleName());
@@ -63,7 +63,7 @@ public class PaymentRenewalsScheduler {
     @ClientAware(clientAlias = "#clientAlias")
     @AnalyseTransaction(name = "renewNotifications")
     @Transactional(transactionManager = "#clientAlias", source = "payments")
-    public void sendNotifications(String requestId, String clientAlias) {
+    public void sendNotifications (String requestId, String clientAlias) {
         MDC.put(REQUEST_ID, requestId);
         AnalyticService.update(REQUEST_ID, requestId);
         AnalyticService.update("class", this.getClass().getSimpleName());
@@ -79,7 +79,7 @@ public class PaymentRenewalsScheduler {
         AnalyticService.update("renewNotificationsCompleted", true);
     }
 
-    private void sendToRenewalQueue(List<PaymentRenewal> paymentRenewals) {
+    private void sendToRenewalQueue (List<PaymentRenewal> paymentRenewals) {
         for (PaymentRenewal paymentRenewal : paymentRenewals) {
             publishRenewalMessage(PaymentRenewalMessage.builder()
                     .attemptSequence(paymentRenewal.getAttemptSequence())
@@ -101,9 +101,8 @@ public class PaymentRenewalsScheduler {
     @AnalyseTransaction(name = "schedulePreDebitNotificationMessage")
     private void publishPreDebitNotificationMessage (PreDebitNotificationMessageManager message) {
         AnalyticService.update(message);
-        if(checkPreDebitEligibility(message.getTransactionId())) {
-            kafkaPublisherService.publishKafkaMessage(message);
-        }
+        //sqsManagerService.publishSQSMessage(message);
+        kafkaPublisherService.publishKafkaMessage(message);
     }
 
     private boolean checkPreDebitEligibility (String transactionId) {
@@ -112,7 +111,7 @@ public class PaymentRenewalsScheduler {
 
     @ClientAware(clientId = "#clientId")
     @AnalyseTransaction(name = "sePaymentRenewals")
-    public void startSeRenewals(String requestId, String clientId) {
+    public void startSeRenewals (String requestId, String clientId) {
         MDC.put(REQUEST_ID, requestId);
         AnalyticService.update(REQUEST_ID, requestId);
         AnalyticService.update("class", this.getClass().getSimpleName());

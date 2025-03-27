@@ -21,5 +21,5 @@ public class ApsTdrResponse {
     private String pgSystemId;
     private String responseStatus;
     private String responseMsg;
-    private double tdrAmount;
+    private Double tdrAmount;
 }

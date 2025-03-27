@@ -1,6 +1,5 @@
 package in.wynk.payment.service.impl;
 
-import com.datastax.driver.core.utils.UUIDs;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.service.AnalyticService;
@@ -25,9 +24,7 @@ import in.wynk.payment.core.event.MerchantTransactionEvent;
 import in.wynk.payment.core.event.MerchantTransactionEvent.Builder;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.BaseTDRResponse;
-import in.wynk.payment.dto.PreDebitNotificationMessage;
 import in.wynk.payment.dto.TransactionContext;
-import in.wynk.payment.dto.common.AbstractPreDebitNotificationResponse;
 import in.wynk.payment.dto.payu.PayUUpiCollectResponse;
 import in.wynk.payment.dto.payu.*;
 import in.wynk.payment.dto.request.*;
@@ -47,7 +44,6 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.conn.ConnectTimeoutException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -55,10 +51,8 @@ import org.springframework.http.*;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpStatusCodeException;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -659,7 +653,6 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         return responseBuilder.data(refundResponseBuilder.build()).build();
     }
 
-
     @Override
     public void cancelRecurring (String transactionId, PaymentEvent paymentEvent) {
         try {
@@ -687,6 +680,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
 
     @Override
     public BaseTDRResponse getTDR (String transactionId) {
+        /** payu not sending tdr value
         try {
             final Transaction transaction = TransactionContext.get();
             final MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(transactionId);
@@ -698,8 +692,8 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             return BaseTDRResponse.from(response.getMessage().getTdr());
         } catch (Exception e) {
             log.error(PAYU_TDR_ERROR, e.getMessage());
-        }
-        return BaseTDRResponse.from(-2);
+        } */
+        return BaseTDRResponse.from(Double.valueOf(-2));
     }
 
     private class DelegatePayUCallbackHandler implements IMerchantPaymentCallbackService<AbstractCallbackResponse, PayUCallbackRequestPayload> {

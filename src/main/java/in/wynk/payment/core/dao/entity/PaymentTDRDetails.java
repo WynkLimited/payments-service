@@ -22,8 +22,8 @@ import java.util.Date;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "tdr_details", indexes = {@Index(name = "tdr_day_time_index", columnList = "execution_day, execution_min,processed")})
-public class PaymentTDRDetails {
+@Table(name = "tdr_details", indexes = {@Index(name = "tdr_time_index", columnList = "execution_time, is_processed")
+})public class PaymentTDRDetails {
 
     @Id
     @Column(name = "transaction_id")

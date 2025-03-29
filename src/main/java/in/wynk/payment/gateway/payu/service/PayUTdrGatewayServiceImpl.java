@@ -31,7 +31,7 @@ public class PayUTdrGatewayServiceImpl implements IMerchantTDRService {
 
     @Override
     public BaseTDRResponse getTDR (String transactionId) {
-       /**  payu not sending the tdr value
+
         try {
 
             final Transaction transaction = TransactionContext.get();
@@ -43,7 +43,7 @@ public class PayUTdrGatewayServiceImpl implements IMerchantTDRService {
             return BaseTDRResponse.from(response.getMessage().getTdr());
         } catch (Exception e) {
             log.error(PAYU_TDR_ERROR, e.getMessage());
-        } */
+        }
         return BaseTDRResponse.from(Double.valueOf(-2));
     }
 }

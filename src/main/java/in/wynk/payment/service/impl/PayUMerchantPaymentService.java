@@ -680,7 +680,6 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
 
     @Override
     public BaseTDRResponse getTDR (String transactionId) {
-        /** payu not sending tdr value
         try {
             final Transaction transaction = TransactionContext.get();
             final MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(transactionId);
@@ -692,7 +691,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             return BaseTDRResponse.from(response.getMessage().getTdr());
         } catch (Exception e) {
             log.error(PAYU_TDR_ERROR, e.getMessage());
-        } */
+        }
         return BaseTDRResponse.from(Double.valueOf(-2));
     }
 

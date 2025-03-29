@@ -1,27 +1,46 @@
 package in.wynk.payment.core.dao.repository;
 
-import in.wynk.payment.core.constant.BeanConstant;
-import in.wynk.payment.core.dao.entity.Invoice;
+import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.PaymentTDRDetails;
-import org.springframework.data.domain.Pageable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Primary;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.util.Date;
 import java.util.Optional;
 
-@Repository(BeanConstant.PAYMENT_TDR_DETAILS)
+@Repository("paymentTdrDetailsDao")
+@Primary
 public interface PaymentTDRDetailsDao extends JpaRepository<PaymentTDRDetails, String> {
 
-    @Query("SELECT t FROM PaymentTDRDetails t WHERE t.isProcessed = false " +
-            "AND t.executionTime <= CURRENT_TIMESTAMP " +
-            "ORDER BY t.executionTime ASC " +
-            "LIMIT 1 FOR UPDATE SKIP LOCKED")
-    Optional<PaymentTDRDetails> fetchNextTransactionForProcessing();
+    Logger logger = LoggerFactory.getLogger(PaymentTDRDetailsDao.class);
 
+    @Query(value = "SELECT * FROM tdr_details t " +
+            "WHERE t.is_processed = 0 " +
+            "AND t.execution_time <= :currentTimestamp " +
+            "ORDER BY t.execution_time ASC " +
+            "LIMIT 1",
+            nativeQuery = true)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, timeout = 60)
+    Optional<PaymentTDRDetails> findFirstEligibleTransaction(@Param("currentTimestamp") Date currentTimestamp);
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW, timeout = 60)
+    default Optional<PaymentTDRDetails> fetchNextTransactionForProcessing() {
+        try {
+            return findFirstEligibleTransaction(new Date());
+        } catch (DataAccessException e) {
+            logger.error(PaymentLoggingMarker.TDR_TABLE_FETCHING_QUERY_ERROR,
+                    "Error while fetching first Eligible Transaction from tdr_table",
+                    e);
+            return Optional.empty();
+        }
+    }
 }

@@ -190,4 +190,12 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker QRCODE_PAYMENT_METHOD_ERROR = MarkerFactory.getMarker("QRCODE_PAYMENT_METHOD_ERROR");
     Marker QRCODE_REQUEST_TRANSFORM_ERROR = MarkerFactory.getMarker("QRCODE_REQUEST_TRANSFORM_ERROR");
 
+    Marker TDR_BUILD_ERROR = MarkerFactory.getMarker("TDR_BUILD_ERROR");
+    Marker TDR_TABLE_SAVE_QUERY_ERROR = MarkerFactory.getMarker("TDR_TABLE_SAVE_QUERY_ERROR");
+    Marker TDR_DELAY_ERROR = MarkerFactory.getMarker("TDR_DELAY_ERROR");
+    Marker TDR_PROCESSING_ERROR = MarkerFactory.getMarker("TDR_PROCESSING_ERROR");
+    Marker TDR_TABLE_FETCHING_QUERY_ERROR = MarkerFactory.getMarker("TDR_TABLE_FETCHING_QUERY_ERROR");
+    Marker TDR_API_ERROR = MarkerFactory.getMarker("TDR_API_ERROR");
+    Marker TDR_RETRY_ERROR = MarkerFactory.getMarker("TDR_RETRY_ERROR");
+
 }

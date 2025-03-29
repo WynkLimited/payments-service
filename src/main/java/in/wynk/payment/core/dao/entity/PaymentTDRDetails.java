@@ -22,14 +22,16 @@ import java.util.Date;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "tdr_details", indexes = {@Index(name = "tdr_time_index", columnList = "execution_time, is_processed")
-})public class PaymentTDRDetails {
+@Table(name = "tdr_details", indexes = {
+        @Index(name = "tdr_query_idx", columnList = "is_processed, execution_time")
+})
+public class PaymentTDRDetails {
 
     @Id
     @Column(name = "transaction_id")
     private String transactionId;
 
-    @Column(name = "transaction_id")
+    @Column(name = "tdr")
     private Double tdr;
 
     @Column(name = "plan_id")
@@ -39,10 +41,10 @@ import java.util.Date;
     private String uid;
 
     @Column(name = "reference_id")
-    private String reference_id;
+    private String referenceId;
 
-    @Column(name = "processed")
-    private Boolean processed;
+    @Column(name = "is_processed", nullable = false)
+    private Boolean isProcessed = false;
 
     @Column(name = "execution_time", nullable = false)
     @Temporal(TemporalType.TIMESTAMP)

@@ -50,6 +50,7 @@ public interface PaymentConstants extends BaseConstants {
     String PLAN_ID_PLACEHOLDER = "<PLAN_ID>";
     String MERCHANT_CLIENT_ID = "clientId";
     String PAYMENT_METHOD = "paymentMethod";
+    String TDR_TRANSACTION_DETAIL = "tdrTransactionDetail";
     String TDR = "tdr";
     String MIGRATED_TXN_ID = "transactionid";
     String PAYMENT_API_CLIENT = "paymentApi";

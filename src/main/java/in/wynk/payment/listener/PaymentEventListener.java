@@ -64,12 +64,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.quartz.SimpleScheduleBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -113,6 +115,9 @@ public class PaymentEventListener {
     private final IKafkaEventPublisher<String, GenerateItemKafkaMessage> itemKafkaPublisher;
 
     public static Map<String, String> map = Collections.singletonMap(AIRTEL_TV, AIRTEL_XSTREAM);
+    @Autowired
+    @Qualifier("paymentTdrDetailsDao")
+    private PaymentTDRDetailsDao paymentTDRDetailsDao;
 
     @Value("${event.stream.dp}")
     private String dpStream;
@@ -718,9 +723,9 @@ public class PaymentEventListener {
         AnalyticService.update(TRANSACTION_STATUS, event.getTransaction().getStatus().getValue());
         AnalyticService.update(PAYMENT_METHOD, event.getTransaction().getPaymentChannel().getCode());
         if (event.getTransaction().getStatus() == TransactionStatus.SUCCESS) {
-            delayfetchTDRDetails(PaymentTDRDetailsDto.builder().planId(event.getTransaction().getPlanId())
+            delayFetchTDRDetails(PaymentTDRDetailsDto.builder().planId(event.getTransaction().getPlanId())
                     .uid(event.getTransaction().getUid()).transactionId(event.getTransaction().getIdStr())
-                    .reference_id(referenceTransactionId).build());
+                    .referenceId(referenceTransactionId).build());
 
             /*final BaseTDRResponse tdr = paymentGatewayManager.getTDR(event.getTransaction().getIdStr());
             if ((tdr.getTdr() != -1) && (tdr.getTdr() != -2)) {
@@ -895,11 +900,35 @@ public class PaymentEventListener {
         }
     }
 
-    private void delayfetchTDRDetails(PaymentTDRDetailsDto paymentTDRDetailsDto){
-        Calendar delayedTime = Calendar.getInstance();
-        delayedTime.add(Calendar.MINUTE, 10);
-        BeanLocatorFactory.getBean(PaymentTDRDetailsDao.class).save(PaymentTDRDetails.builder().planId(paymentTDRDetailsDto.getPlanId())
-                .transactionId(paymentTDRDetailsDto.getTransactionId())
-                .reference_id(paymentTDRDetailsDto.getReference_id()).executionTime(delayedTime.getTime()).processed(false).build());
+    private void delayFetchTDRDetails(PaymentTDRDetailsDto paymentTDRDetailsDto) {
+        try {
+            Calendar delayedTime = Calendar.getInstance();
+            delayedTime.add(Calendar.MINUTE, 1);
+
+            PaymentTDRDetails tdrDetails = PaymentTDRDetails.builder()
+                    .planId(paymentTDRDetailsDto.getPlanId())
+                    .uid(paymentTDRDetailsDto.getUid())
+                    .transactionId(paymentTDRDetailsDto.getTransactionId())
+                    .referenceId(paymentTDRDetailsDto.getReferenceId())
+                    .executionTime(delayedTime.getTime())
+                    .createdTimestamp(Calendar.getInstance())
+                    .isProcessed(Boolean.FALSE)
+                    .build();
+            AnalyticService.update(TDR_TRANSACTION_DETAIL,tdrDetails.toString());
+            paymentTDRDetailsDao.save(tdrDetails);
+
+        } catch (NullPointerException | IllegalArgumentException e) {
+            log.error(PaymentLoggingMarker.TDR_BUILD_ERROR,
+                    "Failed to build TDR details object",
+                    e);
+        } catch (DataAccessException e) {
+            log.error(PaymentLoggingMarker.TDR_TABLE_SAVE_QUERY_ERROR,
+                    "Failed to save delayed TDR details",
+                    e);
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.TDR_DELAY_ERROR,
+                    "Unexpected error while delaying TDR processing for transaction",
+                    e);
+        }
     }
 }

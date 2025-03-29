@@ -19,7 +19,7 @@ public class PaymentTDRDetailsDto {
 
     private String uid;
 
-    private String reference_id;
+    private String referenceId;
 
     private boolean processed;
 

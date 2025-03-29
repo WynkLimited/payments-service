@@ -61,7 +61,7 @@ public class SchedulerController {
     public EmptyResponse fetchTDR() {
         String requestId = MDC.get(REQUEST_ID);
         String clientId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
-        paymentTDRScheduler.fecthTDR(requestId, cachingService.getClientById(clientId).getAlias());
+        executorService.submit(() -> paymentTDRScheduler.fecthTDR(requestId, cachingService.getClientById(clientId).getAlias()));
         return EmptyResponse.response();
     }
 

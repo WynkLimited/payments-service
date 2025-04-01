@@ -19,7 +19,7 @@ public class PaymentTDRScheduler {
     private IPaymentTDRManager paymentTDRManager;
 
     @ClientAware(clientAlias = "#clientAlias")
-    @AnalyseTransaction(name = "fetchTDRWithDelay")
+    @AnalyseTransaction(name = "fetchTdrAfterDelay")
     @Transactional(transactionManager = "#clientAlias", source = "payments")
     public void fecthTDR(String requestId, String clientAlias) {
         MDC.put(REQUEST_ID, requestId);

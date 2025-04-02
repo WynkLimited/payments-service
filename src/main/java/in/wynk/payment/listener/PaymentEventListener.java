@@ -838,6 +838,7 @@ public class PaymentEventListener {
 
     @ClientAware(clientAlias = "#event.clientAlias")
     @EventListener(UnScheduleRecurringPaymentEvent.class)
+    @AnalyseTransaction(name = "UnscheduleRecurringPaymentEvent")
     private void unScheduleTransactionRecurring (UnScheduleRecurringPaymentEvent event) {
         AnalyticService.update(event);
         recurringPaymentManagerService.unScheduleRecurringPayment(event.getClientAlias(), event.getTransactionId(), PaymentEvent.CANCELLED);

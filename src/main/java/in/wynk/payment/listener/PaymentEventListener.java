@@ -470,10 +470,12 @@ public class PaymentEventListener {
             PurchaseRecord purchaseRecord = PurchaseRecord.from(event);
             final ClientDetails clientDetails = (ClientDetails) ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT001));
             if (taskScheduler.isTriggerExist(purchaseRecord.getGroupId(), purchaseRecord.getTaskId())) {
+                AnalyticService.update("existing TaskId", purchaseRecord.getTaskId());
                 taskScheduler.unSchedule(purchaseRecord.getGroupId(), purchaseRecord.getTaskId());
             }
             final long delayedBy = (clientDetails.<Double>getMeta(PaymentConstants.PAYMENT_DROPOUT_TRACKER_IN_SECONDS).orElse(3600D)).longValue();
             final Date taskScheduleTime = new Date(System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(delayedBy));
+            AnalyticService.update("purchaseRecord", purchaseRecord.toString());
             taskScheduler.schedule(TaskDefinition.<PurchaseRecord>builder()
                     .entity(purchaseRecord)
                     .handler(CustomerWinBackHandler.class)
@@ -766,7 +768,7 @@ public class PaymentEventListener {
                     .purchaseDetails(event.getPurchaseDetails())
                     .build());
         }
-        publishBranchEvent(event);
+      //  publishBranchEvent(event);
         if (EnumSet.of(TransactionStatus.SUCCESS, TransactionStatus.FAILURE).contains(event.getTransaction().getStatus())) {
             publishWaPaymentStatusEvent(event);
         }

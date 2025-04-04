@@ -730,6 +730,7 @@ wynk:
         paymentRenewal:
           - concurrency: 3
             enabled: true
+            isManualCommit: true
             factoryDetails:
               #autoCommitInterval: 100
               autoOffsetConfig: earliest
@@ -766,6 +767,7 @@ wynk:
         paymentRenewalCharging:
           - concurrency: 3
             enabled: true
+            isManualCommit: true
             factoryDetails:
               #autoCommitInterval: 100
               autoOffsetConfig: earliest

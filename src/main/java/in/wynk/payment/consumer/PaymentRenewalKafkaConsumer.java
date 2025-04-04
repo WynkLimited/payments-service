@@ -37,6 +37,7 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.config.KafkaListenerEndpointRegistry;
+import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
 
@@ -100,10 +101,11 @@ public class PaymentRenewalKafkaConsumer extends AbstractKafkaEventConsumer<Stri
                                                @Header(value = StreamConstant.MESSAGE_CREATION_DATETIME, required = false) String createdAt,
                                                @Header(value = StreamConstant.MESSAGE_LAST_PROCESSED_DATETIME, required = false) String lastProcessedAt,
                                                @Header(value = StreamConstant.RETRY_COUNT, required = false) String retryCount,
-                                               ConsumerRecord<String, PaymentRenewalMessage> consumerRecord) {
+                                               ConsumerRecord<String, PaymentRenewalMessage> consumerRecord, Acknowledgment acknowledgment) {
         try {
             log.debug("Kafka consume record result {} for event {}", consumerRecord, consumerRecord.value().toString());
             consume(consumerRecord.value());
+            acknowledgment.acknowledge();
         } catch (Exception e) {
             kafkaRetryHandlerService.retry(consumerRecord, lastAttemptedSequence, createdAt, lastProcessedAt, retryCount);
             if (!(e instanceof WynkRuntimeException)) {

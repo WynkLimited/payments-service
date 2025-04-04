@@ -708,12 +708,12 @@ wynk:
           - concurrency: 3
             enabled: true
             factoryDetails:
-              autoCommitInterval: 100
+              #autoCommitInterval: 100
               autoOffsetConfig: earliest
               bootstrapServers: 10.168.88.20:9092
               username: appuser
               password: uJK67dC1Ax
-              enableAutoCommit: true
+              enableAutoCommit: false
               groupId: group1
               keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
               maxPollInterval: 600000
@@ -744,12 +744,12 @@ wynk:
           - concurrency: 3
             enabled: true
             factoryDetails:
-              autoCommitInterval: 100
+              #autoCommitInterval: 100
               autoOffsetConfig: earliest
               bootstrapServers: 10.168.88.20:9092
               username: appuser
               password: uJK67dC1Ax
-              enableAutoCommit: true
+              enableAutoCommit: false
               groupId: group1
               keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
               maxPollInterval: 600000

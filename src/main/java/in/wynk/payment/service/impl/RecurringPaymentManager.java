@@ -219,8 +219,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
                     RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).findById(originalTransactionId)
                             .orElseThrow(() -> new WynkRuntimeException(PaymentErrorType.PAY010, originalTransactionId));
             if (originalTransaction.getStatus() == TransactionStatus.SUCCESS && originalTransaction.getType() == PaymentEvent.RENEW) {
-                //updatedAttemptSequence = attemptSequence + 1;
-                updatedAttemptSequence=0;
+                updatedAttemptSequence = attemptSequence + 1;
             } else {
                 if (transaction.getStatus() == TransactionStatus.INPROGRESS) {
                     renewal = Objects.nonNull(renewal) ? renewal : getRenewalById(originalTransactionId);
@@ -238,13 +237,8 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
         }
         updatedLastSuccessTransactionId = (Objects.nonNull(renewal) && StringUtils.isEmpty(updatedLastSuccessTransactionId) && StringUtils.isNotBlank(renewal.getLastSuccessTransactionId())) ? renewal.getLastSuccessTransactionId() : originalTransactionId;
         String initialTransactionId = Objects.nonNull(renewal) ? renewal.getInitialTransactionId() : fetchInitialTransactionId(transaction, paymentEvent, updatedLastSuccessTransactionId);
-        /*PaymentRenewal paymentRenewal = PaymentRenewal.builder().day(nextRecurringDateTime).transactionId(transactionId).hour(nextRecurringDateTime.getTime()).createdTimestamp(Calendar.getInstance())
-                .transactionEvent((PaymentEvent.RENEW == paymentEvent && finalTransactionStatus == TransactionStatus.FAILURE) ? PaymentEvent.DEFERRED.name() : PaymentEvent.SUBSCRIBE.name())
-                .initialTransactionId(initialTransactionId).lastSuccessTransactionId(updatedLastSuccessTransactionId)
-                .attemptSequence(updatedAttemptSequence).build();*/
-
         PaymentRenewal paymentRenewal = PaymentRenewal.builder().day(nextRecurringDateTime).transactionId(transactionId).hour(nextRecurringDateTime.getTime()).createdTimestamp(Calendar.getInstance())
-                .transactionEvent((PaymentEvent.RENEW == paymentEvent && finalTransactionStatus == TransactionStatus.FAILURE) ? PaymentEvent.CANCELLED.name() : PaymentEvent.SUBSCRIBE.name())
+                .transactionEvent((PaymentEvent.RENEW == paymentEvent && finalTransactionStatus == TransactionStatus.FAILURE) ? PaymentEvent.DEFERRED.name() : PaymentEvent.SUBSCRIBE.name())
                 .initialTransactionId(initialTransactionId).lastSuccessTransactionId(updatedLastSuccessTransactionId)
                 .attemptSequence(updatedAttemptSequence).build();
         upsert(paymentRenewal);

@@ -408,7 +408,9 @@
     <logger name="userChurnLocator" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
-
+    <logger name="shouldTriggerExecute" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
     <logger name="purchaseRequest" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>

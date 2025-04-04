@@ -3,6 +3,7 @@ package in.wynk.payment.handler;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.Transaction;
@@ -37,9 +38,14 @@ public class CustomerWinBackHandler extends TaskHandler<PurchaseRecord> {
     }
 
     @Override
+    @AnalyseTransaction(name ="shouldTriggerExecute")
     public boolean shouldTriggerExecute(PurchaseRecord task) {
         final Transaction lastTransaction = transactionManager.get(task.getTransactionId());
+        AnalyticService.update("lastTransaction",lastTransaction.getIdStr());
+        AnalyticService.update("lastTransactionStatus",lastTransaction.getStatus().toString());
+        AnalyticService.update("currentTransactionStatus",TransactionStatus.SUCCESS.toString());
         final boolean shouldTriggerExecute = lastTransaction.getStatus() != TransactionStatus.SUCCESS;
+        AnalyticService.update("shouldTriggerExecute",shouldTriggerExecute);
         if (!shouldTriggerExecute) log.info("skipping to drop msg as user has completed transaction for purchase record {}", task);
         return lastTransaction.getStatus() != TransactionStatus.SUCCESS;
     }
@@ -47,6 +53,9 @@ public class CustomerWinBackHandler extends TaskHandler<PurchaseRecord> {
     @Override
     @AnalyseTransaction(name = "userChurnLocator")
     public void execute(PurchaseRecord task) {
+        AnalyticService.update("taskID", task.getTaskId());
+        AnalyticService.update("transactionId", task.getTransactionId());
+        AnalyticService.update("uid", task.getUid());
         eventPublisher.publishEvent(task.fromSelf());
     }
 

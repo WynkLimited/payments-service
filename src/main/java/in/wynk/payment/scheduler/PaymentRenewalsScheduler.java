@@ -18,7 +18,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static in.wynk.common.enums.PaymentEvent.*;
@@ -56,9 +56,28 @@ public class PaymentRenewalsScheduler {
         List<PaymentRenewal> paymentRenewals = recurringPaymentManager.getCurrentDueRecurringPayments(clientAlias)
                 .filter(paymentRenewal -> (paymentRenewal.getTransactionEvent() == RENEW || paymentRenewal.getTransactionEvent() == SUBSCRIBE || paymentRenewal.getTransactionEvent() == DEFERRED))
                 .collect(Collectors.toList());
-        sendToRenewalQueue(paymentRenewals);
+        List<PaymentRenewal> renewals = filterbyLastSuccessTransaction(paymentRenewals);
+        sendToRenewalQueue(renewals);
         AnalyticService.update("paymentRenewalsCompleted", true);
     }
+
+    private List<PaymentRenewal> filterbyLastSuccessTransaction(List<PaymentRenewal> paymentRenewals){
+        if (paymentRenewals == null || paymentRenewals.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Set<String> duplicateTransactions = new HashSet<>();
+        List<PaymentRenewal> distinctRenewals = new ArrayList<>();
+
+        for (PaymentRenewal renewal : paymentRenewals) {
+            String lastSuccessTransactionId = renewal.getLastSuccessTransactionId();
+            if (lastSuccessTransactionId == null || duplicateTransactions.add(lastSuccessTransactionId)) {
+                distinctRenewals.add(renewal);
+            }
+        }
+        return distinctRenewals;
+
+    }
+
 
     @ClientAware(clientAlias = "#clientAlias")
     @AnalyseTransaction(name = "renewNotifications")

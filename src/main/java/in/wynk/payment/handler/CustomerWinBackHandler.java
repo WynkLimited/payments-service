@@ -9,6 +9,7 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.PurchaseRecord;
 import in.wynk.payment.service.ITransactionManagerService;
+import in.wynk.scheduler.common.constant.SchedulerLoggingMarker;
 import in.wynk.scheduler.task.dto.TaskHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -40,6 +41,7 @@ public class CustomerWinBackHandler extends TaskHandler<PurchaseRecord> {
     @Override
     @AnalyseTransaction(name ="shouldTriggerExecute")
     public boolean shouldTriggerExecute(PurchaseRecord task) {
+        log.info("shouldTriggerExecute for taskID {} having transactionID {}", task.getTaskId(), task.getTransactionId());
         final Transaction lastTransaction = transactionManager.get(task.getTransactionId());
         AnalyticService.update("lastTransaction",lastTransaction.getIdStr());
         AnalyticService.update("lastTransactionStatus",lastTransaction.getStatus().toString());
@@ -53,10 +55,16 @@ public class CustomerWinBackHandler extends TaskHandler<PurchaseRecord> {
     @Override
     @AnalyseTransaction(name = "userChurnLocator")
     public void execute(PurchaseRecord task) {
-        AnalyticService.update("taskID", task.getTaskId());
-        AnalyticService.update("transactionId", task.getTransactionId());
-        AnalyticService.update("uid", task.getUid());
-        eventPublisher.publishEvent(task.fromSelf());
+        try {
+            log.info("inside execute method of userChurnLocator");
+            AnalyticService.update("taskID", task.getTaskId());
+            AnalyticService.update("transactionId", task.getTransactionId());
+            AnalyticService.update("uid", task.getUid());
+            eventPublisher.publishEvent(task.fromSelf());
+        } catch (Exception e) {
+            log.error(SchedulerLoggingMarker.SCHEDULER_JOB_EXECUTION_ERROR, "task {} is not able to execute having uid {}", task, task.getUid(), e);
+            throw e;
+        }
     }
 
 }

@@ -41,7 +41,7 @@ public class CustomerWinBackHandler extends TaskHandler<PurchaseRecord> {
     @Override
     @AnalyseTransaction(name ="shouldTriggerExecute")
     public boolean shouldTriggerExecute(PurchaseRecord task) {
-        log.info("shouldTriggerExecute for taskID {} having transactionID {}", task.getTaskId(), task.getTransactionId());
+        log.info("QUARTS_DEBUG : shouldTriggerExecute for taskID {} having transactionID {}", task.getTaskId(), task.getTransactionId());
         final Transaction lastTransaction = transactionManager.get(task.getTransactionId());
         AnalyticService.update("lastTransaction",lastTransaction.getIdStr());
         AnalyticService.update("lastTransactionStatus",lastTransaction.getStatus().toString());
@@ -56,7 +56,7 @@ public class CustomerWinBackHandler extends TaskHandler<PurchaseRecord> {
     @AnalyseTransaction(name = "userChurnLocator")
     public void execute(PurchaseRecord task) {
         try {
-            log.info("inside execute method of userChurnLocator");
+            log.info("QUARTS_DEBUG : inside execute method of userChurnLocator");
             AnalyticService.update("taskID", task.getTaskId());
             AnalyticService.update("transactionId", task.getTransactionId());
             AnalyticService.update("uid", task.getUid());

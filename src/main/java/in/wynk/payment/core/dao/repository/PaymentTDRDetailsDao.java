@@ -27,7 +27,7 @@ public interface PaymentTDRDetailsDao extends JpaRepository<PaymentTDRDetails, S
             "WHERE t.is_processed = 0 " +
             "AND t.execution_time <= :currentTimestamp " +
             "ORDER BY t.execution_time ASC " +
-            "LIMIT 1",
+            "LIMIT 1 FOR UPDATE SKIP LOCKED",
             nativeQuery = true)
     @Transactional(propagation = Propagation.REQUIRES_NEW, timeout = 60)
     Optional<PaymentTDRDetails> findFirstEligibleTransaction(@Param("currentTimestamp") Date currentTimestamp);

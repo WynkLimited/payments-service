@@ -49,4 +49,17 @@ CREATE TABLE IF NOT EXISTS `transaction` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 
+CREATE TABLE IF NOT EXISTS `tdr_details` (
+  `transaction_id` varchar(255) NOT NULL,
+  `plan_id` int(11) DEFAULT NULL,
+  `uid` varchar(255) DEFAULT NULL,
+  `reference_id` varchar(255) DEFAULT NULL,
+  `tdr` double DEFAULT NULL,
+  `is_processed` tinyint(1) NOT NULL DEFAULT 0,
+  `execution_time` timestamp NOT NULL,
+  `created_timestamp` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_timestamp` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`transaction_id`),
+  INDEX `tdr_query_idx` (`is_processed`, `execution_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 

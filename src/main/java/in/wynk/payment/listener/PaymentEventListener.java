@@ -25,6 +25,7 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.*;
+import in.wynk.payment.core.dao.repository.PaymentTDRDetailsDao;
 import in.wynk.payment.core.event.*;
 import in.wynk.payment.core.service.InvoiceDetailsCachingService;
 import in.wynk.payment.dto.*;
@@ -63,12 +64,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.quartz.SimpleScheduleBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -112,6 +115,9 @@ public class PaymentEventListener {
     private final IKafkaEventPublisher<String, GenerateItemKafkaMessage> itemKafkaPublisher;
 
     public static Map<String, String> map = Collections.singletonMap(AIRTEL_TV, AIRTEL_XSTREAM);
+    @Autowired
+    @Qualifier("paymentTdrDetailsDao")
+    private PaymentTDRDetailsDao paymentTDRDetailsDao;
 
     @Value("${event.stream.dp}")
     private String dpStream;
@@ -666,6 +672,7 @@ public class PaymentEventListener {
         AnalyticService.update(AMOUNT_PAID, event.getTransaction().getAmount());
         AnalyticService.update(CLIENT, event.getTransaction().getClientAlias());
         AnalyticService.update(COUPON_CODE, event.getTransaction().getCoupon());
+        String referenceTransactionId = event.getTransaction().getIdStr();
         if (Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getGeoLocation())) {
             AnalyticService.update(ACCESS_COUNTRY_CODE, event.getPurchaseDetails().getGeoLocation().getAccessCountryCode());
             AnalyticService.update(STATE_CODE, event.getPurchaseDetails().getGeoLocation().getStateCode());
@@ -673,7 +680,7 @@ public class PaymentEventListener {
         }
         if (EnumSet.of(PaymentEvent.SUBSCRIBE, PaymentEvent.RENEW).contains(event.getTransaction().getType()) && !IAP_PAYMENT_METHODS.contains(event.getTransaction().getPaymentChannel().name())) {
             AnalyticService.update(MANDATE_AMOUNT, event.getTransaction().getMandateAmount());
-            String referenceTransactionId = event.getTransaction().getIdStr();
+            //String referenceTransactionId = event.getTransaction().getIdStr();
             int renewalAttemptSequence = 0;
             if (PaymentEvent.RENEW == event.getTransaction().getType()) {
                 PaymentRenewal renewal = recurringPaymentManagerService.getRenewalById(event.getTransaction().getIdStr());
@@ -716,10 +723,14 @@ public class PaymentEventListener {
         AnalyticService.update(TRANSACTION_STATUS, event.getTransaction().getStatus().getValue());
         AnalyticService.update(PAYMENT_METHOD, event.getTransaction().getPaymentChannel().getCode());
         if (event.getTransaction().getStatus() == TransactionStatus.SUCCESS) {
-            final BaseTDRResponse tdr = paymentGatewayManager.getTDR(event.getTransaction().getIdStr());
+            delayFetchTDRDetails(PaymentTDRDetailsDto.builder().planId(event.getTransaction().getPlanId())
+                    .uid(event.getTransaction().getUid()).transactionId(event.getTransaction().getIdStr())
+                    .referenceId(referenceTransactionId).build());
+
+            /*final BaseTDRResponse tdr = paymentGatewayManager.getTDR(event.getTransaction().getIdStr());
             if ((tdr.getTdr() != -1) && (tdr.getTdr() != -2)) {
                 AnalyticService.update(TDR, tdr.getTdr());
-            }
+            }*/
             MerchantTransaction merchantTransaction=  merchantTransactionService.getMerchantTransaction(event.getTransaction().getIdStr());
             if (merchantTransaction != null && merchantTransaction.getExternalTransactionId() != null) {
                 AnalyticService.update(PAYUID, merchantTransaction.getExternalTransactionId());
@@ -886,6 +897,38 @@ public class PaymentEventListener {
 
         } catch (Exception e) {
             log.error("error occurred while trying to build BranchRawDataEvent from payment Service", e);
+        }
+    }
+
+    private void delayFetchTDRDetails(PaymentTDRDetailsDto paymentTDRDetailsDto) {
+        try {
+            Calendar delayedTime = Calendar.getInstance();
+            delayedTime.add(Calendar.MINUTE, 10);
+
+            PaymentTDRDetails tdrDetails = PaymentTDRDetails.builder()
+                    .planId(paymentTDRDetailsDto.getPlanId())
+                    .uid(paymentTDRDetailsDto.getUid())
+                    .transactionId(paymentTDRDetailsDto.getTransactionId())
+                    .referenceId(paymentTDRDetailsDto.getReferenceId())
+                    .executionTime(delayedTime.getTime())
+                    .createdTimestamp(Calendar.getInstance())
+                    .isProcessed(Boolean.FALSE)
+                    .build();
+            AnalyticService.update(TDR_TRANSACTION_DETAIL,tdrDetails.toString());
+            paymentTDRDetailsDao.save(tdrDetails);
+
+        } catch (NullPointerException | IllegalArgumentException e) {
+            log.error(PaymentLoggingMarker.TDR_BUILD_ERROR,
+                    "Failed to build TDR details object",
+                    e);
+        } catch (DataAccessException e) {
+            log.error(PaymentLoggingMarker.TDR_TABLE_SAVE_QUERY_ERROR,
+                    "Failed to save delayed TDR details",
+                    e);
+        } catch (Exception e) {
+            log.error(PaymentLoggingMarker.TDR_DELAY_ERROR,
+                    "Unexpected error while delaying TDR processing for transaction",
+                    e);
         }
     }
 }

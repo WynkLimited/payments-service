@@ -482,7 +482,7 @@ public class PaymentEventListener {
                     .triggerConfiguration(TaskDefinition.TriggerConfiguration.builder()
                             .durable(false)
                             .startAt(taskScheduleTime)
-                            .scheduleBuilder(SimpleScheduleBuilder.simpleSchedule().withRepeatCount(0).withIntervalInSeconds(0))
+                            .scheduleBuilder(SimpleScheduleBuilder.simpleSchedule().withRepeatCount(0).withIntervalInSeconds(0).withMisfireHandlingInstructionFireNow())
                             .build())
                     .build());
         } catch (Exception e) {

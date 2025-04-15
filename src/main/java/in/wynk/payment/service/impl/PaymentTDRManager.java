@@ -42,7 +42,7 @@ public class PaymentTDRManager implements IPaymentTDRManager {
         try {
             MDC.put(REQUEST_ID, requestId);
             AnalyticService.update(REQUEST_ID, requestId);
-            int batchSize = 50;
+            int batchSize = 200;
             int processedCount = 0;
 
             while (processedCount < batchSize) {

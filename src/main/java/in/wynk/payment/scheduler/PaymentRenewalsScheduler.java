@@ -91,9 +91,10 @@ public class PaymentRenewalsScheduler {
                 .filter(paymentRenewal -> checkPreDebitEligibility(paymentRenewal.getTransactionId()) &&
                         (paymentRenewal.getTransactionEvent() == RENEW || paymentRenewal.getTransactionEvent() == SUBSCRIBE || paymentRenewal.getTransactionEvent() == DEFERRED))
                 .collect(Collectors.toList());
-        AnalyticService.update("transactionsPickedSize", paymentRenewals.size());
+        List<PaymentRenewal> renewals = filterbyLastSuccessTransaction(paymentRenewals);
+        AnalyticService.update("transactionsPickedSize", renewals.size());
         ;
-        paymentRenewals.forEach(paymentRenewal -> publishPreDebitNotificationMessage(
+        renewals.forEach(paymentRenewal -> publishPreDebitNotificationMessage(
                 PreDebitNotificationMessageManager.builder().clientAlias(clientAlias).transactionId(paymentRenewal.getTransactionId()).build()));
         AnalyticService.update("renewNotificationsCompleted", true);
     }

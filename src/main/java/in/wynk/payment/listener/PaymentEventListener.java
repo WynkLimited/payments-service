@@ -721,7 +721,7 @@ public class PaymentEventListener {
         AnalyticService.update(TRANSACTION_STATUS, event.getTransaction().getStatus().getValue());
         AnalyticService.update(PAYMENT_METHOD, event.getTransaction().getPaymentChannel().getCode());
         if (event.getTransaction().getStatus() == TransactionStatus.SUCCESS) {
-            delayfetchTDRDetails(PaymentTDRDetailsDto.builder().planId(event.getTransaction().getPlanId())
+            delayFetchTDRDetails(PaymentTDRDetailsDto.builder().planId(event.getTransaction().getPlanId())
                     .uid(event.getTransaction().getUid()).transactionId(event.getTransaction().getIdStr())
                     .referenceId(referenceTransactionId).build());
 
@@ -847,7 +847,7 @@ public class PaymentEventListener {
 
     @ClientAware(clientAlias = "#event.clientAlias")
     @EventListener(UnScheduleRecurringPaymentEvent.class)
-    @AnalyseTransaction(name = "UnscheduleRecurringPaymentEvent")
+    @AnalyseTransaction(name = "UnScheduleRecurringPaymentEvent")
     private void unScheduleTransactionRecurring (UnScheduleRecurringPaymentEvent event) {
         AnalyticService.update(event);
         recurringPaymentManagerService.unScheduleRecurringPayment(event.getClientAlias(), event.getTransactionId(), PaymentEvent.CANCELLED);
@@ -899,7 +899,7 @@ public class PaymentEventListener {
         }
     }
 
-    public void delayfetchTDRDetails(PaymentTDRDetailsDto paymentTDRDetailsDto) {
+    private void delayFetchTDRDetails(PaymentTDRDetailsDto paymentTDRDetailsDto) {
         try {
             Calendar delayedTime = Calendar.getInstance();
             delayedTime.add(Calendar.MINUTE, 10);

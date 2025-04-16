@@ -739,13 +739,14 @@ wynk:
         preDebitNotification:
           - concurrency: 3
             enabled: true
+            manualCommit: true
             factoryDetails:
-              autoCommitInterval: 100
+              #autoCommitInterval: 100
               autoOffsetConfig: earliest
               bootstrapServers: 10.160.88.23:9092,10.160.88.24:9092,10.160.88.25:9092
               username: appuser
               password: uJK67dC1Ax
-              enableAutoCommit: true
+              enableAutoCommit: false
               groupId: group1
               keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
               maxPollInterval: 600000

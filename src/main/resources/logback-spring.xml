@@ -35,7 +35,6 @@
         <includeCallerData>true</includeCallerData>
     </appender>
 
-
     <appender name="FILE"
               class="ch.qos.logback.core.rolling.RollingFileAppender">
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
@@ -56,8 +55,6 @@
         <neverBlock>true</neverBlock>
         <includeCallerData>true</includeCallerData>
     </appender>
-
-
 
     <!-- logstashLogs -->
     <appender name="ANALYTIC_LOG_FILE"
@@ -81,7 +78,7 @@
         <includeCallerData>true</includeCallerData>
     </appender>
 
-    <!--    Payment Logger-->
+    <!-- Payment Logger -->
     <logger name="paymentCharging" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
@@ -197,7 +194,7 @@
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
 
-    <!--    Wallet Logger-->
+    <!-- Wallet Logger -->
     <logger name="walletLink" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
@@ -271,7 +268,7 @@
     </logger>
 
     <logger name="iapSubscriptionCancellation" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG"/>
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
 
     <logger name="applyCoupon" additivity="false" level="INFO">
@@ -312,6 +309,10 @@
     <logger name="fetchTdrAfterDelay" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
+    <logger name="fetchTdrAfterDelayInternal" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+
     <logger name="processTransactionForTDR" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
@@ -361,7 +362,7 @@
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
 
-    <!--    wynk service module loggers-->
+    <!-- wynk service module loggers -->
     <logger name="refreshInMemoryCacheWynkService" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
@@ -383,7 +384,6 @@
     <logger name="userChurnLocator" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
-
     <logger name="paymentReconciliationThresholdExceedEvent" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
@@ -408,9 +408,7 @@
     <logger name="userChurnLocator" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
-    <logger name="shouldTriggerExecute" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
-    </logger>
+
     <logger name="purchaseRequest" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
@@ -450,19 +448,6 @@
     <logger name="handleCallback" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
-
-    <logger name="UnscheduleRecurringPaymentEvent" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
-    </logger>
-
-    <logger name="ATBChargingScheduler" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
-    </logger>
-
-    <logger name="ATBCharging" additivity="false" level="INFO">
-        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
-    </logger>
-
 
     <logger name="ATBChargingScheduler" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>

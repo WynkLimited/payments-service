@@ -79,12 +79,13 @@ public class PaymentRenewalKafkaConsumer extends AbstractKafkaEventConsumer<Stri
         try {
             log.debug("Kafka consume record result {} for event {}", consumerRecord, consumerRecord.value().toString());
             consume(consumerRecord.value());
-            acknowledgment.acknowledge();
         } catch (Exception e) {
             kafkaRetryHandlerService.retry(consumerRecord, lastAttemptedSequence, createdAt, lastProcessedAt, retryCount);
             if (!(e instanceof WynkRuntimeException)) {
                 log.error(StreamMarker.KAFKA_POLLING_CONSUMPTION_ERROR, "Something went wrong while processing message {} for kafka consumer : {}", consumerRecord.value(), ", PaymentRenewalMessage - ", e);
             }
+        }finally {
+            acknowledgment.acknowledge();
         }
     }
 

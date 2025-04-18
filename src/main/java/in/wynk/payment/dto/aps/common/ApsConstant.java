@@ -24,4 +24,5 @@ public interface ApsConstant extends PaymentConstants {
     String PAY_DIGI = "paydigi";
     String INT_PAY = "intpay";
     String APS_RECHARGE_REDIRECTION_URL = "https://www.airtel.in/pay/status?omv=v2";
+    String MANDATE_STATUS = "mandateStatus";
 }

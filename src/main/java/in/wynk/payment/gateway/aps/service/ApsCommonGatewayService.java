@@ -239,10 +239,26 @@ public class ApsCommonGatewayService {
     private void syncTransactionWithSourceResponse (ApsChargeStatusResponse apsChargeStatusResponse) {
         TransactionStatus finalTransactionStatus = TransactionStatus.UNKNOWN;
         final Transaction transaction = TransactionContext.get();
+        // mocking mandateStatus as CREATED for testing WCF-5248
+         apsChargeStatusResponse.setMandateStatus(SiRegistrationStatus.CREATED);
+         log.info("mocking mandate status for testing. Modified MandateStatus : {} ", apsChargeStatusResponse.getMandateStatus());
         if ((!apsChargeStatusResponse.getLob().equals(LOB.AUTO_PAY_REGISTER_WYNK.toString()) && "PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) || (apsChargeStatusResponse.getLob().equals(LOB.AUTO_PAY_REGISTER_WYNK.toString()) && ("PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) && SiRegistrationStatus.ACTIVE == apsChargeStatusResponse.getMandateStatus())) {
             finalTransactionStatus = TransactionStatus.SUCCESS;
             evict(transaction.getMsisdn());
-        } else if ((apsChargeStatusResponse.getLob().equals(LOB.AUTO_PAY_REGISTER_WYNK.toString()) && SiRegistrationStatus.ACTIVE != apsChargeStatusResponse.getMandateStatus() && "PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) || ("PAYMENT_FAILED".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) || ("PG_FAILED".equalsIgnoreCase(apsChargeStatusResponse.getPgStatus()))) {
+        } else if (EnumSet.of(PaymentEvent.SUBSCRIBE).contains(transaction.getType())
+                && apsChargeStatusResponse.getLob().equals(LOB.AUTO_PAY_REGISTER_WYNK.toString())
+                && SiRegistrationStatus.CREATED == apsChargeStatusResponse.getMandateStatus()
+                && "PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) {
+            AnalyticService.update(ApsConstant.MANDATE_STATUS, apsChargeStatusResponse.getMandateStatus().toString());
+
+            log.info("Transaction {} was initiated with AUTO_PAY but getting mandate_status as {}. Converting transaction type from SUBSCRIBE to PURCHASE to provide one-time access while preventing automatic renewals.",
+                    transaction.getIdStr(),
+                    apsChargeStatusResponse.getMandateStatus());
+
+            transaction.setType(PaymentEvent.PURCHASE.getValue());
+            transaction.setMandateAmount(-1);
+            finalTransactionStatus = TransactionStatus.SUCCESS;
+        } else if ((apsChargeStatusResponse.getLob().equals(LOB.AUTO_PAY_REGISTER_WYNK.toString()) && SiRegistrationStatus.ACTIVE != apsChargeStatusResponse.getMandateStatus() && SiRegistrationStatus.CREATED != apsChargeStatusResponse.getMandateStatus() && "PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) || ("PAYMENT_FAILED".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) || ("PG_FAILED".equalsIgnoreCase(apsChargeStatusResponse.getPgStatus()))) {
             if ("PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) {
                 eventPublisher.publishEvent(PaymentRefundInitEvent.builder()
                         .reason("mandate status was not active")

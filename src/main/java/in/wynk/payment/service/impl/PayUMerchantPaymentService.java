@@ -339,11 +339,16 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                  * */
                 if (EnumSet.of(PaymentEvent.SUBSCRIBE).contains(transaction.getType()) && PayUChargingTransactionDetails.class.isAssignableFrom(transactionDetails.getClass())) {
                     final PayUChargingTransactionDetails chargingDetails = (PayUChargingTransactionDetails) transactionDetails;
+                    // mocking paymentSource as payuPureS2S for testing WCF-5460
+                    chargingDetails.setPaymentSource("payuPureS2S");
+                    log.info("mocking paymentSource for testing. Modified paymentSource : {} ", chargingDetails.getPaymentSource());
                     if (!PAYU_PAYMENT_SOURCE_SIST.equalsIgnoreCase(chargingDetails.getPaymentSource())) {
                         transaction.setType(PaymentEvent.PURCHASE.getValue());
                         transaction.setMandateAmount(-1);
                         AnalyticService.update(PAYU_PAYMENT_SOURCE_SIST, chargingDetails.getPaymentSource());
-                        log.warn(PAYU_CHARGING_STATUS_VERIFICATION, "transaction was initiated with auto-pay but si is not captured.");
+                        log.info("Transaction {} was initiated with AUTO_PAY but getting payment_source as {} which is not sist(Subscription Transaction). Converting transaction type from SUBSCRIBE to PURCHASE to provide one-time access while preventing automatic renewals.",
+                                transaction.getIdStr(),
+                                chargingDetails.getPaymentSource());
                     }
                 }
                 finalTransactionStatus = TransactionStatus.SUCCESS;

@@ -5,10 +5,7 @@ import in.wynk.payment.constant.UpiConstants;
 import in.wynk.payment.dto.aps.common.RefundInfo;
 import in.wynk.payment.dto.aps.common.SiRegistrationStatus;
 import in.wynk.payment.dto.aps.request.callback.ApsCallBackRequestPayload;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
@@ -19,6 +16,7 @@ import java.util.Objects;
 import static in.wynk.payment.dto.aps.common.ApsConstant.DEFAULT_CIRCLE_ID;
 
 @Getter
+@Setter
 @SuperBuilder
 @ToString
 @JsonInclude(JsonInclude.Include.NON_NULL)

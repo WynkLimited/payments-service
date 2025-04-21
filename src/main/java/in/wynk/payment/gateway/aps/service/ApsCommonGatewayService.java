@@ -239,9 +239,6 @@ public class ApsCommonGatewayService {
     private void syncTransactionWithSourceResponse (ApsChargeStatusResponse apsChargeStatusResponse) {
         TransactionStatus finalTransactionStatus = TransactionStatus.UNKNOWN;
         final Transaction transaction = TransactionContext.get();
-        // mocking mandateStatus as CREATED for testing WCF-5248
-         apsChargeStatusResponse.setMandateStatus(SiRegistrationStatus.CREATED);
-         log.info("mocking mandate status for testing. Modified MandateStatus : {} ", apsChargeStatusResponse.getMandateStatus());
         if ((!apsChargeStatusResponse.getLob().equals(LOB.AUTO_PAY_REGISTER_WYNK.toString()) && "PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) || (apsChargeStatusResponse.getLob().equals(LOB.AUTO_PAY_REGISTER_WYNK.toString()) && ("PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) && SiRegistrationStatus.ACTIVE == apsChargeStatusResponse.getMandateStatus())) {
             finalTransactionStatus = TransactionStatus.SUCCESS;
             evict(transaction.getMsisdn());

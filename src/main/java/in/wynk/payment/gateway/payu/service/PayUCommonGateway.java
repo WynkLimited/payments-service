@@ -233,9 +233,6 @@ public class PayUCommonGateway {
             if (SUCCESS.equalsIgnoreCase(transactionDetails.getStatus())) {
                 if (EnumSet.of(PaymentEvent.SUBSCRIBE).contains(transaction.getType()) && PayUChargingTransactionDetails.class.isAssignableFrom(transactionDetails.getClass())) {
                     final PayUChargingTransactionDetails chargingDetails = (PayUChargingTransactionDetails) transactionDetails;
-                    // mocking paymentSource as payuPureS2S for testing WCF-5460
-                    chargingDetails.setPaymentSource("payuPureS2S");
-                    log.info("mocking paymentSource for testing. Modified paymentSource : {} ", chargingDetails.getPaymentSource());
                     if (!PAYU_PAYMENT_SOURCE_SIST.equalsIgnoreCase(chargingDetails.getPaymentSource())) {
                         transaction.setType(PaymentEvent.PURCHASE.getValue());
                         transaction.setMandateAmount(-1);

@@ -16,7 +16,6 @@ import java.util.Objects;
 import static in.wynk.payment.dto.aps.common.ApsConstant.DEFAULT_CIRCLE_ID;
 
 @Getter
-@Setter
 @SuperBuilder
 @ToString
 @JsonInclude(JsonInclude.Include.NON_NULL)

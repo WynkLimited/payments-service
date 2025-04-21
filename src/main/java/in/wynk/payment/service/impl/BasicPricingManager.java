@@ -61,6 +61,7 @@ public class BasicPricingManager implements IPricingManager {
                     return;
                 } else if (nativeRequest.isAutoRenewOpted()) {
                     nativeRequest.setEvent(PaymentEvent.SUBSCRIBE);
+                    nativeRequest.setAmount(selectedPlan.getFinalPrice());
                 }
                 if (nativeRequest.isTrialOpted()) {
                     nativeRequest.setMandateAmount(selectedPlan.getMandateAmount());
@@ -68,8 +69,11 @@ public class BasicPricingManager implements IPricingManager {
                     nativeRequest.setEvent(PaymentEvent.TRIAL_SUBSCRIPTION);
                     return;
                 }
+            } else if(nativeRequest.getEvent() == PaymentEvent.RENEW ){
+                nativeRequest.setAmount(selectedPlan.getRenewalAmount());
+            } else {
+                nativeRequest.setAmount(selectedPlan.getFinalPrice());
             }
-            nativeRequest.setAmount(selectedPlan.getFinalPrice());
             if (Arrays.asList(PaymentConstants.ITUNES, PaymentConstants.AMAZON_IAP, PaymentConstants.GOOGLE_IAP).contains(request.getPaymentGateway().getId())) couponManager.applyCoupon(nativeRequest.getUid(), nativeRequest.getCouponId());
             if (selectedPlan.getPlanType() == PlanType.FREE_TRIAL) return;
         } else {

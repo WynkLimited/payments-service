@@ -348,6 +348,7 @@ public class PaymentGatewayManager
     @TransactionAware(txnId = "#transactionId", lock = false)
     public BaseTDRResponse getTDR(String transactionId) {
         final Transaction transaction = TransactionContext.get();
+        log.info("transaction in getTDR : {}, complete Transaction : {}",transaction.getIdStr(), transaction);
         return BeanLocatorFactory.getBeanOrDefault(transaction.getPaymentChannel().getCode(), IMerchantTDRService.class, nope -> BaseTDRResponse.from(Double.valueOf(-1))).getTDR(transactionId);
     }
 

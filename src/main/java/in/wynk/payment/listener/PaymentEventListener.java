@@ -902,7 +902,7 @@ public class PaymentEventListener {
     private void delayFetchTDRDetails(PaymentTDRDetailsDto paymentTDRDetailsDto) {
         try {
             Calendar delayedTime = Calendar.getInstance();
-            delayedTime.add(Calendar.MINUTE, 10);
+            delayedTime.add(Calendar.MINUTE, 2);
 
             PaymentTDRDetails tdrDetails = PaymentTDRDetails.builder()
                     .planId(paymentTDRDetailsDto.getPlanId())

@@ -53,7 +53,6 @@ public class BasicPricingManager implements IPricingManager {
             if (Objects.nonNull(nativeRequest.getUserDetails()) && Objects.nonNull(nativeRequest.getAppDetails()) && Objects.nonNull(nativeRequest.getGeoDetails()))
                 selectedPlan = subscriptionManager.getUserPersonalisedPlanOrDefault(UserPersonalisedPlanRequest.builder().userDetails(((UserDetails) nativeRequest.getUserDetails()).toUserDetails(request.getUid())).appDetails(((AppDetails) nativeRequest.getAppDetails()).toAppDetails()).geoDetails((GeoLocation) nativeRequest.getGeoDetails()).planId(nativeRequest.getPlanId()).build(), selectedPlan);
             if (nativeRequest.isAutoRenewOpted() || nativeRequest.isMandate()) nativeRequest.setMandateAmount(selectedPlan.getMandateAmount());
-            if (nativeRequest.getEvent() != PaymentEvent.RENEW) {
                 if (nativeRequest.isMandate()) {
                     nativeRequest.setMandateAmount(selectedPlan.getMandateAmount());
                     nativeRequest.setEvent(PaymentEvent.MANDATE);
@@ -69,7 +68,7 @@ public class BasicPricingManager implements IPricingManager {
                     nativeRequest.setEvent(PaymentEvent.TRIAL_SUBSCRIPTION);
                     return;
                 }
-            } else if(nativeRequest.getEvent() == PaymentEvent.RENEW ){
+          if(nativeRequest.getEvent() == PaymentEvent.RENEW ){
                 nativeRequest.setAmount(selectedPlan.getRenewalAmount());
             } else {
                 nativeRequest.setAmount(selectedPlan.getFinalPrice());

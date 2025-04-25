@@ -80,7 +80,7 @@ public class PaymentTDRManager implements IPaymentTDRManager {
     @AnalyseTransaction(name = "publishTdrTransaction")
     private void publishTdrTransaction(String transactionId, TdrProcessingMessage tdrProcessingMessage, Map<String, String> messageHeaders) {
         try {
-            AnalyticService.update(tdrProcessingMessage);
+            AnalyticService.update("tdrProcessingMessage", tdrProcessingMessage.toString());
             kafkaPublisherService.publishKafkaMessage(transactionId, tdrProcessingMessage, messageHeaders);
             log.info("Kafka message published for transaction {}", transactionId);
         } catch (Exception e) {
@@ -99,12 +99,12 @@ public class PaymentTDRManager implements IPaymentTDRManager {
 
             BaseTDRResponse tdr = paymentGatewayManager.getTDR(transaction.getTransactionId());
             if ((tdr.getTdr() != -1) && (tdr.getTdr() != -2)) {
-                AnalyticService.update(TDR, tdr.getTdr());
                 transaction.setTdr(tdr.getTdr());
             } else {
                 log.warn(PaymentLoggingMarker.TDR_PROCESSING_WARNING,
                         "Invalid TDR value received for transaction {}: TDR={}", transaction.getTransactionId(), tdr.getTdr());
             }
+            AnalyticService.update(TDR, tdr.getTdr());
             transaction.setStatus(PaymentConstants.COMPLETED);
             transaction.setUpdatedTimestamp(Calendar.getInstance());
             paymentTDRDetailsRepository.save(transaction);

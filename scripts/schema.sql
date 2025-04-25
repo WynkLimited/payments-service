@@ -63,3 +63,19 @@ CREATE TABLE IF NOT EXISTS `tdr_details` (
   INDEX `tdr_query_idx` (`is_processed`, `execution_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+-- ALTER TABLE `tdr_details`
+-- ADD COLUMN `status` VARCHAR(50) DEFAULT 'PENDING';
+--
+-- UPDATE `tdr_details`
+-- SET `status` = CASE
+--   WHEN `is_processed` = 0 THEN 'PENDING'
+--   WHEN `is_processed` = 1 THEN 'COMPLETED'
+-- END;
+--
+-- ALTER TABLE `tdr_details`
+-- ADD INDEX `status_execution_idx` (`status`, `execution_time`);
+--
+-- ALTER TABLE `tdr_details`
+-- DROP COLUMN `is_processed`,
+-- DROP INDEX `tdr_query_idx`;
+

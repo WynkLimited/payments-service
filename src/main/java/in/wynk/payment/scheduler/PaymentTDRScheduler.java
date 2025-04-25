@@ -27,6 +27,6 @@ public class PaymentTDRScheduler {
         AnalyticService.update("clientAlias", clientAlias);
         AnalyticService.update("class", this.getClass().getSimpleName());
         AnalyticService.update("fetchTDRWithDelayInit", true);
-        paymentTDRManager.fetchTDR(requestId);
+        paymentTDRManager.fetchTDR(requestId,clientAlias);
     }
 }

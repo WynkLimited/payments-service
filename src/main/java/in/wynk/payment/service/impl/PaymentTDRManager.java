@@ -54,8 +54,6 @@ public class PaymentTDRManager implements IPaymentTDRManager {
                 log.info("No eligible TDR transactions found for processing.");
                 return;
             }
-            Map<String, String> messageHeaders = new HashMap<>();
-            messageHeaders.put(StreamConstant.RETRY_COUNT, "0");
 
             for (PaymentTDRDetails txn : paymentTDRDetailsList) {
                 txn.setStatus(PaymentConstants.INPROGRESS);
@@ -65,7 +63,7 @@ public class PaymentTDRManager implements IPaymentTDRManager {
                         .clientAlias(clientAlias)
                         .paymentTDRDetails(txn)
                         .build();
-                publishTdrTransaction(txn.getTransactionId(), message, messageHeaders);
+                publishTdrTransaction(txn.getTransactionId(), message);
                 paymentTDRDetailsRepository.save(txn);
             }
             AnalyticService.update("publishTdrTransactionsCompleted", true);
@@ -78,7 +76,7 @@ public class PaymentTDRManager implements IPaymentTDRManager {
     }
 
     @AnalyseTransaction(name = "publishTdrTransaction")
-    private void publishTdrTransaction(String transactionId, TdrProcessingMessage tdrProcessingMessage, Map<String, String> messageHeaders) {
+    private void publishTdrTransaction(String transactionId, TdrProcessingMessage tdrProcessingMessage) {
         try {
             AnalyticService.update("tdrProcessingMessage", tdrProcessingMessage.toString());
             kafkaPublisherService.publishKafkaMessage(tdrProcessingMessage);

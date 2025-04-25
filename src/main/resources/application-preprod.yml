@@ -761,6 +761,24 @@ wynk:
               topic: wcf_preprod.payment_renewal_charging
               valueDeserializer: in.wynk.payment.consumer.deserializer.PaymentRenewalChargingKafkaDeserializer
             name: PAYMENT_RENEWAL_CHARGING_BEAN
+        tdrProcessing:
+          - concurrency: 4
+            enabled: true
+            factoryDetails:
+              autoCommitInterval: 100
+              autoOffsetConfig: earliest
+              bootstrapServers: 10.168.88.20:9092
+              username: appuser
+              password: uJK67dC1Ax
+              enableAutoCommit: true
+              groupId: group1
+              keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
+              maxPollInterval: 300000
+              maxPollRecords: 100
+              sessionTimeout: 30000
+              topic: wcf_preprod.payment_tdr_processing
+              valueDeserializer: in.wynk.payment.consumer.deserializer.TdrProcessingKafkaDeserializer
+            name: PAYMENT_TDR_PROCESSING_BEAN
         paymentRecurringScheduling:
           - concurrency: 3
             enabled: true

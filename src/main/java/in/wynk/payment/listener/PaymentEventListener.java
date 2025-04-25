@@ -913,7 +913,7 @@ public class PaymentEventListener {
                     .referenceId(paymentTDRDetailsDto.getReferenceId())
                     .executionTime(delayedTime.getTime())
                     .createdTimestamp(Calendar.getInstance())
-                    .isProcessed(Boolean.FALSE)
+                    .status(PENDING)
                     .build();
             AnalyticService.update(TDR_TRANSACTION_DETAIL,tdrDetails.toString());
             paymentTDRDetailsDao.save(tdrDetails);

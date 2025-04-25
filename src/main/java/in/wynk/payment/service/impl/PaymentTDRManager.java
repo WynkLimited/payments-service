@@ -54,8 +54,6 @@ public class PaymentTDRManager implements IPaymentTDRManager {
                 log.info("No eligible TDR transactions found for processing.");
                 return;
             }
-            Map<String, String> messageHeaders = new HashMap<>();
-            messageHeaders.put(StreamConstant.RETRY_COUNT, "0");
 
             for (PaymentTDRDetails txn : paymentTDRDetailsList) {
                 txn.setStatus(PaymentConstants.INPROGRESS);
@@ -65,7 +63,7 @@ public class PaymentTDRManager implements IPaymentTDRManager {
                         .clientAlias(clientAlias)
                         .paymentTDRDetails(txn)
                         .build();
-                publishTdrTransaction(txn.getTransactionId(), message, messageHeaders);
+                publishTdrTransaction(txn.getTransactionId(), message);
                 paymentTDRDetailsRepository.save(txn);
             }
             AnalyticService.update("publishTdrTransactionsCompleted", true);
@@ -78,10 +76,10 @@ public class PaymentTDRManager implements IPaymentTDRManager {
     }
 
     @AnalyseTransaction(name = "publishTdrTransaction")
-    private void publishTdrTransaction(String transactionId, TdrProcessingMessage tdrProcessingMessage, Map<String, String> messageHeaders) {
+    private void publishTdrTransaction(String transactionId, TdrProcessingMessage tdrProcessingMessage) {
         try {
-            AnalyticService.update(tdrProcessingMessage);
-            kafkaPublisherService.publishKafkaMessage(transactionId, tdrProcessingMessage, messageHeaders);
+            AnalyticService.update("tdrProcessingMessage", tdrProcessingMessage.toString());
+            kafkaPublisherService.publishKafkaMessage(tdrProcessingMessage);
             log.info("Kafka message published for transaction {}", transactionId);
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.TDR_KAFKA_PUBLISH_ERROR,
@@ -99,12 +97,12 @@ public class PaymentTDRManager implements IPaymentTDRManager {
 
             BaseTDRResponse tdr = paymentGatewayManager.getTDR(transaction.getTransactionId());
             if ((tdr.getTdr() != -1) && (tdr.getTdr() != -2)) {
-                AnalyticService.update(TDR, tdr.getTdr());
                 transaction.setTdr(tdr.getTdr());
             } else {
                 log.warn(PaymentLoggingMarker.TDR_PROCESSING_WARNING,
                         "Invalid TDR value received for transaction {}: TDR={}", transaction.getTransactionId(), tdr.getTdr());
             }
+            AnalyticService.update(TDR, tdr.getTdr());
             transaction.setStatus(PaymentConstants.COMPLETED);
             transaction.setUpdatedTimestamp(Calendar.getInstance());
             paymentTDRDetailsRepository.save(transaction);

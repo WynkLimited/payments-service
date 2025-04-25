@@ -193,6 +193,9 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker TDR_BUILD_ERROR = MarkerFactory.getMarker("TDR_BUILD_ERROR");
     Marker TDR_TABLE_SAVE_QUERY_ERROR = MarkerFactory.getMarker("TDR_TABLE_SAVE_QUERY_ERROR");
     Marker TDR_DELAY_ERROR = MarkerFactory.getMarker("TDR_DELAY_ERROR");
+    Marker TDR_RECORDS_PUBLISHING_ERROR = MarkerFactory.getMarker("TDR_RECORDS_PUBLISHING_ERROR");
+    Marker TDR_KAFKA_PUBLISH_ERROR = MarkerFactory.getMarker("TDR_KAFKA_PUBLISH_ERROR");
+    Marker TDR_PROCESSING_WARNING = MarkerFactory.getMarker("TDR_PROCESSING_WARNING");
     Marker TDR_PROCESSING_ERROR = MarkerFactory.getMarker("TDR_PROCESSING_ERROR");
     Marker TDR_TABLE_FETCHING_QUERY_ERROR = MarkerFactory.getMarker("TDR_TABLE_FETCHING_QUERY_ERROR");
     Marker TDR_API_ERROR = MarkerFactory.getMarker("TDR_API_ERROR");

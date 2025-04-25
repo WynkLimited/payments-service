@@ -1,5 +1,6 @@
 package in.wynk.payment.core.dao.entity;
 
+import in.wynk.payment.core.constant.PaymentConstants;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -23,7 +24,7 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "tdr_details", indexes = {
-        @Index(name = "tdr_query_idx", columnList = "is_processed, execution_time")
+        @Index(name = "status_execution_idx", columnList = "status, execution_time")
 })
 public class PaymentTDRDetails {
 
@@ -43,8 +44,8 @@ public class PaymentTDRDetails {
     @Column(name = "reference_id")
     private String referenceId;
 
-    @Column(name = "is_processed", nullable = false)
-    private Boolean isProcessed = false;
+    @Column(name = "status", nullable = false)
+    private String status;
 
     @Column(name = "execution_time", nullable = false)
     @Temporal(TemporalType.TIMESTAMP)

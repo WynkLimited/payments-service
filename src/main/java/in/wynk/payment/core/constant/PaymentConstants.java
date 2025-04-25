@@ -23,6 +23,8 @@ public interface PaymentConstants extends BaseConstants {
     String FAILURE = "failure";
     String REQUEST = "request";
     String PENDING = "pending";
+    String INPROGRESS = "inprogress";
+    String COMPLETED = "completed";
     String SUCCESS = "success";
     String MESSAGE = "message";
     String ERROR_REASON = "errorReason";

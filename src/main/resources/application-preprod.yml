@@ -72,7 +72,7 @@ spring:
     show-sql: false
     open-in-view: false
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
       naming:
         physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
         implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
@@ -1250,7 +1250,7 @@ wynk:
                     hibernate.hbm2ddl.auto: validate
                     hibernate.jdbc.time_zone: Asia/Kolkata
                 hibernate:
-                  ddl-auto: validate
+                  ddl-auto: update
                   naming:
                     physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
                     implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
@@ -1289,7 +1289,7 @@ wynk:
                     hibernate.hbm2ddl.auto: validate
                     hibernate.jdbc.time_zone: Asia/Kolkata
                 hibernate:
-                  ddl-auto: validate
+                  ddl-auto: update
                   naming:
                     physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
                     implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
@@ -1328,7 +1328,7 @@ wynk:
                     hibernate.hbm2ddl.auto: validate
                     hibernate.jdbc.time_zone: Asia/Kolkata
                 hibernate:
-                  ddl-auto: validate
+                  ddl-auto: update
                   naming:
                     physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
                     implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
@@ -1367,7 +1367,7 @@ wynk:
                     hibernate.hbm2ddl.auto: validate
                     hibernate.jdbc.time_zone: Asia/Kolkata
                 hibernate:
-                  ddl-auto: validate
+                  ddl-auto: update
                   naming:
                     physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
                     implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
@@ -1406,7 +1406,7 @@ wynk:
                     hibernate.hbm2ddl.auto: validate
                     hibernate.jdbc.time_zone: Asia/Kolkata
                 hibernate:
-                  ddl-auto: validate
+                  ddl-auto: update
                   naming:
                     physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
                     implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
@@ -1445,7 +1445,7 @@ wynk:
                     hibernate.hbm2ddl.auto: validate
                     hibernate.jdbc.time_zone: Asia/Kolkata
                 hibernate:
-                  ddl-auto: validate
+                  ddl-auto: update
                   naming:
                     physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
                     implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy

@@ -55,12 +55,12 @@ CREATE TABLE IF NOT EXISTS `tdr_details` (
   `uid` varchar(255) DEFAULT NULL,
   `reference_id` varchar(255) DEFAULT NULL,
   `tdr` double DEFAULT NULL,
-  `is_processed` tinyint(1) NOT NULL DEFAULT 0,
+  `status` VARCHAR(50) DEFAULT 'PENDING',
   `execution_time` timestamp NOT NULL,
   `created_timestamp` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_timestamp` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`transaction_id`),
-  INDEX `tdr_query_idx` (`is_processed`, `execution_time`)
+  INDEX `status_execution_idx` (`status`, `execution_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ALTER TABLE `tdr_details`

@@ -83,7 +83,7 @@ spring:
       hibernate.cache.use_second_level_cache: false
       hibernate.cache.use_query_cache: false
       hibernate.generate_statistics: false
-      hibernate.hbm2ddl.auto: validate
+      hibernate.hbm2ddl.auto: update
       hibernate.jdbc.time_zone: Asia/Kolkata
 
 ####### payment props #######
@@ -1247,7 +1247,7 @@ wynk:
                     hibernate.cache.use_second_level_cache: false
                     hibernate.cache.use_query_cache: false
                     hibernate.generate_statistics: false
-                    hibernate.hbm2ddl.auto: validate
+                    hibernate.hbm2ddl.auto: update
                     hibernate.jdbc.time_zone: Asia/Kolkata
                 hibernate:
                   ddl-auto: update
@@ -1286,7 +1286,7 @@ wynk:
                     hibernate.cache.use_second_level_cache: false
                     hibernate.cache.use_query_cache: false
                     hibernate.generate_statistics: false
-                    hibernate.hbm2ddl.auto: validate
+                    hibernate.hbm2ddl.auto: update
                     hibernate.jdbc.time_zone: Asia/Kolkata
                 hibernate:
                   ddl-auto: update
@@ -1325,7 +1325,7 @@ wynk:
                     hibernate.cache.use_second_level_cache: false
                     hibernate.cache.use_query_cache: false
                     hibernate.generate_statistics: false
-                    hibernate.hbm2ddl.auto: validate
+                    hibernate.hbm2ddl.auto: update
                     hibernate.jdbc.time_zone: Asia/Kolkata
                 hibernate:
                   ddl-auto: update
@@ -1364,7 +1364,7 @@ wynk:
                     hibernate.cache.use_second_level_cache: false
                     hibernate.cache.use_query_cache: false
                     hibernate.generate_statistics: false
-                    hibernate.hbm2ddl.auto: validate
+                    hibernate.hbm2ddl.auto: update
                     hibernate.jdbc.time_zone: Asia/Kolkata
                 hibernate:
                   ddl-auto: update
@@ -1403,7 +1403,7 @@ wynk:
                     hibernate.cache.use_second_level_cache: false
                     hibernate.cache.use_query_cache: false
                     hibernate.generate_statistics: false
-                    hibernate.hbm2ddl.auto: validate
+                    hibernate.hbm2ddl.auto: update
                     hibernate.jdbc.time_zone: Asia/Kolkata
                 hibernate:
                   ddl-auto: update
@@ -1442,7 +1442,7 @@ wynk:
                     hibernate.cache.use_second_level_cache: false
                     hibernate.cache.use_query_cache: false
                     hibernate.generate_statistics: false
-                    hibernate.hbm2ddl.auto: validate
+                    hibernate.hbm2ddl.auto: update
                     hibernate.jdbc.time_zone: Asia/Kolkata
                 hibernate:
                   ddl-auto: update

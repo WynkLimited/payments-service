@@ -45,7 +45,7 @@ public class PaymentTDRDetails {
     private String referenceId;
 
     @Column(name = "status", nullable = false)
-    private String status;
+    private String status = PaymentConstants.PENDING;
 
     @Column(name = "execution_time", nullable = false)
     @Temporal(TemporalType.TIMESTAMP)

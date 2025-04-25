@@ -81,7 +81,7 @@ public class PaymentTDRManager implements IPaymentTDRManager {
     private void publishTdrTransaction(String transactionId, TdrProcessingMessage tdrProcessingMessage, Map<String, String> messageHeaders) {
         try {
             AnalyticService.update("tdrProcessingMessage", tdrProcessingMessage.toString());
-            kafkaPublisherService.publishKafkaMessage(transactionId, tdrProcessingMessage, messageHeaders);
+            kafkaPublisherService.publishKafkaMessage(tdrProcessingMessage);
             log.info("Kafka message published for transaction {}", transactionId);
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.TDR_KAFKA_PUBLISH_ERROR,

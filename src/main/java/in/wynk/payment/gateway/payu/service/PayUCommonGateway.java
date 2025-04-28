@@ -231,17 +231,6 @@ public class PayUCommonGateway {
         if (transactionDetailsWrapper.getStatus() == 1) {
             final AbstractPayUTransactionDetails transactionDetails = transactionDetailsWrapper.getTransactionDetails(transaction.getIdStr());
             if (SUCCESS.equalsIgnoreCase(transactionDetails.getStatus())) {
-                if (EnumSet.of(PaymentEvent.SUBSCRIBE).contains(transaction.getType()) && PayUChargingTransactionDetails.class.isAssignableFrom(transactionDetails.getClass())) {
-                    final PayUChargingTransactionDetails chargingDetails = (PayUChargingTransactionDetails) transactionDetails;
-                    if (!PAYU_PAYMENT_SOURCE_SIST.equalsIgnoreCase(chargingDetails.getPaymentSource())) {
-                        transaction.setType(PaymentEvent.PURCHASE.getValue());
-                        transaction.setMandateAmount(-1);
-                        AnalyticService.update(PAYU_PAYMENT_SOURCE_SIST, chargingDetails.getPaymentSource());
-                        log.info("Transaction {} was initiated with AUTO_PAY but getting payment_source as {} which is not sist(Subscription Transaction). Converting transaction type from SUBSCRIBE to PURCHASE to provide one-time access while preventing automatic renewals.",
-                                transaction.getIdStr(),
-                                chargingDetails.getPaymentSource());
-                    }
-                }
                 finalTransactionStatus = TransactionStatus.SUCCESS;
             } else if (FAILURE.equalsIgnoreCase(transactionDetails.getStatus()) || (FAILED.equalsIgnoreCase(transactionDetails.getStatus())) ||
                     PAYU_STATUS_NOT_FOUND.equalsIgnoreCase(transactionDetails.getStatus())) {

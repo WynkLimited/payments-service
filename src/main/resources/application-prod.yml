@@ -762,7 +762,7 @@ wynk:
             factoryDetails:
               # autoCommitInterval: 100
               autoOffsetConfig: earliest
-              bootstrapServers: 10.168.88.20:9092
+              bootstrapServers: 10.160.88.23:9092,10.160.88.24:9092,10.160.88.25:9092
               username: appuser
               password: uJK67dC1Ax
               enableAutoCommit: false

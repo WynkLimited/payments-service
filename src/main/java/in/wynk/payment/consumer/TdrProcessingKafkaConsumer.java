@@ -1,14 +1,11 @@
 package in.wynk.payment.consumer;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
-import com.github.annotation.analytic.core.service.AnalyticService;
+
 import in.wynk.client.aspect.advice.ClientAware;
 import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.aspect.advice.TransactionAware;
-import in.wynk.payment.core.constant.PaymentConstants;
-import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.PaymentTDRDetails;
-import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.*;
 
 import in.wynk.payment.service.impl.PaymentTDRManager;
@@ -56,27 +53,16 @@ public class TdrProcessingKafkaConsumer extends AbstractKafkaEventConsumer<Strin
     public void consume(TdrProcessingMessage message) throws WynkRuntimeException {
 
         PaymentTDRDetails details = message.getPaymentTDRDetails();
-        PaymentTDRDetails paymentTDRDetails = PaymentTDRDetails.builder()
-                .transactionId(details.getTransactionId())
-                .planId(details.getPlanId())
-                .uid(details.getUid())
-                .referenceId(details.getReferenceId())
-                .status(details.getStatus())
-                .executionTime(details.getExecutionTime())
-                .createdTimestamp(details.getCreatedTimestamp())
-                .updatedTimestamp(details.getUpdatedTimestamp())
-                .build();
-        manager.processTransaction(paymentTDRDetails);
-
+        manager.processTransaction(details);
     }
 
 
     @KafkaListener(id = "tdrProcessingMessageListener", topics = "${wynk.kafka.consumers.listenerFactory.tdrProcessing[0].factoryDetails.topic}", containerFactory = "${wynk.kafka.consumers.listenerFactory.tdrProcessing[0].name}")
-    protected void listenPreDebitNotificationMessageManager(@Header(value = StreamConstant.MESSAGE_LAST_ATTEMPTED_SEQUENCE, required = false) String lastAttemptedSequence,
+    protected void listenTdrProcessingMessageManager(@Header(value = StreamConstant.MESSAGE_LAST_ATTEMPTED_SEQUENCE, required = false) String lastAttemptedSequence,
                                                             @Header(value = StreamConstant.MESSAGE_CREATION_DATETIME, required = false) String createdAt,
                                                             @Header(value = StreamConstant.MESSAGE_LAST_PROCESSED_DATETIME, required = false) String lastProcessedAt,
                                                             @Header(value = StreamConstant.RETRY_COUNT) String retryCountHeader,
-                                                            ConsumerRecord<String, TdrProcessingMessage> consumerRecord) {
+                                                            ConsumerRecord<String, TdrProcessingMessage> consumerRecord , Acknowledgment acknowledgment) {
         TdrProcessingMessage message = consumerRecord.value();
         int retryCount = 0;
         try {
@@ -93,6 +79,8 @@ public class TdrProcessingKafkaConsumer extends AbstractKafkaEventConsumer<Strin
             if (!(e instanceof WynkRuntimeException)) {
                 log.error(StreamMarker.KAFKA_POLLING_CONSUMPTION_ERROR, "Something went wrong while processing message {} for kafka consumer : {}", consumerRecord.value(), ", PreDebitNotificationMessageManager - ", e);
             }
+        } finally {
+            acknowledgment.acknowledge();
         }
     }
 

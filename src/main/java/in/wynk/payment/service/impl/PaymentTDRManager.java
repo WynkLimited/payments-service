@@ -50,6 +50,7 @@ public class PaymentTDRManager implements IPaymentTDRManager {
             AnalyticService.update(REQUEST_ID, requestId);
             int batchSize = 200;
             List<PaymentTDRDetails> paymentTDRDetailsList = paymentTDRDetailsRepository.fetchNextTransactionForProcessing(batchSize);
+            AnalyticService.update("batchSize", paymentTDRDetailsList.size());
             if (paymentTDRDetailsList.isEmpty()) {
                 log.info("No eligible TDR transactions found for processing.");
                 return;
@@ -98,13 +99,14 @@ public class PaymentTDRManager implements IPaymentTDRManager {
             BaseTDRResponse tdr = paymentGatewayManager.getTDR(transaction.getTransactionId());
             if ((tdr.getTdr() != -1) && (tdr.getTdr() != -2)) {
                 transaction.setTdr(tdr.getTdr());
+                AnalyticService.update(TDR, tdr.getTdr());
             } else {
                 log.warn(PaymentLoggingMarker.TDR_PROCESSING_WARNING,
                         "Invalid TDR value received for transaction {}: TDR={}", transaction.getTransactionId(), tdr.getTdr());
             }
-            AnalyticService.update(TDR, tdr.getTdr());
             transaction.setStatus(PaymentConstants.COMPLETED);
             transaction.setUpdatedTimestamp(Calendar.getInstance());
+            AnalyticService.update("TdrStatus",transaction.getStatus());
             paymentTDRDetailsRepository.save(transaction);
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.TDR_API_ERROR,
@@ -120,7 +122,7 @@ public class PaymentTDRManager implements IPaymentTDRManager {
             transaction.setStatus(PaymentConstants.FAILED);
             transaction.setUpdatedTimestamp(Calendar.getInstance());
             paymentTDRDetailsRepository.save(transaction);
-            log.warn(PaymentLoggingMarker.TDR_PROCESSING_WARNING,
+            log.error(PaymentLoggingMarker.TDR_PROCESSING_WARNING,
                     "Transaction marked as FAILED after retry limit reached: {}", transaction.getTransactionId());
 
         } catch (Exception e) {

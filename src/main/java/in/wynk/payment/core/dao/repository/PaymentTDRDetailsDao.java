@@ -42,7 +42,11 @@ public interface PaymentTDRDetailsDao extends JpaRepository<PaymentTDRDetails, S
             logger.error(PaymentLoggingMarker.TDR_TABLE_FETCHING_QUERY_ERROR,
                     "Error while fetching eligible transactions from tdr_table",
                     e);
-            return Collections.emptyList();
+        } catch (Exception e) {
+            logger.error(PaymentLoggingMarker.TDR_TABLE_FETCHING_QUERY_ERROR,
+                    "Unexpected error while fetching eligible transactions from tdr_table",
+                    e);
         }
+        return Collections.emptyList();
     }
 }

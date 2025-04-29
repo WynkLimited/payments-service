@@ -23,7 +23,7 @@ import java.util.Date;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "tdr_details", indexes = {
+@Table(name = "tdr_processing", indexes = {
         @Index(name = "status_execution_idx", columnList = "status, execution_time")
 })
 public class PaymentTDRDetails {

@@ -49,33 +49,17 @@ CREATE TABLE IF NOT EXISTS `transaction` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 
-CREATE TABLE IF NOT EXISTS `tdr_details` (
+CREATE TABLE IF NOT EXISTS `tdr_processing` (
   `transaction_id` varchar(255) NOT NULL,
   `plan_id` int(11) DEFAULT NULL,
   `uid` varchar(255) DEFAULT NULL,
   `reference_id` varchar(255) DEFAULT NULL,
   `tdr` double DEFAULT NULL,
-  `is_processed` tinyint(1) NOT NULL DEFAULT 0,
+  `status` varchar(50) DEFAULT 'pending',
   `execution_time` timestamp NOT NULL,
   `created_timestamp` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_timestamp` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`transaction_id`),
-  INDEX `tdr_query_idx` (`is_processed`, `execution_time`)
+  INDEX `status_execution_idx` (`status`, `execution_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- ALTER TABLE `tdr_details`
--- ADD COLUMN `status` VARCHAR(50) DEFAULT 'PENDING';
---
--- UPDATE `tdr_details`
--- SET `status` = CASE
---   WHEN `is_processed` = 0 THEN 'PENDING'
---   WHEN `is_processed` = 1 THEN 'COMPLETED'
--- END;
---
--- ALTER TABLE `tdr_details`
--- ADD INDEX `status_execution_idx` (`status`, `execution_time`);
---
--- ALTER TABLE `tdr_details`
--- DROP COLUMN `is_processed`,
--- DROP INDEX `tdr_query_idx`;
 

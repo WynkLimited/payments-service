@@ -24,7 +24,7 @@ public interface PaymentTDRDetailsDao extends JpaRepository<PaymentTDRDetails, S
 
     Logger logger = LoggerFactory.getLogger(PaymentTDRDetailsDao.class);
 
-    @Query(value = "SELECT * FROM tdr_details t " +
+    @Query(value = "SELECT * FROM tdr_processing t " +
             "WHERE t.status = 'PENDING' " +
             "AND t.execution_time <= :currentTimestamp " +
             "ORDER BY t.execution_time ASC " +

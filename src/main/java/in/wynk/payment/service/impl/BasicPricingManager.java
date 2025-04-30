@@ -53,25 +53,29 @@ public class BasicPricingManager implements IPricingManager {
             if (Objects.nonNull(nativeRequest.getUserDetails()) && Objects.nonNull(nativeRequest.getAppDetails()) && Objects.nonNull(nativeRequest.getGeoDetails()))
                 selectedPlan = subscriptionManager.getUserPersonalisedPlanOrDefault(UserPersonalisedPlanRequest.builder().userDetails(((UserDetails) nativeRequest.getUserDetails()).toUserDetails(request.getUid())).appDetails(((AppDetails) nativeRequest.getAppDetails()).toAppDetails()).geoDetails((GeoLocation) nativeRequest.getGeoDetails()).planId(nativeRequest.getPlanId()).build(), selectedPlan);
             if (nativeRequest.isAutoRenewOpted() || nativeRequest.isMandate()) nativeRequest.setMandateAmount(selectedPlan.getMandateAmount());
+            if(nativeRequest.getEvent() == PaymentEvent.RENEW ){
+                nativeRequest.setAmount(selectedPlan.getRenewalAmount());
+            }
+            if (nativeRequest.getEvent() != PaymentEvent.RENEW) {
                 if (nativeRequest.isMandate()) {
                     nativeRequest.setMandateAmount(selectedPlan.getMandateAmount());
                     nativeRequest.setEvent(PaymentEvent.MANDATE);
                     nativeRequest.setAmount(PaymentConstants.MANDATE_FLOW_AMOUNT);
                     return;
-                } else if (nativeRequest.isAutoRenewOpted()) {
+                }
+                else if (nativeRequest.isAutoRenewOpted()) {
                     nativeRequest.setEvent(PaymentEvent.SUBSCRIBE);
                     nativeRequest.setAmount(selectedPlan.getFinalPrice());
                 }
-                if (nativeRequest.isTrialOpted()) {
+                else if (nativeRequest.isTrialOpted()) {
                     nativeRequest.setMandateAmount(selectedPlan.getMandateAmount());
                     nativeRequest.setAmount(PaymentConstants.MANDATE_FLOW_AMOUNT);
                     nativeRequest.setEvent(PaymentEvent.TRIAL_SUBSCRIPTION);
                     return;
                 }
-          if(nativeRequest.getEvent() == PaymentEvent.RENEW ){
-                nativeRequest.setAmount(selectedPlan.getRenewalAmount());
-            } else {
-                nativeRequest.setAmount(selectedPlan.getFinalPrice());
+                else {
+                    nativeRequest.setAmount(selectedPlan.getFinalPrice());
+                }
             }
             if (Arrays.asList(PaymentConstants.ITUNES, PaymentConstants.AMAZON_IAP, PaymentConstants.GOOGLE_IAP).contains(request.getPaymentGateway().getId())) couponManager.applyCoupon(nativeRequest.getUid(), nativeRequest.getCouponId());
             if (selectedPlan.getPlanType() == PlanType.FREE_TRIAL) return;

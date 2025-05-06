@@ -78,7 +78,6 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static in.wynk.common.constant.BaseConstants.*;
-import static in.wynk.common.constant.BaseConstants.PAYUID;
 import static in.wynk.exception.WynkErrorType.UT999;
 import static in.wynk.payment.core.constant.PaymentConstants.AIRTEL_TV;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_CODE;
@@ -128,19 +127,19 @@ public class PaymentEventListener {
     @Value("${payment.cancelMandate.unsupported}")
     private List<String> cancelMandatePG;
 
-    public PaymentEventListener (TaxUtils taxUtils, ObjectMapper mapper, RetryRegistry retryRegistry, PaymentManager paymentManager,
-                                 PaymentGatewayManager paymentGatewayManager, ITaskScheduler<TaskDefinition<?>> taskScheduler,
-                                 IKafkaPublisherService<String, Object> kafkaPublisherService, IPaymentErrorService paymentErrorService, ApplicationEventPublisher eventPublisher,
-                                 IClientCallbackService clientCallbackService, ITransactionManagerService transactionManagerService,
-                                 IMerchantTransactionService merchantTransactionService, IRecurringPaymentManagerService recurringPaymentManagerService,
-                                 PaymentCachingService cachingService, IQuickPayLinkGenerator quickPayLinkGenerator, InvoiceService invoiceService,
-                                 IKafkaEventPublisher<String, InvoiceKafkaMessage> invoiceKafkaPublisher,
-                                 IKafkaEventPublisher<String, WaPayStateRespEvent> paymentStatusKafkaPublisher, InvoiceDetailsCachingService invoiceDetailsCachingService,
-                                 ClientDetailsCachingService clientDetailsCachingService, WynkServiceDetailsCachingService wynkServiceDetailsCachingService,
-                                 ISubscriptionServiceManager subscriptionServiceManager,
-                                 @Qualifier("item")
-                                 @Lazy
-                                 IKafkaEventPublisher<String, GenerateItemKafkaMessage> itemKafkaPublisher) {
+    public PaymentEventListener(TaxUtils taxUtils, ObjectMapper mapper, RetryRegistry retryRegistry, PaymentManager paymentManager,
+                                PaymentGatewayManager paymentGatewayManager, ITaskScheduler<TaskDefinition<?>> taskScheduler,
+                                IKafkaPublisherService<String, Object> kafkaPublisherService, IPaymentErrorService paymentErrorService, ApplicationEventPublisher eventPublisher,
+                                IClientCallbackService clientCallbackService, ITransactionManagerService transactionManagerService,
+                                IMerchantTransactionService merchantTransactionService, IRecurringPaymentManagerService recurringPaymentManagerService,
+                                PaymentCachingService cachingService, IQuickPayLinkGenerator quickPayLinkGenerator, InvoiceService invoiceService,
+                                IKafkaEventPublisher<String, InvoiceKafkaMessage> invoiceKafkaPublisher,
+                                IKafkaEventPublisher<String, WaPayStateRespEvent> paymentStatusKafkaPublisher, InvoiceDetailsCachingService invoiceDetailsCachingService,
+                                ClientDetailsCachingService clientDetailsCachingService, WynkServiceDetailsCachingService wynkServiceDetailsCachingService,
+                                ISubscriptionServiceManager subscriptionServiceManager,
+                                @Qualifier("item")
+                                @Lazy
+                                IKafkaEventPublisher<String, GenerateItemKafkaMessage> itemKafkaPublisher) {
         this.taxUtils = taxUtils;
         this.mapper = mapper;
         this.retryRegistry = retryRegistry;
@@ -168,7 +167,7 @@ public class PaymentEventListener {
 
     @EventListener
     @AnalyseTransaction(name = StreamConstant.DEFAULT_KAFKA_MESSAGE_THRESHOLD_EXCEED_EVENT)
-    public void onAnyOrderMessageThresholdExceedEvent (MessageThresholdExceedEvent event) throws JsonProcessingException {
+    public void onAnyOrderMessageThresholdExceedEvent(MessageThresholdExceedEvent event) throws JsonProcessingException {
         AnalyticService.update(event);
         AnalyticService.update(MESSAGE_PAYLOAD, mapper.writeValueAsString(event));
     }
@@ -176,7 +175,7 @@ public class PaymentEventListener {
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "paymentReconciliationThresholdExceedEvent")
-    public void onPaymentReconThresholdExceedEvent (PaymentReconciliationThresholdExceedEvent event) {
+    public void onPaymentReconThresholdExceedEvent(PaymentReconciliationThresholdExceedEvent event) {
         AnalyticService.update(event);
         final Transaction transaction = transactionManagerService.get(event.getTransactionId());
         final TransactionStatus existingTransactionStatus = transaction.getStatus();
@@ -188,7 +187,7 @@ public class PaymentEventListener {
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "paymentRenewalMessageThresholdExceedEvent")
-    public void onPaymentRenewalMessageThresholdExceedEvent (PaymentRenewalMessageThresholdExceedEvent event) {
+    public void onPaymentRenewalMessageThresholdExceedEvent(PaymentRenewalMessageThresholdExceedEvent event) {
         AnalyticService.update(event);
         Transaction transaction = transactionManagerService.get(event.getTransactionId());
         kafkaPublisherService.publishKafkaMessage(PaymentRenewalChargingMessage.builder()
@@ -204,10 +203,10 @@ public class PaymentEventListener {
 
     @EventListener
     @AnalyseTransaction(name = "recurringPaymentEvent")
-    public void onRecurringPaymentEvent (RecurringPaymentEvent event) {
+    public void onRecurringPaymentEvent(RecurringPaymentEvent event) {
         AnalyticService.update(event);
         Transaction transaction = event.getTransaction();
-        if ((!cancelMandatePG.contains(transaction.getPaymentChannel().getId())) && ((transaction.getStatus() == TransactionStatus.SUCCESS || (transaction.getStatus()==TransactionStatus.REFUNDED && transaction.getType()== PaymentEvent.TRIAL_SUBSCRIPTION ))
+        if ((!cancelMandatePG.contains(transaction.getPaymentChannel().getId())) && ((transaction.getStatus() == TransactionStatus.SUCCESS || (transaction.getStatus() == TransactionStatus.REFUNDED && transaction.getType() == PaymentEvent.TRIAL_SUBSCRIPTION))
                 && transaction.getType() != PaymentEvent.UNSUBSCRIBE) &&
                 event.getPaymentEvent() == PaymentEvent.UNSUBSCRIBE) {
             cancelMandateFromPG(transaction.getPaymentChannel().getId(), transaction.getPaymentChannel().getCode(), transaction.getIdStr(), event.getClientAlias(), event.getPaymentEvent());
@@ -216,11 +215,11 @@ public class PaymentEventListener {
 
     @ClientAware(clientAlias = "#clientAlias")
     @AnalyseTransaction(name = "cancelMandateFromPGEvent")
-    private void cancelMandateFromPG (String paymentCode, String paymentMethod, String txnId,String clientAlias, PaymentEvent paymentEvent) {
+    private void cancelMandateFromPG(String paymentCode, String paymentMethod, String txnId, String clientAlias, PaymentEvent paymentEvent) {
         try {
             AnalyticService.update("paymentCode", paymentCode);
             AnalyticService.update("txnId", txnId);
-            BeanLocatorFactory.getBean(paymentMethod, ICancellingRecurringService.class).cancelRecurring(txnId,paymentEvent);
+            BeanLocatorFactory.getBean(paymentMethod, ICancellingRecurringService.class).cancelRecurring(txnId, paymentEvent);
         } catch (Exception e) {
             AnalyticService.update("isMandateCancelled", false);
             log.error(PaymentLoggingMarker.MANDATE_REVOKE_ERROR, e.getMessage(), e);
@@ -230,7 +229,7 @@ public class PaymentEventListener {
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "merchantTransactionEvent")
-    public void onMerchantTransactionEvent (MerchantTransactionEvent event) {
+    public void onMerchantTransactionEvent(MerchantTransactionEvent event) {
         AnalyticService.update(event);
         //If we get data in  merchant table then update the data else upsert the data
         boolean isDataPresent = checkIfEntryPresentAndUpdateData(event);
@@ -247,7 +246,7 @@ public class PaymentEventListener {
         }
     }
 
-    private void upsertData (MerchantTransaction merchantTransaction, MerchantTransactionEvent event) {
+    private void upsertData(MerchantTransaction merchantTransaction, MerchantTransactionEvent event) {
         try {
             retryRegistry.retry(PaymentConstants.MERCHANT_TRANSACTION_UPSERT_RETRY_KEY).executeRunnable(() -> merchantTransactionService.upsert(merchantTransaction));
         } catch (Exception e) {
@@ -255,7 +254,7 @@ public class PaymentEventListener {
         }
     }
 
-    private boolean checkIfEntryPresentAndUpdateData (MerchantTransactionEvent event) {
+    private boolean checkIfEntryPresentAndUpdateData(MerchantTransactionEvent event) {
         try {
             if (Objects.isNull(event.getExternalTokenReferenceId())) {
                 MerchantTransaction merchantData = merchantTransactionService.getMerchantTransaction(event.getId());
@@ -277,7 +276,7 @@ public class PaymentEventListener {
     @EventListener
     @AnalyseTransaction(name = "paymentErrorEvent")
     @ClientAware(clientAlias = "#event.clientAlias")
-    public void onPaymentErrorEvent (PaymentErrorEvent event) {
+    public void onPaymentErrorEvent(PaymentErrorEvent event) {
         AnalyticService.update(event);
         publishAdditionalData(event);
         retryRegistry.retry(PaymentConstants.PAYMENT_ERROR_UPSERT_RETRY_KEY).executeRunnable(() -> paymentErrorService.upsert(PaymentError.builder()
@@ -288,7 +287,7 @@ public class PaymentEventListener {
                 .build()));
     }
 
-    private void publishAdditionalData (PaymentErrorEvent event) {
+    private void publishAdditionalData(PaymentErrorEvent event) {
         if (StringUtils.equals(event.getCode(), E6002) && Objects.isNull(event.getDescription())) {
             AnalyticService.update(DESCRIPTION, ERROR_DESCRIPTION_FOR_E6002);
         }
@@ -314,7 +313,7 @@ public class PaymentEventListener {
 
     @EventListener
     @AnalyseTransaction(name = "invoiceEvent")
-    public void onInvoiceEvent (InvoiceEvent event) {
+    public void onInvoiceEvent(InvoiceEvent event) {
         AnalyticService.update(event);
         AnalyticService.update(INVOICE_ID, event.getInvoice().getId());
         AnalyticService.update(TRANSACTION_ID, event.getInvoice().getTransactionId());
@@ -337,7 +336,7 @@ public class PaymentEventListener {
 
     @EventListener
     @AnalyseTransaction(name = "scheduleInvoiceRetryEvent")
-    public void onInvoiceRetryEvent (InvoiceRetryEvent event) {
+    public void onInvoiceRetryEvent(InvoiceRetryEvent event) {
         try {
             AnalyticService.update(event);
             int retryCount = event.getRetryCount();
@@ -366,7 +365,7 @@ public class PaymentEventListener {
 
     @EventListener
     @AnalyseTransaction(name = "triggerInvoiceRetryEvent")
-    public void onInvoiceRetryTaskEvent (InvoiceRetryTaskEvent event) {
+    public void onInvoiceRetryTaskEvent(InvoiceRetryTaskEvent event) {
         try {
             AnalyticService.update(event);
             final Invoice invoice = invoiceService.getInvoiceByTransactionId(event.getTransactionId());
@@ -430,7 +429,7 @@ public class PaymentEventListener {
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "paymentRefundInitEvent")
-    public void onPaymentRefundInitEvent (PaymentRefundInitEvent event) {
+    public void onPaymentRefundInitEvent(PaymentRefundInitEvent event) {
         AnalyticService.update(event);
         kafkaPublisherService.publishKafkaMessage(PaymentRefundInitMessage.builder()
                 .originalTransactionId(event.getOriginalTransactionId())
@@ -440,14 +439,14 @@ public class PaymentEventListener {
 
     @EventListener
     @AnalyseTransaction(name = "paymentRefundedEvent")
-    public void onPaymentRefundEvent (PaymentRefundReconciledEvent event) {
+    public void onPaymentRefundEvent(PaymentRefundReconciledEvent event) {
         AnalyticService.update(event);
     }
 
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "paymentReconciledEvent")
-    public void onPaymentReconciledEvent (PaymentChargingReconciledEvent event) {
+    public void onPaymentReconciledEvent(PaymentChargingReconciledEvent event) {
         AnalyticService.update(event);
         initRefundIfApplicable(event);
     }
@@ -455,7 +454,7 @@ public class PaymentEventListener {
     @EventListener
     @AnalyseTransaction(name = "clientCallback")
     @ClientAware(clientAlias = "#event.clientAlias")
-    public void onClientCallbackEvent (ClientCallbackEvent callbackEvent) {
+    public void onClientCallbackEvent(ClientCallbackEvent callbackEvent) {
         AnalyticService.update(callbackEvent);
         sendClientCallback(callbackEvent.getClientAlias(), ClientCallbackRequest.from(callbackEvent));
     }
@@ -464,7 +463,7 @@ public class PaymentEventListener {
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "purchaseInitEvent")
-    public void onPurchaseInitEvent (PurchaseInitEvent event) {
+    public void onPurchaseInitEvent(PurchaseInitEvent event) {
         try {
             AnalyticService.update(event);
             PurchaseRecord purchaseRecord = PurchaseRecord.from(event);
@@ -494,11 +493,12 @@ public class PaymentEventListener {
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "purchaseRecordEvent")
-    public void onPurchaseRecordEvent (PurchaseRecordEvent event) {
+    public void onPurchaseRecordEvent(PurchaseRecordEvent event) {
         try {
             AnalyticService.update(event);
             final Transaction lastTransaction = transactionManagerService.get(event.getTransactionId());
-            final boolean sendDropOutNotification = lastTransaction.getStatus() != TransactionStatus.SUCCESS;
+            final ClientDetails client = (ClientDetails) ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT001));
+            final boolean sendDropOutNotification = supportsDropOutText(client, lastTransaction.getPlanId()) && lastTransaction.getStatus() != TransactionStatus.SUCCESS;
             if (!sendDropOutNotification) {
                 log.info("Skipping to send drop out notification as user has completed transaction for {}", event);
                 return;
@@ -512,10 +512,20 @@ public class PaymentEventListener {
         }
     }
 
+    private boolean supportsDropOutText(ClientDetails clientDetails, Integer planId) {
+        if (clientDetails != null && clientDetails.getMeta() != null && clientDetails.getMeta(PLAN_IDS_WITH_NO_MESSAGE_SUPPORT).isPresent()) {
+            List<Integer> plans = (List<Integer>) clientDetails.getMeta().get(PLAN_IDS_WITH_NO_MESSAGE_SUPPORT);
+            if (plans.stream().filter(plan -> plan.equals(planId)).findAny().isPresent()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "paymentAutoRefundEvent")
-    public void onPaymentAutoRefundEvent (PaymentAutoRefundEvent event) {
+    public void onPaymentAutoRefundEvent(PaymentAutoRefundEvent event) {
         try {
             AnalyticService.update(event);
             final String tinyUrl = quickPayLinkGenerator.generate(event.getTransaction().getIdStr(), event.getClientAlias(), event.getPurchaseDetails().getAppDetails(),
@@ -531,7 +541,7 @@ public class PaymentEventListener {
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "generateInvoiceEvent")
-    public void onGenerateInvoiceEvent (GenerateInvoiceEvent event) {
+    public void onGenerateInvoiceEvent(GenerateInvoiceEvent event) {
         try {
             AnalyticService.update(event);
             final Invoice invoice = invoiceService.getInvoiceByTransactionId(event.getTxnId());
@@ -555,7 +565,7 @@ public class PaymentEventListener {
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
     @AnalyseTransaction(name = "externalTransactionReportEvent")
-    public void onExternalTransactionReportEvent (ExternalTransactionReportEvent event) {
+    public void onExternalTransactionReportEvent(ExternalTransactionReportEvent event) {
         AnalyticService.update(event);
         try {
             kafkaPublisherService.publishKafkaMessage(ExternalTransactionReportMessageManager.builder().clientAlias(event.getClientAlias()).transactionId(event.getTransactionId())
@@ -567,15 +577,15 @@ public class PaymentEventListener {
 
     @EventListener
     @AnalyseTransaction(name = "GooglePlayReportEvent")
-    public void onGooglePlayReportEvent (GooglePlayReportEvent event) {
+    public void onGooglePlayReportEvent(GooglePlayReportEvent event) {
         AnalyticService.update(event);
     }
 
-    private void sendNotificationToUser (IProductDetails productDetails, String tinyUrl, String msisdn, Transaction transaction) {
+    private void sendNotificationToUser(IProductDetails productDetails, String tinyUrl, String msisdn, Transaction transaction) {
         final PlanDTO plan = cachingService.getPlan(productDetails.getId());
         final String service = productDetails.getType().equalsIgnoreCase(PLAN) ? plan.getService() : cachingService.getItem(productDetails.getId()).getService();
         final WynkService wynkService = WynkServiceUtils.fromServiceId(service);
-        final TransactionStatus txnStatus= transaction.getStatus();
+        final TransactionStatus txnStatus = transaction.getStatus();
         final Message message = Optional.ofNullable(wynkService.getMessages().get(USER_WINBACK))
                 .map(userwinback -> userwinback.getOrDefault(transaction.getPaymentChannel().getCode().toUpperCase(), userwinback.get("DEFAULT")))
                 .map(config -> config.get(txnStatus.getValue()))
@@ -602,15 +612,15 @@ public class PaymentEventListener {
 
     @EventListener
     @AnalyseTransaction(name = "mandateStatusEvent")
-    private void onMandateStatusEvent (MandateStatusEvent event) {
+    private void onMandateStatusEvent(MandateStatusEvent event) {
         AnalyticService.update(event);
     }
 
-    private void sendClientCallback (String clientAlias, ClientCallbackRequest request) {
+    private void sendClientCallback(String clientAlias, ClientCallbackRequest request) {
         clientCallbackService.sendCallback(ClientCallbackPayloadWrapper.<ClientCallbackRequest>builder().clientAlias(clientAlias).payload(request).build());
     }
 
-    private void initRefundIfApplicable (PaymentChargingReconciledEvent event) {
+    private void initRefundIfApplicable(PaymentChargingReconciledEvent event) {
         if (EnumSet.of(TransactionStatus.SUCCESS).contains(event.getTransactionStatus()) && event.getPaymentGateway().isTrialRefundSupported() &&
                 (EnumSet.of(PaymentEvent.TRIAL_SUBSCRIPTION, PaymentEvent.MANDATE).contains(event.getPaymentEvent()))) {
             eventPublisher.publishEvent(PaymentRefundInitEvent.builder()
@@ -622,7 +632,7 @@ public class PaymentEventListener {
 
     @EventListener
     @AnalyseTransaction(name = "paymentSettlement")
-    public void onPaymentSettlementEvent (PaymentSettlementEvent event) {
+    public void onPaymentSettlementEvent(PaymentSettlementEvent event) {
         final AbstractPaymentSettlementResponse response = paymentManager.settle(PaymentSettlementRequest.builder().tid(event.getTid()).build());
         AnalyticService.update(event);
         AnalyticService.update(response);
@@ -631,7 +641,7 @@ public class PaymentEventListener {
     @EventListener
     @AnalyseTransaction(name = "userSubscriptionStatus")
     @TransactionAware(txnId = "#event.transactionId", lock = false)
-    public void onUserSubscriptionEvent (UserSubscriptionStatusEvent event) {
+    public void onUserSubscriptionEvent(UserSubscriptionStatusEvent event) {
         AnalyticService.update(event);
         if (!SUBSCRIBED_STATE.equals(event.getStatus())) {
             Transaction transaction = TransactionContext.get();
@@ -644,7 +654,7 @@ public class PaymentEventListener {
 
     @EventListener
     @ClientAware(clientAlias = "#event.clientAlias")
-    public void onPaymentUserDeactivationEvent (PaymentUserDeactivationEvent event) {
+    public void onPaymentUserDeactivationEvent(PaymentUserDeactivationEvent event) {
         try {
             transactionManagerService.migrateOldTransactions(event.getId(), event.getUid(), event.getOldUid(), event.getService());
         } catch (Exception e) {
@@ -654,14 +664,14 @@ public class PaymentEventListener {
 
     @EventListener
     @AnalyseTransaction(name = "paymentUserDeactivationMigrationEvent")
-    public void onPaymentUserDeactivationMigrationEvent (PaymentUserDeactivationMigrationEvent event) {
+    public void onPaymentUserDeactivationMigrationEvent(PaymentUserDeactivationMigrationEvent event) {
         AnalyticService.update(event);
     }
 
     @EventListener
     @AnalyseTransaction(name = "transactionSnapshot")
     @ClientAware(clientAlias = "#event.transaction.clientAlias")
-    public void onTransactionSnapshotEvent (TransactionSnapshotEvent event) {
+    public void onTransactionSnapshotEvent(TransactionSnapshotEvent event) {
         Optional.ofNullable(event.getPurchaseDetails()).ifPresent(AnalyticService::update);
         AnalyticService.update(UID, event.getTransaction().getUid());
         AnalyticService.update(MSISDN, event.getTransaction().getMsisdn());
@@ -729,7 +739,7 @@ public class PaymentEventListener {
             if ((tdr.getTdr() != -1) && (tdr.getTdr() != -2)) {
                 AnalyticService.update(TDR, tdr.getTdr());
             }*/
-            MerchantTransaction merchantTransaction=  merchantTransactionService.getMerchantTransaction(event.getTransaction().getIdStr());
+            MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(event.getTransaction().getIdStr());
             if (merchantTransaction != null && merchantTransaction.getExternalTransactionId() != null) {
                 AnalyticService.update(PAYUID, merchantTransaction.getExternalTransactionId());
             }
@@ -739,7 +749,7 @@ public class PaymentEventListener {
                 if (!(EnumSet.of(PaymentEvent.UNSUBSCRIBE, PaymentEvent.CANCELLED, PaymentEvent.RESUMED, PaymentEvent.SUSPENDED, PaymentEvent.PROMOTION, PaymentEvent.FREE)
                         .contains(event.getTransaction().getType())) && (PaymentEvent.REFUND != event.getTransaction().getType() ||
                         (PaymentEvent.REFUND == event.getTransaction().getType() && event.getTransaction().getAmount() != MANDATE_FLOW_AMOUNT))) {
-                    if (PaymentEvent.REFUND == event.getTransaction().getType() && event.getTransaction().getAmount() != MANDATE_FLOW_AMOUNT){
+                    if (PaymentEvent.REFUND == event.getTransaction().getType() && event.getTransaction().getAmount() != MANDATE_FLOW_AMOUNT) {
                         eventPublisher.publishEvent(GenerateInvoiceEvent.builder()
                                 .msisdn(event.getTransaction().getMsisdn())
                                 .txnId(event.getTransaction().getIdStr())
@@ -781,7 +791,7 @@ public class PaymentEventListener {
         AnalyticService.update(event);
     }
 
-    public void publishWaPaymentStatusEvent (TransactionSnapshotEvent event) {
+    public void publishWaPaymentStatusEvent(TransactionSnapshotEvent event) {
         final IPurchaseDetails purchaseDetails = event.getPurchaseDetails();
         if (purchaseDetails != null && purchaseDetails.getSessionDetails() != null && WhatsappSessionDetails.class.isAssignableFrom(purchaseDetails.getSessionDetails().getClass())) {
             final WhatsappSessionDetails waSessionDetails = (WhatsappSessionDetails) purchaseDetails.getSessionDetails();
@@ -836,7 +846,7 @@ public class PaymentEventListener {
     }
 
     @EventListener
-    private void publishPaymentEventToBranch (PaymentsBranchEvent event) {
+    private void publishPaymentEventToBranch(PaymentsBranchEvent event) {
         Map<String, Object> map = new HashMap<>();
         if (event.getData() instanceof EventsWrapper) {
             map.putAll(branchMeta((EventsWrapper) event.getData()));
@@ -848,22 +858,22 @@ public class PaymentEventListener {
     @ClientAware(clientAlias = "#event.clientAlias")
     @EventListener(UnScheduleRecurringPaymentEvent.class)
     @AnalyseTransaction(name = "UnScheduleRecurringPaymentEvent")
-    private void unScheduleTransactionRecurring (UnScheduleRecurringPaymentEvent event) {
+    private void unScheduleTransactionRecurring(UnScheduleRecurringPaymentEvent event) {
         AnalyticService.update(event);
         recurringPaymentManagerService.unScheduleRecurringPayment(event.getClientAlias(), event.getTransactionId(), PaymentEvent.CANCELLED);
     }
 
-    private void publishBranchEvent (Map<String, Object> meta, String event) {
+    private void publishBranchEvent(Map<String, Object> meta, String event) {
         meta.put(EVENT, event);
         BranchEvent branchEvent = AppUtils.from(BranchRawDataEvent.builder().data(meta).build());
         BeanLocatorFactory.getBean(IKinesisEventPublisher.class).publish(dpStream, branchEvent.getEvent_name(), branchEvent);
     }
 
-    private Map<String, Object> branchMeta (EventsWrapper eventsWrapper) {
+    private Map<String, Object> branchMeta(EventsWrapper eventsWrapper) {
         return mapper.convertValue(eventsWrapper, Map.class);
     }
 
-    private void publishBranchEvent (TransactionSnapshotEvent event) {
+    private void publishBranchEvent(TransactionSnapshotEvent event) {
         try {
             EventsWrapper.EventsWrapperBuilder eventsWrapperBuilder = EventsWrapper.builder();
             eventsWrapperBuilder.uid(event.getTransaction().getUid())
@@ -913,7 +923,7 @@ public class PaymentEventListener {
                     .createdTimestamp(Calendar.getInstance())
                     .status(PENDING)
                     .build();
-            AnalyticService.update(TDR_TRANSACTION_DETAIL,tdrDetails.toString());
+            AnalyticService.update(TDR_TRANSACTION_DETAIL, tdrDetails.toString());
             paymentTDRDetailsDao.save(tdrDetails);
 
         } catch (NullPointerException | IllegalArgumentException e) {

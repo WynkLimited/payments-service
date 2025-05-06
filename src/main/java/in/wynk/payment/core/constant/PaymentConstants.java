@@ -121,6 +121,7 @@ public interface PaymentConstants extends BaseConstants {
     String DESCRIPTION = "description";
 
     String REFUND_TEMPLATE_ID= "refund_template_id";
+    String PLAN_IDS_WITH_NO_MESSAGE_SUPPORT = "planIdsWithoutDropOutSms";
 
     String TRANSACTION = "transaction";
     String UPI_INTENT_QR_TAG = "#UPIINTENT";

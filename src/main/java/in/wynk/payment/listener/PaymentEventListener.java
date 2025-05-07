@@ -498,6 +498,7 @@ public class PaymentEventListener {
             AnalyticService.update(event);
             final Transaction lastTransaction = transactionManagerService.get(event.getTransactionId());
             final ClientDetails client = (ClientDetails) ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT001));
+            AnalyticService.update("client",client.getAlias());
             final boolean sendDropOutNotification = supportsDropOutText(client, lastTransaction.getPlanId()) && lastTransaction.getStatus() != TransactionStatus.SUCCESS;
             if (!sendDropOutNotification) {
                 log.info("Skipping to send drop out notification as user has completed transaction for {}", event);
@@ -516,6 +517,7 @@ public class PaymentEventListener {
         if (clientDetails != null && clientDetails.getMeta() != null && clientDetails.getMeta(PLAN_IDS_WITH_NO_MESSAGE_SUPPORT).isPresent()) {
             List<Integer> plans = (List<Integer>) clientDetails.getMeta().get(PLAN_IDS_WITH_NO_MESSAGE_SUPPORT);
             if (plans.stream().filter(plan -> plan.equals(planId)).findAny().isPresent()) {
+                AnalyticService.update("dropOutMessageSupported",Boolean.FALSE);
                 return false;
             }
         }

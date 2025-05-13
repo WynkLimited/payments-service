@@ -49,11 +49,11 @@ session:
 ##### mysql database props #####
 spring:
   datasource:
-    url: jdbc:mysql://10.168.64.3:3306/payments-preprod
+    url: jdbc:mysql://10.168.64.3:3306/payments-preprod?sslMode=DISABLED
     username: wcf-app-user-preprod
     password: LB+@5l.[@nc~mOg.
     hikari:
-      jdbc-url: jdbc:mysql://10.168.64.3:3306/payments-preprod
+      jdbc-url: jdbc:mysql://10.168.64.3:3306/payments-preprod?sslMode=DISABLED
       username: wcf-app-user-preprod
       password: LB+@5l.[@nc~mOg.
       driver-class-name: com.mysql.cj.jdbc.Driver
@@ -1225,7 +1225,7 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 hikari:
-                  jdbc-url: jdbc:mysql://10.168.64.3:3306/payments-preprod
+                  jdbc-url: jdbc:mysql://10.168.64.3:3306/payments-preprod?sslMode=DISABLED
                   username: wcf-app-user-preprod
                   password: LB+@5l.[@nc~mOg.
                   driver-class-name: com.mysql.cj.jdbc.Driver
@@ -1264,7 +1264,7 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 hikari:
-                  jdbc-url: jdbc:mysql://10.168.64.3:3306/payments-preprod
+                  jdbc-url: jdbc:mysql://10.168.64.3:3306/payments-preprod?sslMode=DISABLED
                   username: wcf-app-user-preprod
                   password: LB+@5l.[@nc~mOg.
                   driver-class-name: com.mysql.cj.jdbc.Driver
@@ -1303,7 +1303,7 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 hikari:
-                  jdbc-url: jdbc:mysql://10.168.64.3:3306/payments-preprod
+                  jdbc-url: jdbc:mysql://10.168.64.3:3306/payments-preprod?sslMode=DISABLED
                   username: wcf-app-user-preprod
                   password: LB+@5l.[@nc~mOg.
                   driver-class-name: com.mysql.cj.jdbc.Driver
@@ -1342,7 +1342,7 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 hikari:
-                  jdbc-url: jdbc:mysql://10.168.64.3:3306/payments_preprod_iqvideo
+                  jdbc-url: jdbc:mysql://10.168.64.3:3306/payments_preprod_iqvideo?sslMode=DISABLED
                   username: wcf-app-user-preprod
                   password: LB+@5l.[@nc~mOg.
                   driver-class-name: com.mysql.cj.jdbc.Driver
@@ -1381,7 +1381,7 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 hikari:
-                  jdbc-url: jdbc:mysql://10.168.64.3:3306/payments_preprod_rajtv
+                  jdbc-url: jdbc:mysql://10.168.64.3:3306/payments_preprod_rajtv?sslMode=DISABLED
                   username: wcf-app-user-preprod
                   password: LB+@5l.[@nc~mOg.
                   driver-class-name: com.mysql.cj.jdbc.Driver
@@ -1420,7 +1420,7 @@ wynk:
                 basePackages: in.wynk.payment.core.dao
               source:
                 hikari:
-                  jdbc-url: jdbc:mysql://10.168.64.3:3306/payments_preprod_enterr10
+                  jdbc-url: jdbc:mysql://10.168.64.3:3306/payments_preprod_enterr10?sslMode=DISABLED
                   username: wcf-app-user-preprod
                   password: LB+@5l.[@nc~mOg.
                   driver-class-name: com.mysql.cj.jdbc.Driver

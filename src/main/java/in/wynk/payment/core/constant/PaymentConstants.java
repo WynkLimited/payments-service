@@ -119,9 +119,8 @@ public interface PaymentConstants extends BaseConstants {
     String RENEWALS_INELIGIBLE_PLANS = "renewalsIneligiblePlans";
     String ERROR_DESCRIPTION_FOR_E6002 = "Invalid vpa ! please try again";
     String DESCRIPTION = "description";
-
     String REFUND_TEMPLATE_ID= "refund_template_id";
-
+    String OLD_TXN_ID= "old_txnId";
     String TRANSACTION = "transaction";
     String UPI_INTENT_QR_TAG = "#UPIINTENT";
     int MAXIMUM_RENEWAL_RETRY_ALLOWED = 3;

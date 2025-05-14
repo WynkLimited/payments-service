@@ -23,6 +23,8 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.util.Pair;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import in.wynk.payment.service.IPaymentRenewalInfoService;
+
 
 import javax.validation.Valid;
 
@@ -40,6 +42,8 @@ public class RevenuePaymentS2SControllerV2 {
 
     private final PaymentGatewayManager manager;
     private final PaymentMethodCachingService paymentMethodCachingService;
+    private final IPaymentRenewalInfoService paymentRenewalInfoService;
+
 
     @PostMapping("/charge")
     @AnalyseTransaction(name = "paymentCharging")
@@ -76,4 +80,12 @@ public class RevenuePaymentS2SControllerV2 {
         AnalyticService.update(response);
         return WynkResponseEntity.<AbstractPaymentRefundResponse>builder().data(response).build();
     }
+
+    @GetMapping("/event/{transactionId}")
+    @AnalyseTransaction(name = "getMerchantTransactionEvent")
+    public WynkResponseEntity<String> getMerchantTransactionEvent(@PathVariable String transactionId) {
+        String event = paymentRenewalInfoService.getMerchantTransactionEvent(transactionId);
+        return WynkResponseEntity.<String>builder().data(event).build();
+    }
 }
+

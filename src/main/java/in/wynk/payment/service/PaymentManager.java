@@ -331,6 +331,18 @@ public class PaymentManager
             }
             throw e;
         }
+        String oldTransactionId = SessionContextHolder.<SessionDTO>getBody().get(OLD_TXN_ID);
+        if (oldTransactionId != null) {
+            final Transaction oldTransaction = transactionManager.get(oldTransactionId);
+            String oldMsisdn = oldTransaction.getMsisdn();
+            String newMsisdn = request.getMsisdn();
+            if (oldMsisdn != null && !oldMsisdn.equalsIgnoreCase(newMsisdn)) {
+                log.info("msisdn changed from {} to {} for transactionId {}, cancelling previous subscription.",
+                        oldMsisdn, newMsisdn, oldTransaction.getIdStr());
+
+                subscriptionServiceManager.unSubscribePlan(UnSubscribePlanAsyncRequest.builder().uid(oldTransaction.getUid()).msisdn(oldMsisdn).planId(oldTransaction.getPlanId()).transactionId(oldTransaction.getIdStr()).paymentEvent(PaymentEvent.CANCELLED).transactionStatus(oldTransaction.getStatus()).triggerDataRequest(getTriggerData()).build());
+            }
+        }
         final AbstractTransactionInitRequest transactionInitRequest =
                 DefaultTransactionInitRequestMapper.from(IapVerificationRequestWrapper.builder().clientId(clientId).verificationRequest(request).receiptResponse(latestReceiptResponse).build());
         final Transaction transaction = transactionManager.init(transactionInitRequest, request.getPurchaseDetails());

@@ -8,6 +8,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.io.Serializable;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -32,6 +33,7 @@ public abstract class ReceiptDetails extends MongoBaseEntity<String> implements 
     private String receiptTransactionId;
     @Field("service")
     private String service;
+    private Map<String, Object> meta;
 
     public abstract Integer getNotificationType();
     public abstract boolean isRenew ();

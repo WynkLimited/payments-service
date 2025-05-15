@@ -341,7 +341,7 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                         } else {
                             if (!StringUtils.isBlank(originalITunesTrxnId) && !StringUtils.isBlank(itunesTrxnId)) {
                                 Map<String, Object> meta = new HashMap<>();
-                                if (oldMsisdn != null) {
+                                if (oldMsisdn != null && isMsisdnChanged) {
                                     meta.put(IS_MSISDN_CHANGED, isMsisdnChanged);
                                     meta.put("Msisdns", oldMsisdn + " | " + newMsisdn);
                                 }

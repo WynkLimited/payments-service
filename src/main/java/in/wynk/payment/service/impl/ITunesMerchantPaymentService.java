@@ -96,9 +96,11 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
     private final ApplicationEventPublisher eventPublisher;
     private final WynkRedisLockService wynkRedisLockService;
     private final IAuditableListener auditingListener;
+    private final ITransactionManagerService transactionManager;
 
-    public ITunesMerchantPaymentService(@Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson, ObjectMapper mapper, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, WynkRedisLockService wynkRedisLockService, IErrorCodesCacheService errorCodesCacheServiceImpl, @Qualifier(AuditConstants.MONGO_AUDIT_LISTENER) IAuditableListener auditingListener) {
+    public ITunesMerchantPaymentService(ITransactionManagerService transactionManager, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, Gson gson, ObjectMapper mapper, PaymentCachingService cachingService, ApplicationEventPublisher eventPublisher, WynkRedisLockService wynkRedisLockService, IErrorCodesCacheService errorCodesCacheServiceImpl, @Qualifier(AuditConstants.MONGO_AUDIT_LISTENER) IAuditableListener auditingListener) {
         super(cachingService, errorCodesCacheServiceImpl);
+        this.transactionManager = transactionManager;
         this.gson = gson;
         this.mapper = mapper;
         this.restTemplate = restTemplate;

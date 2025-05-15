@@ -67,8 +67,12 @@ public class ReceiptValidator extends BaseHandler<IReceiptValidatorRequest<Lates
                 throw new WynkRuntimeException(PaymentErrorType.PAY701);
             }
             receiptDetailsOptional.ifPresent(details -> {
-                SessionContextHolder.<SessionDTO>getBody().put(OLD_TXN_ID, details.getPaymentTransactionId());
+                String oldTransactionId = details.getPaymentTransactionId();
+                if (oldTransactionId != null) {
+                    SessionContextHolder.<SessionDTO>getBody().put(OLD_TXN_ID, oldTransactionId);
+                }
             });
+
             super.handle(request);
         }
     }

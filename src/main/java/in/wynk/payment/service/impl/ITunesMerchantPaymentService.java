@@ -299,9 +299,17 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
             ItunesStatusCodes code = null;
             final ItunesReceiptType receiptType = itunesLatestReceiptResponse.getItunesReceiptType();
             final List<LatestReceiptInfo> latestReceiptInfoList = itunesLatestReceiptResponse.getLatestReceiptInfo();
-            String oldTransactionId =   sessionDTO.get(OLD_TXN_ID);
-            final Transaction oldTransaction = transactionManager.get(oldTransactionId);
-            boolean isMsisdnChanged= transaction.getMsisdn() == oldTransaction.getMsisdn();
+            String oldTransactionId = sessionDTO.get(OLD_TXN_ID);
+            Transaction oldTransaction = null;
+            String oldMsisdn= null;
+            if(!StringUtils.isEmpty(oldTransactionId)){
+                oldTransaction = transactionManager.get(oldTransactionId);
+                if(oldTransaction != null){
+                    oldMsisdn= oldTransaction.getMsisdn();
+                }
+            }
+            String newMsisdn = transaction.getMsisdn();
+            boolean isMsisdnChanged= !Objects.equals(oldMsisdn, newMsisdn);
             if (CollectionUtils.isEmpty(latestReceiptInfoList)) {
                 log.info("Latest receipt not found for uid: {}, planId: {}", transaction.getUid(), transaction.getPlanId());
                 code = ItunesStatusCodes.APPLE_21018;
@@ -333,8 +341,10 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                         } else {
                             if (!StringUtils.isBlank(originalITunesTrxnId) && !StringUtils.isBlank(itunesTrxnId)) {
                                 Map<String, Object> meta = new HashMap<>();
-                                meta.put(IS_MSISDN_CHANGED, isMsisdnChanged);
-                                meta.put("Msisdns", oldTransaction.getMsisdn() + " | " + transaction.getMsisdn());
+                                if (oldMsisdn != null) {
+                                    meta.put(IS_MSISDN_CHANGED, isMsisdnChanged);
+                                    meta.put("Msisdns", oldMsisdn + " | " + newMsisdn);
+                                }
                                 final ItunesReceiptDetails itunesIdUidMapping = ItunesReceiptDetails.builder()
                                         .type(receiptType.name())
                                         .id(originalITunesTrxnId)

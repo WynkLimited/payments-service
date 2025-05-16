@@ -335,13 +335,13 @@ public class PaymentManager
             throw e;
         }
         String oldTransactionId = SessionContextHolder.<SessionDTO>getBody().get(OLD_TXN_ID);
-        if (oldTransactionId != null) {
+        if (Objects.nonNull(oldTransactionId)) {
             final Transaction oldTransaction = transactionManager.get(oldTransactionId);
-            if (oldTransaction != null) {
+            if (Objects.nonNull(oldTransaction)) {
                 String oldMsisdn = oldTransaction.getMsisdn();
                 String newMsisdn = request.getMsisdn();
 
-                if (oldMsisdn != null && !oldMsisdn.equalsIgnoreCase(newMsisdn)) {
+                if (StringUtils.isNotBlank(oldMsisdn) && !oldMsisdn.equalsIgnoreCase(newMsisdn)) {
                     log.info("msisdn changed from {} to {} for transactionId {}, cancelling previous subscription.",oldMsisdn, newMsisdn, oldTransaction.getIdStr());
                     subscriptionServiceManager.unSubscribePlan(UnSubscribePlanAsyncRequest.builder().uid(oldTransaction.getUid()).msisdn(oldMsisdn).planId(oldTransaction.getPlanId()).transactionId(oldTransaction.getIdStr()).paymentEvent(PaymentEvent.CANCELLED).transactionStatus(oldTransaction.getStatus()).triggerDataRequest(getTriggerData()).build());
                 }

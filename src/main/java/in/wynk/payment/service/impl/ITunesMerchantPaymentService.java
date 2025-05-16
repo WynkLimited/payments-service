@@ -344,8 +344,8 @@ public class ITunesMerchantPaymentService extends AbstractMerchantPaymentStatusS
                         } else {
                             if (!StringUtils.isBlank(originalITunesTrxnId) && !StringUtils.isBlank(itunesTrxnId)) {
                                 Map<String, Object> meta = new HashMap<>();
-                                if (oldMsisdn != null && isMsisdnChanged) {
-                                    meta.put(IS_MSISDN_CHANGED, isMsisdnChanged);
+                                if (StringUtils.isNotBlank(oldMsisdn) && isMsisdnChanged) {
+                                    meta.put(IS_MSISDN_CHANGED, true);
                                     meta.put("Msisdns", oldMsisdn + " | " + newMsisdn);
                                 }
                                 final ItunesReceiptDetails itunesIdUidMapping = ItunesReceiptDetails.builder()

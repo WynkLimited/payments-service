@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
+
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.GET_MERCHANT_EVENT;
 
 @Service
@@ -20,9 +22,11 @@ public class PaymentRenewalInfoServiceImpl implements IPaymentRenewalInfoService
     public String getMerchantTransactionEvent(String transactionId) {
         try {
             PaymentRenewal renewal = recurringPaymentManagerService.getRenewalById(transactionId);
-            return (renewal != null && renewal.getTransactionEvent() != null)
-                    ? renewal.getTransactionEvent().name()
-                    : null;
+
+            if (Objects.nonNull(renewal) && Objects.nonNull(renewal.getTransactionEvent())) {
+                return renewal.getTransactionEvent().name();
+            }
+            return "NA";
         } catch (Exception e) {
             log.error(GET_MERCHANT_EVENT, "ERROR fetching renewal entry, transactionId={}", transactionId, e);
             throw e;

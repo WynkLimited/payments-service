@@ -24,7 +24,7 @@ public class PaymentRenewalInfoServiceImpl implements IPaymentRenewalInfoService
                     ? renewal.getTransactionEvent().name()
                     : null;
         } catch (Exception e) {
-            log.error(GET_MERCHANT_EVENT, "Service ERROR fetching, transactionId={}", transactionId, e);
+            log.error(GET_MERCHANT_EVENT, "ERROR fetching renewal entry, transactionId={}", transactionId, e);
             throw e;
         }
     }

@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import static in.wynk.payment.constant.PaymentLoggingMarker.MERCHANT_TXN_EVENT_ERROR;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.GET_MERCHANT_EVENT;
 
 @Service
 @RequiredArgsConstructor
@@ -24,7 +24,7 @@ public class PaymentRenewalInfoServiceImpl implements IPaymentRenewalInfoService
                     ? renewal.getTransactionEvent().name()
                     : null;
         } catch (Exception e) {
-            log.error(MERCHANT_TXN_EVENT_ERROR, "getMerchantTransactionEvent – ERROR fetching renewal, transactionId={}", transactionId, e);
+            log.error(GET_MERCHANT_EVENT, "Service ERROR fetching, transactionId={}", transactionId, e);
             throw e;
         }
     }

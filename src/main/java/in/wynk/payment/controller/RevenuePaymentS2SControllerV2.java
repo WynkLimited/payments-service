@@ -72,6 +72,7 @@ public class RevenuePaymentS2SControllerV2 {
     @AnalyseTransaction(name = "getMerchantTransactionEvent")
     public WynkResponseEntity<String> getMerchantTransactionEvent(@PathVariable String transactionId) {
         String event = paymentRenewalInfoService.getMerchantTransactionEvent(transactionId);
+        AnalyticService.update("getMerchantTransactionEvent.response", event);
         return WynkResponseEntity.<String>builder().data(event).build();
     }
 

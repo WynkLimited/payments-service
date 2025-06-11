@@ -28,6 +28,7 @@ import javax.validation.Valid;
 
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_CLIENT_AUTHORIZATION;
 import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_METHOD;
+import in.wynk.payment.service.IPaymentRenewalInfoService;
 
 /**
  * @author Nishesh Pandey
@@ -40,6 +41,7 @@ public class RevenuePaymentS2SControllerV2 {
 
     private final PaymentGatewayManager manager;
     private final PaymentMethodCachingService paymentMethodCachingService;
+    private final IPaymentRenewalInfoService paymentRenewalInfoService;
 
     @PostMapping("/charge")
     @AnalyseTransaction(name = "paymentCharging")
@@ -64,6 +66,13 @@ public class RevenuePaymentS2SControllerV2 {
                 }).transform(() -> manager.reconcile(ChargingTransactionStatusRequest.builder().transactionId(tid).build()));
         AnalyticService.update(responseEntity);
         return responseEntity;
+    }
+
+    @GetMapping("/event/{transactionId}")
+    @AnalyseTransaction(name = "getMerchantTransactionEvent")
+    public WynkResponseEntity<String> getMerchantTransactionEvent(@PathVariable String transactionId) {
+        String event = paymentRenewalInfoService.getMerchantTransactionEvent(transactionId);
+        return WynkResponseEntity.<String>builder().data(event).build();
     }
 
     @PostMapping("/refund")

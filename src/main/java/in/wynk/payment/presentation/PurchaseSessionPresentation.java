@@ -34,7 +34,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.*;
 public class PurchaseSessionPresentation implements IPresentation<WynkResponseEntity<SessionResponse.SessionData>, Pair<String, PurchaseRequest>> {
 
 
-    @Value("show.GBP.disabled.plans")
+    @Value("${show.GBP.disabled.plans}")
     private List<String> showGBPDisabledPlans;
 
 

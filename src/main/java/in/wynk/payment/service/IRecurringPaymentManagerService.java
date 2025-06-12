@@ -19,8 +19,11 @@ public interface IRecurringPaymentManagerService {
 
     void scheduleRecurringPayment (AbstractTransactionRevisionRequest request);
 
-    void scheduleRecurringPayment (String transactionId, String lastSuccessTransactionId, PaymentEvent event, String code, Calendar nextRecurringDateTime, int attemptSequence,
+    void updateRenewalEntry (String transactionId, String lastSuccessTransactionId, PaymentEvent event, String code, Calendar nextRecurringDateTime,
                                    Transaction transaction, TransactionStatus finalTransactionStatus, PaymentRenewal renewal);
+
+    void createEntryInRenewalTable (String transactionId, String lastSuccessTransactionId, PaymentEvent event, String code, Calendar nextRecurringDateTime, int attemptSequence,
+                                   Transaction transaction, TransactionStatus finalTransactionStatus, PaymentRenewal previousRenewal, Transaction previousTransaction);
 
     void unScheduleRecurringPayment (String clientAlias, String transactionId, PaymentEvent paymentEvent);
 

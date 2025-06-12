@@ -360,4 +360,7 @@ event:
 
 api.get.endPoint: https://subscription-staging.wynk.in
 
-
+show:
+  GBP:
+    disabled:
+      plans: 79007

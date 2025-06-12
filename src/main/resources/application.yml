@@ -359,3 +359,5 @@ event:
     dp:  data-science-subscription-funnel-information
 
 api.get.endPoint: https://subscription-staging.wynk.in
+
+

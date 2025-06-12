@@ -32,7 +32,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.*;
 @Component
 public class PurchaseSessionPresentation implements IPresentation<WynkResponseEntity<SessionResponse.SessionData>, Pair<String, PurchaseRequest>> {
 
-    @Value("show.GBP.disabled.plans")
+    @Value("${show.GBP.disabled.plans}")
     private List<String> showGBPDisabledPlans;
 
     @Override
@@ -48,7 +48,7 @@ public class PurchaseSessionPresentation implements IPresentation<WynkResponseEn
             if (request.getProductDetails().getType().equalsIgnoreCase(PLAN)) {
                 queryBuilder.addParameter(PLAN_ID, request.getProductDetails().getId());
                 PlanDTO planDto = cache.getPlan(request.getProductDetails().getId());
-                if (!showGBPDisabledPlans.contains(request.getProductDetails().getId()) && Objects.nonNull(planDto.getSku()) && Objects.nonNull(planDto.getSku().get("google_iap"))) {
+                if (Objects.nonNull(planDto.getSku()) && Objects.nonNull(planDto.getSku().get("google_iap")) && !showGBPDisabledPlans.contains(request.getProductDetails().getId())) {
                     queryBuilder.addParameter(PaymentConstants.SKU_ID, planDto.getSku().get("google_iap"));
                 } else {
                     queryBuilder.addParameter(PaymentConstants.SHOW_GPB, String.valueOf(false));

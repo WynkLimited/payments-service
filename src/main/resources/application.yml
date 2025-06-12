@@ -359,3 +359,8 @@ event:
     dp:  data-science-subscription-funnel-information
 
 api.get.endPoint: https://subscription-staging.wynk.in
+
+show:
+  GBP:
+    disabled:
+      plans: 79007

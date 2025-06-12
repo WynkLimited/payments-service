@@ -48,7 +48,7 @@ public class PurchaseSessionPresentation implements IPresentation<WynkResponseEn
             if (request.getProductDetails().getType().equalsIgnoreCase(PLAN)) {
                 queryBuilder.addParameter(PLAN_ID, request.getProductDetails().getId());
                 PlanDTO planDto = cache.getPlan(request.getProductDetails().getId());
-                if (Objects.nonNull(planDto.getSku()) && Objects.nonNull(planDto.getSku().get("google_iap")) && !showGBPDisabledPlans.contains(request.getProductDetails().getId())) {
+                if (!showGBPDisabledPlans.contains(request.getProductDetails().getId()) && Objects.nonNull(planDto.getSku()) && Objects.nonNull(planDto.getSku().get("google_iap"))) {
                     queryBuilder.addParameter(PaymentConstants.SKU_ID, planDto.getSku().get("google_iap"));
                 } else {
                     queryBuilder.addParameter(PaymentConstants.SHOW_GPB, String.valueOf(false));

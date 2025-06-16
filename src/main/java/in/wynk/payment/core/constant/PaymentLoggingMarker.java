@@ -76,6 +76,12 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker AMAZON_IAP_VERIFICATION_FAILURE = MarkerFactory.getMarker("AMAZON_IAP_VERIFICATION_FAILURE");
     Marker AMAZON_SERVICE_ERROR = MarkerFactory.getMarker("AMAZON_SERVICE_ERROR");
 
+    /**
+     * KEPLER IAP Marker
+     **/
+    Marker KEPLER_IAP_NOTIFICATION_ERROR = MarkerFactory.getMarker("KEPLER_IAP_NOTIFICATION_ERROR");
+    Marker KEPLER_IAP_RENEWAL_ERROR = MarkerFactory.getMarker("KEPLER_IAP_RENEWAL_ERROR");
+    Marker KEPLER_IAP_VERIFICATION_FAILURE = MarkerFactory.getMarker("KEPLER_IAP_VERIFICATION_FAILURE");
 
     /**
      * Common Renewal Marker

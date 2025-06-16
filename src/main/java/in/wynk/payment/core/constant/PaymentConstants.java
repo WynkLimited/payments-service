@@ -35,6 +35,7 @@ public interface PaymentConstants extends BaseConstants {
     String MERCHANT_TOKEN = "token";
     String SE_BILLING = "SE_BILLING";
     String AMAZON_IAP = "AMAZON_IAP";
+    String KEPLER_IAP = "KEPLER_IAP";
     String GOOGLE_IAP = "GOOGLE_IAP";
     String SUBTITLE_TEXT = "subtitle";
     String BUTTON_TEXT = "buttonText";
@@ -94,7 +95,7 @@ public interface PaymentConstants extends BaseConstants {
     String BLANK = "";
     String PAYMENT_CLIENT_AUTHORIZATION = "authentication.details.getApiServices().contains(\"payment\")";
 
-    List<String> IAP_PAYMENT_METHODS = Arrays.asList(PaymentConstants.ITUNES, PaymentConstants.AMAZON_IAP, PaymentConstants.GOOGLE_IAP);
+    List<String> IAP_PAYMENT_METHODS = Arrays.asList(PaymentConstants.ITUNES, PaymentConstants.AMAZON_IAP, PaymentConstants.GOOGLE_IAP, PaymentConstants.KEPLER_IAP);
 
     String CONTENT_TYPE = "Content-Type";
     String CURRENCY_INR = "INR";

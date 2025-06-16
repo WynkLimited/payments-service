@@ -18,6 +18,7 @@ public interface BeanConstant {
     String TRANSACTION_DAO = "transactionDaoBean";
     String PAYTM_MERCHANT_WALLET_SERVICE = "PayTm";
     String AMAZON_IAP_PAYMENT_SERVICE = "AmazonIap";
+    String KEPLER_IAP_PAYMENT_SERVICE = "KeplerIap";
     String ADD_TO_BILL_PAYMENT_SERVICE = "AddToBill";
     String TRANSACTION_MANAGER = "transactionManager";
     String PHONEPE_MERCHANT_PAYMENT_SERVICE = "PhonePe";

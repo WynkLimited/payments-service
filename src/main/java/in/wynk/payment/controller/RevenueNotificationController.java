@@ -30,7 +30,7 @@ public class RevenueNotificationController {
     @PostMapping("/{partner}")
     @AnalyseTransaction(name = "paymentServerSyncCallback")
     public WynkResponseEntity<Void> handlePartnerCallback(@PathVariable String partner, @RequestBody String payload) {
-        return handleCallbackAsync(partner, applicationAlias, payload);
+        return handleCallbackAsync(partner, applicationAlias, payload);//check
     }
 
     @PostMapping("/{partner}/{clientAlias}")

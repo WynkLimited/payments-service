@@ -70,7 +70,8 @@ public class BasicPricingManager implements IPricingManager {
                 }
             }
             nativeRequest.setAmount(selectedPlan.getFinalPrice());
-            if (Arrays.asList(PaymentConstants.ITUNES, PaymentConstants.AMAZON_IAP, PaymentConstants.GOOGLE_IAP).contains(request.getPaymentGateway().getId())) couponManager.applyCoupon(nativeRequest.getUid(), nativeRequest.getCouponId());
+            if (Arrays.asList(PaymentConstants.ITUNES, PaymentConstants.AMAZON_IAP, PaymentConstants.KEPLER_IAP, PaymentConstants.GOOGLE_IAP).contains(request.getPaymentGateway().getId()))
+                couponManager.applyCoupon(nativeRequest.getUid(), nativeRequest.getCouponId());
             if (selectedPlan.getPlanType() == PlanType.FREE_TRIAL) return;
         } else {
             final PointTransactionInitRequest pointRequest = (PointTransactionInitRequest) request;

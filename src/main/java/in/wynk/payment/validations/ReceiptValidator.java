@@ -21,6 +21,7 @@ import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayProductReceiptRespons
 import in.wynk.payment.dto.gpbs.response.receipt.GooglePlaySubscriptionReceiptResponse;
 import in.wynk.payment.dto.itune.ItunesLatestReceiptResponse;
 import in.wynk.payment.dto.itune.LatestReceiptInfo;
+import in.wynk.payment.dto.keplerIap.KeplerLatestReceiptResponse;
 import in.wynk.payment.dto.response.LatestReceiptResponse;
 import in.wynk.session.context.SessionContextHolder;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +43,7 @@ public class ReceiptValidator extends BaseHandler<IReceiptValidatorRequest<Lates
         delegate.put(ITUNES, new ItunesReceiptValidator());
         delegate.put(AMAZON_IAP, new AmazonReceiptValidator());
         delegate.put(GOOGLE_IAP, new GooglePlayReceiptValidator());
+        delegate.put(KEPLER_IAP, new KeplerReceiptValidator());
     }
 
     @Override
@@ -81,6 +83,20 @@ public class ReceiptValidator extends BaseHandler<IReceiptValidatorRequest<Lates
 
         @Override
         public void handle (IReceiptValidatorRequest<AmazonLatestReceiptResponse> request) {
+            LatestReceiptResponse receiptResponse = request.getLatestReceiptInfo();
+            final String receiptId = receiptResponse.getExtTxnId();
+            Optional<ReceiptDetails> receiptDetailsOptional =
+                    RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(receiptId);
+            if (receiptDetailsOptional.isPresent() && verifyIfPreviousTransactionSuccess(receiptDetailsOptional.get())) {
+                SessionContextHolder.<SessionDTO>getBody().put(TXN_ID, receiptDetailsOptional.get().getPaymentTransactionId());
+                throw new WynkRuntimeException(PaymentErrorType.PAY701);
+            }
+        }
+    }
+
+    private static class KeplerReceiptValidator extends BaseHandler<IReceiptValidatorRequest<KeplerLatestReceiptResponse>> {
+        @Override
+        public void handle(IReceiptValidatorRequest<KeplerLatestReceiptResponse> request) {
             LatestReceiptResponse receiptResponse = request.getLatestReceiptInfo();
             final String receiptId = receiptResponse.getExtTxnId();
             Optional<ReceiptDetails> receiptDetailsOptional =

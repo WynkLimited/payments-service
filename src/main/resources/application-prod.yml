@@ -341,6 +341,15 @@ payment:
       secret: 2:IJfTI-o1TsAxo1MRxwTUlOprySfH_G5qDlZXvlenFE_MSxEkckfQ70hwHwKC7cbB:3ot0eUrg4XOyFFQdKv5L4Q==
       status:
         baseUrl: https://appstore-sdk.amazon.com/version/1.0/verifyReceiptId/developer/
+    #### Kepler props ####
+    KeplerIap:
+      airtelxstream:
+        secret: 2:KkdfLe4Q5R5EdYCsbychuO2ofiPp1vS2T6Gz9wAIf--MBm-ZVs0TJwEgEWjdwPHx:OqiKmkkYy0II9AV4ev8kFg==
+      enterr10:
+        secret: 2:KkdfLe4Q5R5EdYCsbychuO2ofiPp1vS2T6Gz9wAIf--MBm-ZVs0TJwEgEWjdwPHx:OqiKmkkYy0II9AV4ev8kFg==
+      secret: 2:KkdfLe4Q5R5EdYCsbychuO2ofiPp1vS2T6Gz9wAIf--MBm-ZVs0TJwEgEWjdwPHx:OqiKmkkYy0II9AV4ev8kFg==
+      status:
+        baseUrl: https://appstore-sdk.amazon.com/version/1.0/verifyReceiptId/developer/
     #### PhonePe props ######
     phonepe:
       airtelxstream:

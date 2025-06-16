@@ -38,7 +38,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.*;
 @RequiredArgsConstructor
 public class RetryableCallbackService implements ICallbackService<Object, AbstractCallbackResponse>, IHeaderCallbackService<Object, AbstractPaymentCallbackResponse> {
 
-    private static final List<String> RECEIPT_PROCESSING_PAYMENT_CODE = Arrays.asList(ITUNES, AMAZON_IAP, GOOGLE_IAP);
+    private static final List<String> RECEIPT_PROCESSING_PAYMENT_CODE = Arrays.asList(ITUNES, AMAZON_IAP, KEPLER_IAP, GOOGLE_IAP);
     private final PaymentManager oldManager;
     private final PaymentGatewayManager newManager;
 
@@ -127,7 +127,7 @@ public class RetryableCallbackService implements ICallbackService<Object, Abstra
             if (Objects.isNull(callbackRequest.getTransactionId())) {
                 return CallbackResponseWrapper.builder().callbackResponse(DefaultPaymentCallbackResponse.builder().build()).build();
             }
-            return newManager.handle(callbackRequest);
+            return newManager.handle(callbackRequest); //this line will get execute
         }
     }
 

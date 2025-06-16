@@ -36,6 +36,7 @@ import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.*;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.mapper.DefaultTransactionInitRequestMapper;
+import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.stream.producer.IKafkaPublisherService;
 import lombok.RequiredArgsConstructor;
@@ -432,13 +433,13 @@ public class PaymentManager
                     .txnId(txnId)
                     .build();
         }
-        throw new WynkRuntimeException("Exception occurred as type is missing");
+       throw new WynkRuntimeException("Exception occurred as type is missing");
     }
 
     @Override
     public WynkResponseEntity<Void> doRenewal (PaymentRenewalChargingRequest request) {
         Optional<Transaction> originalTransaction = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).findById(request.getId());
-        if ((request.getPaymentGateway().getId().equals(ITUNES) || request.getPaymentGateway().getId().equals(AMAZON_IAP) || request.getPaymentGateway().getId().equals(GOOGLE_IAP)) && originalTransaction.get().getStatus() != TransactionStatus.SUCCESS && !isEligibleForRenewal(originalTransaction.get())) {
+        if (request.getPaymentGateway().getId().equals(ITUNES) && originalTransaction.get().getStatus() != TransactionStatus.SUCCESS && !isEligibleForRenewal(originalTransaction.get())) {
             log.info("User already renewed through callback: {} ", request.getId());
             return null;
         }

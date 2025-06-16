@@ -21,14 +21,12 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.*;
-import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
-import in.wynk.payment.core.dao.repository.ITransactionDao;
 import in.wynk.payment.core.dao.repository.WynkUserExtUserDao;
 import in.wynk.payment.core.dao.repository.receipts.ReceiptDetailsDao;
 import in.wynk.payment.core.event.PaymentErrorEvent;
 import in.wynk.payment.dto.*;
-import in.wynk.payment.dto.amazonIap.*;
 import in.wynk.payment.dto.gpbs.acknowledge.request.AbstractPaymentAcknowledgementRequest;
+import in.wynk.payment.dto.keplerIap.*;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
 import in.wynk.payment.dto.request.IapVerificationRequest;
 import in.wynk.payment.dto.request.PaymentRenewalChargingRequest;
@@ -63,13 +61,12 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.*;
 
-import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
-import static in.wynk.payment.core.constant.PaymentLoggingMarker.AMAZON_IAP_VERIFICATION_FAILURE;
+import static in.wynk.payment.core.constant.PaymentLoggingMarker.KEPLER_IAP_VERIFICATION_FAILURE;
+
 
 @Slf4j
-@Service(BeanConstant.AMAZON_IAP_PAYMENT_SERVICE)
-public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentPreVerificationService, IMerchantIapSubscriptionAcknowledgementService, IMerchantIapPaymentVerificationService, IReceiptDetailService<AmazonIapReceiptResponse, AmazonNotificationRequest>, IUserMappingService, IPaymentNotificationService<AmazonIapReceiptResponse>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> {
-
+@Service(BeanConstant.KEPLER_IAP_PAYMENT_SERVICE)
+public class KeplerIapMerchantPaymentService extends AbstractMerchantPaymentStatusService implements IMerchantIapPaymentPreVerificationService, IMerchantIapSubscriptionAcknowledgementService, IMerchantIapPaymentVerificationService, IReceiptDetailService<KeplerIapReceiptResponse, KeplerNotificationRequest>, IUserMappingService, IPaymentNotificationService<KeplerIapReceiptResponse>, IMerchantPaymentRenewalService<PaymentRenewalChargingRequest> {
     private static final List<String> SUBSCRIBED_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_MODIFIED_IMMEDIATE", "SUBSCRIPTION_PURCHASED");
     private static final List<String> RENEW_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_RENEWED", "SUBSCRIPTION_CONVERTED_FREE_TRIAL_TO_PAID");
     private static final List<String> PURCHASE_NOTIFICATIONS = Arrays.asList("CONSUMABLE_PURCHASED", "ENTITLEMENT_PURCHASED");
@@ -77,7 +74,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     private static final List<String> UNSUBSCRIBE_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_AUTO_RENEWAL_OFF", "SUBSCRIPTION_EXPIRED");
     private static final List<String> CANCELLED_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_CANCELLED", "ENTITLEMENT_CANCELLED", "CONSUMABLE_CANCELLED");
     private static final List<String> SUB_MODIFICATION_NOTIFICATIONS = Arrays.asList("SUBSCRIPTION_RENEWED", "SUBSCRIPTION_CONVERTED_FREE_TRIAL_TO_PAID", "SUBSCRIPTION_CANCELLED", "SUBSCRIPTION_AUTO_RENEWAL_OFF", "SUBSCRIPTION_EXPIRED", "SUBSCRIPTION_MODIFIED_IMMEDIATE", "ENTITLEMENT_CANCELLED", "CONSUMABLE_CANCELLED");
-    private static final List<String> AMAZON_SNS_CONFIRMATION = Arrays.asList("SubscriptionConfirmation", "UnsubscribeConfirmation");
+    private static final List<String> KEPLER_SNS_CONFIRMATION = Arrays.asList("SubscriptionConfirmation", "UnsubscribeConfirmation");
 
     private static final Map<Integer, String> CANCELLATION_REASON = new HashMap<Integer, String>() {{
         put(0, "The cancel reason is currently unavailable and will render at a later time.");
@@ -86,15 +83,15 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     }};
     private final ApplicationEventPublisher eventPublisher;
     private final PaymentCachingService cachingService;
-    @Value("${payment.merchant.AmazonIap.secret}")
-    private String amazonIapSecret;
-    @Value("${payment.merchant.AmazonIap.status.baseUrl}")
-    private String amazonIapStatusUrl;
+    @Value("${payment.merchant.KeplerIap.secret}")
+    private String keplerIapSecret;
+    @Value("${payment.merchant.KeplerIap.status.baseUrl}")
+    private String keplerIapStatusUrl;
     private final RestTemplate restTemplate;
     private final SnsSignatureVerifier signatureVerifier;
     private final IAuditableListener auditingListener;
 
-    public AmazonIapMerchantPaymentService(ApplicationEventPublisher eventPublisher, PaymentCachingService cachingService, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, IErrorCodesCacheService errorCodesCacheServiceImpl, SnsSignatureVerifier signatureVerifier, @Qualifier(AuditConstants.MONGO_AUDIT_LISTENER) IAuditableListener auditingListener) {
+    public KeplerIapMerchantPaymentService(ApplicationEventPublisher eventPublisher, PaymentCachingService cachingService, @Qualifier(BeanConstant.EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, IErrorCodesCacheService errorCodesCacheServiceImpl, SnsSignatureVerifier signatureVerifier, @Qualifier(AuditConstants.MONGO_AUDIT_LISTENER) IAuditableListener auditingListener) {
         super(cachingService, errorCodesCacheServiceImpl);
         this.signatureVerifier = signatureVerifier;
         this.eventPublisher = eventPublisher;
@@ -103,7 +100,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         this.auditingListener = auditingListener;
     }
 
-    private static String buildNotificationStringToSign(AmazonNotificationRequest msg) {
+    private static String buildNotificationStringToSign(KeplerNotificationRequest msg) {
         String stringToSign = "Message\n";
         stringToSign += msg.getMessage() + "\n";
         stringToSign += "MessageId\n";
@@ -121,14 +118,14 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         return stringToSign;
     }
 
-    private static byte[] getMessageBytesToSign(AmazonNotificationRequest msg) {
-        if (AMAZON_SNS_CONFIRMATION.contains(msg.getNotificationType())) {
+    private static byte[] getMessageBytesToSign(KeplerNotificationRequest msg) {
+        if (KEPLER_SNS_CONFIRMATION.contains(msg.getNotificationType())) {
             return buildSubscriptionStringToSign(msg).getBytes();
         }
         return buildNotificationStringToSign(msg).getBytes();
     }
 
-    private static void verifyMessageSignatureURL(AmazonNotificationRequest msg, URL endpoint) {
+    private static void verifyMessageSignatureURL(KeplerNotificationRequest msg, URL endpoint) {
         URI certUri = URI.create(msg.getSigningCertURL());
 
         if (!"https".equals(certUri.getScheme())) {
@@ -144,7 +141,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         }
     }
 
-    public static String buildSubscriptionStringToSign(AmazonNotificationRequest msg) {
+    public static String buildSubscriptionStringToSign(KeplerNotificationRequest msg) {
         String stringToSign = "Message\n";
         stringToSign += msg.getMessage() + "\n";
         stringToSign += "MessageId\n";
@@ -162,11 +159,10 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         return stringToSign;
     }
 
-    private boolean isMessageSignatureValid(AmazonNotificationRequest msg) {
+    private boolean isMessageSignatureValid(KeplerNotificationRequest msg) {
         try {
             URL url = new URL(msg.getSigningCertURL());
             verifyMessageSignatureURL(msg, url);
-//            InputStream inStream = url.openStream();
             RequestEntity<String> requestEntity = new RequestEntity<>(HttpMethod.GET, url.toURI());
             ResponseEntity<Resource> responseEntity = restTemplate.exchange(requestEntity, Resource.class);
             InputStream inStream = Objects.requireNonNull(responseEntity.getBody()).getInputStream();
@@ -190,7 +186,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         final IapVerificationResponse.IapVerification.IapVerificationBuilder builder = IapVerificationResponse.IapVerification.builder();
         try {
             final Transaction transaction = TransactionContext.get();
-            final AmazonLatestReceiptResponse response = (AmazonLatestReceiptResponse) latestReceiptResponse;
+            final KeplerLatestReceiptResponse response = (KeplerLatestReceiptResponse) latestReceiptResponse;
             fetchAndUpdateTransaction(transaction, response);
             final String clientPagePlaceHolder = PaymentConstants.PAYMENT_PAGE_PLACE_HOLDER.replace("%c", ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT));
             if (transaction.getStatus().equals(TransactionStatus.SUCCESS)) {
@@ -202,7 +198,7 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
             }
             return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().data(builder.build()).build()).status(HttpStatus.OK).build();
         } catch (Exception e) {
-            log.error(AMAZON_IAP_VERIFICATION_FAILURE, e.getMessage(), e);
+            log.error(KEPLER_IAP_VERIFICATION_FAILURE, e.getMessage(), e);
             return BaseResponse.<IapVerificationResponse>builder().body(IapVerificationResponse.builder().success(false).data(builder.build()).build()).status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -210,23 +206,23 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     @Override
     public LatestReceiptResponse getLatestReceiptResponse(IapVerificationRequest iapVerificationRequest) {
         boolean autoRenewal = false;
-        AmazonIapVerificationRequest amazonIapVerificationRequest = (AmazonIapVerificationRequest) iapVerificationRequest;
-        AmazonIapReceiptResponse amazonIapReceiptResponse = getReceiptStatus(amazonIapVerificationRequest.getReceipt().getReceiptId(), amazonIapVerificationRequest.getUserData().getUserId());
-        if (amazonIapReceiptResponse.getRenewalDate() != null && amazonIapReceiptResponse.getRenewalDate() > System.currentTimeMillis()) {
+        KeplerIapVerificationRequest keplerIapVerificationRequest = (KeplerIapVerificationRequest) iapVerificationRequest;
+        KeplerIapReceiptResponse keplerIapReceiptResponse = getReceiptStatus(keplerIapVerificationRequest.getReceipt().getReceiptId(), keplerIapVerificationRequest.getUserData().getUserId());
+        if (keplerIapReceiptResponse.getRenewalDate() != null && keplerIapReceiptResponse.getRenewalDate() > System.currentTimeMillis()) {
             autoRenewal = true;
         }
-        String skuId = amazonIapReceiptResponse.getTermSku();
+        String skuId = keplerIapReceiptResponse.getTermSku();
         if (StringUtils.isEmpty(skuId)) {
-            skuId = amazonIapVerificationRequest.getReceipt().getSku();
+            skuId = keplerIapVerificationRequest.getReceipt().getSku();
         }
-        return AmazonLatestReceiptResponse.builder()
-                .freeTrial(Objects.nonNull(amazonIapReceiptResponse.getFreeTrialEndDate()))
+        return KeplerLatestReceiptResponse.builder()
+                .freeTrial(Objects.nonNull(keplerIapReceiptResponse.getFreeTrialEndDate()))
                 .autoRenewal(autoRenewal)
-                .amazonIapReceiptResponse(amazonIapReceiptResponse)
+                .keplerIapReceiptResponse(keplerIapReceiptResponse)
                 .planId(cachingService.getPlanFromSku(skuId).getId())
                 .service(iapVerificationRequest.getService())
-                .extTxnId(amazonIapVerificationRequest.getReceipt().getReceiptId())
-                .amazonUserId(amazonIapVerificationRequest.getUserData().getUserId())
+                .extTxnId(keplerIapVerificationRequest.getReceipt().getReceiptId())
+                .keplerUserId(keplerIapVerificationRequest.getUserData().getUserId())
                 .build();
     }
 
@@ -237,49 +233,49 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     }
 
     @SneakyThrows
-    private ChargingStatusResponse fetchChargingStatusFromAmazonIapSource(Transaction transaction, String extTxnId) {
+    private ChargingStatusResponse fetchChargingStatusFromKeplerIapSource(Transaction transaction, String extTxnId) {
         if (EnumSet.of(TransactionStatus.FAILURE).contains(transaction.getStatus())) {
-            fetchAndUpdateTransaction(transaction, AmazonLatestReceiptResponse.builder().extTxnId(extTxnId).build());
+            fetchAndUpdateTransaction(transaction, KeplerLatestReceiptResponse.builder().extTxnId(extTxnId).build());
         }
         ChargingStatusResponse.ChargingStatusResponseBuilder<?, ?> responseBuilder = ChargingStatusResponse.builder().transactionStatus(transaction.getStatus()).tid(transaction.getIdStr()).planId(transaction.getPlanId());
         if (transaction.getStatus() == TransactionStatus.SUCCESS && transaction.getType() != PaymentEvent.POINT_PURCHASE) {
-            responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId(),transaction.getMsisdn()));
+            responseBuilder.validity(cachingService.validTillDate(transaction.getPlanId(), transaction.getMsisdn()));
         }
         return responseBuilder.build();
     }
 
-    private void fetchAndUpdateTransaction(Transaction transaction, AmazonLatestReceiptResponse amazonLatestReceiptResponse) {
+    private void fetchAndUpdateTransaction(Transaction transaction, KeplerLatestReceiptResponse keplerLatestReceiptResponse) {
         TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
         PaymentErrorEvent.Builder errorBuilder = PaymentErrorEvent.builder(transaction.getIdStr());
-        Optional<ReceiptDetails> mapping = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(amazonLatestReceiptResponse.getExtTxnId());
+        Optional<ReceiptDetails> mapping = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(keplerLatestReceiptResponse.getExtTxnId());
         try {
             if ((!mapping.isPresent() || mapping.get().getState() != State.ACTIVE) & EnumSet.of(TransactionStatus.INPROGRESS).contains(transaction.getStatus())) {
-                saveReceipt(transaction.getUid(), transaction.getMsisdn(), transaction.getPlanId(), amazonLatestReceiptResponse.getExtTxnId(), amazonLatestReceiptResponse.getAmazonUserId(), transaction.getIdStr(), amazonLatestReceiptResponse.getService(), Objects.nonNull(amazonLatestReceiptResponse.getAmazonIapReceiptResponse().getRenewalDate()) ? amazonLatestReceiptResponse.getAmazonIapReceiptResponse().getRenewalDate() : null);
-                AmazonIapReceiptResponse amazonIapReceipt = amazonLatestReceiptResponse.getAmazonIapReceiptResponse();
-                if (amazonIapReceipt != null) {
-                    if (amazonIapReceipt.getCancelDate() == null) {
+                saveReceipt(transaction.getUid(), transaction.getMsisdn(), transaction.getPlanId(), keplerLatestReceiptResponse.getExtTxnId(), keplerLatestReceiptResponse.getKeplerUserId(), transaction.getIdStr(), keplerLatestReceiptResponse.getService(), Objects.nonNull(keplerLatestReceiptResponse.getKeplerIapReceiptResponse().getRenewalDate()) ? keplerLatestReceiptResponse.getKeplerIapReceiptResponse().getRenewalDate() : null);
+                KeplerIapReceiptResponse keplerIapReceipt = keplerLatestReceiptResponse.getKeplerIapReceiptResponse();
+                if (keplerIapReceipt != null) {
+                    if (keplerIapReceipt.getCancelDate() == null) {
                         finalTransactionStatus = TransactionStatus.SUCCESS;
                     } else {
                         transaction.setType(PaymentEvent.CANCELLED.getValue());
                     }
                 } else {
-                    errorBuilder.code(AmazonIapStatusCode.ERR_002.getCode()).description(AmazonIapStatusCode.ERR_002.getDescription());
-                    throw new WynkRuntimeException(PaymentErrorType.PAY012, "Unable to verify amazon iap receipt for payment response received from client");
+                    errorBuilder.code(KeplerIapStatusCode.ERR_002.getCode()).description(KeplerIapStatusCode.ERR_002.getDescription());
+                    throw new WynkRuntimeException(PaymentErrorType.PAY014, "Unable to verify kepler iap receipt for payment response received from client");
                 }
-            } else if (((mapping.isPresent() && mapping.get().getState() == State.ACTIVE) & EnumSet.of(TransactionStatus.FAILURE).contains(transaction.getStatus()))) { // added for recon
+            } else if (((mapping.isPresent() && mapping.get().getState() == State.ACTIVE) & EnumSet.of(TransactionStatus.FAILURE).contains(transaction.getStatus()))) {
                 finalTransactionStatus = TransactionStatus.SUCCESS;
             } else {
                 log.warn("Receipt is already present for uid: {}, planId: {} and receiptId: {}", transaction.getUid(), transaction.getPlanId(), mapping.get().getId());
-                errorBuilder.code(AmazonIapStatusCode.ERR_001.getCode()).description(AmazonIapStatusCode.ERR_001.getDescription());
+                errorBuilder.code(KeplerIapStatusCode.ERR_001.getCode()).description(KeplerIapStatusCode.ERR_001.getDescription());
                 finalTransactionStatus = TransactionStatus.FAILUREALREADYSUBSCRIBED;
             }
         } catch (HttpStatusCodeException e) {
-            errorBuilder.code(AmazonIapStatusCode.ERR_003.getCode()).description(AmazonIapStatusCode.ERR_003.getDescription());
-            throw new WynkRuntimeException(PaymentErrorType.PAY012, e);
+            errorBuilder.code(KeplerIapStatusCode.ERR_003.getCode()).description(KeplerIapStatusCode.ERR_003.getDescription());
+            throw new WynkRuntimeException(PaymentErrorType.PAY014, e);
         } catch (Exception e) {
-            log.error(PaymentLoggingMarker.AMAZON_IAP_VERIFICATION_FAILURE, "failed to execute fetchAndUpdateTransaction for amazonIap due to ", e);
-            errorBuilder.code(AmazonIapStatusCode.ERR_004.getCode()).description(AmazonIapStatusCode.ERR_004.getDescription());
-            throw new WynkRuntimeException(PaymentErrorType.PAY012, e);
+            log.error(PaymentLoggingMarker.KEPLER_IAP_VERIFICATION_FAILURE, "failed to execute fetchAndUpdateTransaction for keplerIap due to ", e);
+            errorBuilder.code(KeplerIapStatusCode.ERR_004.getCode()).description(KeplerIapStatusCode.ERR_004.getDescription());
+            throw new WynkRuntimeException(PaymentErrorType.PAY014, e);
         } finally {
             transaction.setStatus(finalTransactionStatus.name());
             if (transaction.getStatus() != TransactionStatus.SUCCESS)
@@ -288,31 +284,31 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     }
 
     private void saveReceipt(String uid, String msisdn, int planId, String receiptId, String amzUserId, String transactionId, String service, long renewalDate) {
-        final AmazonReceiptDetails amazonReceiptDetails = AmazonReceiptDetails.builder().paymentTransactionId(transactionId).receiptTransactionId(receiptId).amazonUserId(amzUserId).msisdn(msisdn).planId(planId).id(receiptId).uid(uid).service(service).renewalDate(renewalDate).build();
-        auditingListener.onBeforeSave(amazonReceiptDetails);
-        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).save(amazonReceiptDetails);
+        final KeplerReceiptDetails keplerReceiptDetails = KeplerReceiptDetails.builder().paymentTransactionId(transactionId).receiptTransactionId(receiptId).amazonUserId(amzUserId).msisdn(msisdn).planId(planId).id(receiptId).uid(uid).service(service).renewalDate(renewalDate).build();
+        auditingListener.onBeforeSave(keplerReceiptDetails);
+        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).save(keplerReceiptDetails);
     }
 
-    private AmazonIapReceiptResponse getReceiptStatus(String receiptId, String userId) {
+    private KeplerIapReceiptResponse getReceiptStatus(String receiptId, String userId) {
         final String iapSecret = ClientContext.getClient().map((client) -> {
             try {
-                return PropertyResolverUtils.resolve(client.getAlias(), BeanConstant.AMAZON_IAP_PAYMENT_SERVICE, PaymentConstants.MERCHANT_SECRET);
+                return PropertyResolverUtils.resolve(client.getAlias(), BeanConstant.KEPLER_IAP_PAYMENT_SERVICE, PaymentConstants.MERCHANT_SECRET);
             } catch (Exception e) {
                 return null;
             }
-        }).orElse(amazonIapSecret);
-        String requestUrl = amazonIapStatusUrl + iapSecret + "/user/" + userId + "/receiptId/" + receiptId;
+        }).orElse(keplerIapSecret);
+        String requestUrl = keplerIapStatusUrl + iapSecret + "/user/" + userId + "/receiptId/" + receiptId;
         RequestEntity<String> requestEntity = new RequestEntity<>(HttpMethod.GET, URI.create(requestUrl));
-        ResponseEntity<AmazonIapReceiptResponse> responseEntity = restTemplate.exchange(requestEntity, AmazonIapReceiptResponse.class);
+        ResponseEntity<KeplerIapReceiptResponse> responseEntity = restTemplate.exchange(requestEntity, KeplerIapReceiptResponse.class);
         if (responseEntity.getBody() != null)
             return responseEntity.getBody();
         else
-            throw new WynkRuntimeException(PaymentErrorType.PAY012);
+            throw new WynkRuntimeException(PaymentErrorType.PAY014);
     }
 
     @Override
     public WynkResponseEntity<AbstractChargingStatusResponse> status(AbstractTransactionReconciliationStatusRequest transactionStatusRequest) {
-        ChargingStatusResponse statusResponse = fetchChargingStatusFromAmazonIapSource(TransactionContext.get(), transactionStatusRequest.getExtTxnId());
+        ChargingStatusResponse statusResponse = fetchChargingStatusFromKeplerIapSource(TransactionContext.get(), transactionStatusRequest.getExtTxnId());
         return WynkResponseEntity.<AbstractChargingStatusResponse>builder().data(statusResponse).build();
     }
 
@@ -324,23 +320,24 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
         RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), WynkUserExtUserDao.class).save(mapping);
     }
 
+
     @Override
-    public UserPlanMapping<AmazonIapReceiptResponse> getUserPlanMapping(DecodedNotificationWrapper<AmazonNotificationRequest> wrapper) {
-        AmazonNotificationMessage message = Utils.getData(wrapper.getDecodedNotification().getMessage(), AmazonNotificationMessage.class);
-        AmazonIapReceiptResponse receiptResponse = getReceiptStatus(message.getReceiptId(), message.getAppUserId());
+    public UserPlanMapping<KeplerIapReceiptResponse> getUserPlanMapping(DecodedNotificationWrapper<KeplerNotificationRequest> wrapper) {
+        KeplerNotificationMessage message = Utils.getData(wrapper.getDecodedNotification().getMessage(), KeplerNotificationMessage.class);
+        KeplerIapReceiptResponse receiptResponse = getReceiptStatus(message.getReceiptId(), message.getAppUserId());
         PlanDTO planDTO = cachingService.getPlanFromSku(receiptResponse.getTermSku());
         if (Objects.isNull(planDTO)) {
             throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid sku " + receiptResponse.getTermSku());
         }
         Optional<ReceiptDetails> optionalReceiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(message.getReceiptId());
-        final UserPlanMapping.UserPlanMappingBuilder<AmazonIapReceiptResponse> builder = UserPlanMapping.<AmazonIapReceiptResponse>builder()
-                .message(AmazonIapReceiptResponseWrapper.builder().receiptID(message.getReceiptId()).appUserId(message.getAppUserId()).decodedResponse(receiptResponse).build());
+        final UserPlanMapping.UserPlanMappingBuilder<KeplerIapReceiptResponse> builder = UserPlanMapping.<KeplerIapReceiptResponse>builder()
+                .message(KeplerIapReceiptResponseWrapper.builder().receiptID(message.getReceiptId()).appUserId(message.getAppUserId()).decodedResponse(receiptResponse).build());
         if (receiptResponse.getFreeTrialEndDate() != null) {
             if (planDTO.getLinkedFreePlanId() != -1) {
                 builder.planId(planDTO.getLinkedFreePlanId());
             } else {
                 log.error("No Free Trial mapping present for planId {}", planDTO.getId());
-                throw new WynkRuntimeException(PaymentErrorType.PAY035);
+                throw new WynkRuntimeException(PaymentErrorType.PAY036);
             }
         } else {
             builder.planId(planDTO.getId());
@@ -356,17 +353,17 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     }
 
     @Override
-    public DecodedNotificationWrapper<AmazonNotificationRequest> isNotificationEligible(String requestPayload) {
-        AmazonNotificationRequest request = Utils.getData(requestPayload, AmazonNotificationRequest.class);
+    public DecodedNotificationWrapper<KeplerNotificationRequest> isNotificationEligible(String requestPayload) {
+        KeplerNotificationRequest request = Utils.getData(requestPayload, KeplerNotificationRequest.class);
         if (signatureVerifier.verifySignature(requestPayload)) {
-            if (AMAZON_SNS_CONFIRMATION.contains(request.getNotificationType())) {
+            if (KEPLER_SNS_CONFIRMATION.contains(request.getNotificationType())) {
                 subscribeToSns(request);
             } else {
                 try {
-                    AmazonNotificationMessage message = Utils.getData(request.getMessage(), AmazonNotificationMessage.class);
+                    KeplerNotificationMessage message = Utils.getData(request.getMessage(), KeplerNotificationMessage.class);
                     final Optional<ReceiptDetails> receiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(message.getReceiptId());
-                    AmazonReceiptDetails receipt = (AmazonReceiptDetails) receiptDetails.get();
-                    AmazonIapReceiptResponse receiptResponse = getReceiptStatus(message.getReceiptId(), message.getAppUserId());
+                    KeplerReceiptDetails receipt = (KeplerReceiptDetails) receiptDetails.get();
+                    KeplerIapReceiptResponse receiptResponse = getReceiptStatus(message.getReceiptId(), message.getAppUserId());
                     if (RENEW_NOTIFICATIONS.contains(message.getNotificationType())) {
                         boolean isEligible = isNotificationEligibleForRenewal(receiptResponse, receipt);
                         //TODO: check for eligibility cases.
@@ -374,14 +371,14 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
                             final boolean existsById = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).existsById(message.getReceiptId());
                             if ((!existsById && FIRST_TIME_NOTIFICATIONS.contains(message.getNotificationType()) && RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), WynkUserExtUserDao.class).countByExternalUserId(message.getAppUserId()) == 1)
                                     || (existsById && SUB_MODIFICATION_NOTIFICATIONS.contains(message.getNotificationType()))) {
-                                return DecodedNotificationWrapper.<AmazonNotificationRequest>builder().eligible(true).decodedNotification(request).build();
+                                return DecodedNotificationWrapper.<KeplerNotificationRequest>builder().eligible(true).decodedNotification(request).build();
                             }
                         }
                     } else {
                         final boolean existsById = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).existsById(message.getReceiptId());
                         if ((!existsById && FIRST_TIME_NOTIFICATIONS.contains(message.getNotificationType()) && RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), WynkUserExtUserDao.class).countByExternalUserId(message.getAppUserId()) == 1)
                                 || (existsById && SUB_MODIFICATION_NOTIFICATIONS.contains(message.getNotificationType()))) {
-                            return DecodedNotificationWrapper.<AmazonNotificationRequest>builder().eligible(true).decodedNotification(request).build();
+                            return DecodedNotificationWrapper.<KeplerNotificationRequest>builder().eligible(true).decodedNotification(request).build();
                         }
                     }
                 } catch (Exception e) {
@@ -389,42 +386,28 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
                 }
             }
         }
-        log.info("Realtime Notification is not Eligible: {}", request.getDecodedMessage().getReceiptId());
-        return DecodedNotificationWrapper.<AmazonNotificationRequest>builder().eligible(false).decodedNotification(request).build();
+        return DecodedNotificationWrapper.<KeplerNotificationRequest>builder().eligible(false).decodedNotification(request).build();
     }
 
-//
-//    @Override
-//    public UserPlanMapping<AmazonIapReceiptResponse> getUserPlanMapping(DecodedNotificationWrapper<IAPNotification> wrapper) {
-//        AmazonNotificationMessage message = Utils.getData(wrapper.getDecodedNotification().getMessage(), AmazonNotificationMessage.class);
-//        AmazonIapReceiptResponse receiptResponse = getReceiptStatus(message.getReceiptId(), message.getAppUserId());
-//        PlanDTO planDTO = cachingService.getPlanFromSku(receiptResponse.getTermSku());
-//        if (Objects.isNull(planDTO)) {
-//            throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid sku " + receiptResponse.getTermSku());
-//        }
-//        WynkUserExtUserMapping mapping = userMappingDao.findByExternalUserId(message.getAppUserId());
-//        return UserPlanMapping.<AmazonIapReceiptResponse>builder().uid(mapping.getId()).msisdn(mapping.getMsisdn()).message(receiptResponse).planId(planDTO.getId()).build();
-//    }
-
-    private void subscribeToSns(AmazonNotificationRequest request) {
+    private void subscribeToSns(KeplerNotificationRequest request) {
         restTemplate.getForEntity(request.getSubscribeUrl(), String.class);
     }
 
     @Override
-    public void handleNotification(Transaction transaction, UserPlanMapping<AmazonIapReceiptResponse> mapping) {
-        final AmazonIapReceiptResponseWrapper wrapper = (AmazonIapReceiptResponseWrapper) mapping.getMessage();
+    public void handleNotification(Transaction transaction, UserPlanMapping<KeplerIapReceiptResponse> mapping) {
+        final KeplerIapReceiptResponseWrapper wrapper = (KeplerIapReceiptResponseWrapper) mapping.getMessage();
         saveReceipt(mapping.getUid(), mapping.getMsisdn(), transaction.getPlanId(), wrapper.getReceiptID(), wrapper.getAppUserId(), transaction.getIdStr(), mapping.getService(), wrapper.getDecodedResponse().getRenewalDate());
         TransactionStatus finalTransactionStatus = TransactionStatus.FAILURE;
-        AmazonIapReceiptResponse amazonIapReceipt = mapping.getMessage();
-        if (amazonIapReceipt.getCancelDate() == null || transaction.getType() == PaymentEvent.CANCELLED) {
+        KeplerIapReceiptResponse keplerIapReceipt = mapping.getMessage();
+        if (keplerIapReceipt.getCancelDate() == null || transaction.getType() == PaymentEvent.CANCELLED) {
             finalTransactionStatus = TransactionStatus.SUCCESS;
         }
         transaction.setStatus(finalTransactionStatus.name());
     }
 
     @Override
-    public PaymentEvent getPaymentEvent(DecodedNotificationWrapper<AmazonNotificationRequest> wrapper, String productType) {
-        final AmazonNotificationMessage message = Utils.getData(wrapper.getDecodedNotification().getMessage(), AmazonNotificationMessage.class);
+    public PaymentEvent getPaymentEvent(DecodedNotificationWrapper<KeplerNotificationRequest> wrapper, String productType) {
+        final KeplerNotificationMessage message = Utils.getData(wrapper.getDecodedNotification().getMessage(), KeplerNotificationMessage.class);
         if (SUBSCRIBED_NOTIFICATIONS.contains(message.getNotificationType())) {
             return PaymentEvent.SUBSCRIBE;
         } else if (PURCHASE_NOTIFICATIONS.contains(message.getNotificationType())) {
@@ -444,63 +427,54 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
     public WynkResponseEntity<Void> doRenewal(PaymentRenewalChargingRequest paymentRenewalChargingRequest) {
         TransactionStatus status = TransactionStatus.FAILURE;
         final Transaction transaction = TransactionContext.get();
-        Optional<Transaction> oldTransaction = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ITransactionDao.class).findById(paymentRenewalChargingRequest.getId());
-        final AmazonReceiptDetails receipt;
-        if (oldTransaction.get().getStatus() != TransactionStatus.SUCCESS) {
-            String lastSuccessTransactionId = getLastSuccessTransactionId(oldTransaction.get());
-            receipt = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByPaymentTransactionId(lastSuccessTransactionId);
-        } else {
-            receipt = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByPaymentTransactionId(paymentRenewalChargingRequest.getId());
-        }
-        final AmazonIapReceiptResponse response = getReceiptStatus(receipt.getId(), receipt.getAmazonUserId());
-        try {
-            if (Objects.nonNull(response)) {
-                boolean isEligible = isNotificationEligibleForRenewal(response, receipt);
-                if (isEligible && Objects.isNull(response.getCancelDate()) && response.getRenewalDate() > System.currentTimeMillis()) {
-                    status = TransactionStatus.SUCCESS;
-                    return WynkResponseEntity.<Void>builder().build();
+        final KeplerReceiptDetails receipt = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByPaymentTransactionId(paymentRenewalChargingRequest.getId());
+        if (Objects.nonNull(receipt)) {
+            final KeplerIapReceiptResponse response = getReceiptStatus(receipt.getId(), receipt.getAmazonUserId());
+            try {
+                if (Objects.nonNull(response)) {
+                    boolean isEligible = isNotificationEligibleForRenewal(response, receipt);
+                    if (isEligible && Objects.isNull(response.getCancelDate()) && response.getRenewalDate() > System.currentTimeMillis()) {
+                        status = TransactionStatus.SUCCESS;
+                        return WynkResponseEntity.<Void>builder().build();
+                    }
+                    if (Objects.nonNull(response.getCancelDate())) {
+                        eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PaymentErrorType.APS012.name()).description(CANCELLATION_REASON.get(response.getCancelReason())).build());
+                    }
                 }
-                if (Objects.nonNull(response.getCancelDate())) {
-                    eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PaymentErrorType.APS012.name()).description(CANCELLATION_REASON.get(response.getCancelReason())).build());
-                }
+                throw new WynkRuntimeException(PaymentErrorType.PAY046);
+            } catch (Exception e) {
+                eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PaymentErrorType.PAY046.name()).description(PaymentErrorType.PAY046.getErrorMessage()).build());
+                return WynkResponseEntity.<Void>builder().success(false).build();
+            } finally {
+                transaction.setStatus(status.getValue());
+                saveReceipt(transaction.getUid(), transaction.getMsisdn(), transaction.getPlanId(), receipt.getId(), receipt.getAmazonUserId(), transaction.getIdStr(), receipt.getService(), response.getRenewalDate());
             }
-            eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PaymentErrorType.PAY045.name()).description(PaymentErrorType.PAY045.getErrorMessage()).build());
-            throw new WynkRuntimeException(PaymentErrorType.PAY045);
-        } catch (Exception e) {
-            throw new WynkRuntimeException(PaymentErrorType.PAY045, e);
-        } finally {
-            transaction.setStatus(status.getValue());
-            saveReceipt(transaction.getUid(), transaction.getMsisdn(), transaction.getPlanId(), receipt.getId(), receipt.getAmazonUserId(), transaction.getIdStr(), receipt.getService(), response.getRenewalDate());
         }
+        transaction.setStatus(status.getValue());
+        eventPublisher.publishEvent(PaymentErrorEvent.builder(transaction.getIdStr()).code(PaymentErrorType.PAY046.name()).description(PaymentErrorType.PAY046.getErrorMessage()).build());
+        return WynkResponseEntity.<Void>builder().success(false).build();
     }
 
-    private boolean isNotificationEligibleForRenewal(AmazonIapReceiptResponse response, AmazonReceiptDetails receipt) {
-        if (Objects.isNull(receipt.getRenewalDate()) || response.getRenewalDate() > receipt.getRenewalDate()) {
-            return true;
+    private boolean isNotificationEligibleForRenewal(KeplerIapReceiptResponse response, KeplerReceiptDetails receipt) {
+        try {
+            if (Objects.isNull(receipt.getRenewalDate()) || response.getRenewalDate() > receipt.getRenewalDate()) {
+                return true;
+            }
+            return false;
+        } catch (Exception ex) {
+            return false;
         }
-        log.info("User already renewed: {}", receipt.getPaymentTransactionId());
-        return false;
     }
 
     @Override
-    public String getIdAndUpdateReceiptDetails(DecodedNotificationWrapper<AmazonNotificationRequest> wrapper) {
-        AmazonNotificationMessage message = Utils.getData(wrapper.getDecodedNotification().getMessage(), AmazonNotificationMessage.class);
+    public String getIdAndUpdateReceiptDetails(DecodedNotificationWrapper<KeplerNotificationRequest> wrapper) {
+        KeplerNotificationMessage message = Utils.getData(wrapper.getDecodedNotification().getMessage(), KeplerNotificationMessage.class);
         Optional<ReceiptDetails> optionalReceiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(message.getReceiptId());
-        AmazonReceiptDetails amazonReceiptDetails = (AmazonReceiptDetails) optionalReceiptDetails.get();
-        amazonReceiptDetails.setExpiry(System.currentTimeMillis());
-        auditingListener.onBeforeSave(amazonReceiptDetails);
-        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).save(amazonReceiptDetails);
-        return amazonReceiptDetails.getPaymentTransactionId();
-    }
-
-    private String getLastSuccessTransactionId (Transaction transaction) {
-        if (transaction.getType() == PaymentEvent.RENEW) {
-            PaymentRenewal renewal =
-                    RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).findById(transaction.getIdStr())
-                            .orElse(null);
-            return Objects.nonNull(renewal) ? renewal.getLastSuccessTransactionId() : null;
-        }
-        return null;
+        KeplerReceiptDetails keplerReceiptDetails = (KeplerReceiptDetails) optionalReceiptDetails.get();
+        keplerReceiptDetails.setExpiry(System.currentTimeMillis());
+        auditingListener.onBeforeSave(keplerReceiptDetails);
+        RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).save(keplerReceiptDetails);
+        return keplerReceiptDetails.getPaymentTransactionId();
     }
 
     public boolean supportsRenewalReconciliation() {

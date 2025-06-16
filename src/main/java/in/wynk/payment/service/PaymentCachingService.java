@@ -125,7 +125,7 @@ public class PaymentCachingService {
 
 
 
-    private void loadPlans() {
+    private void loadPlans() { //check
         Collection<PlanDTO> planList = planDtoCachingService.getAll();
         if (CollectionUtils.isNotEmpty(planList) && writeLock.tryLock()) {
             try {
@@ -133,7 +133,7 @@ public class PaymentCachingService {
                 for (PlanDTO planDTO : planList) {
                     if (MapUtils.isNotEmpty(planDTO.getSku())) {
                         for (String sku : planDTO.getSku().values()) {
-                            skuToPlanMap.putIfAbsent(sku, planDTO);
+                            skuToPlanMap.putIfAbsent(sku, planDTO);  //check
                         }
                     }
                 }

@@ -13,6 +13,7 @@ import in.wynk.payment.dto.AppDetails;
 import in.wynk.payment.dto.UserDetails;
 import in.wynk.payment.dto.amazonIap.AmazonIapVerificationRequest;
 import in.wynk.payment.dto.itune.ItunesVerificationRequest;
+import in.wynk.payment.dto.keplerIap.KeplerIapVerificationRequest;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -34,7 +35,7 @@ import static in.wynk.common.constant.CacheBeanNameConstants.OS;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentCode")
-@JsonSubTypes({@JsonSubTypes.Type(value = ItunesVerificationRequest.class, name = "ITUNES"), @JsonSubTypes.Type(value = AmazonIapVerificationRequest.class, name = "AMAZON_IAP")})
+@JsonSubTypes({@JsonSubTypes.Type(value = ItunesVerificationRequest.class, name = "ITUNES"), @JsonSubTypes.Type(value = AmazonIapVerificationRequest.class, name = "AMAZON_IAP"), @JsonSubTypes.Type(value = KeplerIapVerificationRequest.class, name = "KEPLER_IAP")})
 public abstract class IapVerificationRequest {
 
 

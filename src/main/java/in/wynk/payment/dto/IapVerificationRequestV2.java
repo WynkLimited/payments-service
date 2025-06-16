@@ -10,6 +10,7 @@ import in.wynk.payment.core.service.PaymentCodeCachingService;
 import in.wynk.payment.dto.amazonIap.AmazonIapVerificationRequest;
 import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
 import in.wynk.payment.dto.itune.ItunesVerificationRequest;
+import in.wynk.payment.dto.keplerIap.KeplerIapVerificationRequest;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -27,7 +28,7 @@ import javax.validation.Valid;
 @AnalysedEntity
 @NoArgsConstructor
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentCode")
-@JsonSubTypes({@JsonSubTypes.Type(value = ItunesVerificationRequest.class, name = "ITUNES"), @JsonSubTypes.Type(value = AmazonIapVerificationRequest.class, name = "AMAZON_IAP"), @JsonSubTypes.Type(value = GooglePlayVerificationRequest.class, name = "GOOGLE_IAP")})
+@JsonSubTypes({@JsonSubTypes.Type(value = ItunesVerificationRequest.class, name = "ITUNES"), @JsonSubTypes.Type(value = AmazonIapVerificationRequest.class, name = "AMAZON_IAP"), @JsonSubTypes.Type(value = GooglePlayVerificationRequest.class, name = "GOOGLE_IAP"), @JsonSubTypes.Type(value = KeplerIapVerificationRequest.class, name = "KEPLER_IAP")})
 public abstract class IapVerificationRequestV2 {
 
     @Valid

@@ -357,88 +357,42 @@ public class AmazonIapMerchantPaymentService extends AbstractMerchantPaymentStat
 
     @Override
     public DecodedNotificationWrapper<AmazonNotificationRequest> isNotificationEligible(String requestPayload) {
-        AmazonNotificationRequest request;
-        try {
-            log.info("Deserializing AmazonNotificationRequest from payload: {}", requestPayload);
-            request = Utils.getData(requestPayload, AmazonNotificationRequest.class);
-            log.info("Deserialized request: {}", request);
-        } catch (Exception e) {
-            log.error("Failed to deserialize AmazonNotificationRequest from payload: {}", requestPayload, e);
-            throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid request payload");
-        }
-
-        try {
-            if (signatureVerifier.verifySignature(requestPayload)) {
-                log.info("Signature verified for payload");
-
-                if (AMAZON_SNS_CONFIRMATION.contains(request.getNotificationType())) {
-                    log.info("Notification type is confirmation: {}", request.getNotificationType());
-                    subscribeToSns(request);
-                } else {
-                    try {
-                        log.info("Deserializing AmazonNotificationMessage from message: {}", request.getMessage());
-                        AmazonNotificationMessage message = Utils.getData(request.getMessage(), AmazonNotificationMessage.class);
-                        log.info("Deserialized message: {}", message);
-
-                        String clientAlias = ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT);
-                        log.info("Using client alias: {}", clientAlias);
-
-                        Optional<ReceiptDetails> receiptDetailsOpt = RepositoryUtils.getRepositoryForClient(clientAlias, ReceiptDetailsDao.class).findById(message.getReceiptId());
-                        if (!receiptDetailsOpt.isPresent()) {
-                            log.warn("No receipt found for ID: {}", message.getReceiptId());
-                            return DecodedNotificationWrapper.<AmazonNotificationRequest>builder().eligible(false).decodedNotification(request).build();
-                        }
-
-                        AmazonReceiptDetails receipt = (AmazonReceiptDetails) receiptDetailsOpt.get();
-                        log.info("Fetched receipt details: {}", receipt);
-
-                        AmazonIapReceiptResponse receiptResponse = getReceiptStatus(message.getReceiptId(), message.getAppUserId());
-                        log.info("Fetched receipt response: {}", receiptResponse);
-
-                        if (RENEW_NOTIFICATIONS.contains(message.getNotificationType())) {
-                            log.info("Renewal type notification: {}", message.getNotificationType());
-                            boolean isEligible = isNotificationEligibleForRenewal(receiptResponse, receipt);
-                            log.info("Eligibility for renewal: {}", isEligible);
-
-                            if (isEligible) {
-                                boolean existsById = RepositoryUtils.getRepositoryForClient(clientAlias, ReceiptDetailsDao.class).existsById(message.getReceiptId());
-                                long userCount = RepositoryUtils.getRepositoryForClient(clientAlias, WynkUserExtUserDao.class).countByExternalUserId(message.getAppUserId());
-
-                                if ((!existsById && FIRST_TIME_NOTIFICATIONS.contains(message.getNotificationType()) && userCount == 1)
-                                        || (existsById && SUB_MODIFICATION_NOTIFICATIONS.contains(message.getNotificationType()))) {
-                                    log.info("Notification is eligible for renewal");
-                                    return DecodedNotificationWrapper.<AmazonNotificationRequest>builder().eligible(true).decodedNotification(request).build();
-                                }
-                            }
-                        } else {
-                            log.info("Non-renewal type notification: {}", message.getNotificationType());
-                            boolean existsById = RepositoryUtils.getRepositoryForClient(clientAlias, ReceiptDetailsDao.class).existsById(message.getReceiptId());
-                            long userCount = RepositoryUtils.getRepositoryForClient(clientAlias, WynkUserExtUserDao.class).countByExternalUserId(message.getAppUserId());
-
-                            if ((!existsById && FIRST_TIME_NOTIFICATIONS.contains(message.getNotificationType()) && userCount == 1)
+        AmazonNotificationRequest request = Utils.getData(requestPayload, AmazonNotificationRequest.class);
+        if (signatureVerifier.verifySignature(requestPayload)) {
+            if (AMAZON_SNS_CONFIRMATION.contains(request.getNotificationType())) {
+                subscribeToSns(request);
+            } else {
+                try {
+                    AmazonNotificationMessage message = Utils.getData(request.getMessage(), AmazonNotificationMessage.class);
+                    final Optional<ReceiptDetails> receiptDetails = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findById(message.getReceiptId());
+                    AmazonReceiptDetails receipt = (AmazonReceiptDetails) receiptDetails.get();
+                    AmazonIapReceiptResponse receiptResponse = getReceiptStatus(message.getReceiptId(), message.getAppUserId());
+                    if (RENEW_NOTIFICATIONS.contains(message.getNotificationType())) {
+                        boolean isEligible = isNotificationEligibleForRenewal(receiptResponse, receipt);
+                        //TODO: check for eligibility cases.
+                        if (isEligible) {
+                            final boolean existsById = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).existsById(message.getReceiptId());
+                            if ((!existsById && FIRST_TIME_NOTIFICATIONS.contains(message.getNotificationType()) && RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), WynkUserExtUserDao.class).countByExternalUserId(message.getAppUserId()) == 1)
                                     || (existsById && SUB_MODIFICATION_NOTIFICATIONS.contains(message.getNotificationType()))) {
-                                log.info("Notification is eligible for first-time or modification");
                                 return DecodedNotificationWrapper.<AmazonNotificationRequest>builder().eligible(true).decodedNotification(request).build();
                             }
                         }
-
-                    } catch (Exception e) {
-                        log.error("Error while processing AmazonNotificationMessage or eligibility logic", e);
-                        throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid message");
+                    } else {
+                        final boolean existsById = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).existsById(message.getReceiptId());
+                        if ((!existsById && FIRST_TIME_NOTIFICATIONS.contains(message.getNotificationType()) && RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), WynkUserExtUserDao.class).countByExternalUserId(message.getAppUserId()) == 1)
+                                || (existsById && SUB_MODIFICATION_NOTIFICATIONS.contains(message.getNotificationType()))) {
+                            return DecodedNotificationWrapper.<AmazonNotificationRequest>builder().eligible(true).decodedNotification(request).build();
+                        }
                     }
+                } catch (Exception e) {
+                    throw new WynkRuntimeException(PaymentErrorType.PAY400, "Invalid message");
                 }
-            } else {
-                log.warn("Signature verification failed for payload");
             }
-
-            log.info("Realtime Notification is not Eligible: {}", request.getDecodedMessage().getReceiptId());
-            return DecodedNotificationWrapper.<AmazonNotificationRequest>builder().eligible(false).decodedNotification(request).build();
-
-        } catch (Exception e) {
-            log.error("Unexpected error in isNotificationEligible()", e);
-            throw new WynkRuntimeException(PaymentErrorType.PAY400, "Internal error in eligibility check");
         }
+        log.info("Realtime Notification is not Eligible: {}", request.getDecodedMessage().getReceiptId());
+        return DecodedNotificationWrapper.<AmazonNotificationRequest>builder().eligible(false).decodedNotification(request).build();
     }
+
 
 //
 //    @Override

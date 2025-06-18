@@ -187,7 +187,7 @@ public class PaymentManager
             final TransactionStatus finalStatus = TransactionContext.get().getStatus();
             String lastSuccessTransactionId = getLastSuccessTransactionId(transaction);
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(existingStatus)
-                    .finalTransactionStatus(finalStatus).attemptSequence(renewal.getAttemptSequence()).build());
+                    .finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);
             //publishBranchEvent(PaymentsBranchEvent.<EventsWrapper>builder().eventName(PAYMENT_CALLBACK_EVENT).data(getEventsWrapperBuilder(transaction, TransactionContext.getPurchaseDetails())
             // .callbackRequest(request.getBody()).build()).build());

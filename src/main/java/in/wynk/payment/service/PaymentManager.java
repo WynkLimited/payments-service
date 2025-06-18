@@ -185,7 +185,6 @@ public class PaymentManager
         } finally {
             final TransactionStatus finalStatus = TransactionContext.get().getStatus();
             String lastSuccessTransactionId = getLastSuccessTransactionId(transaction);
-            PaymentRenewal renewal= recurringPaymentManagerService.getRenewalById(transaction.getIdStr());
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(existingStatus)
                     .finalTransactionStatus(finalStatus).build());
             exhaustCouponIfApplicable(existingStatus, finalStatus, transaction);

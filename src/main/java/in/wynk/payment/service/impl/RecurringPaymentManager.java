@@ -86,17 +86,11 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
             PaymentRenewal renewal= getRenewalById(request.getTransaction().getIdStr());
             if (request.getExistingTransactionStatus() != TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.SUCCESS &&
                     request.getTransaction().getPaymentChannel().isInternalRecurring()) {
-                if (EnumSet.of(PaymentEvent.SUBSCRIBE, PaymentEvent.RENEW).contains(request.getTransaction().getType())) {
+                if (EnumSet.of(PaymentEvent.SUBSCRIBE, PaymentEvent.TRIAL_SUBSCRIPTION).contains(request.getTransaction().getType())) {
                     nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planDTO.getPeriod().getTimeUnit().toMillis(planDTO.getPeriod().getValidity()));
-                    if(request.getTransaction().getType()== PaymentEvent.SUBSCRIBE){
-                        createRenewalEntry(request.getTransaction().getIdStr(), request.getTransaction().getType(), nextRecurringDateTime);
+                    createRenewalEntry(request.getTransaction().getIdStr(), request.getTransaction().getType(), nextRecurringDateTime);
 
-                    } else{
-                        updateRenewalEntry(request.getTransaction().getIdStr(), request.getLastSuccessTransactionId(), request.getTransaction().getType(),
-                                request.getTransaction().getPaymentChannel().getCode(), nextRecurringDateTime, request.getTransaction(), request.getFinalTransactionStatus(),
-                                renewal);
-                    }
-                } else if (request.getTransaction().getType() == PaymentEvent.TRIAL_SUBSCRIPTION) {
+                } else if (request.getTransaction().getType() == PaymentEvent.RENEW) {
                     nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planDTO.getPeriod().getTimeUnit().toMillis(planDTO.getPeriod().getValidity()));
                     updateRenewalEntry(request.getTransaction().getIdStr(), request.getLastSuccessTransactionId(), request.getTransaction().getType(),
                             request.getTransaction().getPaymentChannel().getCode(), nextRecurringDateTime, request.getTransaction(), request.getFinalTransactionStatus(),

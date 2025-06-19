@@ -1632,3 +1632,6 @@ payments:
         consumer:
           delay: 20
           delayTimeUnit: SECONDS
+
+redis:
+  env: nonProd

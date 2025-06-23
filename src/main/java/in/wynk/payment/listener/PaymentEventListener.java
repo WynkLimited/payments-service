@@ -780,7 +780,7 @@ public class PaymentEventListener {
                     .purchaseDetails(event.getPurchaseDetails())
                     .build());
         }
-        publishBranchEvent(event);
+        //publishBranchEvent(event);
         if (EnumSet.of(TransactionStatus.SUCCESS, TransactionStatus.FAILURE).contains(event.getTransaction().getStatus())) {
             publishWaPaymentStatusEvent(event);
         }

@@ -61,14 +61,15 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
             final String errorCode = request.getError();
             final String errorMessage = request.getErrorMessage();
             final IPaymentCallback callbackService = delegator.get(request.getFlow());
-            if (isValid(request)) {
-                return callbackService.handle(request);
-            } else {
-                log.error(PAYU_CALLBACK_FAILURE,
-                        "Invalid checksum found with transactionStatus: {}, Wynk transactionId: {}, PayU transactionId: {}, Reason: error code: {}, error message: {} for uid: {}",
-                        request.getStatus(), transactionId, request.getExternalTransactionId(), errorCode, errorMessage, transaction.getUid());
-                throw new PaymentRuntimeException(PaymentErrorType.PAYU011, "Invalid checksum found with transaction id:" + transactionId);
-            }
+//            if (isValid(request)) {
+//                return callbackService.handle(request);
+//            } else {
+//                log.error(PAYU_CALLBACK_FAILURE,
+//                        "Invalid checksum found with transactionStatus: {}, Wynk transactionId: {}, PayU transactionId: {}, Reason: error code: {}, error message: {} for uid: {}",
+//                        request.getStatus(), transactionId, request.getExternalTransactionId(), errorCode, errorMessage, transaction.getUid());
+//                throw new PaymentRuntimeException(PaymentErrorType.PAYU011, "Invalid checksum found with transaction id:" + transactionId);
+//            }
+            return callbackService.handle(request);
         } catch (Exception e) {
             throw new PaymentRuntimeException(PaymentErrorType.PAYU011, e);
         }

@@ -152,7 +152,7 @@ public class RecurringTransactionUtils {
 
     public boolean checkRenewalEligibility (String transactionId, int attemptSequence) {
         Transaction transaction = transactionManagerService.get(transactionId);
-        if ((transaction.getStatus() == TransactionStatus.FAILURE && attemptSequence >= PaymentConstants.MAXIMUM_RENEWAL_RETRY_ALLOWED) ||
+        if ((transaction.getStatus() == TransactionStatus.FAILURE && attemptSequence >= PaymentConstants.MAXIMUM_RENEWAL_RETRY) ||
                 (transaction.getStatus() == TransactionStatus.FAILURE && transaction.getType() != RENEW) || (transaction.getStatus() == TransactionStatus.CANCELLED)) {
             try {
                 eventPublisher.publishEvent(UnScheduleRecurringPaymentEvent.builder().transactionId(transaction.getIdStr()).clientAlias(transaction.getClientAlias())

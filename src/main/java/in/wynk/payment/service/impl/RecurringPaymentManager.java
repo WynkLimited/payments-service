@@ -103,7 +103,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
 
                 if (Objects.nonNull(renewal) && renewal.getTransactionEvent() == PaymentEvent.CANCELLED) {
                     return;
-                } else if ((Objects.nonNull(renewal) && (renewal.getAttemptSequence() > PaymentConstants.MAXIMUM_RENEWAL_RETRY_ALLOWED)) ||
+                } else if ((Objects.nonNull(renewal) && (renewal.getAttemptSequence() >= PaymentConstants.MAXIMUM_RENEWAL_RETRY_ALLOWED)) ||
                         (request.getAttemptSequence() >= PaymentConstants.MAXIMUM_RENEWAL_RETRY_ALLOWED)) {
                     AnalyticService.update(MESSAGE, "Maximum Attempts Reached. No More Entry In Payment Renewal");
                     eventPublisher.publishEvent(UnScheduleRecurringPaymentEvent.builder().transactionId(request.getTransaction().getIdStr()).clientAlias(request.getTransaction().getClientAlias())

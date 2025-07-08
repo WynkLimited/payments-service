@@ -832,8 +832,12 @@ public class PaymentEventListener {
                     .purchaseDetails(event.getPurchaseDetails())
                     .build());
         }
-
-        snapshotKafkaPublisher.publish(analyticsBuilder.build());
+        try {
+            snapshotKafkaPublisher.publish(analyticsBuilder.build());
+        } catch (Exception ex) {
+            log.error(PaymentLoggingMarker.DP_KAFKA_PUBLISHER_FAILURE, "Unable to publish the transaction snapshot event in kafka due to {}", ex.getMessage(), ex);
+            AnalyticService.update(ERROR, "Unable to publish the transaction snapshot event in kafka " + ex.getMessage());
+        }
         publishBranchEvent(event);
         if (EnumSet.of(TransactionStatus.SUCCESS, TransactionStatus.FAILURE).contains(event.getTransaction().getStatus())) {
             publishWaPaymentStatusEvent(event);

@@ -13,7 +13,6 @@ public interface PaymentConstants extends BaseConstants {
     String SAVED = "SAVED";
     String PAYU = "PAYU";
     String TXN_ID = "tid";
-    String ERROR = "error";
     String VERSION_2 = "V2";
     String FAILED = "failed";
     String QUEUED = "queued";

@@ -2,13 +2,12 @@ package in.wynk.payment.core.event;
 
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.stream.advice.KafkaEvent;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 @Getter
 @Builder
-@RequiredArgsConstructor
 @KafkaEvent(topic = "${wynk.kafka.producers.dp.transactions.snapshot.topic}")
 public class TransactionAnalyticsMessage {
     private String uid;

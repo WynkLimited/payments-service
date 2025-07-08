@@ -576,6 +576,10 @@ wynk:
       cancel:
        mandate:
          topic: wcf_preprod.cancel_mandate
+      dp:
+        transactions:
+          snapshot:
+            topic: wcf_preprod.dp_transaction_snapshot
     consumers:
       enabled: true
       listenerFactory:

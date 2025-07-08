@@ -206,5 +206,6 @@ public interface PaymentLoggingMarker extends BaseLoggingMarkers {
     Marker TDR_TABLE_FETCHING_QUERY_ERROR = MarkerFactory.getMarker("TDR_TABLE_FETCHING_QUERY_ERROR");
     Marker TDR_API_ERROR = MarkerFactory.getMarker("TDR_API_ERROR");
     Marker TDR_RETRY_ERROR = MarkerFactory.getMarker("TDR_RETRY_ERROR");
+    Marker GET_MERCHANT_EVENT = MarkerFactory.getMarker("GET_MERCHANT_TRANSACTION_EVENT");
 
 }

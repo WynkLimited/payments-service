@@ -10,6 +10,7 @@ import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.constant.BaseConstants;
+import in.wynk.common.dto.AppDetails;
 import in.wynk.common.dto.Message;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
@@ -31,6 +32,7 @@ import in.wynk.payment.core.service.InvoiceDetailsCachingService;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.gpbs.GooglePlayReportEvent;
 import in.wynk.payment.dto.gpbs.acknowledge.queue.ExternalTransactionReportMessageManager;
+import in.wynk.payment.dto.gpbs.request.GooglePlayAppDetails;
 import in.wynk.payment.dto.invoice.GenerateInvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.InvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.InvoiceRetryTask;
@@ -136,7 +138,7 @@ public class PaymentEventListener {
                                 IMerchantTransactionService merchantTransactionService, IRecurringPaymentManagerService recurringPaymentManagerService,
                                 PaymentCachingService cachingService, IQuickPayLinkGenerator quickPayLinkGenerator, InvoiceService invoiceService,
                                 IKafkaEventPublisher<String, InvoiceKafkaMessage> invoiceKafkaPublisher,
-                                IKafkaEventPublisher<String,TransactionAnalyticsMessage> transactionSnapshotKafkaPublisher,
+                                IKafkaEventPublisher<String, TransactionAnalyticsMessage> transactionSnapshotKafkaPublisher,
                                 IKafkaEventPublisher<String, WaPayStateRespEvent> paymentStatusKafkaPublisher, InvoiceDetailsCachingService invoiceDetailsCachingService,
                                 ClientDetailsCachingService clientDetailsCachingService, WynkServiceDetailsCachingService wynkServiceDetailsCachingService,
                                 ISubscriptionServiceManager subscriptionServiceManager,
@@ -741,7 +743,9 @@ public class PaymentEventListener {
                 }
             }
             String couponId = BeanLocatorFactory.getBean(ICouponCodeLinkService.class).fetchCouponCodeLink(couponCode).getCouponId();
-            Coupon coupon = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<Coupon, String>>() {}).get(couponId);;
+            Coupon coupon = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<Coupon, String>>() {
+            }).get(couponId);
+            ;
             AnalyticService.update(COUPON_GROUP, coupon.getId());
             AnalyticService.update(DISCOUNT_TYPE, coupon.getDiscountType().toString());
             AnalyticService.update(DISCOUNT_VALUE, coupon.getDiscount());
@@ -809,7 +813,7 @@ public class PaymentEventListener {
         }
 
         if (Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getAppDetails())) {
-            analyticsBuilder.appDetails(event.getPurchaseDetails().getAppDetails());
+            setAppDetails(analyticsBuilder, event.getPurchaseDetails());
             AnalyticService.update(event.getPurchaseDetails().getAppDetails());
         }
 
@@ -830,7 +834,21 @@ public class PaymentEventListener {
         if (EnumSet.of(TransactionStatus.SUCCESS, TransactionStatus.FAILURE).contains(event.getTransaction().getStatus())) {
             publishWaPaymentStatusEvent(event);
         }
-}
+    }
+
+    private void setAppDetails(TransactionAnalyticsMessage.TransactionAnalyticsMessageBuilder analyticsBuilder, IPurchaseDetails purchaseDetails) {
+        try {
+            if (purchaseDetails.getAppDetails().getClass().isInstance(in.wynk.payment.dto.AppDetails.class)) {
+                in.wynk.payment.dto.AppDetails appDetails = (in.wynk.payment.dto.AppDetails) purchaseDetails.getAppDetails();
+                analyticsBuilder.appDetails(appDetails);
+            } else {
+                GooglePlayAppDetails appDetails = (GooglePlayAppDetails)purchaseDetails.getAppDetails();
+                analyticsBuilder.appDetails(appDetails);
+            }
+        } catch (Exception ex) {
+            AnalyticService.update(ERROR, "Unable to set app details in transaction snapshot event " + ex.getMessage());
+        }
+    }
 
     @EventListener
     @AnalyseTransaction(name = "generateItemEvent")

@@ -2,7 +2,6 @@ package in.wynk.payment.core.event;
 
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.stream.advice.KafkaEvent;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 

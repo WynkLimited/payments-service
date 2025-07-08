@@ -611,6 +611,10 @@ wynk:
       sms:
         notification:
           topic: wcf_preprod.sms_notification_message
+      dp:
+        transactions:
+          snapshot:
+            topic: wcf_preprod.dp_transaction_snapshot
     consumers:
       enabled: true
       listenerFactory:

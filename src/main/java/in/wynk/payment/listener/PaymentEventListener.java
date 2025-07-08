@@ -10,6 +10,7 @@ import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.constant.BaseConstants;
+import in.wynk.common.dto.AppDetails;
 import in.wynk.common.dto.Message;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
@@ -31,6 +32,7 @@ import in.wynk.payment.core.service.InvoiceDetailsCachingService;
 import in.wynk.payment.dto.*;
 import in.wynk.payment.dto.gpbs.GooglePlayReportEvent;
 import in.wynk.payment.dto.gpbs.acknowledge.queue.ExternalTransactionReportMessageManager;
+import in.wynk.payment.dto.gpbs.request.GooglePlayAppDetails;
 import in.wynk.payment.dto.invoice.GenerateInvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.InvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.InvoiceRetryTask;
@@ -136,7 +138,7 @@ public class PaymentEventListener {
                                 IMerchantTransactionService merchantTransactionService, IRecurringPaymentManagerService recurringPaymentManagerService,
                                 PaymentCachingService cachingService, IQuickPayLinkGenerator quickPayLinkGenerator, InvoiceService invoiceService,
                                 IKafkaEventPublisher<String, InvoiceKafkaMessage> invoiceKafkaPublisher,
-                                IKafkaEventPublisher<String,TransactionAnalyticsMessage> transactionSnapshotKafkaPublisher,
+                                IKafkaEventPublisher<String, TransactionAnalyticsMessage> transactionSnapshotKafkaPublisher,
                                 IKafkaEventPublisher<String, WaPayStateRespEvent> paymentStatusKafkaPublisher, InvoiceDetailsCachingService invoiceDetailsCachingService,
                                 ClientDetailsCachingService clientDetailsCachingService, WynkServiceDetailsCachingService wynkServiceDetailsCachingService,
                                 ISubscriptionServiceManager subscriptionServiceManager,
@@ -681,38 +683,31 @@ public class PaymentEventListener {
         Optional.ofNullable(event.getPurchaseDetails()).ifPresent(AnalyticService::update);
 
         TransactionAnalyticsMessage.TransactionAnalyticsMessageBuilder analyticsBuilder = TransactionAnalyticsMessage.builder();
-        analyticsBuilder.uid(event.getTransaction().getUid());
+        analyticsBuilder
+                .uid(event.getTransaction().getUid())
+                .msisdn(event.getTransaction().getMsisdn())
+                .planId(event.getTransaction().getPlanId())
+                .itemId(event.getTransaction().getItemId())
+                .amountPaid(event.getTransaction().getAmount())
+                .client(event.getTransaction().getClientAlias())
+                .couponCode(event.getTransaction().getCoupon());
         AnalyticService.update(UID, event.getTransaction().getUid());
-
-        analyticsBuilder.msisdn(event.getTransaction().getMsisdn());
         AnalyticService.update(MSISDN, event.getTransaction().getMsisdn());
-
-        analyticsBuilder.planId(event.getTransaction().getPlanId());
         AnalyticService.update(PLAN_ID, event.getTransaction().getPlanId());
-
-        analyticsBuilder.itemId(event.getTransaction().getItemId());
         AnalyticService.update(ITEM_ID, event.getTransaction().getItemId());
-
-        analyticsBuilder.amountPaid(event.getTransaction().getAmount());
         AnalyticService.update(AMOUNT_PAID, event.getTransaction().getAmount());
-
-        analyticsBuilder.client(event.getTransaction().getClientAlias());
         AnalyticService.update(CLIENT, event.getTransaction().getClientAlias());
-
-        analyticsBuilder.couponCode(event.getTransaction().getCoupon());
         AnalyticService.update(COUPON_CODE, event.getTransaction().getCoupon());
 
         String referenceTransactionId = event.getTransaction().getIdStr();
 
         if (Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getGeoLocation())) {
-            analyticsBuilder.accessCountryCode(event.getPurchaseDetails().getGeoLocation().getAccessCountryCode());
             AnalyticService.update(ACCESS_COUNTRY_CODE, event.getPurchaseDetails().getGeoLocation().getAccessCountryCode());
-
-            analyticsBuilder.stateCode(event.getPurchaseDetails().getGeoLocation().getStateCode());
             AnalyticService.update(STATE_CODE, event.getPurchaseDetails().getGeoLocation().getStateCode());
-
-            analyticsBuilder.ip(event.getPurchaseDetails().getGeoLocation().getIp());
             AnalyticService.update(IP, event.getPurchaseDetails().getGeoLocation().getIp());
+            analyticsBuilder.accessCountryCode(event.getPurchaseDetails().getGeoLocation().getAccessCountryCode())
+                    .stateCode(event.getPurchaseDetails().getGeoLocation().getStateCode())
+                    .ip(event.getPurchaseDetails().getGeoLocation().getIp());
         }
 
         if (EnumSet.of(PaymentEvent.SUBSCRIBE, PaymentEvent.RENEW).contains(event.getTransaction().getType()) && !IAP_PAYMENT_METHODS.contains(event.getTransaction().getPaymentChannel().name())) {
@@ -726,10 +721,8 @@ public class PaymentEventListener {
                     referenceTransactionId = renewal.getInitialTransactionId();
                 }
             }
-            analyticsBuilder.renewalAttemptSequence(renewalAttemptSequence);
+            analyticsBuilder.renewalAttemptSequence(renewalAttemptSequence).referenceTransactionId(referenceTransactionId);
             AnalyticService.update(RENEWAL_ATTEMPT_SEQUENCE, renewalAttemptSequence);
-
-            analyticsBuilder.referenceTransactionId(referenceTransactionId);
             AnalyticService.update(REFERENCE_TRANSACTION_ID, referenceTransactionId);
         }
 
@@ -750,40 +743,39 @@ public class PaymentEventListener {
                 }
             }
             String couponId = BeanLocatorFactory.getBean(ICouponCodeLinkService.class).fetchCouponCodeLink(couponCode).getCouponId();
-            Coupon coupon = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<Coupon, String>>() {}).get(couponId);
-
-            analyticsBuilder.couponGroup(coupon.getId());
+            Coupon coupon = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IEntityCacheService<Coupon, String>>() {
+            }).get(couponId);
+            ;
             AnalyticService.update(COUPON_GROUP, coupon.getId());
-
-            analyticsBuilder.discountType(coupon.getDiscountType().toString());
             AnalyticService.update(DISCOUNT_TYPE, coupon.getDiscountType().toString());
-
-            analyticsBuilder.discountValue(coupon.getDiscount());
             AnalyticService.update(DISCOUNT_VALUE, coupon.getDiscount());
+
+            analyticsBuilder.couponGroup(coupon.getId())
+                    .discountType(coupon.getDiscountType().toString())
+                    .discountValue(coupon.getDiscount());
         }
 
-        analyticsBuilder.transactionId(event.getTransaction().getIdStr());
-        AnalyticService.update(TRANSACTION_ID, event.getTransaction().getIdStr());
 
-        analyticsBuilder.initTimestamp(event.getTransaction().getInitTime().getTime().getTime());
+        AnalyticService.update(TRANSACTION_ID, event.getTransaction().getIdStr());
         AnalyticService.update(INIT_TIMESTAMP, event.getTransaction().getInitTime().getTime().getTime());
+
+        analyticsBuilder.transactionId(event.getTransaction().getIdStr())
+                .initTimestamp(event.getTransaction().getInitTime().getTime().getTime());
 
         if (Objects.nonNull(event.getTransaction().getExitTime())) {
             analyticsBuilder.exitTimestamp(event.getTransaction().getExitTime().getTime().getTime());
             AnalyticService.update(EXIT_TIMESTAMP, event.getTransaction().getExitTime().getTime().getTime());
         }
 
-        analyticsBuilder.paymentEvent(event.getTransaction().getType().getValue());
         AnalyticService.update(PAYMENT_EVENT, event.getTransaction().getType().getValue());
-
-        analyticsBuilder.paymentCode(event.getTransaction().getPaymentChannel().name());
         AnalyticService.update(PAYMENT_CODE, event.getTransaction().getPaymentChannel().name());
-
-        analyticsBuilder.transactionStatus(event.getTransaction().getStatus().getValue());
         AnalyticService.update(TRANSACTION_STATUS, event.getTransaction().getStatus().getValue());
-
-        analyticsBuilder.paymentMethod(event.getTransaction().getPaymentChannel().getCode());
         AnalyticService.update(PAYMENT_METHOD, event.getTransaction().getPaymentChannel().getCode());
+
+        analyticsBuilder.paymentEvent(event.getTransaction().getType().getValue())
+                .paymentCode(event.getTransaction().getPaymentChannel().name())
+                .transactionStatus(event.getTransaction().getStatus().getValue())
+                .paymentMethod(event.getTransaction().getPaymentChannel().getCode());
 
         if (event.getTransaction().getStatus() == TransactionStatus.SUCCESS) {
             delayFetchTDRDetails(PaymentTDRDetailsDto.builder().planId(event.getTransaction().getPlanId())
@@ -821,7 +813,7 @@ public class PaymentEventListener {
         }
 
         if (Objects.nonNull(event.getPurchaseDetails()) && Objects.nonNull(event.getPurchaseDetails().getAppDetails())) {
-            analyticsBuilder.appDetails(event.getPurchaseDetails().getAppDetails());
+            setAppDetails(analyticsBuilder, event.getPurchaseDetails());
             AnalyticService.update(event.getPurchaseDetails().getAppDetails());
         }
 
@@ -842,7 +834,21 @@ public class PaymentEventListener {
         if (EnumSet.of(TransactionStatus.SUCCESS, TransactionStatus.FAILURE).contains(event.getTransaction().getStatus())) {
             publishWaPaymentStatusEvent(event);
         }
-}
+    }
+
+    private void setAppDetails(TransactionAnalyticsMessage.TransactionAnalyticsMessageBuilder analyticsBuilder, IPurchaseDetails purchaseDetails) {
+        try {
+            if (purchaseDetails.getAppDetails().getClass().isInstance(in.wynk.payment.dto.AppDetails.class)) {
+                in.wynk.payment.dto.AppDetails appDetails = (in.wynk.payment.dto.AppDetails) purchaseDetails.getAppDetails();
+                analyticsBuilder.appDetails(appDetails);
+            } else {
+                GooglePlayAppDetails appDetails = (GooglePlayAppDetails)purchaseDetails.getAppDetails();
+                analyticsBuilder.appDetails(appDetails);
+            }
+        } catch (Exception ex) {
+            AnalyticService.update(ERROR, "Unable to set app details in transaction snapshot event " + ex.getMessage());
+        }
+    }
 
     @EventListener
     @AnalyseTransaction(name = "generateItemEvent")

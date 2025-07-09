@@ -258,7 +258,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
         String initialTransactionId= previousTransaction.getType()== PaymentEvent.SUBSCRIBE ? previousTransactionId : previousRenewal.getInitialTransactionId();
         PaymentRenewal paymentRenewal= PaymentRenewal.builder().day(nextRecurringDateTime).transactionId(transactionId).hour(nextRecurringDateTime.getTime()).createdTimestamp(Calendar.getInstance())
                 .transactionEvent(PaymentEvent.SUBSCRIBE.name()).initialTransactionId(initialTransactionId)
-                .lastSuccessTransactionId(lastSuccessTransactionId).attemptSequence(attemptSequence)
+                .lastSuccessTransactionId(lastSuccessTransactionId).attemptSequence(updatedAttemptSequence)
                 .build();
         upsert(paymentRenewal);
     }

@@ -32,7 +32,7 @@ import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.payment.utils.RecurringTransactionUtils;
-import in.wynk.vas.client.service.ApsClientService;
+import in.wynk.vas.client.service.aps.ApsClientService;
 import io.netty.channel.ConnectTimeoutException;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;

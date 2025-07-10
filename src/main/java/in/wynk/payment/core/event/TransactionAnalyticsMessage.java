@@ -1,5 +1,6 @@
 package in.wynk.payment.core.event;
 
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import in.wynk.payment.core.dao.entity.IAppDetails;
 import in.wynk.stream.advice.KafkaEvent;
 import lombok.Builder;
@@ -34,5 +35,6 @@ public class TransactionAnalyticsMessage {
     private String transactionStatus;
     private String paymentMethod;
     private String payuId;
+    @JsonUnwrapped
     private IAppDetails appDetails;
 }

@@ -124,6 +124,7 @@ public interface PaymentConstants extends BaseConstants {
     String TRANSACTION = "transaction";
     String UPI_INTENT_QR_TAG = "#UPIINTENT";
     int MAXIMUM_RENEWAL_RETRY_ALLOWED = 3;
+    String APP_DETAILS_TYPE = "appDetailsType";
     List<Integer> excludedAmounts = Arrays.asList(1, 49, 59, 69);
     ArrayList<String> ERROR_REASONS = new ArrayList<>(
             Arrays.asList("mandate status is: revoked", "|Mandate has been revoked", "mandate status is: pause", "Card has been classified as lost and has been blocked.",

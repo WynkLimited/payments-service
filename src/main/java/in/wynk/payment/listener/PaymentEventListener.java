@@ -838,12 +838,14 @@ public class PaymentEventListener {
 
     private void setAppDetails(TransactionAnalyticsMessage.TransactionAnalyticsMessageBuilder analyticsBuilder, IPurchaseDetails purchaseDetails) {
         try {
-            if (purchaseDetails.getAppDetails().getClass().isInstance(in.wynk.payment.dto.AppDetails.class)) {
+            if (purchaseDetails.getAppDetails().getClass().isAssignableFrom(in.wynk.payment.dto.AppDetails.class)) {
                 in.wynk.payment.dto.AppDetails appDetails = (in.wynk.payment.dto.AppDetails) purchaseDetails.getAppDetails();
                 analyticsBuilder.appDetails(appDetails);
-            } else {
+                AnalyticService.update(APP_DETAILS_TYPE, appDetails.getClass().getName());
+            } else if (purchaseDetails.getAppDetails().getClass().isAssignableFrom(GooglePlayAppDetails.class)) {
                 GooglePlayAppDetails appDetails = (GooglePlayAppDetails)purchaseDetails.getAppDetails();
                 analyticsBuilder.appDetails(appDetails);
+                AnalyticService.update(APP_DETAILS_TYPE, appDetails.getClass().getName());
             }
         } catch (Exception ex) {
             AnalyticService.update(ERROR, "Unable to set app details in transaction snapshot event " + ex.getMessage());

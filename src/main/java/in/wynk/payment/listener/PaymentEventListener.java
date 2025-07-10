@@ -830,7 +830,6 @@ public class PaymentEventListener {
             log.error(PaymentLoggingMarker.DP_KAFKA_PUBLISHER_FAILURE, "Unable to publish the transaction snapshot event in kafka due to {}", ex.getMessage(), ex);
             AnalyticService.update(ERROR, "Unable to publish the transaction snapshot event in kafka " + ex.getMessage());
         }
-        publishBranchEvent(event);
         if (EnumSet.of(TransactionStatus.SUCCESS, TransactionStatus.FAILURE).contains(event.getTransaction().getStatus())) {
             publishWaPaymentStatusEvent(event);
         }

@@ -18,17 +18,26 @@ import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.subscription.common.dto.ItemDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import org.apache.http.client.utils.URIBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.net.URISyntaxException;
+import java.util.List;
 import java.util.Objects;
 
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 
+
 @Component
 public class PurchaseSessionPresentation implements IPresentation<WynkResponseEntity<SessionResponse.SessionData>, Pair<String, PurchaseRequest>> {
+
+
+    @Value("${show.GBP.disabled.plans}")
+    private List<String> showGBPDisabledPlans;
+
+
     @Override
     public WynkResponseEntity<SessionResponse.SessionData> transform(Pair<String, PurchaseRequest> pair) {
         final String id = pair.getFirst();
@@ -42,8 +51,8 @@ public class PurchaseSessionPresentation implements IPresentation<WynkResponseEn
             if (request.getProductDetails().getType().equalsIgnoreCase(PLAN)) {
                 queryBuilder.addParameter(PLAN_ID, request.getProductDetails().getId());
                 PlanDTO planDto = cache.getPlan(request.getProductDetails().getId());
-                if (Objects.nonNull(planDto.getSku()) && Objects.nonNull(planDto.getSku().get("google_iap"))) {
-                    queryBuilder.addParameter(PaymentConstants.SKU_ID, planDto.getSku().get("google_iap"));
+                if (Objects.nonNull(planDto.getSku()) && Objects.nonNull(planDto.getSku().get("google_iap")) && !showGBPDisabledPlans.contains(request.getProductDetails().getId())){
+                     queryBuilder.addParameter(PaymentConstants.SKU_ID, planDto.getSku().get("google_iap"));
                 } else {
                     queryBuilder.addParameter(PaymentConstants.SHOW_GPB, String.valueOf(false));
                 }

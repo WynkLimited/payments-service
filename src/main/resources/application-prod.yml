@@ -56,14 +56,14 @@ spring:
 #    url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
 #    username: huygens
 #    password: 2dtRAHGI5OhfBj1hNkpd
-    url: jdbc:mysql://10.160.64.3:3306/payments
+    url: jdbc:mysql://10.160.64.3:3306/payments?useSSL=true&requireSSL=true
     username: huygens
     password: 2dtRAHGI5OhfBj1hNkpd
     hikari:
 #      jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
 #      username: huygens
 #      password: 2dtRAHGI5OhfBj1hNkpd
-      jdbc-url: jdbc:mysql://10.160.64.3:3306/payments
+      jdbc-url: jdbc:mysql://10.160.64.3:3306/payments?useSSL=true&requireSSL=true
       username: huygens
       password: 2dtRAHGI5OhfBj1hNkpd
       driver-class-name: com.mysql.cj.jdbc.Driver
@@ -589,6 +589,10 @@ wynk:
       sms:
         notification:
           topic: wcf_prod.sms_notification_message
+      dp:
+        transactions:
+          snapshot:
+            topic: wcf_prod.dp_transaction_snapshot
     consumers:
       enabled: true
       listenerFactory:
@@ -1179,7 +1183,7 @@ wynk:
 #                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
 #                  username: huygens
 #                  password: 2dtRAHGI5OhfBj1hNkpd
-                  jdbc-url: jdbc:mysql://10.160.64.3:3306/payments
+                  jdbc-url: jdbc:mysql://10.160.64.3:3306/payments?useSSL=true&requireSSL=true
                   username: huygens
                   password: 2dtRAHGI5OhfBj1hNkpd
                   driver-class-name: com.mysql.cj.jdbc.Driver
@@ -1221,7 +1225,7 @@ wynk:
 #                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
 #                  username: huygens
 #                  password: 2dtRAHGI5OhfBj1hNkpd
-                  jdbc-url: jdbc:mysql://10.160.64.3:3306/payments
+                  jdbc-url: jdbc:mysql://10.160.64.3:3306/payments?useSSL=true&requireSSL=true
                   username: huygens
                   password: 2dtRAHGI5OhfBj1hNkpd
                   driver-class-name: com.mysql.cj.jdbc.Driver
@@ -1263,7 +1267,7 @@ wynk:
 #                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
 #                  username: huygens
 #                  password: 2dtRAHGI5OhfBj1hNkpd
-                  jdbc-url: jdbc:mysql://10.160.64.3:3306/payments
+                  jdbc-url: jdbc:mysql://10.160.64.3:3306/payments?useSSL=true&requireSSL=true
                   username: huygens
                   password: 2dtRAHGI5OhfBj1hNkpd
                   driver-class-name: com.mysql.cj.jdbc.Driver
@@ -1305,7 +1309,7 @@ wynk:
 #                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments_rajtv
 #                  username: huygens
 #                  password: 2dtRAHGI5OhfBj1hNkpd
-                  jdbc-url: jdbc:mysql://10.160.64.3:3306/payments
+                  jdbc-url: jdbc:mysql://10.160.64.3:3306/payments?useSSL=true&requireSSL=true
                   username: huygens
                   password: 2dtRAHGI5OhfBj1hNkpd
                   driver-class-name: com.mysql.cj.jdbc.Driver
@@ -1347,7 +1351,7 @@ wynk:
 #                  jdbc-url: jdbc:mysql://wcf-payments-production.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments_enterr10
 #                  username: huygens
 #                  password: 2dtRAHGI5OhfBj1hNkpd
-                  jdbc-url: jdbc:mysql://10.160.64.3:3306/payments
+                  jdbc-url: jdbc:mysql://10.160.64.3:3306/payments?useSSL=true&requireSSL=true
                   username: huygens
                   password: 2dtRAHGI5OhfBj1hNkpd
                   driver-class-name: com.mysql.cj.jdbc.Driver

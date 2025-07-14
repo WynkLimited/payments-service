@@ -88,7 +88,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
                     request.getTransaction().getPaymentChannel().isInternalRecurring()) {
                 if (EnumSet.of(PaymentEvent.SUBSCRIBE, PaymentEvent.TRIAL_SUBSCRIPTION).contains(request.getTransaction().getType())) {
                     nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planDTO.getPeriod().getTimeUnit().toMillis(planDTO.getPeriod().getValidity()));
-                    createRenewalEntry(request.getTransaction().getIdStr(), request.getTransaction().getType(), nextRecurringDateTime);
+                    createRenewalEntry(request.getTransaction().getIdStr(), request.getTransaction().getType(), nextRecurringDateTime, request.getTransaction(), request.getFinalTransactionStatus(), request.getTransaction().getPaymentChannel().getCode());
 
                 } else if (request.getTransaction().getType() == PaymentEvent.RENEW) {
                     nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planDTO.getPeriod().getTimeUnit().toMillis(planDTO.getPeriod().getValidity()));
@@ -119,7 +119,20 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
         }
     }
 
-    private void createRenewalEntry(String transactionId, PaymentEvent event, Calendar nextRecurringDateTime){
+    private void createRenewalEntry(String transactionId, PaymentEvent event, Calendar nextRecurringDateTime, Transaction transaction, TransactionStatus finalTransactionStatus, String paymentCode){
+        if (BeanConstant.ADD_TO_BILL_PAYMENT_SERVICE.equalsIgnoreCase(paymentCode)) {
+            if (finalTransactionStatus != TransactionStatus.FAILURE) {
+                scheduleAtbTask(transaction, nextRecurringDateTime);
+            }
+            return;
+        }
+        if (CODE_TO_RENEW_OFFSET.containsKey(paymentCode)) {
+            final Calendar day = Calendar.getInstance();
+            day.add(Calendar.DAY_OF_MONTH, 3);
+            if (nextRecurringDateTime.compareTo(day) >= 0) {
+                nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, CODE_TO_RENEW_OFFSET.get(paymentCode));
+            }
+        }
         PaymentRenewal paymentRenewal = PaymentRenewal.builder().day(nextRecurringDateTime).transactionId(transactionId).hour(nextRecurringDateTime.getTime()).createdTimestamp(Calendar.getInstance())
                 .transactionEvent(String.valueOf(event))
                 .initialTransactionId(transactionId).lastSuccessTransactionId(null)
@@ -208,11 +221,19 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     @Override
     public void updateRenewalEntry (String transactionId, String originalTransactionId, PaymentEvent paymentEvent, String code, Calendar nextRecurringDateTime,
                                           Transaction transaction, TransactionStatus finalTransactionStatus, PaymentRenewal renewal) {
+        //remove this ATB code in future
         if (BeanConstant.ADD_TO_BILL_PAYMENT_SERVICE.equalsIgnoreCase(code)) {
             if (finalTransactionStatus != TransactionStatus.FAILURE) {
                 scheduleAtbTask(transaction, nextRecurringDateTime);
             }
             return;
+        }
+        if (CODE_TO_RENEW_OFFSET.containsKey(code)) {
+            final Calendar day = Calendar.getInstance();
+            day.add(Calendar.DAY_OF_MONTH, 3);
+            if (nextRecurringDateTime.compareTo(day) >= 0) {
+                nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, CODE_TO_RENEW_OFFSET.get(code));
+            }
         }
 
         String merchantTransactionEvent= renewal.getTransactionEvent().name();
@@ -232,13 +253,13 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
 
     @Override
     public void createEntryInRenewalTable(String transactionId, String previousTransactionId, PaymentEvent event, String paymentCode, Calendar nextRecurringDateTime, int attemptSequence, Transaction transaction, TransactionStatus finalTransactionStatus, PaymentRenewal previousRenewal, Transaction previousTransaction) {
+        //remove this ATB piece of code after testing
         if (BeanConstant.ADD_TO_BILL_PAYMENT_SERVICE.equalsIgnoreCase(paymentCode)) {
             if (finalTransactionStatus != TransactionStatus.FAILURE) {
                 scheduleAtbTask(transaction, nextRecurringDateTime);
             }
             return;
         }
-
         if (CODE_TO_RENEW_OFFSET.containsKey(paymentCode)) {
             final Calendar day = Calendar.getInstance();
             day.add(Calendar.DAY_OF_MONTH, 3);

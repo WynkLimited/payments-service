@@ -1,6 +1,7 @@
 package in.wynk.payment.gateway.payu.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.payment.core.dao.entity.MerchantTransaction;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.BaseTDRResponse;
@@ -40,6 +41,9 @@ public class PayUTdrGatewayServiceImpl implements IMerchantTDRService {
             final MultiValueMap<String, String> requestMap = common.buildPayUInfoRequest(transaction.getClientAlias(), PAYU_GETTDR.getCode(), midPayId);
             final PayUTdrResponse response = common.exchange(TDR_ENDPOINT, requestMap, new TypeReference<PayUTdrResponse>() {
             });
+            log.info("payU Response for TDR : {}, tdr Value: {}", response.toString(), response.getMessage().getTdr());
+            AnalyticService.update("PAYUTDRResponse", response.toString());
+            AnalyticService.update("PAYUTDRValue", response.getMessage().getTdr());
             return BaseTDRResponse.from(response.getMessage().getTdr());
         } catch (Exception e) {
             log.error(PAYU_TDR_ERROR, e.getMessage());

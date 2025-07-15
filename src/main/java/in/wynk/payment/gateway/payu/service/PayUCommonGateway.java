@@ -108,7 +108,9 @@ public class PayUCommonGateway {
 
     public <T> T exchange (String uri, MultiValueMap<String, String> request, HttpHeaders headers, TypeReference<T> target) {
         try {
+            log.info("uri: {}, request : {}  target : {}, for payU Curl",uri,request,target);
             final String response = restTemplate.exchange(RequestEntity.method(HttpMethod.POST, URI.create(uri)).body(request), String.class).getBody();
+            log.info("response in exchange method from payU: {}", response);
             if (StringUtils.isNotEmpty(response) && response.contains("Record not found")) {
                 throw new WynkRuntimeException("Record not found");
             }
@@ -138,6 +140,7 @@ public class PayUCommonGateway {
                 }
             }
         }
+        log.info("requestMap for payU: {}",requestMap);
         return requestMap;
     }
 

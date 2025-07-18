@@ -41,7 +41,9 @@ import org.springframework.stereotype.Service;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalTime;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static in.wynk.payment.core.constant.PaymentConstants.MESSAGE;
@@ -67,6 +69,11 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     private int duePreDebitNotificationOffsetDay;
     @Value("${payment.preDebitNotification.offset.hour}")
     private int duePreDebitNotificationOffsetTime;
+    @Value("${payment.recurring.peak.morning}")
+    private String morningPeakHours;
+    @Value("${payment.recurring.peak.evening}")
+    private String eveningPeakHours;
+
 
     private final Map<String, Integer> CODE_TO_RENEW_OFFSET = new HashMap<String, Integer>() {{
         put(BeanConstant.AIRTEL_PAY_STACK, -2);
@@ -133,6 +140,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
                 nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, CODE_TO_RENEW_OFFSET.get(paymentCode));
             }
         }
+        scheduleToNonPeakHours(nextRecurringDateTime);
         PaymentRenewal paymentRenewal = PaymentRenewal.builder().day(nextRecurringDateTime).transactionId(transactionId).hour(nextRecurringDateTime.getTime()).createdTimestamp(Calendar.getInstance())
                 .transactionEvent(String.valueOf(event))
                 .initialTransactionId(transactionId).lastSuccessTransactionId(null)
@@ -218,6 +226,32 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
         return paymentRenewalDao.getRecurrentPayment(currentDay, currentDayTimeWithOffset, currentTime, currentTimeWithOffset);
     }
 
+    private Set<Integer> parseHours(String hoursStr) {
+        return Arrays.stream(hoursStr.split(","))
+                .map(String::trim)
+                .map(Integer::parseInt)
+                .collect(Collectors.toSet());
+    }
+
+    private void scheduleToNonPeakHours(Calendar calendar) {
+        int hour = calendar.get(Calendar.HOUR_OF_DAY);
+        Set<Integer> morningPeak = parseHours(morningPeakHours);
+        Set<Integer> eveningPeak = parseHours(eveningPeakHours);
+
+        if (morningPeak.contains(hour)) {
+            calendar.set(Calendar.HOUR_OF_DAY, new Random().nextInt(4) + 6);
+        } else if (eveningPeak.contains(hour)) {
+            calendar.set(Calendar.HOUR_OF_DAY, new Random().nextInt(5) + 17);
+        } else {
+            return;
+        }
+
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+    }
+
+
     @Override
     public void updateRenewalEntry (String transactionId, String originalTransactionId, PaymentEvent paymentEvent, String code, Calendar nextRecurringDateTime,
                                           Transaction transaction, TransactionStatus finalTransactionStatus, PaymentRenewal renewal) {
@@ -235,6 +269,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
                 nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, CODE_TO_RENEW_OFFSET.get(code));
             }
         }
+        scheduleToNonPeakHours(nextRecurringDateTime);
 
         String merchantTransactionEvent= renewal.getTransactionEvent().name();
         if (finalTransactionStatus== TransactionStatus.SUCCESS){
@@ -267,6 +302,9 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
                 nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, CODE_TO_RENEW_OFFSET.get(paymentCode));
             }
         }
+
+        scheduleToNonPeakHours(nextRecurringDateTime);
+
         int updatedAttemptSequence= attemptSequence;
         TransactionStatus previousStatus= previousTransaction.getStatus();
         if(previousStatus== TransactionStatus.SUCCESS || previousStatus== TransactionStatus.INPROGRESS){

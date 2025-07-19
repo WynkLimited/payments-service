@@ -240,8 +240,9 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
 
         if (morningPeak.contains(hour)) {
             calendar.set(Calendar.HOUR_OF_DAY, new Random().nextInt(4) + 6);
+
         } else if (eveningPeak.contains(hour)) {
-            calendar.set(Calendar.HOUR_OF_DAY, new Random().nextInt(5) + 17);
+            calendar.set(Calendar.HOUR_OF_DAY, new Random().nextInt(4) + 13);
         } else {
             return;
         }

@@ -73,6 +73,12 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     private String morningPeakHours;
     @Value("${payment.recurring.peak.evening}")
     private String eveningPeakHours;
+    @Value("${payment.npciRenewalWindowUpdate.preOffsetDays}")
+    private int npciRenewalWindowUpdatePreOffsetDay;
+    @Value("${payment.npciRenewalWindowUpdate.offset.day}")
+    private int npciRenewalWindowUpdateOffsetDay;
+    @Value("${payment.npciRenewalWindowUpdate.offset.hour}")
+    private int npciRenewalWindowUpdateOffsetTime;
 
 
     private final Map<String, Integer> CODE_TO_RENEW_OFFSET = new HashMap<String, Integer>() {{
@@ -195,6 +201,12 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     }
 
     @Override
+    @Transactional(transactionManager = "#clientAlias", source = "payments")
+    public Stream<PaymentRenewal> getNextDayRecurringPayments(String clientAlias) {
+        return getPaymentRenewalStream(npciRenewalWindowUpdateOffsetDay, npciRenewalWindowUpdateOffsetTime, npciRenewalWindowUpdatePreOffsetDay);
+    }
+
+    @Override
     public PaymentRenewal getLatestRecurringPaymentByInitialTxnId (String txnId) {
         Optional<PaymentRenewal> paymentRenewalOptional = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class).findTopByInitialTransactionIdOrderByCreatedTimestampDesc(txnId);
         return paymentRenewalOptional.orElse(null);
@@ -233,7 +245,8 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
                 .collect(Collectors.toSet());
     }
 
-    private void scheduleToNonPeakHours(Calendar calendar) {
+    @Override
+    public void scheduleToNonPeakHours(Calendar calendar) {
         int hour = calendar.get(Calendar.HOUR_OF_DAY);
         Set<Integer> morningPeak = parseHours(morningPeakHours);
         Set<Integer> eveningPeak = parseHours(eveningPeakHours);

@@ -38,6 +38,16 @@ public class SchedulerController {
         return EmptyResponse.response();
     }
 
+    @GetMapping("/start/prepareRenewals")
+    @AnalyseTransaction(name = "prepareNextDayRenewalWindow")
+    public EmptyResponse prepareNextDayRenewals() {
+        String requestId = MDC.get(REQUEST_ID);
+        String clientId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        executorService.submit(() -> paymentRenewalsScheduler.prepareNextDayRenewals(requestId, cachingService.getClientById(clientId).getAlias()));
+        return EmptyResponse.response();
+    }
+
+
     @GetMapping("/start/seRenewal")
     @AnalyseTransaction(name = "sePaymentRenew")
     public EmptyResponse startSEPaymentRenew() {

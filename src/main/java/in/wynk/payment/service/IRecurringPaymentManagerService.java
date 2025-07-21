@@ -38,4 +38,8 @@ public interface IRecurringPaymentManagerService {
     PaymentRenewal getLatestRecurringPaymentByInitialTxnId (String txnId);
 
     void updateRenewalSchedule (String clientAlias, String transactionId, Calendar day, Date hour);
+
+    Stream<PaymentRenewal> getNextDayRecurringPayments(String clientAlias);
+
+    void scheduleToNonPeakHours(Calendar calendar);
 }

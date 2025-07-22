@@ -77,6 +77,28 @@ public class PaymentRenewalsScheduler {
                         paymentRenewal.getTransactionEvent() == DEFERRED))
                 .collect(Collectors.toList());
 
+        sendToNextDayRenewalHourFixingQueue(paymentRenewals);
+        AnalyticService.update("transactionsSize", paymentRenewals.size());
+    }
+
+    private List<PaymentRenewal> filterbyLastSuccessTransaction(List<PaymentRenewal> paymentRenewals){
+        if (paymentRenewals == null || paymentRenewals.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Set<String> duplicateTransactions = new HashSet<>();
+        List<PaymentRenewal> distinctRenewals = new ArrayList<>();
+
+        for (PaymentRenewal renewal : paymentRenewals) {
+            String lastSuccessTransactionId = renewal.getLastSuccessTransactionId();
+            if (lastSuccessTransactionId == null || duplicateTransactions.add(lastSuccessTransactionId)) {
+                distinctRenewals.add(renewal);
+            }
+        }
+        return distinctRenewals;
+
+    }
+
+    private void sendToNextDayRenewalHourFixingQueue(List<PaymentRenewal> paymentRenewals){
         for (PaymentRenewal paymentRenewal : paymentRenewals) {
             try {
                 Calendar originalHourCal = Calendar.getInstance();
@@ -97,28 +119,11 @@ public class PaymentRenewalsScheduler {
                     recurringPaymentManager.upsert(paymentRenewal);
                 }
             } catch (Exception e) {
-                log.error("Error processing PaymentRenewal with txnId={}: {}",
+                log.error("Error processing PaymentRenewal with txnId : {}: {}",
                         paymentRenewal.getTransactionId(), e.getMessage(), e);
             }
         }
         AnalyticService.update("nextDayPaymentRenewalsPrepared", true);
-    }
-
-    private List<PaymentRenewal> filterbyLastSuccessTransaction(List<PaymentRenewal> paymentRenewals){
-        if (paymentRenewals == null || paymentRenewals.isEmpty()) {
-            return Collections.emptyList();
-        }
-        Set<String> duplicateTransactions = new HashSet<>();
-        List<PaymentRenewal> distinctRenewals = new ArrayList<>();
-
-        for (PaymentRenewal renewal : paymentRenewals) {
-            String lastSuccessTransactionId = renewal.getLastSuccessTransactionId();
-            if (lastSuccessTransactionId == null || duplicateTransactions.add(lastSuccessTransactionId)) {
-                distinctRenewals.add(renewal);
-            }
-        }
-        return distinctRenewals;
-
     }
 
 

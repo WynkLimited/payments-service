@@ -116,6 +116,11 @@ payment:
     offset:
       day: 0
       hour: 1
+  npciRenewalWindowUpdate:
+    preOffsetDays: 1
+    offset:
+      day: 0
+      hour: 1
   ###### lib-queue props ######
   pooling:
     queue:

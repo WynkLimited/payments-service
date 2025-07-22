@@ -475,19 +475,17 @@ public class PaymentEventListener {
             PurchaseRecord purchaseRecord = PurchaseRecord.from(event);
             final ClientDetails clientDetails = (ClientDetails) ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT001));
             if (taskScheduler.isTriggerExist(purchaseRecord.getGroupId(), purchaseRecord.getTaskId())) {
-                AnalyticService.update("existing TaskId", purchaseRecord.getTaskId());
                 taskScheduler.unSchedule(purchaseRecord.getGroupId(), purchaseRecord.getTaskId());
             }
             final long delayedBy = (clientDetails.<Double>getMeta(PaymentConstants.PAYMENT_DROPOUT_TRACKER_IN_SECONDS).orElse(3600D)).longValue();
             final Date taskScheduleTime = new Date(System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(delayedBy));
-            AnalyticService.update("purchaseRecord", purchaseRecord.toString());
             taskScheduler.schedule(TaskDefinition.<PurchaseRecord>builder()
                     .entity(purchaseRecord)
                     .handler(CustomerWinBackHandler.class)
                     .triggerConfiguration(TaskDefinition.TriggerConfiguration.builder()
                             .durable(false)
                             .startAt(taskScheduleTime)
-                            .scheduleBuilder(SimpleScheduleBuilder.simpleSchedule().withRepeatCount(0).withIntervalInSeconds(0).withMisfireHandlingInstructionFireNow())
+                            .scheduleBuilder(SimpleScheduleBuilder.simpleSchedule().withRepeatCount(0).withIntervalInSeconds(0))
                             .build())
                     .build());
         } catch (Exception e) {
@@ -504,7 +502,6 @@ public class PaymentEventListener {
             AnalyticService.update(event);
             final Transaction lastTransaction = transactionManagerService.get(event.getTransactionId());
             final ClientDetails client = (ClientDetails) ClientContext.getClient().orElseThrow(() -> new WynkRuntimeException(ClientErrorType.CLIENT001));
-            AnalyticService.update("client",client.getAlias());
             final boolean sendDropOutNotification = supportsDropOutText(client, lastTransaction.getPlanId()) && lastTransaction.getStatus() != TransactionStatus.SUCCESS;
             if (!sendDropOutNotification) {
                 log.info("Skipping to send drop out notification as user has completed transaction for {}", event);
@@ -523,7 +520,6 @@ public class PaymentEventListener {
         if (clientDetails != null && clientDetails.getMeta() != null && clientDetails.getMeta(PLAN_IDS_WITH_NO_MESSAGE_SUPPORT).isPresent()) {
             List<Integer> plans = (List<Integer>) clientDetails.getMeta().get(PLAN_IDS_WITH_NO_MESSAGE_SUPPORT);
             if (plans.stream().filter(plan -> plan.equals(planId)).findAny().isPresent()) {
-                AnalyticService.update("dropOutMessageSupported",Boolean.FALSE);
                 return false;
             }
         }
@@ -830,7 +826,6 @@ public class PaymentEventListener {
             log.error(PaymentLoggingMarker.DP_KAFKA_PUBLISHER_FAILURE, "Unable to publish the transaction snapshot event in kafka due to {}", ex.getMessage(), ex);
             AnalyticService.update(ERROR, "Unable to publish the transaction snapshot event in kafka " + ex.getMessage());
         }
-        //publishBranchEvent(event);
         if (EnumSet.of(TransactionStatus.SUCCESS, TransactionStatus.FAILURE).contains(event.getTransaction().getStatus())) {
             publishWaPaymentStatusEvent(event);
         }
@@ -980,7 +975,7 @@ public class PaymentEventListener {
     private void delayFetchTDRDetails(PaymentTDRDetailsDto paymentTDRDetailsDto) {
         try {
             Calendar delayedTime = Calendar.getInstance();
-            delayedTime.add(Calendar.MINUTE, 2);
+            delayedTime.add(Calendar.MINUTE, 10);
 
             PaymentTDRDetails tdrDetails = PaymentTDRDetails.builder()
                     .planId(paymentTDRDetailsDto.getPlanId())

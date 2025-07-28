@@ -233,9 +233,9 @@ public class SubscriptionServiceManagerImpl implements ISubscriptionServiceManag
     }
 
     public boolean isDeferred(String paymentMethod, long furtherDefer, boolean isPreDebitFlow) {
-        long oneHourWindow = (long) hour * 60 * 60 * 1000;
-        long twoDayPlusOneHourWindow = ((long) 2 * 24 * 60 * 60 * 1000) + oneHourWindow;
-        return (Objects.equals(paymentMethod, AIRTEL_PAY_STACK) || isPreDebitFlow) ? (furtherDefer > twoDayPlusOneHourWindow) : (furtherDefer > oneHourWindow);
+        long oneDayWindow = (long) 1 * 24 * 60 * 60 * 1000; // for PAYU
+        long twoDayPlusOneDayWindow = ((long) 2 * 24 * 60 * 60 * 1000) + oneDayWindow;    // for APS
+        return (Objects.equals(paymentMethod, AIRTEL_PAY_STACK) || isPreDebitFlow) ? (furtherDefer > twoDayPlusOneDayWindow) : (furtherDefer > oneDayWindow);
     }
 
     @Override

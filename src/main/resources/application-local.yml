@@ -101,6 +101,9 @@ payment:
     offset:
       day: 0
       hour: 1
+    peak:
+      morning: 10,11,12
+      evening: 17,18,19,20,21
     retry:
       day: 0
       hour: 1

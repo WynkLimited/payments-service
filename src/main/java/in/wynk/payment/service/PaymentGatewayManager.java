@@ -53,7 +53,9 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static in.wynk.payment.core.constant.BeanConstant.CHARGING_FRAUD_DETECTION_CHAIN;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
@@ -297,6 +299,7 @@ public class PaymentGatewayManager
 
     @Override
     public void renew(PaymentRenewalChargingRequest request) {
+        AtomicBoolean retryForAps = new AtomicBoolean(false);
         PaymentGateway paymentGateway = request.getPaymentGateway();
         final AbstractTransactionInitRequest transactionInitRequest = DefaultTransactionInitRequestMapper.from(
                 PlanRenewalRequest.builder().planId(request.getPlanId()).txnId(request.getId()).uid(request.getUid()).msisdn(request.getMsisdn()).paymentGateway(paymentGateway)
@@ -321,7 +324,11 @@ public class PaymentGatewayManager
                 PaymentErrorEvent errorEvent = errorEventBuilder.build();
                 recurringTransactionUtils.cancelRenewalBasedOnErrorReason(errorEvent.getDescription(), transaction);
                 eventPublisher.publishEvent(errorEvent);
-            } else {
+            }
+            else {
+                if(ex instanceof IOException){
+                    retryForAps.set(true);
+                }
                 errorEventBuilder.code(PaymentErrorType.PAY024.getErrorCode()).description(PaymentErrorType.PAY024.getErrorMessage());
                 eventPublisher.publishEvent(errorEventBuilder.build());
             }
@@ -336,7 +343,7 @@ public class PaymentGatewayManager
             }
             final TransactionStatus finalStatus = transaction.getStatus();
             transactionManager.revision(AsyncTransactionRevisionRequest.builder().transaction(transaction).existingTransactionStatus(initialStatus).finalTransactionStatus(finalStatus)
-                    .attemptSequence(request.getAttemptSequence()).originalTransactionId(request.getId()).lastSuccessTransactionId(transaction.getIdStr()).build());
+                    .attemptSequence(request.getAttemptSequence()).originalTransactionId(request.getId()).lastSuccessTransactionId(transaction.getIdStr()).retryForAps(retryForAps.get()).build());
         }
     }
 

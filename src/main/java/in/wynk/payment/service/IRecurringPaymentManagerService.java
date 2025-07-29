@@ -20,7 +20,7 @@ public interface IRecurringPaymentManagerService {
     void scheduleRecurringPayment (AbstractTransactionRevisionRequest request);
 
     void updateRenewalEntry (String transactionId, String lastSuccessTransactionId, PaymentEvent event, String code, Calendar nextRecurringDateTime,
-                                   Transaction transaction, TransactionStatus finalTransactionStatus, PaymentRenewal renewal, boolean retryForAps);
+                                   Transaction transaction, TransactionStatus finalTransactionStatus, PaymentRenewal renewal);
 
     void createEntryInRenewalTable (String transactionId, String lastSuccessTransactionId, PaymentEvent event, String code, Calendar nextRecurringDateTime, int attemptSequence,
                                    Transaction transaction, TransactionStatus finalTransactionStatus, PaymentRenewal previousRenewal, Transaction previousTransaction);

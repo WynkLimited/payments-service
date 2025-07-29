@@ -29,9 +29,6 @@ public abstract class AbstractTransactionRevisionRequest {
     @Setter
     private String lastSuccessTransactionId;
 
-    @Analysed
-    private boolean retryForAps;
-
     public int getAttemptSequence() {
         return 0;
     };

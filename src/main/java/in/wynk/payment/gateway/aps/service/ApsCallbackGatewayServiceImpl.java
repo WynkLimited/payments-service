@@ -70,12 +70,13 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
             callbackType = WebhookConfigType.PAYMENT_STATUS.name();
         }
         final IPaymentCallback callbackService = delegator.get(callbackType);
-        if (isValid(request)) {
-            return callbackService.handle(request);
-        } else {
-            log.error(APS_CALLBACK_FAILURE, "Invalid checksum found with transactionStatus: {}, APS transactionId: {}", request.getStatus(), request.getOrderId());
-            throw new PaymentRuntimeException(PaymentErrorType.APS009, "Invalid checksum found with transaction id:" + request.getOrderId());
-        }
+//        if (isValid(request)) {
+//            return callbackService.handle(request);
+//        } else {
+//            log.error(APS_CALLBACK_FAILURE, "Invalid checksum found with transactionStatus: {}, APS transactionId: {}", request.getStatus(), request.getOrderId());
+//            throw new PaymentRuntimeException(PaymentErrorType.APS009, "Invalid checksum found with transaction id:" + request.getOrderId());
+//        }
+        return callbackService.handle(request);
     }
 
     @Override

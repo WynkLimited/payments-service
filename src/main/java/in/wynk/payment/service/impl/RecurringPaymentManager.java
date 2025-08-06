@@ -122,11 +122,15 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
                             .reason("Maximum Attempts Reached. No More Entry In Payment Renewal").build());
                     return;
                 }
-                PlanPeriodDTO planPeriodDTO = planDTO.getPeriod();
-                nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planPeriodDTO.getTimeUnit().toMillis(planPeriodDTO.getRetryInterval()));
-                updateRenewalEntry(request.getTransaction().getIdStr(), request.getLastSuccessTransactionId(), request.getTransaction().getType(),
-                        request.getTransaction().getPaymentChannel().getCode(), nextRecurringDateTime, request.getTransaction(), request.getFinalTransactionStatus(),
-                        renewal, request.isRetryForAps());
+                if(request.getTransaction().getPaymentChannel().getId().equals(PAYU) ||  (request.getTransaction().getPaymentChannel().getId().equals(ApsConstant.APS) && request.isRetryForAps())){
+                    PlanPeriodDTO planPeriodDTO = planDTO.getPeriod();
+                    nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planPeriodDTO.getTimeUnit().toMillis(planPeriodDTO.getRetryInterval()));
+                    updateRenewalEntry(request.getTransaction().getIdStr(), request.getLastSuccessTransactionId(), request.getTransaction().getType(),
+                            request.getTransaction().getPaymentChannel().getCode(), nextRecurringDateTime, request.getTransaction(), request.getFinalTransactionStatus(),
+                            renewal, request.isRetryForAps());
+                }
+
+
             }
         }
     }

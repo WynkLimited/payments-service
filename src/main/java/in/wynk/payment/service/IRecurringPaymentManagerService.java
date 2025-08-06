@@ -20,7 +20,7 @@ public interface IRecurringPaymentManagerService {
     void scheduleRecurringPayment (AbstractTransactionRevisionRequest request);
 
     void updateRenewalEntry (String transactionId, String lastSuccessTransactionId, PaymentEvent event, String code, Calendar nextRecurringDateTime,
-                                   Transaction transaction, TransactionStatus finalTransactionStatus, PaymentRenewal renewal);
+                                   Transaction transaction, TransactionStatus finalTransactionStatus, PaymentRenewal renewal, boolean retryForAps);
 
     void createEntryInRenewalTable (String transactionId, String lastSuccessTransactionId, PaymentEvent event, String code, Calendar nextRecurringDateTime, int attemptSequence,
                                    Transaction transaction, TransactionStatus finalTransactionStatus, PaymentRenewal previousRenewal, Transaction previousTransaction);
@@ -38,4 +38,8 @@ public interface IRecurringPaymentManagerService {
     PaymentRenewal getLatestRecurringPaymentByInitialTxnId (String txnId);
 
     void updateRenewalSchedule (String clientAlias, String transactionId, Calendar day, Date hour);
+
+    Stream<PaymentRenewal> getNextDayRecurringPayments(String clientAlias);
+
+    void scheduleToNonPeakHours(Calendar calendar);
 }

@@ -1,5 +1,6 @@
 package in.wynk.payment.gateway.aps.service;
 
+import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.constant.BaseConstants;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.utils.BeanLocatorFactory;
@@ -157,7 +158,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                                     .channelInfo(ChannelInfo.builder().redirectionUrl(redirectUrl).build());
                     boolean isMandateFlow = paymentDetails.isMandate() || request.getPaymentDetails().isTrialOpted();
                     CollectUpiPaymentInfo.CollectUpiPaymentInfoBuilder<?, ?> paymentInfoBuilder =
-                            CollectUpiPaymentInfo.builder().lob(isRecharge ? LOB.PREPAID.toString() : LOB.WYNK.toString()).vpa(paymentDetails.getUpiDetails().getVpa()).paymentAmount(isMandateFlow ? PaymentConstants.MANDATE_FLOW_AMOUNT : transaction.getAmount());
+                            CollectUpiPaymentInfo.builder().lob(isRecharge ? LOB.PREPAID.toString() : LOB.WYNK.toString()).vpa(paymentDetails.getUpiDetails().getVpa()).paymentAmount(isMandateFlow ? PaymentConstants.MANDATE_FLOW_AMOUNT : transaction.getAmount()).paymentMode(request.getPaymentDetails().getPaymentMode());
                     //if auto-renew true means user's mandate should be registered. Update fields in request for autoRenew
                     if (paymentDetails.isAutoRenew() || isMandateFlow ) {
                         Calendar cal = Calendar.getInstance();
@@ -169,6 +170,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                                 .paymentEndDate(next10Year.toInstant().toEpochMilli()).billPayment(!isMandateFlow);
                     }
                     final ExternalChargingRequest<CollectUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(paymentInfoBuilder.build()).build();
+                    AnalyticService.update("paymentModeOfPayRequest", payRequest.getPaymentInfo().getPaymentMode());
                     common.exchange(transaction.getClientAlias(), isRecharge ? UPI_PAYDIGI_CHARGING_ENDPOINT : UPI_CHARGING_ENDPOINT, HttpMethod.POST,
                             isRecharge ? null : request.getUserDetails().getMsisdn(), payRequest, UpiCollectChargingResponse.class);
                     return UpiCollectInAppChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).build();
@@ -194,8 +196,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     boolean isMandateFlow = paymentDetails.isMandate() || request.getPaymentDetails().isTrialOpted();
                     IntentUpiPaymentInfo.IntentUpiPaymentInfoBuilder<?, ?> upiPaymentInfoBuilder =
                             IntentUpiPaymentInfo.builder().lob(isRecharge ? LOB.PREPAID.toString() : LOB.WYNK.toString()).upiApp(payAppName)
-                                    .paymentAmount(isMandateFlow ? PaymentConstants.MANDATE_FLOW_AMOUNT : transaction.getAmount());
-
+                                    .paymentAmount(isMandateFlow ? PaymentConstants.MANDATE_FLOW_AMOUNT : transaction.getAmount()).paymentMode(request.getPaymentDetails().getPaymentMode());
                     //if auto-renew true means user's mandate should be registered. Update fields in request for autoRenew
                     if (paymentDetails.isAutoRenew() || isMandateFlow) {
                         Calendar cal = Calendar.getInstance();
@@ -210,6 +211,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     }
 
                     ExternalChargingRequest<IntentUpiPaymentInfo> payRequest = apsChargingRequestBuilder.paymentInfo(upiPaymentInfoBuilder.build()).build();
+                    AnalyticService.update("paymentModeOfPayRequest", payRequest.getPaymentInfo().getPaymentMode());
                     UpiIntentChargingChargingResponse apsUpiIntentChargingChargingResponse =
                             common.exchange(transaction.getClientAlias(), isRecharge ? UPI_PAYDIGI_CHARGING_ENDPOINT : UPI_CHARGING_ENDPOINT, HttpMethod.POST,
                                     isRecharge ? null : request.getUserDetails().getMsisdn(),

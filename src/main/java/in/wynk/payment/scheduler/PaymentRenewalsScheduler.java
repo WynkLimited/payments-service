@@ -61,6 +61,26 @@ public class PaymentRenewalsScheduler {
         AnalyticService.update("paymentRenewalsCompleted", true);
     }
 
+    @ClientAware(clientAlias = "#clientAlias")
+    @AnalyseTransaction(name = "prepareNextDayRenewals")
+    @Transactional(transactionManager = "#clientAlias", source = "payments")
+    public void prepareNextDayRenewals(String requestId, String clientAlias) {
+        MDC.put(REQUEST_ID, requestId);
+        AnalyticService.update(REQUEST_ID, requestId);
+        AnalyticService.update("class", this.getClass().getSimpleName());
+        AnalyticService.update("clientAlias", clientAlias);
+        AnalyticService.update("executionPurpose", "NPCI_Compliant_NextDay_Window_Update");
+
+        List<PaymentRenewal> paymentRenewals = recurringPaymentManager.getNextDayRecurringPayments(clientAlias)
+                .filter(paymentRenewal -> (paymentRenewal.getTransactionEvent() == RENEW ||
+                        paymentRenewal.getTransactionEvent() == SUBSCRIBE ||
+                        paymentRenewal.getTransactionEvent() == DEFERRED))
+                .collect(Collectors.toList());
+
+        sendToNextDayRenewalHourFixingQueue(paymentRenewals);
+        AnalyticService.update("transactionsSize", paymentRenewals.size());
+    }
+
     private List<PaymentRenewal> filterbyLastSuccessTransaction(List<PaymentRenewal> paymentRenewals){
         if (paymentRenewals == null || paymentRenewals.isEmpty()) {
             return Collections.emptyList();
@@ -76,6 +96,34 @@ public class PaymentRenewalsScheduler {
         }
         return distinctRenewals;
 
+    }
+
+    private void sendToNextDayRenewalHourFixingQueue(List<PaymentRenewal> paymentRenewals){
+        for (PaymentRenewal paymentRenewal : paymentRenewals) {
+            try {
+                Calendar originalHourCal = Calendar.getInstance();
+                originalHourCal.setTime(paymentRenewal.getHour());
+
+                recurringPaymentManager.scheduleToNonPeakHours(originalHourCal);
+
+                Date updatedHour = originalHourCal.getTime();
+
+                if (!updatedHour.equals(paymentRenewal.getHour())) {
+                    log.info("Updating renewal hour for txnId={} from {} to {}",
+                            paymentRenewal.getTransactionId(),
+                            paymentRenewal.getHour(),
+                            updatedHour);
+
+                    paymentRenewal.setHour(updatedHour);
+                    paymentRenewal.setUpdatedTimestamp(Calendar.getInstance());
+                    recurringPaymentManager.upsert(paymentRenewal);
+                }
+            } catch (Exception e) {
+                log.error("Error processing PaymentRenewal with txnId : {}: {}",
+                        paymentRenewal.getTransactionId(), e.getMessage(), e);
+            }
+        }
+        AnalyticService.update("nextDayPaymentRenewalsPrepared", true);
     }
 
 

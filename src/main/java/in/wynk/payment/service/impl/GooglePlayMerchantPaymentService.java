@@ -340,7 +340,7 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
                     AnalyticService.update(GOOGLE_PLAY_RECEIPT, gson.toJson(latestResponse));
                     Lock lock = wynkRedisLockService.getWynkRedisLock(latestReceipt.getPurchaseToken());
 
-                    if (lock.tryLock(300, TimeUnit.MILLISECONDS)) {
+                    if (lock.tryLock(90, TimeUnit.SECONDS)) {
                         if (Objects.isNull(receiptDetails) && !PURCHASE_NOTIFICATION_TYPE.equals(notificationType)) {
                             Optional<ReceiptDetails> receiptDetailsOptional =
                                     RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class)

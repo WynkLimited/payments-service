@@ -822,7 +822,7 @@ wynk:
               groupId: group1
               keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
               maxPollInterval: 600000
-              maxPollRecords: 5
+              maxPollRecords: 50
               sessionTimeout: 180000
               topic: wcf_preprod.payment_renewal_charging_load_testing
               valueDeserializer: in.wynk.payment.consumer.deserializer.PaymentRenewalChargingKafkaDeserializerLoadTesting

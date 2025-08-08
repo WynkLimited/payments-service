@@ -473,8 +473,9 @@
     <logger name="ATBCharging" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
-
-
+    <logger name="paymentRenewalChargingMessageLoadTesting" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
     <!-- invoice loggers end -->
 
     <springProfile name="local">

@@ -1,0 +1,36 @@
+package in.wynk.payment.dto;
+
+import com.github.annotation.analytic.core.annotations.Analysed;
+import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.stream.advice.WynkKafkaMessage;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Getter
+@Builder
+@AnalysedEntity
+@NoArgsConstructor
+@AllArgsConstructor
+@WynkKafkaMessage(topic = "${wynk.kafka.consumers.listenerFactory.paymentRenewalChargingLoadTesting[0].factoryDetails.topic}")
+public class PaymentRenewalChargingMessageTest {
+
+    @Analysed
+    private int attemptSequence;
+
+    @Analysed(name = "old_transaction_id")
+    private String id;
+    @Analysed
+    private String uid;
+    @Analysed
+    private String msisdn;
+    @Analysed
+    private String clientAlias;
+    @Analysed
+    private String paymentCode;
+
+    @Analysed
+    private Integer planId;
+
+}

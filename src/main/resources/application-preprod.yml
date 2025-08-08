@@ -825,7 +825,7 @@ wynk:
               maxPollRecords: 5
               sessionTimeout: 180000
               topic: wcf_preprod.payment_renewal_charging_load_testing
-              valueDeserializer: in.wynk.payment.consumer.deserializer.PaymentRenewalChargingKafkaDeserializer
+              valueDeserializer: in.wynk.payment.consumer.deserializer.PaymentRenewalChargingKafkaDeserializerLoadTesting
             name: PAYMENT_RENEWAL_CHARGING_LOAD_TESTING_BEAN
         tdrProcessing:
           - concurrency: 5

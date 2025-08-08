@@ -826,7 +826,7 @@ wynk:
               sessionTimeout: 180000
               topic: wcf_preprod.payment_renewal_charging_load_testing
               valueDeserializer: in.wynk.payment.consumer.deserializer.PaymentRenewalChargingKafkaDeserializer
-            name: PAYMENT_RENEWAL_CHARGING_BEAN
+            name: PAYMENT_RENEWAL_CHARGING_LOAD_TESTING_BEAN
         tdrProcessing:
           - concurrency: 5
             enabled: true

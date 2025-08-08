@@ -53,15 +53,17 @@ public class PaymentRenewalChargingKafkaConsumerTesting extends AbstractKafkaEve
     @ClientAware(clientAlias = "#message.clientAlias")
     @AnalyseTransaction(name = "paymentRenewalChargingMessageLoadTesting")
     public void consume(PaymentRenewalChargingMessageTest message) throws WynkRuntimeException {
-       try{
-           log.info("message id {}:, msisdn :{}",message.getId(),message.getMsisdn());
-           AnalyticService.update(message);
-           AnalyticService.update("messageUID",message.getUid());
-           AnalyticService.update("msisdn",message.getMsisdn());
-           Thread.sleep(600);
-       }catch (Exception exception){
-           log.error("error in load testing consumer");
-       }
+        try {
+            log.info("message id {}:, msisdn :{}", message.getId(), message.getMsisdn());
+            AnalyticService.update(message);
+            AnalyticService.update("messageUID", message.getUid());
+            AnalyticService.update("msisdn", message.getMsisdn());
+            Thread.sleep(600);
+        } catch (Exception exception) {
+            log.error("error in load testing consumer", exception);
+            // Don't swallow the exception — propagate it
+            throw new WynkRuntimeException("Consumer failed", exception);
+        }
     }
 
     @KafkaListener(id = "paymentRenewalChargingMessageLoadTestingListener", topics = "${wynk.kafka.consumers.listenerFactory.paymentRenewalChargingLoadTesting[0].factoryDetails.topic}", containerFactory = "${wynk.kafka.consumers.listenerFactory.paymentRenewalChargingLoadTesting[0].name}")
@@ -74,7 +76,7 @@ public class PaymentRenewalChargingKafkaConsumerTesting extends AbstractKafkaEve
             log.info("Kafka consume record result for loadTesting {} for event {}", consumerRecord, consumerRecord.value().toString());
             consume(consumerRecord.value());
         } catch (Exception e) {
-            kafkaRetryHandlerService.retry(consumerRecord, lastAttemptedSequence, createdAt, lastProcessedAt, retryCount);
+           // kafkaRetryHandlerService.retry(consumerRecord, lastAttemptedSequence, createdAt, lastProcessedAt, retryCount);
             if (!(e instanceof WynkRuntimeException)) {
                 log.error(StreamMarker.KAFKA_POLLING_CONSUMPTION_ERROR, "Something went wrong while processing message {} for kafka consumer : {}", consumerRecord.value(), ", PaymentRenewalChargingMessageLoadTesting - ", e);
             }

@@ -749,7 +749,7 @@ wynk:
               valueDeserializer: in.wynk.payment.consumer.deserializer.PaymentRenewalKafkaDeserializer
             name: PAYMENT_RENEWAL_BEAN
         preDebitNotification:
-          - concurrency: 3
+          - concurrency: 1
             enabled: true
             manualCommit: true
             factoryDetails:
@@ -762,13 +762,13 @@ wynk:
               groupId: group1
               keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
               maxPollInterval: 600000
-              maxPollRecords: 50
+              maxPollRecords: 5
               sessionTimeout: 180000
               topic: wcf_prod.payment_pre_debit_notification
               valueDeserializer: in.wynk.payment.consumer.deserializer.PreDebitNotificationKafkaDeserializer
             name: PAYMENT_PRE_DEBIT_NOTIFICATION_BEAN
         tdrProcessing:
-          - concurrency: 4
+          - concurrency: 1
             enabled: true
             manualCommit: true
             factoryDetails:
@@ -781,13 +781,13 @@ wynk:
               groupId: group1
               keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
               maxPollInterval: 300000
-              maxPollRecords: 100
+              maxPollRecords: 5
               sessionTimeout: 30000
               topic: wcf_prod.payment_tdr_processing
               valueDeserializer: in.wynk.payment.consumer.deserializer.TdrProcessingKafkaDeserializer
             name: PAYMENT_TDR_PROCESSING_BEAN
         paymentRenewalCharging:
-          - concurrency: 3
+          - concurrency: 1
             enabled: true
             manualCommit: true
             factoryDetails:
@@ -800,7 +800,7 @@ wynk:
               groupId: group1
               keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
               maxPollInterval: 600000
-              maxPollRecords: 50
+              maxPollRecords: 5
               sessionTimeout: 180000
               topic: wcf_prod.payment_renewal_charging
               valueDeserializer: in.wynk.payment.consumer.deserializer.PaymentRenewalChargingKafkaDeserializer

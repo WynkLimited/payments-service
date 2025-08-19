@@ -52,13 +52,11 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
+import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.EnumSet;
-import java.util.Locale;
-import java.util.Optional;
+import java.util.*;
 
 import static in.wynk.cache.constant.BeanConstant.L2CACHE_MANAGER;
 import static in.wynk.payment.constant.OrderStatus.*;
@@ -127,19 +125,27 @@ public class ApsCommonGatewayService {
         }
         try {
             ResponseEntity<String> responseEntity = apsClientService.apsOperations(getLoginId(msisdn), generateToken(url, clientAlias), url, method, body);
+            log.info("Response Status Code: {}", responseEntity.getStatusCode());
+            log.info("Response Body: {}", responseEntity.getBody());
             if (responseEntity.getStatusCode() == HttpStatus.OK) {
-                return objectMapper.readValue(responseEntity.getBody(), target);
-                /*ApsResponseWrapper apsVasResponse = gson.fromJson(responseEntity.getBody(), ApsResponseWrapper.class);
-                if (HttpStatus.OK.name().equals(apsVasResponse.getStatusCode())) {
-                    return objectMapper.convertValue(apsVasResponse.getBody(), target);
+                try {
+                    log.info("response received from APS : {}", responseEntity.getBody());
+                    ApsResponseWrapper apsVasResponse = gson.fromJson(responseEntity.getBody(), ApsResponseWrapper.class);
+                    if (HttpStatus.OK.name().equals(apsVasResponse.getStatusCode())) {
+                        return objectMapper.convertValue(apsVasResponse.getBody(), target);
+                    }
+                    ApsFailureResponse failureResponse = objectMapper.readValue((String) responseEntity.getBody(), ApsFailureResponse.class);
+                    failureResponse.setStatusCode(apsVasResponse.getStatusCode());
+                    throw new WynkRuntimeException(failureResponse.getErrorCode(), failureResponse.getMessage(), failureResponse.getStatusCode());
+                } catch (Exception e){
+                    return objectMapper.readValue(responseEntity.getBody(), target);
                 }
-                ApsFailureResponse failureResponse = objectMapper.readValue((String) responseEntity.getBody(), ApsFailureResponse.class);
-                failureResponse.setStatusCode(apsVasResponse.getStatusCode());
-                throw new WynkRuntimeException(failureResponse.getErrorCode(), failureResponse.getMessage(), failureResponse.getStatusCode());*/
             }
             throw new WynkRuntimeException(APS001, responseEntity.getStatusCode().name());
         } catch (JsonProcessingException ex) {
             throw new WynkRuntimeException("Unknown Object from ApsGateway", ex);
+        } catch (IOException ex) {
+            throw new WynkRuntimeException ("I/O failure while communicating with APS", ex);
         } catch (Exception e) {
             if (e instanceof WynkRuntimeException) {
                 throw e;
@@ -242,20 +248,7 @@ public class ApsCommonGatewayService {
         if ((!apsChargeStatusResponse.getLob().equals(LOB.AUTO_PAY_REGISTER_WYNK.toString()) && "PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) || (apsChargeStatusResponse.getLob().equals(LOB.AUTO_PAY_REGISTER_WYNK.toString()) && ("PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) && SiRegistrationStatus.ACTIVE == apsChargeStatusResponse.getMandateStatus())) {
             finalTransactionStatus = TransactionStatus.SUCCESS;
             evict(transaction.getMsisdn());
-        } else if (EnumSet.of(PaymentEvent.SUBSCRIBE).contains(transaction.getType())
-                && apsChargeStatusResponse.getLob().equals(LOB.AUTO_PAY_REGISTER_WYNK.toString())
-                && SiRegistrationStatus.CREATED == apsChargeStatusResponse.getMandateStatus()
-                && "PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) {
-            AnalyticService.update(ApsConstant.MANDATE_STATUS, apsChargeStatusResponse.getMandateStatus().toString());
-
-            log.info("Transaction {} was initiated with AUTO_PAY but getting mandate_status as {}. Converting transaction type from SUBSCRIBE to PURCHASE to provide one-time access while preventing automatic renewals.",
-                    transaction.getIdStr(),
-                    apsChargeStatusResponse.getMandateStatus());
-
-            transaction.setType(PaymentEvent.PURCHASE.getValue());
-            transaction.setMandateAmount(-1);
-            finalTransactionStatus = TransactionStatus.SUCCESS;
-        } else if ((apsChargeStatusResponse.getLob().equals(LOB.AUTO_PAY_REGISTER_WYNK.toString()) && SiRegistrationStatus.ACTIVE != apsChargeStatusResponse.getMandateStatus() && SiRegistrationStatus.CREATED != apsChargeStatusResponse.getMandateStatus() && "PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) || ("PAYMENT_FAILED".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) || ("PG_FAILED".equalsIgnoreCase(apsChargeStatusResponse.getPgStatus()))) {
+        } else if ((apsChargeStatusResponse.getLob().equals(LOB.AUTO_PAY_REGISTER_WYNK.toString()) && SiRegistrationStatus.ACTIVE != apsChargeStatusResponse.getMandateStatus() && "PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) || ("PAYMENT_FAILED".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) || ("PG_FAILED".equalsIgnoreCase(apsChargeStatusResponse.getPgStatus()))) {
             if ("PAYMENT_SUCCESS".equalsIgnoreCase(apsChargeStatusResponse.getPaymentStatus())) {
                 eventPublisher.publishEvent(PaymentRefundInitEvent.builder()
                         .reason("mandate status was not active")
@@ -287,7 +280,7 @@ public class ApsCommonGatewayService {
         String txnId = transaction.getIdStr();
         final MerchantTransactionEvent.Builder builder = MerchantTransactionEvent.builder(transaction.getIdStr());
         MerchantTransaction merchantTransaction = merchantTransactionService.getMerchantTransaction(txnId);
-
+        if (Objects.nonNull(merchantTransaction)) {
             String orderId = merchantTransaction.getOrderId();
             if (StringUtils.isEmpty(orderId)) {
                 throw new WynkRuntimeException("Order Id is missing in merchant table which is mandatory for aps_v2");
@@ -335,9 +328,7 @@ public class ApsCommonGatewayService {
             if (transaction.getType() != PaymentEvent.RENEW || transaction.getStatus() != TransactionStatus.FAILURE) {
                 eventPublisher.publishEvent(builder.build());
             }
-
-
-
+        }
     }
 
     @CacheEvict(cacheName = "APS_ELIGIBILITY_API", cacheKey = "#msisdn", cacheManager = L2CACHE_MANAGER)
@@ -359,16 +350,11 @@ public class ApsCommonGatewayService {
         try {
             apsMandateStatusResponse = exchange(transaction.getClientAlias(), MANDATE_STATUS_ENDPOINT, HttpMethod.POST, null, request, ApsMandateStatusResponse.class);
         } catch (RestClientException e) {
-            if (e.getRootCause() != null) {
-                if (e.getRootCause() instanceof SocketTimeoutException || e.getRootCause() instanceof ConnectTimeoutException) {
-                    log.error(APS_MANDATE_STATUS_VALIDATION_ERROR, "Socket timeout during mandate validation but retry will happen {}, {} ", request, e.getMessage(), e);
-                    throw new WynkRuntimeException(APS013);
-                } else {
-                    throw new WynkRuntimeException(APS013, e);
-                }
-            } else {
-                throw new WynkRuntimeException(APS013, e);
+            if (e.getRootCause() != null && e.getRootCause() instanceof SocketTimeoutException || e.getRootCause() instanceof ConnectTimeoutException) {
+                log.error(APS_MANDATE_STATUS_VALIDATION_ERROR, "Socket timeout during mandate validation but retry will happen {}, {} ", request, e.getMessage(), e);
+                throw new WynkRuntimeException(APS013, e.getRootCause());
             }
+            return true;
         } catch (Exception ex) {
             log.error(APS_MANDATE_STATUS_VALIDATION_ERROR, ex.getMessage(), ex);
             throw new WynkRuntimeException(APS013, ex);

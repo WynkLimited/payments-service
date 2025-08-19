@@ -52,6 +52,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
+import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -143,6 +144,8 @@ public class ApsCommonGatewayService {
             throw new WynkRuntimeException(APS001, responseEntity.getStatusCode().name());
         } catch (JsonProcessingException ex) {
             throw new WynkRuntimeException("Unknown Object from ApsGateway", ex);
+        } catch (IOException ex) {
+            throw new WynkRuntimeException ("I/O failure while communicating with APS", ex);
         } catch (Exception e) {
             if (e instanceof WynkRuntimeException) {
                 throw e;
@@ -349,7 +352,7 @@ public class ApsCommonGatewayService {
         } catch (RestClientException e) {
             if (e.getRootCause() != null && e.getRootCause() instanceof SocketTimeoutException || e.getRootCause() instanceof ConnectTimeoutException) {
                 log.error(APS_MANDATE_STATUS_VALIDATION_ERROR, "Socket timeout during mandate validation but retry will happen {}, {} ", request, e.getMessage(), e);
-                throw new WynkRuntimeException(APS013);
+                throw new WynkRuntimeException(APS013, e.getRootCause());
             }
             return true;
         } catch (Exception ex) {

@@ -322,6 +322,9 @@ public class PaymentGatewayManager
             if (ex instanceof WynkRuntimeException) {
                 final WynkRuntimeException original = (WynkRuntimeException) ex;
                 final IWynkErrorType errorType = original.getErrorType();
+                if(original.getCause() instanceof IOException){
+                    retryForAps.set(true);
+                }
                 errorEventBuilder.code(Objects.nonNull(errorType) ? errorType.getErrorCode() : original.getErrorCode());
                 errorEventBuilder.description(Objects.nonNull(errorType) ? errorType.getErrorMessage() : original.getMessage());
                 PaymentErrorEvent errorEvent = errorEventBuilder.build();
@@ -329,9 +332,6 @@ public class PaymentGatewayManager
                 eventPublisher.publishEvent(errorEvent);
             }
             else {
-                if(ex instanceof IOException){
-                    retryForAps.set(true);
-                }
                 errorEventBuilder.code(PaymentErrorType.PAY024.getErrorCode()).description(PaymentErrorType.PAY024.getErrorMessage());
                 eventPublisher.publishEvent(errorEventBuilder.build());
             }

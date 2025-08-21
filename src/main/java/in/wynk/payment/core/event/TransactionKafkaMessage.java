@@ -8,7 +8,7 @@ import lombok.Getter;
 
 @Getter
 @Builder
-@KafkaEvent(topic = "${wynk.kafka.producers.dp.topic}",transactionName = "transactionSnapshot")
+@KafkaEvent(topic = "${wynk.multi.kafka.dp.serviceTopic}",transactionName = "transactionSnapshot")
 public class TransactionKafkaMessage {
     private String uid;
     private String msisdn;

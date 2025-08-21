@@ -150,6 +150,9 @@ public class ApsCommonGatewayService {
             if (e instanceof WynkRuntimeException) {
                 throw e;
             }
+            if(e instanceof RestClientException){
+                throw e;
+            }
             throw new WynkRuntimeException(APS001, e);
         }
     }

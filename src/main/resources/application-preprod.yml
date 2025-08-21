@@ -872,6 +872,14 @@ wynk:
          enabled: true
          nodes: 10.70.3.4:9092,10.70.3.128:9092,10.70.3.180:9092,10.70.3.245:9092,10.70.3.44:9092,10.70.3.80:9092,10.70.1.57:9092,10.70.3.152:9092
          topic: wcf_ringtone_transactions
+      dp:
+        serviceTopic: subscription
+        enabled: true
+        topic: subscription
+        kafkaDPProperties:
+          nodes: ${wynk.kafka.nodes}
+          username: ${wynk.kafka.username}
+          password: ${wynk.kafka.password}
   ########### MONGO CONFIG ###########
   mongodb:
     enabled: true

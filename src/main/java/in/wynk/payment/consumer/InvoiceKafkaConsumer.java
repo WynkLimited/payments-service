@@ -5,6 +5,7 @@ import in.wynk.exception.WynkRuntimeException;
 import in.wynk.payment.dto.invoice.CallbackInvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.GenerateInvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.InvoiceKafkaMessage;
+import in.wynk.payment.service.impl.GenerateInvoiceDPKafkaMessage;
 import in.wynk.stream.constant.StreamMarker;
 import in.wynk.stream.consumer.impl.AbstractKafkaEventConsumer;
 import in.wynk.stream.service.IDataPlatformKafkaService;
@@ -43,7 +44,7 @@ public class InvoiceKafkaConsumer extends AbstractKafkaEventConsumer<String, Inv
         } else if (CallbackInvoiceKafkaMessage.class.isAssignableFrom(message.getClass())) {
             invoiceHandler.processCallback(message);
         }
-        dataPlatformKafkaService.publish(creator.convert(message,null));
+        dataPlatformKafkaService.publish(GenerateInvoiceDPKafkaMessage.from(message));
     }
 
     @KafkaListener(id = "generateInvoiceListener", topics = "${wynk.kafka.consumers.listenerFactory.invoice[0].factoryDetails.topic}", containerFactory = "${wynk.kafka.consumers.listenerFactory.invoice[0].name}")

@@ -26,7 +26,7 @@ public class GenerateInvoiceDPKafkaMessage {
     private String status;
     private String description;
 
-    public static GenerateInvoiceDPKafkaMessage convert(InvoiceKafkaMessage request, String response) {
+    public static GenerateInvoiceDPKafkaMessage from(InvoiceKafkaMessage request) {
         try {
             if(request instanceof GenerateInvoiceKafkaMessage) {
                 final GenerateInvoiceKafkaMessage generateInvoiceKafkaMessage = (GenerateInvoiceKafkaMessage) request;

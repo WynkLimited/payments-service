@@ -2,11 +2,12 @@ package in.wynk.payment.consumer;
 
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import in.wynk.exception.WynkRuntimeException;
-import in.wynk.payment.dto.invoice.GenerateInvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.CallbackInvoiceKafkaMessage;
+import in.wynk.payment.dto.invoice.GenerateInvoiceKafkaMessage;
 import in.wynk.payment.dto.invoice.InvoiceKafkaMessage;
 import in.wynk.stream.constant.StreamMarker;
 import in.wynk.stream.consumer.impl.AbstractKafkaEventConsumer;
+import in.wynk.stream.service.IDataPlatformKafkaService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,11 +27,13 @@ public class InvoiceKafkaConsumer extends AbstractKafkaEventConsumer<String, Inv
     private boolean enabled;
 
     private final KafkaListenerEndpointRegistry endpointRegistry;
+    private final IDataPlatformKafkaService dataPlatformKafkaService;
 
-    public InvoiceKafkaConsumer (InvoiceHandler<InvoiceKafkaMessage> invoiceHandler, KafkaListenerEndpointRegistry endpointRegistry) {
+    public InvoiceKafkaConsumer (InvoiceHandler<InvoiceKafkaMessage> invoiceHandler, KafkaListenerEndpointRegistry endpointRegistry,IDataPlatformKafkaService dataPlatformKafkaService) {
         super();
         this.invoiceHandler = invoiceHandler;
         this.endpointRegistry = endpointRegistry;
+        this.dataPlatformKafkaService = dataPlatformKafkaService;
     }
 
     @Override
@@ -40,6 +43,7 @@ public class InvoiceKafkaConsumer extends AbstractKafkaEventConsumer<String, Inv
         } else if (CallbackInvoiceKafkaMessage.class.isAssignableFrom(message.getClass())) {
             invoiceHandler.processCallback(message);
         }
+        dataPlatformKafkaService.publish(creator.convert(message,null));
     }
 
     @KafkaListener(id = "generateInvoiceListener", topics = "${wynk.kafka.consumers.listenerFactory.invoice[0].factoryDetails.topic}", containerFactory = "${wynk.kafka.consumers.listenerFactory.invoice[0].name}")

@@ -4,9 +4,13 @@ import in.wynk.payment.core.dao.entity.Invoice;
 import in.wynk.stream.advice.KafkaEvent;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+
+import static in.wynk.logging.BaseLoggingMarkers.KAFKA_MESSAGE_CREATOR_ERROR;
 
 @Getter
 @Builder
+@Slf4j
 @KafkaEvent(topic = "${wynk.data.platform.topic}", transactionName = "invoiceEvent")
 public class InvoiceEventKafkaMessage {
 
@@ -47,8 +51,9 @@ public class InvoiceEventKafkaMessage {
                     .retryCount(invoice.getRetryCount())
                     .build();
         } catch (Exception e) {
-            throw new RuntimeException("Error while converting InvoiceEvent to InvoiceEventKafkaMessage", e);
+            log.error(KAFKA_MESSAGE_CREATOR_ERROR,"Error in creating InvoiceEventKafkaMessage for event: {}", event, e);
         }
+        return null;
     }
 
 }

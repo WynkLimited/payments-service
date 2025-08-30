@@ -13,7 +13,6 @@ import static in.wynk.logging.BaseLoggingMarkers.KAFKA_MESSAGE_CREATOR_ERROR;
 @Setter
 @Builder
 @Slf4j
-@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @KafkaEvent(topic = "${wynk.data.platform.topic}", transactionName = "receiptVerification")
 public class ReceiptVerificationKafkaMessage {
     private String uid;

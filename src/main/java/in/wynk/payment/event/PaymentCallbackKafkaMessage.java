@@ -23,7 +23,6 @@ import static in.wynk.payment.dto.aps.common.ApsConstant.APS;
 @Setter
 @Builder
 @Slf4j
-@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @KafkaEvent(topic = "${wynk.data.platform.topic}", transactionName = "paymentCallback")
 public class PaymentCallbackKafkaMessage {
 

@@ -5,6 +5,7 @@ import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import in.wynk.auth.dao.entity.Client;
 import in.wynk.client.context.ClientContext;
 import in.wynk.common.constant.BaseConstants;
+import in.wynk.stream.advice.KafkaEvent;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_API_CLIENT;
 @Getter
 @AnalysedEntity
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+@KafkaEvent(topic = "${wynk.data.platform.topic}", transactionName = "paymentErrorEvent")
 public class PaymentErrorEvent {
 
     @Analysed(name = BaseConstants.TRANSACTION_ID)

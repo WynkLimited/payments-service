@@ -3,6 +3,7 @@ package in.wynk.payment.core.event;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
+import in.wynk.stream.advice.KafkaEvent;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -13,6 +14,7 @@ import lombok.Getter;
 @Builder
 @AnalysedEntity
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@KafkaEvent(topic = "${wynk.data.platform.topic}", transactionName = "mandateStatusEvent")
 public class MandateStatusEvent {
     @Analysed
     private String txnId;

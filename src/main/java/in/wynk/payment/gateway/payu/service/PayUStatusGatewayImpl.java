@@ -10,7 +10,9 @@ import in.wynk.payment.dto.common.response.AbstractPaymentStatusResponse;
 import in.wynk.payment.dto.common.response.DefaultPaymentStatusResponse;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.request.charge.upi.UpiPaymentDetails;
+import in.wynk.payment.event.PaymentReconciliationKafkaMessage;
 import in.wynk.payment.gateway.IPaymentStatus;
+import in.wynk.stream.service.IDataPlatformKafkaService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
@@ -26,11 +28,14 @@ import static in.wynk.payment.core.constant.PaymentLoggingMarker.*;
 public class PayUStatusGatewayImpl implements IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest> {
 
     private final PayUCommonGateway common;
+    private IDataPlatformKafkaService dataPlatformKafkaService;
+
     private final Map<Class<? extends AbstractTransactionReconciliationStatusRequest>, IPaymentStatus<AbstractPaymentStatusResponse, AbstractTransactionStatusRequest>>
             statusDelegate = new HashMap<>();
 
-    public PayUStatusGatewayImpl(PayUCommonGateway common) {
+    public PayUStatusGatewayImpl(PayUCommonGateway common, IDataPlatformKafkaService dataPlatformKafkaService) {
         this.common = common;
+        this.dataPlatformKafkaService = dataPlatformKafkaService;
         this.statusDelegate.put(ChargingTransactionReconciliationStatusRequest.class, new ChargingTransactionReconciliationStatusService());
         this.statusDelegate.put(RefundTransactionReconciliationStatusRequest.class, new RefundTransactionReconciliationStatusService());
         this.statusDelegate.put(RenewalChargingTransactionReconciliationStatusRequest.class, new RenewalChargingTransactionReconciliationStatusService());
@@ -71,6 +76,7 @@ public class PayUStatusGatewayImpl implements IPaymentStatus<AbstractPaymentStat
                 log.warn(PAYU_CHARGING_STATUS_VERIFICATION, "Unknown Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                 throw new WynkRuntimeException(PaymentErrorType.PAYU003);
             }
+            dataPlatformKafkaService.publish(PaymentReconciliationKafkaMessage.from(transaction));
             return DefaultPaymentStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType()).build();
         }
     }
@@ -91,6 +97,7 @@ public class PayUStatusGatewayImpl implements IPaymentStatus<AbstractPaymentStat
                 log.warn(PAYU_REFUND_STATUS_VERIFICATION, "Unknown Refund Transaction status at payU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                 throw new WynkRuntimeException(PaymentErrorType.PAYU003);
             }
+            dataPlatformKafkaService.publish(PaymentReconciliationKafkaMessage.from(transaction));
             return DefaultPaymentStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType()).build();
         }
     }
@@ -108,6 +115,7 @@ public class PayUStatusGatewayImpl implements IPaymentStatus<AbstractPaymentStat
                 log.warn(PAYU_RENEWAL_CHARGING_STATUS_VERIFICATION, "Unknown renewal transaction status at PAYU end for uid {} and transactionId {}", transaction.getUid(), transaction.getId().toString());
                 throw new WynkRuntimeException(PaymentErrorType.PAYU003);
             }
+            dataPlatformKafkaService.publish(PaymentReconciliationKafkaMessage.from(transaction));
             return DefaultPaymentStatusResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType()).build();
         }
     }

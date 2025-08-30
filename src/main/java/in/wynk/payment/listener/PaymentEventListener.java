@@ -38,6 +38,7 @@ import in.wynk.payment.dto.invoice.InvoiceRetryTask;
 import in.wynk.payment.dto.point.GenerateItemKafkaMessage;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractPaymentSettlementResponse;
+import in.wynk.payment.event.RecurringKafkaMessage;
 import in.wynk.payment.event.WaPayStateRespEvent;
 import in.wynk.payment.event.common.*;
 import in.wynk.payment.handler.CustomerWinBackHandler;
@@ -216,6 +217,8 @@ public class PaymentEventListener {
                 && transaction.getType() != PaymentEvent.UNSUBSCRIBE) &&
                 event.getPaymentEvent() == PaymentEvent.UNSUBSCRIBE) {
             cancelMandateFromPG(transaction.getPaymentChannel().getId(), transaction.getPaymentChannel().getCode(), transaction.getIdStr(), event.getClientAlias(), event.getPaymentEvent());
+        } else {
+            dataPlatformKafkaService.publish(RecurringKafkaMessage.from(transaction.getIdStr(), event.getPaymentEvent(), transaction.getPaymentChannel().getId()));
         }
     }
 
@@ -285,6 +288,7 @@ public class PaymentEventListener {
     public void onPaymentErrorEvent(PaymentErrorEvent event) {
         AnalyticService.update(event);
         publishAdditionalData(event);
+        dataPlatformKafkaService.publish(event);
         retryRegistry.retry(PaymentConstants.PAYMENT_ERROR_UPSERT_RETRY_KEY).executeRunnable(() -> paymentErrorService.upsert(PaymentError.builder()
                 .id(event.getId())
                 .code(Objects.nonNull(event.getCode()) ? event.getCode() : "UNKNOWN")
@@ -623,6 +627,7 @@ public class PaymentEventListener {
     @EventListener
     @AnalyseTransaction(name = "mandateStatusEvent")
     private void onMandateStatusEvent(MandateStatusEvent event) {
+        dataPlatformKafkaService.publish(event);
         AnalyticService.update(event);
     }
 
@@ -924,6 +929,7 @@ public class PaymentEventListener {
     @AnalyseTransaction(name = "UnScheduleRecurringPaymentEvent")
     private void unScheduleTransactionRecurring(UnScheduleRecurringPaymentEvent event) {
         AnalyticService.update(event);
+        dataPlatformKafkaService.publish(event);
         recurringPaymentManagerService.unScheduleRecurringPayment(event.getClientAlias(), event.getTransactionId(), PaymentEvent.CANCELLED);
     }
 

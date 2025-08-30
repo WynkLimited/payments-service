@@ -27,6 +27,7 @@ import in.wynk.payment.gateway.aps.service.*;
 import in.wynk.payment.service.*;
 import in.wynk.payment.utils.RecurringTransactionUtils;
 import in.wynk.stream.producer.IKafkaEventPublisher;
+import in.wynk.stream.service.IDataPlatformKafkaService;
 import in.wynk.subscription.common.message.CancelMandateEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -94,19 +95,20 @@ public class ApsGateway implements
                       IMerchantTransactionService merchantTransactionService,
                       IRecurringPaymentManagerService recurringPaymentManagerService,
                       RecurringTransactionUtils recurringTransactionUtils,
-                      @Qualifier("apsHttpTemplate") RestTemplate httpTemplate) {
+                      @Qualifier("apsHttpTemplate") RestTemplate httpTemplate,
+                      IDataPlatformKafkaService dataPlatformKafkaService) {
         this.kafkaPublisherService = kafkaPublisherService;
         this.eligibilityGateway = new ApsEligibilityGatewayServiceImpl();
-        this.statusGateway = new ApsStatusGatewayServiceImpl(commonGateway);
+        this.statusGateway = new ApsStatusGatewayServiceImpl(commonGateway, dataPlatformKafkaService);
         this.payOptionsGateway = new ApsPaymentOptionsServiceImpl(payOptionEndpoint, commonGateway);
-        this.callbackGateway = new ApsCallbackGatewayServiceImpl(salt, secret, commonGateway, mapper, eventPublisher, recurringTransactionUtils);
+        this.callbackGateway = new ApsCallbackGatewayServiceImpl(salt, secret, commonGateway, mapper, eventPublisher, recurringTransactionUtils, dataPlatformKafkaService);
         this.refundGateway = new ApsRefundGatewayServiceImpl(refundEndpoint, eventPublisher, commonGateway);
         this.settlementGateway = new ApsPaymentSettlementGateway(settlementEndpoint, httpTemplate, paymentCachingService);
         this.deleteGateway = new ApsDeleteGatewayServiceImpl(deleteCardEndpoint, deleteVpaEndpoint, commonGateway);
-        this.chargeGateway = new ApsChargeGatewayServiceImpl(upiChargeEndpoint, chargeEndpoint, upiPayDigiChargeEndpoint, payDigiChargeEndpoint, paymentMethodCachingService, commonGateway);
+        this.chargeGateway = new ApsChargeGatewayServiceImpl(upiChargeEndpoint, chargeEndpoint, upiPayDigiChargeEndpoint, payDigiChargeEndpoint, paymentMethodCachingService, commonGateway, dataPlatformKafkaService);
         this.verificationGateway = new ApsVerificationGatewayImpl(vpaVerifyEndpoint, binVerifyEndpoint, httpTemplate, commonGateway);
         this.renewalGateway = new ApsRenewalGatewayServiceImpl(siPaymentApi, mapper, commonGateway, paymentCachingService, merchantTransactionService, eventPublisher, transactionManager, recurringPaymentManagerService);
-        this.mandateCancellationGateway = new ApsCancelMandateGatewayServiceImpl(mapper, transactionManager, merchantTransactionService, cancelMandateEndpoint, commonGateway, gson, kafkaPublisherService);
+        this.mandateCancellationGateway = new ApsCancelMandateGatewayServiceImpl(mapper, transactionManager, merchantTransactionService, cancelMandateEndpoint, commonGateway, gson, kafkaPublisherService, dataPlatformKafkaService);
         this.iMerchantTDRService = new ApsTdrGatewayServiceImpl(tdrEndPoint, httpTemplate, commonGateway, merchantTransactionService);
     }
 

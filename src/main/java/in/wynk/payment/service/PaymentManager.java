@@ -34,11 +34,13 @@ import in.wynk.payment.dto.gpbs.request.GooglePlayVerificationRequest;
 import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayLatestReceiptResponse;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.*;
+import in.wynk.payment.event.ReceiptVerificationKafkaMessage;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.mapper.DefaultTransactionInitRequestMapper;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.stream.producer.IKafkaPublisherService;
+import in.wynk.stream.service.IDataPlatformKafkaService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -74,6 +76,7 @@ public class PaymentManager
     private final IEntityCacheService<PaymentMethod, String> paymentMethodCache;
     private final ISubscriptionServiceManager subscriptionServiceManager;
     private final PaymentGatewayCommon common;
+    private final IDataPlatformKafkaService dataPlatformKafkaService;
 
     private static final List<Integer> NOTIFICATION = Arrays.asList(4, 6, 11, 13);
     public static final Integer PURCHASE_NOTIFICATION_TYPE = 4;
@@ -363,6 +366,7 @@ public class PaymentManager
             String lastSuccessTransactionId = getLastSuccessTransactionId(transaction);
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(initialStatus)
                     .finalTransactionStatus(finalStatus).build());
+            dataPlatformKafkaService.publish(ReceiptVerificationKafkaMessage.from(request, transaction));
             exhaustCouponIfApplicable(initialStatus, finalStatus, transaction);
         }
     }
@@ -399,6 +403,7 @@ public class PaymentManager
             String lastSuccessTransactionId = getLastSuccessTransactionId(transaction);
             transactionManager.revision(SyncTransactionRevisionRequest.builder().transaction(transaction).lastSuccessTransactionId(lastSuccessTransactionId).existingTransactionStatus(initialStatus)
                     .finalTransactionStatus(finalStatus).build());
+            dataPlatformKafkaService.publish(ReceiptVerificationKafkaMessage.from(request, transaction));
             exhaustCouponIfApplicable(initialStatus, finalStatus, transaction);
             if ((transaction.getStatus() == TransactionStatus.SUCCESS) && (request.getPaymentCode().getCode().equals(BeanConstant.GOOGLE_PLAY))) {
                 AbstractAcknowledgement acknowledgementRequest = getRequest(request, latestReceiptResponse, transaction);

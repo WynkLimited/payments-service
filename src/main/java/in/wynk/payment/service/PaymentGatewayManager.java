@@ -36,6 +36,7 @@ import in.wynk.payment.dto.manager.CallbackResponseWrapper;
 import in.wynk.payment.dto.request.*;
 import in.wynk.payment.dto.response.AbstractPaymentChargingResponse;
 import in.wynk.payment.dto.response.AbstractPaymentRefundResponse;
+import in.wynk.payment.event.PaymentCallbackKafkaMessage;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.gateway.*;
 import in.wynk.payment.mapper.DefaultTransactionInitRequestMapper;
@@ -43,6 +44,7 @@ import in.wynk.payment.utils.RecurringTransactionUtils;
 import in.wynk.queue.service.ISqsManagerService;
 import in.wynk.session.context.SessionContextHolder;
 import in.wynk.sms.common.message.SmsNotificationMessage;
+import in.wynk.stream.service.IDataPlatformKafkaService;
 import in.wynk.stream.producer.IKafkaPublisherService;
 import io.netty.channel.ConnectTimeoutException;
 import lombok.RequiredArgsConstructor;
@@ -89,6 +91,7 @@ public class PaymentGatewayManager
     private final RecurringTransactionUtils recurringTransactionUtils;
     private final ISubscriptionServiceManager subscriptionServiceManager;
     private final IPurchaseDetailsManger purchaseDetailsManger;
+    private final IDataPlatformKafkaService dataPlatformKafkaService;
 
     @PostConstruct
     public void init() {
@@ -256,6 +259,7 @@ public class PaymentGatewayManager
                         oldTransaction.setStatus(PaymentEvent.CANCELLED.getValue());
                     }
                     publishTransactionSnapShotEvent(oldTransaction);
+                    dataPlatformKafkaService.publish(PaymentCallbackKafkaMessage.from(oldTransaction, request.getPaymentGateway().getCode(), wrapper.getDecodedNotification().getNotificationType()));
                 }else if(event == PaymentEvent.NO_ACTION_EVENT) {
                     log.info("No action needed as this is iTunes DID_CHANGE_RENEWAL_STATUS event; further processing will occur on the next callback.");
                 }

@@ -32,11 +32,14 @@ import in.wynk.payment.dto.request.charge.upi.UpiPaymentDetails;
 import in.wynk.payment.dto.response.*;
 import in.wynk.payment.dto.response.ChargingStatusResponse.ChargingStatusResponseBuilder;
 import in.wynk.payment.dto.response.payu.*;
+import in.wynk.payment.event.PaymentCallbackKafkaMessage;
+import in.wynk.payment.event.RecurringKafkaMessage;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.service.*;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.payment.utils.RecurringTransactionUtils;
 import in.wynk.stream.producer.IKafkaEventPublisher;
+import in.wynk.stream.service.IDataPlatformKafkaService;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.dto.PlanPeriodDTO;
 import in.wynk.subscription.common.message.CancelMandateEvent;
@@ -94,6 +97,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
 
     private final IKafkaEventPublisher<String, CancelMandateEvent> kafkaPublisherService;
     private final RecurringTransactionUtils recurringTransactionUtils;
+    private final IDataPlatformKafkaService dataPlatformKafkaService;
 
     @Value("${payment.merchant.payu.api.info}")
     private String payUInfoApiUrl;
@@ -112,7 +116,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                                        IMerchantTransactionService merchantTransactionService, IErrorCodesCacheService errorCodesCacheServiceImpl,
                                        @Qualifier(EXTERNAL_PAYMENT_GATEWAY_S2S_TEMPLATE) RestTemplate restTemplate, ITransactionManagerService transactionManagerService,
                                        IRecurringPaymentManagerService recurringPaymentManagerService,
-                                       IKafkaEventPublisher<String, CancelMandateEvent> kafkaPublisherService, RecurringTransactionUtils recurringTransactionUtils) {
+                                       IKafkaEventPublisher<String, CancelMandateEvent> kafkaPublisherService, RecurringTransactionUtils recurringTransactionUtils, IDataPlatformKafkaService dataPlatformKafkaService) {
         super(cachingService, errorCodesCacheServiceImpl);
         this.gson = gson;
         this.objectMapper = objectMapper;
@@ -125,6 +129,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
         this.transactionManagerService = transactionManagerService;
         this.recurringPaymentManagerService = recurringPaymentManagerService;
         this.recurringTransactionUtils = recurringTransactionUtils;
+        this.dataPlatformKafkaService = dataPlatformKafkaService;
     }
 
     @Override
@@ -673,6 +678,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
             });
             AnalyticService.update(MANDATE_REVOKE_RESPONSE, gson.toJson(response));
             CancelMandateEvent mandateEvent= CancelMandateEvent.builder().paymentEvent(paymentEvent).planId(transaction.getPlanId()).msisdn(transaction.getMsisdn()).uid(transaction.getUid()).paymentCode(transaction.getPaymentChannel().getCode().toUpperCase()).payUCancellationResponse(CancelMandateEvent.PayUBaseResponse.builder().action(response.getAction()).status(response.getStatus()).message(response.getMessage()).build()).build();
+            dataPlatformKafkaService.publish(RecurringKafkaMessage.from(transactionId, paymentEvent, PAYU));
             kafkaPublisherService.publish(mandateEvent);
         } catch (Exception e) {
             log.error(PAYU_UPI_MANDATE_REVOKE_ERROR, e.getMessage());
@@ -773,6 +779,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                         return WynkResponseUtils.redirectResponse(redirectionUrl);
                     }
                 }
+                dataPlatformKafkaService.publish(PaymentCallbackKafkaMessage.from(callbackRequest, transaction));
                 return WynkResponseEntity.<AbstractCallbackResponse>builder().data(DefaultCallbackResponse.builder().transactionStatus(transaction.getStatus()).build()).build();
             }
 
@@ -799,6 +806,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                 if (transaction.getStatus() == TransactionStatus.SUCCESS) {
                     transaction.setStatus(TransactionStatus.REFUNDED.getValue());
                 }
+                dataPlatformKafkaService.publish(PaymentCallbackKafkaMessage.from(callbackRequest,transaction));
                 return WynkResponseEntity.<AbstractCallbackResponse>builder().data(DefaultCallbackResponse.builder().transactionStatus(transaction.getStatus()).build()).build();
             }
 

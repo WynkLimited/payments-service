@@ -593,6 +593,9 @@ webview:
   host: https://pay-preprod.wynk.in
 
 wynk:
+  data:
+    platform:
+      topic: paymentData
   kafka:
     enabled: true
     nodes: 10.168.88.20:9092
@@ -926,6 +929,12 @@ wynk:
          enabled: true
          nodes: 10.70.3.4:9092,10.70.3.128:9092,10.70.3.180:9092,10.70.3.245:9092,10.70.3.44:9092,10.70.3.80:9092,10.70.1.57:9092,10.70.3.152:9092
          topic: wcf_ringtone_transactions
+        paymentData:
+          enabled: true
+          nodes: ${wynk.kafka.nodes}
+          username: ${wynk.kafka.username}
+          password: ${wynk.kafka.password}
+
   ########### MONGO CONFIG ###########
   mongodb:
     enabled: true

@@ -33,7 +33,9 @@ import in.wynk.payment.dto.request.charge.upi.UpiPaymentDetails;
 import in.wynk.payment.dto.request.common.FreshCardDetails;
 import in.wynk.payment.dto.request.common.SavedCardDetails;
 import in.wynk.payment.dto.response.AbstractPaymentChargingResponse;
+import in.wynk.payment.event.PaymentChargingKafkaMessage;
 import in.wynk.payment.gateway.IPaymentCharging;
+import in.wynk.stream.service.IDataPlatformKafkaService;
 import in.wynk.payment.service.PaymentCachingService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -64,9 +66,10 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
 
     private final ApsCommonGatewayService common;
     private final PaymentMethodCachingService paymentMethodCachingService;
+    private final IDataPlatformKafkaService dataPlatformKafkaService;
     private final Map<FlowType, IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>> chargingDelegate = new HashMap<>();
 
-    public ApsChargeGatewayServiceImpl (String upiChargeEndpoint, String chargeEndpoint, String upiPayDigiChargeEndpoint, String payDigiChargeEndpoint, PaymentMethodCachingService paymentMethodCachingService, ApsCommonGatewayService common) {
+    public ApsChargeGatewayServiceImpl(String upiChargeEndpoint, String chargeEndpoint, String upiPayDigiChargeEndpoint, String payDigiChargeEndpoint, PaymentMethodCachingService paymentMethodCachingService, ApsCommonGatewayService common, IDataPlatformKafkaService dataPlatformKafkaService) {
         this.common = common;
         this.UPI_CHARGING_ENDPOINT = upiChargeEndpoint;
         this.CARD_NETBANKING_CHARGING_ENDPOINT = chargeEndpoint;
@@ -76,6 +79,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
         this.chargingDelegate.put(UPI, new UpiCharging());
         this.chargingDelegate.put(NET_BANKING, new NetBankingCharging());
         this.paymentMethodCachingService = paymentMethodCachingService;
+        this.dataPlatformKafkaService = dataPlatformKafkaService;
     }
 
     @Override
@@ -173,6 +177,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     AnalyticService.update("paymentModeOfPayRequest", payRequest.getPaymentInfo().getPaymentMode());
                     common.exchange(transaction.getClientAlias(), isRecharge ? UPI_PAYDIGI_CHARGING_ENDPOINT : UPI_CHARGING_ENDPOINT, HttpMethod.POST,
                             isRecharge ? null : request.getUserDetails().getMsisdn(), payRequest, UpiCollectChargingResponse.class);
+                    updateToKafka(request, transaction);
                     return UpiCollectInAppChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).build();
                 }
             }
@@ -226,6 +231,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     } else {
                         offerTitle = paymentCachingService.getOffer(paymentCachingService.getPlan(TransactionContext.get().getPlanId()).getLinkedOfferId()).getTitle();
                     }
+                    updateToKafka(request, transaction);
                     return UpiIntentChargingResponse.builder()
                             .mn(map.get(MN))
                             .rev(map.get(REV))
@@ -370,6 +376,7 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                     CardChargingResponse cardChargingResponse =
                             common.exchange(transaction.getClientAlias(), isRecharge ? CARD_NETBANKING_PAYDIGI_CHARGING_ENDPOINT : CARD_NETBANKING_CHARGING_ENDPOINT, HttpMethod.POST,
                                     isRecharge ? null : request.getUserDetails().getMsisdn(), payRequest, CardChargingResponse.class);
+                    updateToKafka(request, transaction);
                     return CardHtmlTypeChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue())
                             .html(cardChargingResponse.getHtml()).build();
 
@@ -410,8 +417,13 @@ public class ApsChargeGatewayServiceImpl implements IPaymentCharging<AbstractPay
                 NetBankingChargingResponse apsNetBankingChargingResponse =
                         common.exchange(transaction.getClientAlias(), isRecharge ? CARD_NETBANKING_PAYDIGI_CHARGING_ENDPOINT : CARD_NETBANKING_CHARGING_ENDPOINT, HttpMethod.POST,
                                 isRecharge ? null : request.getUserDetails().getMsisdn(), payRequest, NetBankingChargingResponse.class);
+                updateToKafka(request, transaction);
                 return NetBankingHtmlTypeResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).html(apsNetBankingChargingResponse.getHtml()).build();
             }
         }
+    }
+
+    public void updateToKafka(AbstractPaymentChargingRequest request, Transaction transaction) {
+        dataPlatformKafkaService.publish(PaymentChargingKafkaMessage.from(request, transaction));
     }
 }

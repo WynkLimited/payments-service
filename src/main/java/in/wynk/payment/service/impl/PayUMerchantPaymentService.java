@@ -780,6 +780,7 @@ public class PayUMerchantPaymentService extends AbstractMerchantPaymentStatusSer
                         } else {
                             redirectionUrl = chargingDetails.getPageUrlDetails().getFailurePageUrl();
                         }
+                        dataPlatformKafkaService.publish(PaymentCallbackKafkaMessage.from(callbackRequest, transaction));
                         return WynkResponseUtils.redirectResponse(redirectionUrl);
                     }
                 }

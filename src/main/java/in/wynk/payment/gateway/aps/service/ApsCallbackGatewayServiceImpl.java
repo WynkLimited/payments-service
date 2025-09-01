@@ -147,6 +147,7 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
                     } else {
                         redirectionUrl = chargingDetails.getPageUrlDetails().getFailurePageUrl();
                     }
+                    dataPlatformKafkaService.publish(PaymentCallbackKafkaMessage.from(request, transaction));
                     return DefaultPaymentCallbackResponse.builder().transactionStatus(transaction.getStatus()).redirectUrl(redirectionUrl).build();
                 }
             }

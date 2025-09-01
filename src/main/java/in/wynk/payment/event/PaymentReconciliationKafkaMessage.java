@@ -38,7 +38,7 @@ public class PaymentReconciliationKafkaMessage {
                     .uid(transaction.getUid())
                     .msisdn(transaction.getMsisdn())
                     .itemId(transaction.getItemId())
-                    .paymentCode(transaction.getPaymentChannel().getCode())
+                    .paymentCode(transaction.getPaymentChannel() != null ? transaction.getPaymentChannel().getCode() : null)
                     .transactionId(transaction.getIdStr())
                     .originalTransactionId(transaction.getOriginalTransactionId())
                     .paymentEvent(transaction.getType())

@@ -274,6 +274,7 @@ public class PaymentGatewayManager
                         final Transaction transaction = transactionManager.init(transactionInitRequest);
                         handleNotification(transaction, mapping);
                     }
+                    dataPlatformKafkaService.publish(PaymentCallbackKafkaMessage.from(oldTransaction, request.getPaymentGateway().getCode(), wrapper.getDecodedNotification().getNotificationType()));
                     return WynkResponseEntity.<Void>builder().success(true).build();
                 }
             }

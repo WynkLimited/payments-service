@@ -161,6 +161,7 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
                     } else {
                         redirectionUrl = chargingDetails.getPageUrlDetails().getFailurePageUrl();
                     }
+                    dataPlatformKafkaService.publish(PaymentCallbackKafkaMessage.from(request, transaction));
                     return DefaultPaymentCallbackResponse.builder().transactionStatus(transaction.getStatus()).redirectUrl(redirectionUrl).build();
                 }
             }

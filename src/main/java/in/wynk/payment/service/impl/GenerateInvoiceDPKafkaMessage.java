@@ -33,14 +33,13 @@ public class GenerateInvoiceDPKafkaMessage {
                 return GenerateInvoiceDPKafkaMessage.builder()
                         .txnId(generateInvoiceKafkaMessage.getTxnId())
                         .type(generateInvoiceKafkaMessage.getType())
-                        .skip_delivery(generateInvoiceKafkaMessage.getType())
+                        .skip_delivery(generateInvoiceKafkaMessage.getSkip_delivery())
                         .msisdn(generateInvoiceKafkaMessage.getMsisdn())
                         .build();
             } else if(request instanceof CallbackInvoiceKafkaMessage) {
                 final CallbackInvoiceKafkaMessage callbackInvoiceKafkaMessage = (CallbackInvoiceKafkaMessage) request;
                 return GenerateInvoiceDPKafkaMessage.builder()
                         .type(callbackInvoiceKafkaMessage.getType())
-                        .skip_delivery(callbackInvoiceKafkaMessage.getType())
                         .lob(callbackInvoiceKafkaMessage.getLob())
                         .invoiceId(callbackInvoiceKafkaMessage.getInvoiceId())
                         .customerAccountNumber(callbackInvoiceKafkaMessage.getCustomerAccountNumber())

@@ -890,7 +890,7 @@ wynk:
           topic: prod_wcf_ringtone_transactions
         paymentData:
           enabled: true
-          nodes: 10.160.88.37,10.160.88.38,10.160.88.39
+          nodes: 10.160.88.37:9092,10.160.88.38:9092,10.160.88.39:9092
           username: ${wynk.kafka.username}
           password: ${wynk.kafka.password}
 

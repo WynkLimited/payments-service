@@ -6,8 +6,10 @@ import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.core.dao.entity.PaymentTDRDetails;
 import in.wynk.payment.core.dao.repository.PaymentTDRDetailsDao;
+import in.wynk.payment.core.event.TdrKafkaMessage;
 import in.wynk.payment.dto.BaseTDRResponse;
 import in.wynk.payment.dto.TdrProcessingMessage;
+import in.wynk.stream.service.IDataPlatformKafkaService;
 import in.wynk.payment.service.IPaymentTDRManager;
 import in.wynk.payment.service.PaymentGatewayManager;
 import in.wynk.stream.constant.StreamConstant;
@@ -43,6 +45,9 @@ public class PaymentTDRManager implements IPaymentTDRManager {
 
     @Autowired
     private IKafkaPublisherService kafkaPublisherService;
+
+    @Autowired
+    private IDataPlatformKafkaService dataPlatformKafkaService;
 
     public void fetchTDR(String requestId, String clientAlias) {
         try {
@@ -91,15 +96,22 @@ public class PaymentTDRManager implements IPaymentTDRManager {
     @AnalyseTransaction(name = "processTransactionForTDR")
     public void processTransaction(PaymentTDRDetails transaction) {
         try {
+            TdrKafkaMessage.TdrKafkaMessageBuilder analyticsBuilder = TdrKafkaMessage.builder();
             AnalyticService.update(UID, transaction.getUid());
             AnalyticService.update(PLAN_ID, transaction.getPlanId());
             AnalyticService.update(REFERENCE_TRANSACTION_ID, transaction.getReferenceId());
             AnalyticService.update(TRANSACTION_ID, transaction.getTransactionId());
+            analyticsBuilder.
+                    uid(transaction.getUid()).
+                    planId(transaction.getPlanId()).
+                    referenceTransactionId(transaction.getReferenceId()).
+                    transactionId(transaction.getTransactionId());
 
             BaseTDRResponse tdr = paymentGatewayManager.getTDR(transaction.getTransactionId());
             if ((tdr.getTdr() != -1) && (tdr.getTdr() != -2)) {
                 transaction.setTdr(tdr.getTdr());
                 AnalyticService.update(TDR, tdr.getTdr());
+                analyticsBuilder.tdr(tdr.getTdr());
             } else {
                 log.warn(PaymentLoggingMarker.TDR_PROCESSING_WARNING,
                         "Invalid TDR value received for transaction {}: TDR={}", transaction.getTransactionId(), tdr.getTdr());
@@ -107,6 +119,8 @@ public class PaymentTDRManager implements IPaymentTDRManager {
             transaction.setStatus(PaymentConstants.COMPLETED);
             transaction.setUpdatedTimestamp(Calendar.getInstance());
             AnalyticService.update("TdrStatus",transaction.getStatus());
+            analyticsBuilder.tdrStatus(transaction.getStatus());
+            dataPlatformKafkaService.publish(analyticsBuilder.build());
             paymentTDRDetailsRepository.save(transaction);
         } catch (Exception e) {
             log.error(PaymentLoggingMarker.TDR_API_ERROR,

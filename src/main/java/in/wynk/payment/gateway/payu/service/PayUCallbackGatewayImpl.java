@@ -15,8 +15,10 @@ import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.gateway.callback.DefaultPaymentCallbackResponse;
 import in.wynk.payment.dto.payu.*;
 import in.wynk.payment.dto.response.payu.PayUVerificationResponse;
+import in.wynk.payment.event.PaymentCallbackKafkaMessage;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.gateway.IPaymentCallback;
+import in.wynk.stream.service.IDataPlatformKafkaService;
 import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import in.wynk.payment.utils.RecurringTransactionUtils;
@@ -41,13 +43,15 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
     private final ObjectMapper objectMapper;
     private final IMerchantTransactionService merchantTransactionService;
     private final RecurringTransactionUtils recurringTransactionUtils;
+    private final IDataPlatformKafkaService dataPlatformKafkaService;
     private final Map<String, IPaymentCallback<? extends AbstractPaymentCallbackResponse, ? extends PayUCallbackRequestPayload>> delegator = new HashMap<>();
 
-    public PayUCallbackGatewayImpl (PayUCommonGateway common, ObjectMapper objectMapper, IMerchantTransactionService merchantTransactionService, RecurringTransactionUtils recurringTransactionUtils) {
+    public PayUCallbackGatewayImpl (PayUCommonGateway common, ObjectMapper objectMapper, IMerchantTransactionService merchantTransactionService, RecurringTransactionUtils recurringTransactionUtils, IDataPlatformKafkaService dataPlatformKafkaService) {
         this.common = common;
         this.objectMapper = objectMapper;
         this.recurringTransactionUtils = recurringTransactionUtils;
         this.merchantTransactionService = merchantTransactionService;
+        this.dataPlatformKafkaService = dataPlatformKafkaService;
         this.delegator.put(WebhookConfigType.PAYMENT_STATUS.name(), new PayUCallbackGatewayImpl.GenericPayUCallbackHandler());
         this.delegator.put(WebhookConfigType.REFUND_STATUS.name(), new PayUCallbackGatewayImpl.RefundPayUCallBackHandler());
         this.delegator.put(WebhookConfigType.MANDATE_STATUS.name(), new PayUCallbackGatewayImpl.MandateStatusPayUCallBackHandler());
@@ -156,9 +160,11 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
                     } else {
                         redirectionUrl = chargingDetails.getPageUrlDetails().getFailurePageUrl();
                     }
+                    dataPlatformKafkaService.publish(PaymentCallbackKafkaMessage.from(request, transaction));
                     return DefaultPaymentCallbackResponse.builder().transactionStatus(transaction.getStatus()).redirectUrl(redirectionUrl).build();
                 }
             }
+            dataPlatformKafkaService.publish(PaymentCallbackKafkaMessage.from(request, transaction));
             return DefaultPaymentCallbackResponse.builder().transactionStatus(transaction.getStatus()).build();
         }
 
@@ -183,6 +189,7 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
             if (transaction.getStatus() == TransactionStatus.SUCCESS) {
                 transaction.setStatus(TransactionStatus.AUTO_REFUND.getValue());
             }
+            dataPlatformKafkaService.publish(PaymentCallbackKafkaMessage.from(request, transaction));
             return DefaultPaymentCallbackResponse.builder().transactionStatus(transaction.getStatus()).build();
         }
 
@@ -207,6 +214,7 @@ public class PayUCallbackGatewayImpl implements IPaymentCallback<AbstractPayment
                 recurringTransactionUtils.cancelRenewalBasedOnRealtimeMandate(description, transaction);
                 transaction.setStatus(TransactionStatus.CANCELLED.getValue());
             }
+            dataPlatformKafkaService.publish(PaymentCallbackKafkaMessage.from(callbackRequest, transaction));
             return DefaultPaymentCallbackResponse.builder().transactionStatus(transaction.getStatus()).build();
         }
 

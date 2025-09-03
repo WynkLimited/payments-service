@@ -42,9 +42,11 @@ import in.wynk.payment.dto.response.addtobill.AddToBillChargingResponse;
 import in.wynk.payment.dto.response.addtobill.UserAddToBillDetails;
 import in.wynk.payment.eligibility.request.PaymentOptionsItemEligibilityRequest;
 import in.wynk.payment.eligibility.request.PaymentOptionsPlanEligibilityRequest;
+import in.wynk.payment.event.RecurringKafkaMessage;
 import in.wynk.payment.gateway.IPaymentInstrumentsProxy;
 import in.wynk.payment.service.*;
 import in.wynk.stream.producer.IKafkaEventPublisher;
+import in.wynk.stream.service.IDataPlatformKafkaService;
 import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.subscription.common.message.CancelMandateEvent;
@@ -81,14 +83,16 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
     private final CatalogueVasClientService catalogueVasClientService;
 
     private final IKafkaEventPublisher<String, CancelMandateEvent> kafkaPublisherService;
+    private final IDataPlatformKafkaService dataPlatformKafkaService;
 
-    public AddToBillPaymentService(PaymentCachingService cachingService, IErrorCodesCacheService errorCodesCacheServiceImpl, PaymentMethodCachingService payCache, ApplicationEventPublisher eventPublisher, CatalogueVasClientService catalogueVasClientService, IKafkaEventPublisher<String, CancelMandateEvent> kafkaPublisherService) {
+    public AddToBillPaymentService(PaymentCachingService cachingService, IErrorCodesCacheService errorCodesCacheServiceImpl, PaymentMethodCachingService payCache, ApplicationEventPublisher eventPublisher, CatalogueVasClientService catalogueVasClientService, IKafkaEventPublisher<String, CancelMandateEvent> kafkaPublisherService, IDataPlatformKafkaService dataPlatformKafkaService) {
         super(cachingService, errorCodesCacheServiceImpl);
         this.payCache = payCache;
         this.cachingService = cachingService;
         this.eventPublisher = eventPublisher;
         this.catalogueVasClientService = catalogueVasClientService;
         this.kafkaPublisherService = kafkaPublisherService;
+        this.dataPlatformKafkaService = dataPlatformKafkaService;
     }
 
     @Override
@@ -319,7 +323,7 @@ public class AddToBillPaymentService extends AbstractMerchantPaymentStatusServic
                 finalTransactionStatus = TransactionStatus.FAILURE;
                 log.error("Unsubscribe failed because Purchase Details not found");
             }
-
+            dataPlatformKafkaService.publish(RecurringKafkaMessage.from(transactionId, paymentEvent, "ADD_TO_BILL"));
         } catch (Exception e) {
             finalTransactionStatus = TransactionStatus.FAILURE;
             log.error("Unsubscribe failed: {}", e.getMessage(), e);

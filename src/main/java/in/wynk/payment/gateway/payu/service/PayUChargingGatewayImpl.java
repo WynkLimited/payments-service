@@ -33,7 +33,9 @@ import in.wynk.payment.dto.request.common.FreshCardDetails;
 import in.wynk.payment.dto.request.common.SavedCardDetails;
 import in.wynk.payment.dto.response.AbstractPaymentChargingResponse;
 import in.wynk.payment.dto.response.payu.PayUUpiIntentInitResponse;
+import in.wynk.payment.event.PaymentChargingKafkaMessage;
 import in.wynk.payment.gateway.IPaymentCharging;
+import in.wynk.stream.service.IDataPlatformKafkaService;
 import in.wynk.payment.service.PaymentCachingService;
 import in.wynk.payment.utils.PropertyResolverUtils;
 import lombok.SneakyThrows;
@@ -65,12 +67,14 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
     public String PAYMENT_API;
     private final PayUCommonGateway common;
     private final PaymentMethodCachingService methodCache;
+    private final IDataPlatformKafkaService dataPlatformKafkaService;
     private final Map<FlowType, IPaymentCharging<AbstractPaymentChargingResponse, AbstractPaymentChargingRequest>> delegate = new HashMap<>();
 
-    public PayUChargingGatewayImpl(PayUCommonGateway common, PaymentMethodCachingService methodCache, String paymentApi) {
+    public PayUChargingGatewayImpl(PayUCommonGateway common, PaymentMethodCachingService methodCache, String paymentApi, IDataPlatformKafkaService dataPlatformKafkaService) {
         this.common = common;
         this.PAYMENT_API = paymentApi;
         this.methodCache = methodCache;
+        this.dataPlatformKafkaService = dataPlatformKafkaService;
         this.delegate.put(UPI, new PayUUpiCharging());
         this.delegate.put(FlowType.CARD, new PayUCardCharging());
         this.delegate.put(NET_BANKING, new PayUNetBankingCharging());
@@ -125,6 +129,7 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
                         form.put(PAYU_VPA, upiDetails.getUpiDetails().getVpa());
                         init(UpiConstants.UPI, form, new TypeReference<PayUUpiCollectResponse>() {
                         });
+                        updateToKafka(request, transaction);
                         return UpiCollectInAppChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).build();
                     } catch (Exception e) {
                         throw new WynkRuntimeException(PAYU006, e);
@@ -154,6 +159,7 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
                         } else {
                             offerTitle = paymentCachingService.getOffer(paymentCachingService.getPlan(TransactionContext.get().getPlanId()).getLinkedOfferId()).getTitle();
                         }
+                        updateToKafka(request, transaction);
                         return UpiIntentChargingResponse.builder()
                                 .mn(map.get(MN))
                                 .rev(map.get(REV))
@@ -174,7 +180,8 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
                                 .validityStart(map.get(VALIDITY_START))
                                 .cu(map.getOrDefault(CU, PaymentConstants.CURRENCY_INR))
                                 .transactionStatus(transaction.getStatus())
-                                .tr(result.getPaymentId()).am(map.get(AM))
+                                .tr(map.get(TR) != null ? map.get(TR) : result.getPaymentId())
+                                .am(map.get(AM))
                                 .fam(map.get(FAM))
                                 .transactionType(transaction.getType().getValue())
                                 .tn(StringUtils.isNotBlank(offerTitle) ? offerTitle : map.get(TN)).mc(PayUConstants.PAYU_MERCHANT_CODE)
@@ -222,6 +229,7 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
                         final Map<String, String> form = PayUChargingGatewayImpl.this.buildPayUForm(request);
                         final UpiPaymentDetails upiDetails = ((UpiPaymentDetails) request.getPaymentDetails());
                         form.put(PAYU_VPA, upiDetails.getUpiDetails().getVpa());
+                        updateToKafka(request,transaction);
                         return UpiCollectChargingResponse.builder().form(form).tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).build();
                     } catch (Exception e) {
                         throw new WynkRuntimeException(PAYU006, e);
@@ -320,6 +328,7 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
                         form.put(PAYU_CARD_CVV, cardDetails.getCardInfo().getCvv());
                     }
                     form.put(PAYU_PG, paymentDetails.getCardDetails().getCardInfo().getCategory());
+                    updateToKafka(request, transaction);
                     return CardKeyValueTypeChargingResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).form(form).url(PAYMENT_API).build();
                 }
             }
@@ -360,6 +369,7 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
                 form.put(PAYU_BANKCODE, (String) method.getMeta().get(PaymentConstants.BANK_CODE));
                 form.put(PAYU_ENFORCE_PAYMENT, NetBankingConstants.NETBANKING.toLowerCase());
                 form.put(PAYU_PG, PAYU_PG_NET_BANKING_VALUE);
+                updateToKafka(request,transaction);
                 return NetBankingKeyValueTypeResponse.builder().tid(transaction.getIdStr()).transactionStatus(transaction.getStatus()).transactionType(transaction.getType().getValue()).form(form).url(PAYMENT_API).build();
             }
         }
@@ -433,6 +443,10 @@ public class PayUChargingGatewayImpl implements IPaymentCharging<AbstractPayment
         final String payUMerchantSecret = PropertyResolverUtils.resolve(client, PAYU_MERCHANT_PAYMENT_SERVICE.toLowerCase(), MERCHANT_SECRET);
         String rawChecksum = payUMerchantKey + PIPE_SEPARATOR + transactionId.toString() + PIPE_SEPARATOR + amount + PIPE_SEPARATOR + planTitle + PIPE_SEPARATOR + firstName + PIPE_SEPARATOR + email + PIPE_SEPARATOR + udf1 + "||||||||||" + siDetails + PIPE_SEPARATOR + payUMerchantSecret;
         return EncryptionUtils.generateSHA512Hash(rawChecksum);
+    }
+
+    public void updateToKafka(AbstractPaymentChargingRequest request, Transaction transaction) {
+        dataPlatformKafkaService.publish(PaymentChargingKafkaMessage.from(request, transaction));
     }
 
 }

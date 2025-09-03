@@ -11,7 +11,9 @@ import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.aps.request.mandate.cancel.CancelMandateRequest;
 import in.wynk.payment.dto.aps.response.mandate.cancel.MandateCancellationResponse;
 import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
+import in.wynk.payment.event.RecurringKafkaMessage;
 import in.wynk.payment.service.ICancellingRecurringService;
+import in.wynk.stream.service.IDataPlatformKafkaService;
 import in.wynk.payment.service.IMerchantTransactionService;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.stream.producer.IKafkaEventPublisher;
@@ -23,6 +25,7 @@ import java.util.Objects;
 
 import static in.wynk.payment.core.constant.PaymentErrorType.APS012;
 import static in.wynk.payment.core.constant.PaymentLoggingMarker.APS_MANDATE_REVOKE_ERROR;
+import static in.wynk.payment.dto.aps.common.ApsConstant.APS;
 
 /**
  * @author Nishesh Pandey
@@ -37,9 +40,10 @@ public class ApsCancelMandateGatewayServiceImpl implements ICancellingRecurringS
     private final Gson gson;
     private final ObjectMapper mapper;
     private final IKafkaEventPublisher<String, CancelMandateEvent> kafkaPublisherService;
+    private final IDataPlatformKafkaService dataPlatformKafkaService;
 
-    public ApsCancelMandateGatewayServiceImpl (ObjectMapper mapper, ITransactionManagerService transactionManager, IMerchantTransactionService merchantTransactionService, String cancelMandateEndpoint,
-                                               ApsCommonGatewayService common, Gson gson, IKafkaEventPublisher<String, CancelMandateEvent> kafkaPublisherService) {
+    public ApsCancelMandateGatewayServiceImpl(ObjectMapper mapper, ITransactionManagerService transactionManager, IMerchantTransactionService merchantTransactionService, String cancelMandateEndpoint,
+                                              ApsCommonGatewayService common, Gson gson, IKafkaEventPublisher<String, CancelMandateEvent> kafkaPublisherService, IDataPlatformKafkaService dataPlatformKafkaService) {
         this.gson = gson;
         this.mapper = mapper;
         this.common = common;
@@ -47,6 +51,7 @@ public class ApsCancelMandateGatewayServiceImpl implements ICancellingRecurringS
         this.CANCEL_MANDATE_ENDPOINT = cancelMandateEndpoint;
         this.merchantTransactionService = merchantTransactionService;
         this.kafkaPublisherService = kafkaPublisherService;
+        this.dataPlatformKafkaService = dataPlatformKafkaService;
     }
 
     @Override
@@ -86,6 +91,7 @@ public class ApsCancelMandateGatewayServiceImpl implements ICancellingRecurringS
                     .paymentEvent(event)
                     .build();
             kafkaPublisherService.publish(mandateEvent);
+            dataPlatformKafkaService.publish(RecurringKafkaMessage.from(transactionId, event, APS));
         } catch (WynkRuntimeException ex) {
             log.error(APS_MANDATE_REVOKE_ERROR, ex.getMessage());
             throw ex;

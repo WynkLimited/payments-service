@@ -18,8 +18,10 @@ import in.wynk.payment.dto.aps.request.status.refund.RefundStatusRequest;
 import in.wynk.payment.dto.aps.response.status.charge.ApsChargeStatusResponse;
 import in.wynk.payment.dto.gateway.callback.AbstractPaymentCallbackResponse;
 import in.wynk.payment.dto.gateway.callback.DefaultPaymentCallbackResponse;
+import in.wynk.payment.event.PaymentCallbackKafkaMessage;
 import in.wynk.payment.exception.PaymentRuntimeException;
 import in.wynk.payment.gateway.IPaymentCallback;
+import in.wynk.stream.service.IDataPlatformKafkaService;
 import in.wynk.payment.utils.RecurringTransactionUtils;
 import in.wynk.payment.utils.aps.SignatureUtil;
 import lombok.SneakyThrows;
@@ -46,15 +48,17 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
     private final RecurringTransactionUtils recurringTransactionUtils;
+    private final IDataPlatformKafkaService dataPlatformKafkaService;
     private final Map<String, IPaymentCallback<? extends AbstractPaymentCallbackResponse, ? extends ApsCallBackRequestPayload>> delegator = new HashMap<>();
 
-    public ApsCallbackGatewayServiceImpl(String salt, String secret, ApsCommonGatewayService common, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher, RecurringTransactionUtils recurringTransactionUtils) {
+    public ApsCallbackGatewayServiceImpl(String salt, String secret, ApsCommonGatewayService common, ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher, RecurringTransactionUtils recurringTransactionUtils, IDataPlatformKafkaService dataPlatformKafkaService) {
         this.salt = salt;
         this.secret = secret;
         this.common = common;
         this.objectMapper = objectMapper;
         this.eventPublisher = eventPublisher;
         this.recurringTransactionUtils = recurringTransactionUtils;
+        this.dataPlatformKafkaService = dataPlatformKafkaService;
         this.delegator.put(WebhookConfigType.PAYMENT_STATUS.name(), new GenericApsCallbackHandler());
         this.delegator.put(WebhookConfigType.REFUND_STATUS.name(), new RefundApsCallBackHandler());
         this.delegator.put(WebhookConfigType.MANDATE_STATUS.name(), new MandateStatusApsCallBackHandler());
@@ -143,9 +147,11 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
                     } else {
                         redirectionUrl = chargingDetails.getPageUrlDetails().getFailurePageUrl();
                     }
+                    dataPlatformKafkaService.publish(PaymentCallbackKafkaMessage.from(request, transaction));
                     return DefaultPaymentCallbackResponse.builder().transactionStatus(transaction.getStatus()).redirectUrl(redirectionUrl).build();
                 }
             }
+            dataPlatformKafkaService.publish(PaymentCallbackKafkaMessage.from(request, transaction));
             return DefaultPaymentCallbackResponse.builder().transactionStatus(transaction.getStatus()).build();
         }
 
@@ -176,7 +182,7 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
                     transaction.setStatus(TransactionStatus.REFUNDED.getValue());
                 }
             }
-
+            dataPlatformKafkaService.publish(PaymentCallbackKafkaMessage.from(request, transaction));
             return DefaultPaymentCallbackResponse.builder().transactionStatus(transaction.getStatus()).build();
         }
 
@@ -218,6 +224,7 @@ public class ApsCallbackGatewayServiceImpl implements IPaymentCallback<AbstractP
             String description = "Mandate is already " + callbackRequest.getMandateStatus().name().toLowerCase(Locale.ROOT);
             recurringTransactionUtils.cancelRenewalBasedOnRealtimeMandate(description, transaction);
             transaction.setStatus(TransactionStatus.CANCELLED.getValue());
+            dataPlatformKafkaService.publish(PaymentCallbackKafkaMessage.from(callbackRequest, transaction));
             return DefaultPaymentCallbackResponse.builder().transactionStatus(transaction.getStatus()).build();
         }
 

@@ -33,7 +33,7 @@ import static in.wynk.common.constant.CacheBeanNameConstants.OS;
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentCode")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentCode", visible = true)
 @JsonSubTypes({@JsonSubTypes.Type(value = ItunesVerificationRequest.class, name = "ITUNES"), @JsonSubTypes.Type(value = AmazonIapVerificationRequest.class, name = "AMAZON_IAP")})
 public abstract class IapVerificationRequest {
 
@@ -84,6 +84,7 @@ public abstract class IapVerificationRequest {
     @Analysed
     private String countryCode;
 
+    @Setter
     private String paymentCode;
 
     @Analysed

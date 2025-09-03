@@ -10,7 +10,6 @@ import in.wynk.client.core.constant.ClientErrorType;
 import in.wynk.client.core.dao.entity.ClientDetails;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.constant.BaseConstants;
-import in.wynk.common.dto.AppDetails;
 import in.wynk.common.dto.Message;
 import in.wynk.common.enums.PaymentEvent;
 import in.wynk.common.enums.TransactionStatus;
@@ -53,6 +52,7 @@ import in.wynk.stream.dto.MessageThresholdExceedEvent;
 import in.wynk.stream.producer.IKafkaEventPublisher;
 import in.wynk.stream.producer.IKafkaPublisherService;
 import in.wynk.stream.producer.IKinesisEventPublisher;
+import in.wynk.stream.service.IDataPlatformKafkaService;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.tinylytics.dto.BranchEvent;
 import in.wynk.tinylytics.dto.BranchRawDataEvent;
@@ -86,7 +86,7 @@ import static in.wynk.payment.core.constant.PaymentConstants.PAYMENT_CODE;
 import static in.wynk.payment.core.constant.PaymentConstants.*;
 import static in.wynk.queue.constant.BeanConstant.MESSAGE_PAYLOAD;
 import static in.wynk.tinylytics.constants.TinylyticsConstants.EVENT;
-import static in.wynk.tinylytics.constants.TinylyticsConstants.TRANSACTION_SNAPShOT_EVENT;
+import static in.wynk.tinylytics.constants.TinylyticsConstants.TRANSACTION_SNAPSHOT_EVENT;
 
 @Slf4j
 @Service
@@ -108,7 +108,7 @@ public class PaymentEventListener {
     private final IQuickPayLinkGenerator quickPayLinkGenerator;
     private final InvoiceService invoiceService;
     private final IKafkaEventPublisher<String, InvoiceKafkaMessage> invoiceKafkaPublisher;
-    private final IKafkaEventPublisher<String, TransactionAnalyticsMessage> snapshotKafkaPublisher;
+    private final IDataPlatformKafkaService dataPlatformKafkaService;
 
     private final IKafkaEventPublisher<String, WaPayStateRespEvent> paymentStatusKafkaPublisher;
     private final InvoiceDetailsCachingService invoiceDetailsCachingService;
@@ -138,13 +138,13 @@ public class PaymentEventListener {
                                 IMerchantTransactionService merchantTransactionService, IRecurringPaymentManagerService recurringPaymentManagerService,
                                 PaymentCachingService cachingService, IQuickPayLinkGenerator quickPayLinkGenerator, InvoiceService invoiceService,
                                 IKafkaEventPublisher<String, InvoiceKafkaMessage> invoiceKafkaPublisher,
-                                IKafkaEventPublisher<String, TransactionAnalyticsMessage> transactionSnapshotKafkaPublisher,
                                 IKafkaEventPublisher<String, WaPayStateRespEvent> paymentStatusKafkaPublisher, InvoiceDetailsCachingService invoiceDetailsCachingService,
                                 ClientDetailsCachingService clientDetailsCachingService, WynkServiceDetailsCachingService wynkServiceDetailsCachingService,
                                 ISubscriptionServiceManager subscriptionServiceManager,
                                 @Qualifier("item")
                                 @Lazy
-                                IKafkaEventPublisher<String, GenerateItemKafkaMessage> itemKafkaPublisher) {
+                                IKafkaEventPublisher<String, GenerateItemKafkaMessage> itemKafkaPublisher,
+                                IDataPlatformKafkaService dataPlatformKafkaService) {
         this.taxUtils = taxUtils;
         this.mapper = mapper;
         this.retryRegistry = retryRegistry;
@@ -168,7 +168,7 @@ public class PaymentEventListener {
         this.wynkServiceDetailsCachingService = wynkServiceDetailsCachingService;
         this.subscriptionServiceManager = subscriptionServiceManager;
         this.itemKafkaPublisher = itemKafkaPublisher;
-        this.snapshotKafkaPublisher = transactionSnapshotKafkaPublisher;
+        this.dataPlatformKafkaService = dataPlatformKafkaService;
     }
 
     @EventListener
@@ -338,6 +338,7 @@ public class PaymentEventListener {
             AnalyticService.update("updatedOn", event.getInvoice().getUpdatedOn().getTime().getTime());
         }
         AnalyticService.update("retryCount", event.getInvoice().getRetryCount());
+        dataPlatformKafkaService.publish(InvoiceEventKafkaMessage.from(event));
     }
 
     @EventListener
@@ -552,6 +553,7 @@ public class PaymentEventListener {
     public void onGenerateInvoiceEvent(GenerateInvoiceEvent event) {
         try {
             AnalyticService.update(event);
+            dataPlatformKafkaService.publish(event);
             final Invoice invoice = invoiceService.getInvoiceByTransactionId(event.getTxnId());
             if (Objects.isNull(invoice)) {
                 final Transaction transaction = transactionManagerService.get(event.getTxnId());
@@ -682,7 +684,7 @@ public class PaymentEventListener {
     public void onTransactionSnapshotEvent(TransactionSnapshotEvent event) {
         Optional.ofNullable(event.getPurchaseDetails()).ifPresent(AnalyticService::update);
 
-        TransactionAnalyticsMessage.TransactionAnalyticsMessageBuilder analyticsBuilder = TransactionAnalyticsMessage.builder();
+        TransactionKafkaMessage.TransactionKafkaMessageBuilder analyticsBuilder = TransactionKafkaMessage.builder();
         analyticsBuilder
                 .uid(event.getTransaction().getUid())
                 .msisdn(event.getTransaction().getMsisdn())
@@ -824,18 +826,13 @@ public class PaymentEventListener {
                     .purchaseDetails(event.getPurchaseDetails())
                     .build());
         }
-        try {
-            snapshotKafkaPublisher.publish(analyticsBuilder.build());
-        } catch (Exception ex) {
-            log.error(PaymentLoggingMarker.DP_KAFKA_PUBLISHER_FAILURE, "Unable to publish the transaction snapshot event in kafka due to {}", ex.getMessage(), ex);
-            AnalyticService.update(ERROR, "Unable to publish the transaction snapshot event in kafka " + ex.getMessage());
-        }
+        dataPlatformKafkaService.publish(analyticsBuilder.build());
         if (EnumSet.of(TransactionStatus.SUCCESS, TransactionStatus.FAILURE).contains(event.getTransaction().getStatus())) {
             publishWaPaymentStatusEvent(event);
         }
     }
 
-    private void setAppDetails(TransactionAnalyticsMessage.TransactionAnalyticsMessageBuilder analyticsBuilder, IPurchaseDetails purchaseDetails) {
+    private void setAppDetails(TransactionKafkaMessage.TransactionKafkaMessageBuilder analyticsBuilder, IPurchaseDetails purchaseDetails) {
         try {
             if (purchaseDetails.getAppDetails().getClass().isAssignableFrom(in.wynk.payment.dto.AppDetails.class)) {
                 in.wynk.payment.dto.AppDetails appDetails = (in.wynk.payment.dto.AppDetails) purchaseDetails.getAppDetails();
@@ -968,7 +965,7 @@ public class PaymentEventListener {
                         .os(event.getPurchaseDetails().getAppDetails().getOs())
                         .deviceId(event.getPurchaseDetails().getAppDetails().getDeviceId());
             }
-            publishBranchEvent(branchMeta(eventsWrapperBuilder.build()), TRANSACTION_SNAPShOT_EVENT);
+            publishBranchEvent(branchMeta(eventsWrapperBuilder.build()), TRANSACTION_SNAPSHOT_EVENT);
 
 
         } catch (Exception e) {

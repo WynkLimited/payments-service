@@ -38,12 +38,12 @@ session:
     readTimeout: 1000
     cluster:
       #nodes: wcf-redis.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
-      nodes: 10.168.88.21:6379
+      nodes: 10.168.88.21:6379,10.168.88.22:6379
     connection:
       timeout: 1000
-      maxTotal: 32
-      minIdle: 10
-      maxIdle: 15
+      maxTotal: 12
+      minIdle: 4
+      maxIdle: 8
 
 ###### CORS config #####
 cors:
@@ -1426,11 +1426,11 @@ cache:
       usePrefix: false
     cluster:
       #nodes: wcf-redis.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
-      nodes: 10.168.88.21:6379
+      nodes: 10.168.88.21:6379,10.168.88.22:6379
     connection:
-      maxIdle: 15
-      maxTotal: 32
-      minIdle: 10
+      maxIdle: 8
+      maxTotal: 12
+      minIdle: 4
       timeout: 1000
     enableJmx: true
     enabled: true
@@ -1452,12 +1452,12 @@ lock:
     readTimeout: 1000
     cluster:
       #nodes: wcf-redis.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
-      nodes: 10.168.88.21:6379
+      nodes: 10.168.88.21:6379,10.168.88.22:6379
     connection:
       timeout: 1000
-      maxTotal: 32
-      minIdle: 10
-      maxIdle: 15
+      maxTotal: 12
+      minIdle: 4
+      maxIdle: 8
   refreshTokenDuration: 60
   refreshTokenLifetime: 3600
   accountName: projects/-/serviceAccounts/gke-wynk-prd-wcf-app-sa@prj-wynk-prd-wcf-svc-01.iam.gserviceaccount.com

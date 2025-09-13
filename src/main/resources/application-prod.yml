@@ -41,9 +41,9 @@ session:
       nodes: 10.168.88.21:6379
     connection:
       timeout: 1000
-      maxTotal: 200
+      maxTotal: 32
       minIdle: 10
-      maxIdle: 50
+      maxIdle: 15
 
 ###### CORS config #####
 cors:
@@ -1428,8 +1428,8 @@ cache:
       #nodes: wcf-redis.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
       nodes: 10.168.88.21:6379
     connection:
-      maxIdle: 50
-      maxTotal: 1500
+      maxIdle: 15
+      maxTotal: 32
       minIdle: 10
       timeout: 1000
     enableJmx: true
@@ -1455,9 +1455,9 @@ lock:
       nodes: 10.168.88.21:6379
     connection:
       timeout: 1000
-      maxTotal: 200
+      maxTotal: 32
       minIdle: 10
-      maxIdle: 50
+      maxIdle: 15
   refreshTokenDuration: 60
   refreshTokenLifetime: 3600
   accountName: projects/-/serviceAccounts/gke-wynk-prd-wcf-app-sa@prj-wynk-prd-wcf-svc-01.iam.gserviceaccount.com

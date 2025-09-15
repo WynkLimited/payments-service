@@ -73,8 +73,8 @@ spring:
       idleTimeout: 10000
       maxLifetime: 30000
       poolName: payment-datasource-pool-prod
-      minimum-idle: 5
-      maximumPoolSize: 20
+      minimum-idle: 3
+      maximumPoolSize: 5
 
   #### JPA props ######
   jpa:
@@ -1210,8 +1210,8 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-payment-api-prod
-                  minimum-idle: 10
-                  maximumPoolSize: 50
+                  minimum-idle: 3
+                  maximumPoolSize: 5
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: false
@@ -1252,8 +1252,8 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-airtelxstream-prod
-                  minimum-idle: 10
-                  maximumPoolSize: 40
+                  minimum-idle: 3
+                  maximumPoolSize: 6
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: false
@@ -1294,8 +1294,8 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-music-prod
-                  minimum-idle: 10
-                  maximumPoolSize: 40
+                  minimum-idle: 2
+                  maximumPoolSize: 4
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: false
@@ -1336,8 +1336,8 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-rajtv-prod
-                  minimum-idle: 10
-                  maximumPoolSize: 20
+                  minimum-idle: 1
+                  maximumPoolSize: 1
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: false
@@ -1378,8 +1378,8 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-enterr10-prod
-                  minimum-idle: 10
-                  maximumPoolSize: 20
+                  minimum-idle: 1
+                  maximumPoolSize: 1
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: false

@@ -74,7 +74,7 @@ spring:
       maxLifetime: 30000
       poolName: payment-datasource-pool-prod
       minimum-idle: 3
-      maximumPoolSize: 5
+      maximumPoolSize: 6
 
   #### JPA props ######
   jpa:

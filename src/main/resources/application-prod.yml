@@ -38,12 +38,12 @@ session:
     readTimeout: 1000
     cluster:
       #nodes: wcf-redis.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
-      nodes: 10.168.88.21:6379
+      nodes: 10.168.88.21:6379,10.168.88.22:6379,10.168.88.31:6379,10.168.88.33:6379
     connection:
       timeout: 1000
-      maxTotal: 32
-      minIdle: 10
-      maxIdle: 15
+      maxTotal: 12
+      minIdle: 4
+      maxIdle: 8
 
 ###### CORS config #####
 cors:
@@ -73,8 +73,8 @@ spring:
       idleTimeout: 10000
       maxLifetime: 30000
       poolName: payment-datasource-pool-prod
-      minimum-idle: 5
-      maximumPoolSize: 20
+      minimum-idle: 3
+      maximumPoolSize: 6
 
   #### JPA props ######
   jpa:
@@ -761,7 +761,7 @@ wynk:
               valueDeserializer: in.wynk.payment.consumer.deserializer.PaymentRenewalKafkaDeserializer
             name: PAYMENT_RENEWAL_BEAN
         preDebitNotification:
-          - concurrency: 3
+          - concurrency: 1
             enabled: true
             manualCommit: true
             factoryDetails:
@@ -774,13 +774,13 @@ wynk:
               groupId: group1
               keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
               maxPollInterval: 600000
-              maxPollRecords: 50
+              maxPollRecords: 5
               sessionTimeout: 180000
               topic: wcf_prod.payment_pre_debit_notification
               valueDeserializer: in.wynk.payment.consumer.deserializer.PreDebitNotificationKafkaDeserializer
             name: PAYMENT_PRE_DEBIT_NOTIFICATION_BEAN
         tdrProcessing:
-          - concurrency: 4
+          - concurrency: 1
             enabled: true
             manualCommit: true
             factoryDetails:
@@ -793,13 +793,13 @@ wynk:
               groupId: group1
               keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
               maxPollInterval: 300000
-              maxPollRecords: 100
+              maxPollRecords: 5
               sessionTimeout: 30000
               topic: wcf_prod.payment_tdr_processing
               valueDeserializer: in.wynk.payment.consumer.deserializer.TdrProcessingKafkaDeserializer
             name: PAYMENT_TDR_PROCESSING_BEAN
         paymentRenewalCharging:
-          - concurrency: 3
+          - concurrency: 1
             enabled: true
             manualCommit: true
             factoryDetails:
@@ -812,7 +812,7 @@ wynk:
               groupId: group1
               keyDeserializer: org.apache.kafka.common.serialization.StringDeserializer
               maxPollInterval: 600000
-              maxPollRecords: 50
+              maxPollRecords: 5
               sessionTimeout: 180000
               topic: wcf_prod.payment_renewal_charging
               valueDeserializer: in.wynk.payment.consumer.deserializer.PaymentRenewalChargingKafkaDeserializer
@@ -897,12 +897,9 @@ wynk:
           enabled: true
           nodes: 10.70.3.4:9092,10.70.3.128:9092,10.70.3.180:9092,10.70.3.245:9092,10.70.3.44:9092,10.70.3.80:9092,10.70.1.57:9092,10.70.3.152:9092
           topic: prod_wcf_ringtone_transactions
-
-
-
         paymentData:
           enabled: true
-          nodes: ${wynk.kafka.nodes}
+          nodes: 10.160.88.37:9092,10.160.88.38:9092,10.160.88.39:9092
           username: ${wynk.kafka.username}
           password: ${wynk.kafka.password}
 
@@ -1222,8 +1219,8 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-payment-api-prod
-                  minimum-idle: 10
-                  maximumPoolSize: 50
+                  minimum-idle: 3
+                  maximumPoolSize: 5
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: false
@@ -1264,8 +1261,8 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-airtelxstream-prod
-                  minimum-idle: 10
-                  maximumPoolSize: 40
+                  minimum-idle: 3
+                  maximumPoolSize: 6
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: false
@@ -1306,8 +1303,8 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-music-prod
-                  minimum-idle: 10
-                  maximumPoolSize: 40
+                  minimum-idle: 2
+                  maximumPoolSize: 4
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: false
@@ -1348,8 +1345,8 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-rajtv-prod
-                  minimum-idle: 10
-                  maximumPoolSize: 20
+                  minimum-idle: 1
+                  maximumPoolSize: 1
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: false
@@ -1390,8 +1387,8 @@ wynk:
                   idleTimeout: 10000
                   maxLifetime: 30000
                   poolName: payment-datasource-pool-enterr10-prod
-                  minimum-idle: 10
-                  maximumPoolSize: 20
+                  minimum-idle: 1
+                  maximumPoolSize: 1
                 jpa:
                   database-platform: org.hibernate.dialect.MySQL8Dialect
                   show-sql: false
@@ -1438,11 +1435,11 @@ cache:
       usePrefix: false
     cluster:
       #nodes: wcf-redis.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
-      nodes: 10.168.88.21:6379
+      nodes: 10.168.88.21:6379,10.168.88.22:6379,10.168.88.31:6379,10.168.88.33:6379
     connection:
-      maxIdle: 15
-      maxTotal: 32
-      minIdle: 10
+      maxIdle: 8
+      maxTotal: 12
+      minIdle: 4
       timeout: 1000
     enableJmx: true
     enabled: true
@@ -1464,12 +1461,12 @@ lock:
     readTimeout: 1000
     cluster:
       #nodes: wcf-redis.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
-      nodes: 10.168.88.21:6379
+      nodes: 10.168.88.21:6379,10.168.88.22:6379,10.168.88.31:6379,10.168.88.33:6379
     connection:
       timeout: 1000
-      maxTotal: 32
-      minIdle: 10
-      maxIdle: 15
+      maxTotal: 12
+      minIdle: 4
+      maxIdle: 8
   refreshTokenDuration: 60
   refreshTokenLifetime: 3600
   accountName: projects/-/serviceAccounts/gke-wynk-prd-wcf-app-sa@prj-wynk-prd-wcf-svc-01.iam.gserviceaccount.com

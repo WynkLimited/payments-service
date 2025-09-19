@@ -34,11 +34,12 @@ session:
   redis:
     name: session-store:prod
     mode: cluster
+    password: Oa76N4jO5Q58
     usePooling: true
     readTimeout: 1000
     cluster:
       #nodes: wcf-redis.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
-      nodes: 10.168.88.21:6379,10.168.88.22:6379,10.168.88.31:6379,10.168.88.33:6379
+      nodes: redis-cluster-headless.redis-ns.svc.cluster.local:6379
     connection:
       timeout: 1000
       maxTotal: 12
@@ -1426,7 +1427,7 @@ cache:
       usePrefix: false
     cluster:
       #nodes: wcf-redis.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
-      nodes: 10.168.88.21:6379,10.168.88.22:6379,10.168.88.31:6379,10.168.88.33:6379
+      nodes: redis-cluster-headless.redis-ns.svc.cluster.local:6379
     connection:
       maxIdle: 8
       maxTotal: 12
@@ -1434,6 +1435,7 @@ cache:
       timeout: 1000
     enableJmx: true
     enabled: true
+    password: Oa76N4jO5Q58
     jmxPrefix: prod
     mode: cluster
     name: l2cache-prod
@@ -1450,9 +1452,10 @@ lock:
     mode: cluster
     usePooling: true
     readTimeout: 1000
+    password: Oa76N4jO5Q58
     cluster:
       #nodes: wcf-redis.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
-      nodes: 10.168.88.21:6379,10.168.88.22:6379,10.168.88.31:6379,10.168.88.33:6379
+      nodes: redis-cluster-headless.redis-ns.svc.cluster.local:6379
     connection:
       timeout: 1000
       maxTotal: 12

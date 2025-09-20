@@ -39,7 +39,7 @@ session:
     enableJmx: true
     jmxPrefix: session-store:preprod
     cluster:
-      nodes: http://redis-wcf-preprod.prd.wcf.internal:6379
+      nodes: redis-wcf-preprod.prd.wcf.internal:6379
     connection:
       timeout: 1000
       maxTotal: 200
@@ -1526,7 +1526,7 @@ cache:
       ttl: 15
       usePrefix: false
     cluster:
-      nodes: http://redis-wcf-preprod.prd.wcf.internal:6379
+      nodes: redis-wcf-preprod.prd.wcf.internal:6379
     connection:
       maxIdle: 50
       maxTotal: 60
@@ -1556,7 +1556,7 @@ lock:
     enableJmx: true
     jmxPrefix: session-store:preprod
     cluster:
-      nodes: http://redis-wcf-preprod.prd.wcf.internal:6379
+      nodes: redis-wcf-preprod.prd.wcf.internal:6379
     connection:
       timeout: 1000
       maxTotal: 200

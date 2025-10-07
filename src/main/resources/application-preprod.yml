@@ -35,11 +35,11 @@ session:
     useSsl: false
     usePooling: true
     readTimeout: 1000
-    password: wcfredis12321
+    password: ##
     enableJmx: true
     jmxPrefix: session-store:preprod
     cluster:
-      nodes: redis-wcf-preprod.prd.wcf.internal:6379
+      nodes: 10.168.88.2:6379
     connection:
       timeout: 1000
       maxTotal: 200
@@ -1526,7 +1526,7 @@ cache:
       ttl: 15
       usePrefix: false
     cluster:
-      nodes: redis-wcf-preprod.prd.wcf.internal:6379
+      nodes: 10.168.88.2:6379
     connection:
       maxIdle: 50
       maxTotal: 60
@@ -1534,7 +1534,7 @@ cache:
       timeout: 2000
     enableJmx: true
     enabled: true
-    password: wcfredis12321
+    password: ##
     jmxPrefix: preprod
     mode: cluster
     name: l2cache-preprod
@@ -1552,11 +1552,11 @@ lock:
     useSsl: false
     usePooling: true
     readTimeout: 1000
-    password: wcfredis12321
+    password: ##
     enableJmx: true
     jmxPrefix: session-store:preprod
     cluster:
-      nodes: redis-wcf-preprod.prd.wcf.internal:6379
+      nodes: 10.168.88.2:6379
     connection:
       timeout: 1000
       maxTotal: 200

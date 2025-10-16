@@ -73,6 +73,8 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     private String morningPeakHours;
     @Value("${payment.recurring.peak.evening}")
     private String eveningPeakHours;
+    @Value("${payment.recurring.peak.night}")
+    private String nightPeakHours;
     @Value("${payment.npciRenewalWindowUpdate.preOffsetDays}")
     private int npciRenewalWindowUpdatePreOffsetDay;
     @Value("${payment.npciRenewalWindowUpdate.offset.day}")
@@ -250,12 +252,15 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
         int hour = calendar.get(Calendar.HOUR_OF_DAY);
         Set<Integer> morningPeak = parseHours(morningPeakHours);
         Set<Integer> eveningPeak = parseHours(eveningPeakHours);
+        Set<Integer> nightPeak = parseHours(nightPeakHours);
 
         if (morningPeak.contains(hour)) {
             calendar.set(Calendar.HOUR_OF_DAY, new Random().nextInt(4) + 6);
 
         } else if (eveningPeak.contains(hour)) {
             calendar.set(Calendar.HOUR_OF_DAY, new Random().nextInt(4) + 13);
+        } else if (nightPeak.contains(hour)) {
+            calendar.set(Calendar.HOUR_OF_DAY, new Random().nextInt(4) + 6);
         } else {
             return;
         }
@@ -279,7 +284,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
                 nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, CODE_TO_RENEW_OFFSET.get(code));
             }
         }
-        scheduleToNonPeakHours(nextRecurringDateTime);
+        scheduleToNonPeakHours(nextRecurringDateTime); //check
 
         String merchantTransactionEvent= renewal.getTransactionEvent().name();
         if (finalTransactionStatus== TransactionStatus.SUCCESS){

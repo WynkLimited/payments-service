@@ -284,7 +284,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
                 nextRecurringDateTime.add(Calendar.DAY_OF_MONTH, CODE_TO_RENEW_OFFSET.get(code));
             }
         }
-        scheduleToNonPeakHours(nextRecurringDateTime); //check
+        scheduleToNonPeakHours(nextRecurringDateTime);
 
         String merchantTransactionEvent= renewal.getTransactionEvent().name();
         if (finalTransactionStatus== TransactionStatus.SUCCESS){

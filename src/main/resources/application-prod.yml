@@ -111,6 +111,7 @@ payment:
     peak:
       morning: 10,11,12
       evening: 17,18,19,20,21
+      night: 22,23
     retry:
       day: 0
       hour: 1

@@ -37,4 +37,5 @@ public class TransactionKafkaMessage {
     private String payuId;
     @JsonUnwrapped
     private IAppDetails appDetails;
+    private String countryCode;
 }

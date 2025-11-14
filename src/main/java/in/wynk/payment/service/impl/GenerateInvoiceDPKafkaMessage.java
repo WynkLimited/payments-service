@@ -26,7 +26,6 @@ public class GenerateInvoiceDPKafkaMessage {
     private String optimusGstStateCode;
     private String geoLocationGstStateCode;
     private String defaultGstStateCode;
-    private GstStateCode gstStateCode;
 
     public static GenerateInvoiceDPKafkaMessage from(GenerateInvoiceRequest request, GstStateCode gstStateCode) {
         try {

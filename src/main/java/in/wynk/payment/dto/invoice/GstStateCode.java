@@ -7,7 +7,6 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@RequiredArgsConstructor
 @Builder
 public class GstStateCode {
     private String optimusGstStateCode;

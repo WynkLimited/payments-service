@@ -22,13 +22,16 @@ import in.wynk.payment.core.service.InvoiceDetailsCachingService;
 import in.wynk.payment.dto.PointDetails;
 import in.wynk.payment.dto.gpbs.request.GooglePlayProductDetails;
 import in.wynk.payment.dto.invoice.*;
+import in.wynk.payment.service.impl.GenerateInvoiceDPKafkaMessage;
 import in.wynk.stream.producer.IKafkaEventPublisher;
+import in.wynk.stream.service.IDataPlatformKafkaService;
 import in.wynk.subscription.common.dto.OfferDTO;
 import in.wynk.subscription.common.dto.PlanDTO;
 import in.wynk.vas.client.dto.MsisdnOperatorDetails;
 import in.wynk.vas.client.service.InvoiceVasClientService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -65,6 +68,7 @@ public class InvoiceManagerService implements InvoiceManager {
     private final IPurchaseDetailsManger purchaseDetailsManager;
     private final WynkRedisLockService wynkRedisLockService;
     private final IUserDetailsService userDetailsService;
+    private final IDataPlatformKafkaService dataPlatformKafkaService;
 
     @Override
     @ClientAware(clientAlias = "#request.clientAlias")
@@ -77,7 +81,10 @@ public class InvoiceManagerService implements InvoiceManager {
                     final IPurchaseDetails purchaseDetails = purchaseDetailsManager.get(transaction);
                     final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(request.getClientAlias());
                     final MsisdnOperatorDetails operatorDetails = userDetailsService.getOperatorDetails(request.getMsisdn());
-                    final String accessStateCode = userDetailsService.getAccessStateCode(operatorDetails, invoiceDetails.getDefaultGSTStateCode(), purchaseDetails);
+                    final GstStateCode gstStateCode = userDetailsService.getAccessStateCode(operatorDetails, invoiceDetails.getDefaultGSTStateCode(), purchaseDetails);
+                    final String accessStateCode = StringUtils.isNotEmpty(gstStateCode.getGeoLocationGstStateCode()) ?
+                            gstStateCode.getGeoLocationGstStateCode() :
+                            (StringUtils.isNotEmpty(gstStateCode.getOptimusGstStateCode()) ? gstStateCode.getOptimusGstStateCode() : gstStateCode.getDefaultGstStateCode());
                     AnalyticService.update(ACCESS_STATE_CODE, accessStateCode);
 
                     final TaxableRequest taxableRequest = TaxableRequest.builder()
@@ -94,6 +101,7 @@ public class InvoiceManagerService implements InvoiceManager {
                     publishInvoiceMessage(PublishInvoiceRequest.builder().transaction(transaction).operatorDetails(operatorDetails).purchaseDetails(purchaseDetails)
                             .taxableRequest(taxableRequest).taxableResponse(taxableResponse).invoiceDetails(invoiceDetails).uid(transaction.getUid())
                             .invoiceId(invoiceID).type(request.getType()).skipDelivery(request.getSkipDelivery()).build());
+                    dataPlatformKafkaService.publish(GenerateInvoiceDPKafkaMessage.from(request, gstStateCode));
                 } catch (WynkRuntimeException e) {
                     throw e;
                 } finally {

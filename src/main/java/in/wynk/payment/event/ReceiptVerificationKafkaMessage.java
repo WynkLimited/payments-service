@@ -36,6 +36,7 @@ public class ReceiptVerificationKafkaMessage {
     private String service;
     private String appId;
     private String skuId;
+    private String originalSid;
 
     public static ReceiptVerificationKafkaMessage from(IapVerificationRequest request, Transaction transaction) {
         try {
@@ -56,6 +57,7 @@ public class ReceiptVerificationKafkaMessage {
                     .os(request.getOs())
                     .service(request.getService())
                     .appId(request.getAppId())
+                    .originalSid(request.getSid())
                     .build();
         } catch (Exception e) {
             log.error(KAFKA_MESSAGE_CREATOR_ERROR, "Error in creating ReceiptVerificationKafkaMessage for request: {}", request, e);
@@ -81,6 +83,7 @@ public class ReceiptVerificationKafkaMessage {
                     .stateCode(request.getGeoLocation() != null ? request.getGeoLocation().getStateCode() : null)
                     .os(request.getAppDetails().getOs())
                     .appId(request.getAppDetails().getAppId())
+                    .originalSid(request.getSessionDetails() != null ? request.getSessionDetails().getSessionId() : null)
                     .build();
         } catch (Exception e) {
             log.error(KAFKA_MESSAGE_CREATOR_ERROR, "Error in creating ReceiptVerificationKafkaMessage for request: {}", request, e);

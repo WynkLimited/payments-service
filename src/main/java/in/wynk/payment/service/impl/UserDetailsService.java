@@ -7,6 +7,7 @@ import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.core.constant.PaymentLoggingMarker;
 import in.wynk.payment.core.dao.entity.IPurchaseDetails;
 import in.wynk.payment.core.service.GSTStateCodesCachingService;
+import in.wynk.payment.dto.invoice.GstStateCode;
 import in.wynk.payment.service.IUserDetailsService;
 import in.wynk.vas.client.dto.MsisdnOperatorDetails;
 import in.wynk.vas.client.service.VasClientService;
@@ -31,7 +32,7 @@ public class UserDetailsService implements IUserDetailsService {
     private final VasClientService vasClientService;
 
     @Override
-    public String getAccessStateCode (MsisdnOperatorDetails operatorDetails, String DefaultStateCode, IPurchaseDetails purchaseDetails) {
+    public GstStateCode getAccessStateCode(MsisdnOperatorDetails operatorDetails, String DefaultStateCode, IPurchaseDetails purchaseDetails) {
         String gstStateCode = (Strings.isNullOrEmpty(DefaultStateCode)) ? DEFAULT_ACCESS_STATE_CODE : DefaultStateCode;
         AnalyticService.update(DEFAULT_GST_STATE_CODE, gstStateCode);
         try {
@@ -44,7 +45,10 @@ public class UserDetailsService implements IUserDetailsService {
                 }
                 AnalyticService.update(OPTIMUS_GST_STATE_CODE, optimusGSTStateCode);
                 if (stateCodesCachingService.containsKey(optimusGSTStateCode)) {
-                    return optimusGSTStateCode;
+                    return GstStateCode.builder()
+                            .defaultGstStateCode(gstStateCode)
+                            .optimusGstStateCode(optimusGSTStateCode)
+                            .build();
                 }
             }
             if (Objects.nonNull(purchaseDetails) &&
@@ -54,14 +58,19 @@ public class UserDetailsService implements IUserDetailsService {
                 if (stateCodesCachingService.containsByISOStateCode(geoLocationISOStateCode)) {
                     gstStateCode = stateCodesCachingService.getByISOStateCode(geoLocationISOStateCode).getId();
                     AnalyticService.update(GEOLOCATION_GST_STATE_CODE, gstStateCode);
-                    return gstStateCode;
+                    return GstStateCode.builder()
+                            .defaultGstStateCode(gstStateCode)
+                            .geoLocationGstStateCode(gstStateCode)
+                            .build();
                 }
             }
         } catch (Exception ex) {
             log.error(PaymentLoggingMarker.GST_STATE_CODE_FAILURE, ex.getMessage(), ex);
             throw new WynkRuntimeException(PaymentErrorType.PAY441, ex);
         }
-        return gstStateCode;
+        return GstStateCode.builder()
+                .defaultGstStateCode(gstStateCode)
+                .build();
     }
 
     @Override

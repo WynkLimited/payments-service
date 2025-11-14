@@ -46,6 +46,7 @@ import in.wynk.payment.dto.gpbs.response.receipt.AbstractGooglePlayReceiptVerifi
 import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayLatestReceiptResponse;
 import in.wynk.payment.dto.gpbs.response.receipt.GooglePlayProductReceiptResponse;
 import in.wynk.payment.dto.gpbs.response.receipt.GooglePlaySubscriptionReceiptResponse;
+import in.wynk.payment.dto.invoice.GstStateCode;
 import in.wynk.payment.dto.invoice.TaxableRequest;
 import in.wynk.payment.dto.invoice.TaxableResponse;
 import in.wynk.payment.dto.request.AbstractTransactionReconciliationStatusRequest;
@@ -564,8 +565,13 @@ public class GooglePlayMerchantPaymentService extends AbstractMerchantPaymentSta
         AnalyticService.update(request);
         final MsisdnOperatorDetails operatorDetails = userDetailsService.getOperatorDetails(request.getTransaction().getMsisdn());
         final InvoiceDetails invoiceDetails = invoiceDetailsCachingService.get(request.getClientAlias());
-        final String accessStateCode = userDetailsService.getAccessStateCode(operatorDetails, invoiceDetails.getDefaultGSTStateCode(), request.getPurchaseDetails());
-        GSTStateCodes gstStateCodes = stateCodesCachingService.get(accessStateCode);
+        final GstStateCode gstStateCode = userDetailsService.getAccessStateCode(operatorDetails, invoiceDetails.getDefaultGSTStateCode(), request.getPurchaseDetails());
+        final String accessStateCode = StringUtils.isNotEmpty(gstStateCode.getGeoLocationGstStateCode()) ?
+                gstStateCode.getGeoLocationGstStateCode() :
+                (StringUtils.isNotEmpty(gstStateCode.getOptimusGstStateCode())
+                        ? gstStateCode.getOptimusGstStateCode()
+                        : gstStateCode.getDefaultGstStateCode());
+        GSTStateCodes gstStateCodes = stateCodesCachingService.get(gstStateCode.getGeoLocationGstStateCode());
 
         String service = request.getPurchaseDetails().getAppDetails().getService();
         String packageName = MerchantServiceUtil.getPackageFromService(service);

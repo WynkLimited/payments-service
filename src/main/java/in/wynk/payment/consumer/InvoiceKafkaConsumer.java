@@ -43,8 +43,8 @@ public class InvoiceKafkaConsumer extends AbstractKafkaEventConsumer<String, Inv
             invoiceHandler.generateInvoice(message);
         } else if (CallbackInvoiceKafkaMessage.class.isAssignableFrom(message.getClass())) {
             invoiceHandler.processCallback(message);
+            dataPlatformKafkaService.publish(GenerateInvoiceDPKafkaMessage.from(message));
         }
-        dataPlatformKafkaService.publish(GenerateInvoiceDPKafkaMessage.from(message));
     }
 
     @KafkaListener(id = "generateInvoiceListener", topics = "${wynk.kafka.consumers.listenerFactory.invoice[0].factoryDetails.topic}", containerFactory = "${wynk.kafka.consumers.listenerFactory.invoice[0].name}")

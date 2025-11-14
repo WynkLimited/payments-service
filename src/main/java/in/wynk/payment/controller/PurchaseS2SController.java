@@ -5,7 +5,9 @@ import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.dto.IPresentation;
 import in.wynk.payment.dto.BestValuePlanPurchaseRequest;
 import in.wynk.payment.dto.BestValuePlanResponse;
+import in.wynk.payment.event.PurchaseRequestKafkaMessage;
 import in.wynk.payment.service.ISubscriptionServiceManager;
+import in.wynk.stream.service.IDataPlatformKafkaService;
 import in.wynk.subscription.common.request.SessionRequest;
 import in.wynk.common.dto.SessionResponse;
 import in.wynk.common.dto.WynkResponseEntity;
@@ -37,6 +39,7 @@ public class PurchaseS2SController {
     private final IPurchaseSessionService sessionService;
 
     private final ISubscriptionServiceManager iSubscriptionServiceManager;
+    private final IDataPlatformKafkaService dataPlatformKafkaService;
 
     @PostMapping("/v1/point/purchase")
     @AnalyseTransaction(name = "pointPurchase")
@@ -61,6 +64,7 @@ public class PurchaseS2SController {
         final WynkResponseEntity<SessionResponse.SessionData> response = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPresentation<WynkResponseEntity<SessionResponse.SessionData>, Pair<String, PurchaseRequest>>>() {
         }).transform(Pair.of(sid, request));
         AnalyticService.update(response.getBody());
+        dataPlatformKafkaService.publish(PurchaseRequestKafkaMessage.from(request, response));
         return response;
     }
     @SneakyThrows

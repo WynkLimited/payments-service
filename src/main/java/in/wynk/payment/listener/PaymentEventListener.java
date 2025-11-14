@@ -709,6 +709,7 @@ public class PaymentEventListener {
             AnalyticService.update(STATE_CODE, event.getPurchaseDetails().getGeoLocation().getStateCode());
             AnalyticService.update(IP, event.getPurchaseDetails().getGeoLocation().getIp());
             analyticsBuilder.accessCountryCode(event.getPurchaseDetails().getGeoLocation().getAccessCountryCode())
+                    .countryCode(event.getPurchaseDetails().getGeoLocation().getCountryCode())
                     .stateCode(event.getPurchaseDetails().getGeoLocation().getStateCode())
                     .ip(event.getPurchaseDetails().getGeoLocation().getIp());
         }

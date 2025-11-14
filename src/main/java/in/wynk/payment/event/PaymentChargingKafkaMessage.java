@@ -33,6 +33,7 @@ public class PaymentChargingKafkaMessage {
     private String productType;
     private String stateCode;
     private String paymentId;
+    private String sid;
 
     public static PaymentChargingKafkaMessage from(AbstractPaymentChargingRequest request, Transaction transaction) {
         try {
@@ -48,6 +49,7 @@ public class PaymentChargingKafkaMessage {
                     .paymentCode(request.getPaymentCode() != null ? request.getPaymentCode().getCode() : null)
                     .paymentMethod(request.getPaymentCode() != null ? request.getPaymentCode().getCode() : null)
                     .paymentMode(request.getPaymentDetails() != null ? request.getPaymentDetails().getPaymentMode() : null)
+                    .sid(request.getSessionDetails() != null ? request.getSessionDetails().getSessionId() : null)
                     .os(request.getOs())
                     .service(request.getService())
                     .bankName(request.getPaymentDetails() != null ? request.getPaymentDetails().getMerchantName() : null)

@@ -1,8 +1,6 @@
 package in.wynk.payment.service.impl;
 
-import in.wynk.payment.dto.invoice.CallbackInvoiceKafkaMessage;
-import in.wynk.payment.dto.invoice.GenerateInvoiceKafkaMessage;
-import in.wynk.payment.dto.invoice.InvoiceKafkaMessage;
+import in.wynk.payment.dto.invoice.*;
 import in.wynk.stream.advice.KafkaEvent;
 import lombok.Builder;
 import lombok.Getter;
@@ -25,6 +23,27 @@ public class GenerateInvoiceDPKafkaMessage {
     private String invoiceId;
     private String status;
     private String description;
+    private String optimusGstStateCode;
+    private String geoLocationGstStateCode;
+    private String defaultGstStateCode;
+    private GstStateCode gstStateCode;
+
+    public static GenerateInvoiceDPKafkaMessage from(GenerateInvoiceRequest request, GstStateCode gstStateCode) {
+        try {
+            return GenerateInvoiceDPKafkaMessage.builder()
+                    .txnId(request.getTxnId())
+                    .type(request.getType())
+                    .skip_delivery(request.getSkipDelivery())
+                    .msisdn(request.getMsisdn())
+                    .defaultGstStateCode(gstStateCode != null ? gstStateCode.getDefaultGstStateCode() : null)
+                    .geoLocationGstStateCode(gstStateCode != null ? gstStateCode.getGeoLocationGstStateCode() : null)
+                    .optimusGstStateCode(gstStateCode != null ? gstStateCode.getOptimusGstStateCode() : null)
+                    .build();
+        } catch (Exception ex) {
+            log.error(KAFKA_MESSAGE_CREATOR_ERROR, "Error in creating GenerateInvoiceKafkaMessage for request: {}", request, ex);
+        }
+        return null;
+    }
 
     public static GenerateInvoiceDPKafkaMessage from(InvoiceKafkaMessage request) {
         try {

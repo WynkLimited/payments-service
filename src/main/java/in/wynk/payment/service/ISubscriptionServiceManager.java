@@ -25,7 +25,7 @@ public interface ISubscriptionServiceManager {
         }
     }
 
-    ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> renewalPlanEligibilityResponse (int planId, String uid);
+    ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> renewalPlanEligibilityResponse(int planId, String uid, String msisdn);
 
     boolean isDeferred (String paymentMethod, long furtherDefer, boolean isPreDebitFlow);
 

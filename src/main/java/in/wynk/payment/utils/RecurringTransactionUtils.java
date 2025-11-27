@@ -168,7 +168,7 @@ public class RecurringTransactionUtils {
     public boolean isEligibleForRenewal (Transaction transaction, boolean isPreDebitFlow) {
         if (!isPlanDeprecated(transaction)) {
             ResponseEntity<WynkResponse.WynkResponseWrapper<RenewalPlanEligibilityResponse>> response =
-                    subscriptionServiceManager.renewalPlanEligibilityResponse(transaction.getPlanId(), transaction.getUid());
+                    subscriptionServiceManager.renewalPlanEligibilityResponse(transaction.getPlanId(), transaction.getUid(), transaction.getMsisdn());
             if (Objects.nonNull(response.getBody()) && Objects.nonNull(response.getBody().getData())) {
                 RenewalPlanEligibilityResponse renewalPlanEligibilityResponse = response.getBody().getData();
                 long today = System.currentTimeMillis();

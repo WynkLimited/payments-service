@@ -24,8 +24,7 @@ import in.wynk.payment.dto.addtobill.AddToBillUserSubscriptionStatusTask;
 import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.request.AbstractTransactionRevisionRequest;
 import in.wynk.payment.dto.request.MigrationTransactionRevisionRequest;
-import in.wynk.payment.dto.request.PaymentRenewalRequest;
-import in.wynk.payment.dto.request.RenewNotificationRequest;
+
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.PaymentCachingService;
@@ -201,9 +200,9 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
         return getPaymentRenewalStream(duePreDebitNotificationOffsetDay, duePreDebitNotificationOffsetTime, preDebitNotificationPreOffsetDay);
     }
     @Override
-    @Transactional(source = "payments")
-    public Stream<PaymentRenewal> getCurrentDueNotifications(RenewNotificationRequest request) {
-        return getPaymentRenewalStream(request.getOffsetDay(), request.getOffsetHour(), request.getPreOffsetDay());
+    @Transactional(transactionManager = "#clientAlias", source = "payments")
+    public Stream<PaymentRenewal> getCurrentDueNotifications(String clientAlias, int offsetDay, int offsetTime, int preOffsetDays){
+        return getPaymentRenewalStream(offsetDay, offsetTime, preOffsetDays);
     }
 
     @Override
@@ -212,9 +211,9 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
         return getPaymentRenewalStream(dueRecurringOffsetDay, dueRecurringOffsetTime, 0);
     }
     @Override
-    @Transactional(source = "payments")
-    public Stream<PaymentRenewal> getCurrentDueRecurringPayments (PaymentRenewalRequest request) {
-        return getPaymentRenewalStream(request.getOffsetDay(), request.getOffsetTime(), 0);
+    @Transactional(transactionManager = "#clientAlias", source = "payments")
+    public Stream<PaymentRenewal> getCurrentDueRecurringPayments(String clientAlias, int offsetDay, int offsetTime, int preOffsetDays) {
+        return getPaymentRenewalStream(offsetDay, offsetTime, preOffsetDays);
     }
 
     @Override

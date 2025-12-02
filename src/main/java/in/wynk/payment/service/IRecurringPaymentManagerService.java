@@ -5,8 +5,6 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.request.AbstractTransactionRevisionRequest;
-import in.wynk.payment.dto.request.PaymentRenewalRequest;
-import in.wynk.payment.dto.request.RenewNotificationRequest;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -16,10 +14,11 @@ import java.util.stream.Stream;
 public interface IRecurringPaymentManagerService {
 
     Stream<PaymentRenewal> getCurrentDueNotifications (String clientAlias);
-    Stream<PaymentRenewal> getCurrentDueNotifications(RenewNotificationRequest request);
+    Stream<PaymentRenewal> getCurrentDueNotifications(String clientAlias, int offsetDay, int offsetTime, int preOffsetDays);
 
     Stream<PaymentRenewal> getCurrentDueRecurringPayments (String clientAlias);
-    Stream<PaymentRenewal> getCurrentDueRecurringPayments (PaymentRenewalRequest request);
+    Stream<PaymentRenewal> getCurrentDueRecurringPayments(String clientAlias, int offsetDay, int offsetTime, int preOffsetDays);
+
     void scheduleRecurringPayment (AbstractTransactionRevisionRequest request);
 
     void updateRenewalEntry (String transactionId, String lastSuccessTransactionId, PaymentEvent event, String code, Calendar nextRecurringDateTime,

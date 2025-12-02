@@ -3,8 +3,6 @@ package in.wynk.payment.controller;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import in.wynk.client.service.ClientDetailsCachingService;
 import in.wynk.common.dto.EmptyResponse;
-import in.wynk.payment.dto.request.PaymentRenewalRequest;
-import in.wynk.payment.dto.request.RenewNotificationRequest;
 import in.wynk.payment.scheduler.PaymentRenewalsScheduler;
 import in.wynk.payment.scheduler.PaymentTDRScheduler;
 import lombok.RequiredArgsConstructor;
@@ -42,16 +40,17 @@ public class SchedulerController {
     }
 
 
-    @GetMapping("/start/renewals/param")
-    @AnalyseTransaction(name = "paramPaymentRenew")
-    public EmptyResponse startPaymentRenew(@RequestParam int offsetDay, @RequestParam int offsetTime) {
+    @GetMapping("/start/renewals/custom")
+    @AnalyseTransaction(name = "customPaymentRenew")
+    public EmptyResponse startPaymentRenew(@RequestParam int offsetDay, @RequestParam int offsetTime, @RequestParam int preOffsetDays) {
         String requestId = MDC.get(REQUEST_ID);
-        PaymentRenewalRequest request = new PaymentRenewalRequest();
-        request.setOffsetDay(offsetDay);
-        request.setOffsetTime(offsetTime);
-        executorService.submit(() -> paymentRenewalsScheduler.paymentRenew(requestId, request));
-        return EmptyResponse.response();
+        String clientId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        String clientAlias = cachingService.getClientById(clientId).getAlias();
+
+        executorService.submit(() -> paymentRenewalsScheduler.paymentRenewCustom(requestId, clientAlias, offsetDay, offsetTime, preOffsetDays));
+        return EmptyResponse.builder().build();
     }
+
 
     @GetMapping("/start/prepareRenewals")
     @AnalyseTransaction(name = "prepareNextDayRenewalWindow")
@@ -80,17 +79,13 @@ public class SchedulerController {
         executorService.submit(() -> paymentRenewalsScheduler.sendNotifications(requestId, cachingService.getClientById(clientId).getAlias()));
         return EmptyResponse.response();
     }
-
-    @GetMapping("/send/notifications/param")
-    @AnalyseTransaction(name = "paramRenewNotification")
-    public EmptyResponse startRenewNotification(@RequestParam int offsetDay, @RequestParam int offsetHour, @RequestParam int preOffsetDay) {
+    @GetMapping("/send/notifications/custom")
+    @AnalyseTransaction(name = "customRenewNotification")
+    public EmptyResponse startRenewNotificationCustom(@RequestParam int offsetDay, @RequestParam int offsetTime, @RequestParam int preOffsetDays) {
         String requestId = MDC.get(REQUEST_ID);
-
-        RenewNotificationRequest request = new RenewNotificationRequest();
-        request.setOffsetDay(offsetDay);
-        request.setOffsetHour(offsetHour);
-        request.setPreOffsetDay(preOffsetDay);
-        executorService.submit(() -> paymentRenewalsScheduler.sendNotifications(requestId, request));
+        String clientId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        String clientAlias = cachingService.getClientById(clientId).getAlias();
+        executorService.submit(() -> paymentRenewalsScheduler.sendNotificationsCustom(requestId, clientAlias, offsetDay, offsetTime, preOffsetDays));
         return EmptyResponse.response();
     }
 

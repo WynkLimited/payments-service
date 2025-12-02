@@ -7,6 +7,8 @@ import in.wynk.client.data.aspect.advice.Transactional;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.dto.PaymentRenewalMessage;
 import in.wynk.payment.dto.PreDebitNotificationMessageManager;
+import in.wynk.payment.dto.request.PaymentRenewalRequest;
+import in.wynk.payment.dto.request.RenewNotificationRequest;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ITransactionManagerService;
 import in.wynk.payment.utils.RecurringTransactionUtils;
@@ -54,6 +56,19 @@ public class PaymentRenewalsScheduler {
         AnalyticService.update("class", this.getClass().getSimpleName());
         AnalyticService.update("clientAlias", clientAlias);
         List<PaymentRenewal> paymentRenewals = recurringPaymentManager.getCurrentDueRecurringPayments(clientAlias)
+                .filter(paymentRenewal -> (paymentRenewal.getTransactionEvent() == RENEW || paymentRenewal.getTransactionEvent() == SUBSCRIBE || paymentRenewal.getTransactionEvent() == DEFERRED))
+                .collect(Collectors.toList());
+        List<PaymentRenewal> renewals = filterbyLastSuccessTransaction(paymentRenewals);
+        sendToRenewalQueue(renewals);
+        AnalyticService.update("paymentRenewalsCompleted", true);
+    }
+
+    @Transactional(source = "payments")
+    public void paymentRenew(String requestId, PaymentRenewalRequest request) {
+        MDC.put(REQUEST_ID, requestId);
+        AnalyticService.update(REQUEST_ID, requestId);
+        AnalyticService.update("class", this.getClass().getSimpleName());
+        List<PaymentRenewal> paymentRenewals = recurringPaymentManager.getCurrentDueRecurringPayments(request)
                 .filter(paymentRenewal -> (paymentRenewal.getTransactionEvent() == RENEW || paymentRenewal.getTransactionEvent() == SUBSCRIBE || paymentRenewal.getTransactionEvent() == DEFERRED))
                 .collect(Collectors.toList());
         List<PaymentRenewal> renewals = filterbyLastSuccessTransaction(paymentRenewals);
@@ -144,6 +159,21 @@ public class PaymentRenewalsScheduler {
         AnalyticService.update("transactionsSizeAfterLastSuccessFilter", renewals.size());
         renewals.forEach(paymentRenewal -> publishPreDebitNotificationMessage(
                 PreDebitNotificationMessageManager.builder().clientAlias(clientAlias).transactionId(paymentRenewal.getTransactionId()).build()));
+        AnalyticService.update("renewNotificationsCompleted", true);
+    }
+    @AnalyseTransaction(name = "renewNotifications")
+    @Transactional(source = "payments")
+    public void sendNotifications(String requestId,  RenewNotificationRequest request) {
+        MDC.put(REQUEST_ID, requestId);
+        AnalyticService.update(REQUEST_ID, requestId);
+        AnalyticService.update("class", this.getClass().getSimpleName());
+        List<PaymentRenewal> paymentRenewals = recurringPaymentManager.getCurrentDueNotifications(request)
+                .filter(paymentRenewal -> checkPreDebitEligibility(paymentRenewal.getTransactionId()) &&
+                        (paymentRenewal.getTransactionEvent() == RENEW || paymentRenewal.getTransactionEvent() == SUBSCRIBE || paymentRenewal.getTransactionEvent() == DEFERRED))
+                .collect(Collectors.toList());
+        AnalyticService.update("transactionsPickedSize", paymentRenewals.size());
+        List<PaymentRenewal> renewals = filterbyLastSuccessTransaction(paymentRenewals);
+        AnalyticService.update("transactionsSizeAfterLastSuccessFilter", renewals.size());
         AnalyticService.update("renewNotificationsCompleted", true);
     }
 

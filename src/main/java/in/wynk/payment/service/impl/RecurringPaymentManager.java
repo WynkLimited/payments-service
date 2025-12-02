@@ -24,6 +24,8 @@ import in.wynk.payment.dto.addtobill.AddToBillUserSubscriptionStatusTask;
 import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.request.AbstractTransactionRevisionRequest;
 import in.wynk.payment.dto.request.MigrationTransactionRevisionRequest;
+import in.wynk.payment.dto.request.PaymentRenewalRequest;
+import in.wynk.payment.dto.request.RenewNotificationRequest;
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.PaymentCachingService;
@@ -198,11 +200,21 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     public Stream<PaymentRenewal> getCurrentDueNotifications (String clientAlias) {
         return getPaymentRenewalStream(duePreDebitNotificationOffsetDay, duePreDebitNotificationOffsetTime, preDebitNotificationPreOffsetDay);
     }
+    @Override
+    @Transactional(source = "payments")
+    public Stream<PaymentRenewal> getCurrentDueNotifications(RenewNotificationRequest request) {
+        return getPaymentRenewalStream(request.getOffsetDay(), request.getOffsetHour(), request.getPreOffsetDay());
+    }
 
     @Override
     @Transactional(transactionManager = "#clientAlias", source = "payments")
     public Stream<PaymentRenewal> getCurrentDueRecurringPayments (String clientAlias) {
         return getPaymentRenewalStream(dueRecurringOffsetDay, dueRecurringOffsetTime, 0);
+    }
+    @Override
+    @Transactional(source = "payments")
+    public Stream<PaymentRenewal> getCurrentDueRecurringPayments (PaymentRenewalRequest request) {
+        return getPaymentRenewalStream(request.getOffsetDay(), request.getOffsetTime(), 0);
     }
 
     @Override

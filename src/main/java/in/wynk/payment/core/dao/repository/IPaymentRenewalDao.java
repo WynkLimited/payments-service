@@ -17,6 +17,9 @@ import java.util.stream.Stream;
 
 @Repository(BeanConstant.PAYMENT_RENEWAL_DAO)
 public interface IPaymentRenewalDao extends JpaRepository<PaymentRenewal, String> {
+    @Query("SELECT p FROM PaymentRenewal p " + "WHERE FUNCTION('TIMESTAMP', p.day, p.hour) BETWEEN :startDateTime AND :endDateTime")
+    Stream<PaymentRenewal> getRecordsBetweenDateTime(@Param("startDateTime") Date startDateTime,
+                                                     @Param("endDateTime") Date endDateTime);
 
     @Query("SELECT p FROM PaymentRenewal p WHERE p.day BETWEEN :currentDay AND :currentDayWithOffset AND p.hour BETWEEN :currentTime AND :currentTimeWithOffset")
     Stream<PaymentRenewal> getRecurrentPayment (@Param("currentDay") Calendar currentDay,

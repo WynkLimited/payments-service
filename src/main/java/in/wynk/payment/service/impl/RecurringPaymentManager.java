@@ -201,7 +201,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     }
     @Override
     @Transactional(transactionManager = "#clientAlias", source = "payments")
-    public Stream<PaymentRenewal> getCurrentDueNotifications(String clientAlias, int offsetDay, int offsetTime, int preOffsetDays){
+    public Stream<PaymentRenewal> getCustomCurrentDueNotifications(String clientAlias, int offsetDay, int offsetTime, int preOffsetDays){
         return getPaymentRenewalStream(offsetDay, offsetTime, preOffsetDays);
     }
 
@@ -212,7 +212,7 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     }
     @Override
     @Transactional(transactionManager = "#clientAlias", source = "payments")
-    public Stream<PaymentRenewal> getCurrentDueRecurringPayments(String clientAlias, int offsetDay, int offsetTime, int preOffsetDays) {
+    public Stream<PaymentRenewal> getCustomCurrentDueRecurringPayments(String clientAlias, int offsetDay, int offsetTime, int preOffsetDays) {
         return getPaymentRenewalStream(offsetDay, offsetTime, preOffsetDays);
     }
 
@@ -248,9 +248,17 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
             currentDayTimeWithOffset.set(Calendar.MILLISECOND, 999);
             final Date[] lowerRangeBound = new Date[]{currentTime, currentDayTimeWithOffset.getTime()};
             final Date[] upperRangeBound = new Date[]{currentDay.getTime(), currentTimeWithOffset};
+            Stream<PaymentRenewal> temp = Stream.concat(
+                    paymentRenewalDao.getRecurrentPayment(currentDay, currentDay, lowerRangeBound[0], upperRangeBound[0]),
+                    paymentRenewalDao.getRecurrentPayment(currentDayTimeWithOffset, currentDayTimeWithOffset, lowerRangeBound[1], upperRangeBound[1])
+            );
+            temp.findFirst().ifPresent(r -> log.info("TEMP FIRST ROW DEBUG === {}", r));
             return Stream.concat(paymentRenewalDao.getRecurrentPayment(currentDay, currentDay, lowerRangeBound[0], upperRangeBound[0]),
                     paymentRenewalDao.getRecurrentPayment(currentDayTimeWithOffset, currentDayTimeWithOffset, lowerRangeBound[1], upperRangeBound[1]));
         }
+        Stream<PaymentRenewal> temp =
+                paymentRenewalDao.getRecurrentPayment(currentDay, currentDayTimeWithOffset, currentTime, currentTimeWithOffset);
+        temp.findFirst().ifPresent(r -> log.info("TEMP FIRST ROW DEBUG === {}", r));
         return paymentRenewalDao.getRecurrentPayment(currentDay, currentDayTimeWithOffset, currentTime, currentTimeWithOffset);
     }
 

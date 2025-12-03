@@ -66,14 +66,9 @@ public class PaymentRenewalsScheduler {
     public void paymentRenewCustom(String requestId, String clientAlias, int offsetDay, int offsetTime, int preOffsetDays) {
         MDC.put(REQUEST_ID, requestId);
         AnalyticService.update(REQUEST_ID, requestId);
-        List<PaymentRenewal> paymentRenewals = recurringPaymentManager.getCurrentDueRecurringPayments(clientAlias, offsetDay, offsetTime, preOffsetDays)
+        List<PaymentRenewal> paymentRenewals = recurringPaymentManager.getCustomCurrentDueRecurringPayments(clientAlias, offsetDay, offsetTime, preOffsetDays)
                         .filter(p -> (p.getTransactionEvent() == RENEW || p.getTransactionEvent() == SUBSCRIBE || p.getTransactionEvent() == DEFERRED))
                         .collect(Collectors.toList());
-
-        log.info("=== PREPROD DB RESPONSE START ===");
-        log.info("Total records picked: {}", paymentRenewals.size());
-        paymentRenewals.forEach(r -> log.info("DB RECORD: {}", r));
-        log.info("=== PREPROD DB RESPONSE END ===");
         List<PaymentRenewal> renewals = filterbyLastSuccessTransaction(paymentRenewals);
         sendToRenewalQueue(renewals);
     }
@@ -171,15 +166,9 @@ public class PaymentRenewalsScheduler {
         AnalyticService.update(REQUEST_ID, requestId);
         AnalyticService.update("clientAlias", clientAlias);
 
-        List<PaymentRenewal> paymentRenewals = recurringPaymentManager.getCurrentDueNotifications(clientAlias, offsetDay, offsetTime, preOffsetDays)
+        List<PaymentRenewal> paymentRenewals = recurringPaymentManager.getCustomCurrentDueNotifications(clientAlias, offsetDay, offsetTime, preOffsetDays)
                         .filter(paymentRenewal -> checkPreDebitEligibility(paymentRenewal.getTransactionId()) && (paymentRenewal.getTransactionEvent() == RENEW || paymentRenewal.getTransactionEvent() == SUBSCRIBE || paymentRenewal.getTransactionEvent() == DEFERRED))
                         .collect(Collectors.toList());
-        log.info("=== PREPROD CUSTOM NOTIFICATION DB RESPONSE START ===");
-        log.info("Total records picked: {}", paymentRenewals.size());
-        paymentRenewals.forEach(r ->
-                log.info("DB RECORD: {}", r)
-        );
-        log.info("=== PREPROD CUSTOM NOTIFICATION DB RESPONSE END ===");
         AnalyticService.update("transactionsPickedSize", paymentRenewals.size());
         List<PaymentRenewal> renewals = filterbyLastSuccessTransaction(paymentRenewals);
         AnalyticService.update("transactionsSizeAfterLastSuccessFilter", renewals.size());

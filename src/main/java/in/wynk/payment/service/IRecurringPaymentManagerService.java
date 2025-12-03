@@ -14,10 +14,10 @@ import java.util.stream.Stream;
 public interface IRecurringPaymentManagerService {
 
     Stream<PaymentRenewal> getCurrentDueNotifications (String clientAlias);
-    Stream<PaymentRenewal> getCurrentDueNotifications(String clientAlias, int offsetDay, int offsetTime, int preOffsetDays);
+    Stream<PaymentRenewal> getCustomCurrentDueNotifications(String clientAlias, int offsetDay, int offsetTime, int preOffsetDays);
 
     Stream<PaymentRenewal> getCurrentDueRecurringPayments (String clientAlias);
-    Stream<PaymentRenewal> getCurrentDueRecurringPayments(String clientAlias, int offsetDay, int offsetTime, int preOffsetDays);
+    Stream<PaymentRenewal> getCustomCurrentDueRecurringPayments(String clientAlias, int offsetDay, int offsetTime, int preOffsetDays);
 
     void scheduleRecurringPayment (AbstractTransactionRevisionRequest request);
 

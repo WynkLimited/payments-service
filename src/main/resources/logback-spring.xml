@@ -360,6 +360,18 @@
     <logger name="paymentRenew" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>
+    <logger name="customPaymentRenew" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+    <logger name="customRenewNotification" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+    <logger name="customPaymentRenewals" additivity="false" level="INFO">
+    <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
+    <logger name="customRenewNotification" additivity="false" level="INFO">
+    <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
+    </logger>
     <logger name="sePaymentRenew" additivity="false" level="INFO">
         <appender-ref ref="ASYNC_ANALYTIC_LOG_FILE"/>
     </logger>

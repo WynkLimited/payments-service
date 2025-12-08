@@ -24,6 +24,7 @@ import in.wynk.payment.dto.addtobill.AddToBillUserSubscriptionStatusTask;
 import in.wynk.payment.dto.aps.common.ApsConstant;
 import in.wynk.payment.dto.request.AbstractTransactionRevisionRequest;
 import in.wynk.payment.dto.request.MigrationTransactionRevisionRequest;
+
 import in.wynk.payment.service.IRecurringPaymentManagerService;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.payment.service.PaymentCachingService;
@@ -39,6 +40,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
+import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalTime;
@@ -198,11 +200,21 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     public Stream<PaymentRenewal> getCurrentDueNotifications (String clientAlias) {
         return getPaymentRenewalStream(duePreDebitNotificationOffsetDay, duePreDebitNotificationOffsetTime, preDebitNotificationPreOffsetDay);
     }
+    @Override
+    @Transactional(transactionManager = "#clientAlias", source = "payments")
+    public Stream<PaymentRenewal> getCustomCurrentDueNotifications(String clientAlias, String startDateTime, String endDateTime) {
+        return getRecordsBetween(startDateTime, endDateTime);
+    }
 
     @Override
     @Transactional(transactionManager = "#clientAlias", source = "payments")
     public Stream<PaymentRenewal> getCurrentDueRecurringPayments (String clientAlias) {
         return getPaymentRenewalStream(dueRecurringOffsetDay, dueRecurringOffsetTime, 0);
+    }
+    @Override
+    @Transactional(transactionManager = "#clientAlias", source = "payments")
+    public Stream<PaymentRenewal> getCustomCurrentDueRecurringPayments(String clientAlias, String startDateTime, String endDateTime){
+        return getRecordsBetween(startDateTime, endDateTime);
     }
 
     @Override
@@ -237,11 +249,30 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
             currentDayTimeWithOffset.set(Calendar.MILLISECOND, 999);
             final Date[] lowerRangeBound = new Date[]{currentTime, currentDayTimeWithOffset.getTime()};
             final Date[] upperRangeBound = new Date[]{currentDay.getTime(), currentTimeWithOffset};
+            Stream<PaymentRenewal> temp = Stream.concat(
+                    paymentRenewalDao.getRecurrentPayment(currentDay, currentDay, lowerRangeBound[0], upperRangeBound[0]),
+                    paymentRenewalDao.getRecurrentPayment(currentDayTimeWithOffset, currentDayTimeWithOffset, lowerRangeBound[1], upperRangeBound[1])
+            );
+            temp.findFirst().ifPresent(r -> log.info("TEMP FIRST ROW DEBUG === {}", r));
             return Stream.concat(paymentRenewalDao.getRecurrentPayment(currentDay, currentDay, lowerRangeBound[0], upperRangeBound[0]),
                     paymentRenewalDao.getRecurrentPayment(currentDayTimeWithOffset, currentDayTimeWithOffset, lowerRangeBound[1], upperRangeBound[1]));
         }
+        Stream<PaymentRenewal> temp =
+                paymentRenewalDao.getRecurrentPayment(currentDay, currentDayTimeWithOffset, currentTime, currentTimeWithOffset);
+        temp.findFirst().ifPresent(r -> log.info("TEMP FIRST ROW DEBUG === {}", r));
         return paymentRenewalDao.getRecurrentPayment(currentDay, currentDayTimeWithOffset, currentTime, currentTimeWithOffset);
     }
+    public Stream<PaymentRenewal> getRecordsBetween(String startDateTime, String endDateTime) {
+        Date start = Timestamp.valueOf(startDateTime.replace("T", " "));
+        Date end = Timestamp.valueOf(endDateTime.replace("T", " "));
+
+        IPaymentRenewalDao paymentRenewalDao = RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), IPaymentRenewalDao.class);
+        Stream<PaymentRenewal> stream = paymentRenewalDao.getRecordsBetweenDateTime(start, end);
+        stream.findFirst().ifPresent(r ->
+                log.info("DEBUG FIRST ROW BETWEEN RANGE === {}", r));
+        return paymentRenewalDao.getRecordsBetweenDateTime(start, end);
+    }
+
 
     private Set<Integer> parseHours(String hoursStr) {
         return Arrays.stream(hoursStr.split(","))

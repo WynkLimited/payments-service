@@ -60,7 +60,7 @@ public class RevenueNotificationControllerV2 {
     public WynkResponseEntity<Void> handleCallbackAsync(String partner, String clientAlias, HttpHeaders headers, Object payload) {
         final PaymentGateway paymentGateway = PaymentCodeCachingService.getFromCode(partner);
         AnalyticService.update(PAYMENT_METHOD, paymentGateway.name());
-        asyncCallback.handle(MDC.get(REQUEST_ID), clientAlias, partner, headers, payload); //check
+        asyncCallback.handle(MDC.get(REQUEST_ID), clientAlias, partner, headers, payload);
         return WynkResponseEntity.<Void>builder().build();
     }
 

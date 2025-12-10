@@ -66,7 +66,7 @@ public class DefaultTransactionInitRequestMapper implements IObjectMapper {
         }
     }
 
-    public static AbstractTransactionInitRequest from(IapVerificationRequestWrapper wrapper) { //check
+    public static AbstractTransactionInitRequest from(IapVerificationRequestWrapper wrapper) {
         final IapVerificationRequest request = wrapper.getVerificationRequest();
         final LatestReceiptResponse receiptResponse = wrapper.getReceiptResponse();
         final PlanDTO selectedPlan = BeanLocatorFactory.getBean(PaymentCachingService.class).getPlan(receiptResponse.getPlanId());

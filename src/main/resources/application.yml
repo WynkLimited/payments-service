@@ -245,7 +245,7 @@ payment:
   renewal:
     unsupported: ADD_TO_BILL
   cancelMandate:
-    unsupported: ITUNES, AMAZON_IAP, GOOGLE_IAP
+    unsupported: ITUNES, AMAZON_IAP
 cors:
   maxAge: 3600
   allowed:

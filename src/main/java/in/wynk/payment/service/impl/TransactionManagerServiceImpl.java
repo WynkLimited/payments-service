@@ -198,7 +198,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             PaymentRenewal previousRenewal= recurringPaymentManagerService.getRenewalById(previousTransactionId);
             Transaction previousTransaction= get(previousTransactionId);
             Calendar nextRecurringDateTime = Calendar.getInstance();
-            nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planDTO.getPeriod().getTimeUnit().toMillis(planDTO.getPeriod().getValidity()));
+            nextRecurringDateTime.setTimeInMillis(recurringPaymentManagerService.getClaimValidity(planDTO));
             recurringPaymentManagerService.createEntryInRenewalTable(txn.getIdStr(), previousTransactionId, txn.getType(), txn.getPaymentChannel().getCode(), nextRecurringDateTime, previousRenewal.getAttemptSequence(), txn,
                     TransactionStatus.INPROGRESS, previousRenewal, previousTransaction);
         }

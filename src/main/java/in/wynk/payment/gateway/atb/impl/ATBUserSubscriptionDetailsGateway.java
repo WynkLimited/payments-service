@@ -66,8 +66,9 @@ public class ATBUserSubscriptionDetailsGateway implements ATBUserSubscriptionSer
             }
             eventPublisher.publishEvent(event);
             if (Objects.nonNull(userSubscriptionStatusResponse) && BaseConstants.SUBSCRIBED_STATE.equalsIgnoreCase(userSubscriptionStatusResponse.getSubscriptionStatus())) {
+                long validity = recurringPaymentManagerService.getClaimValidity(selectedPlan);
                 Calendar nextRecurringDateTime = Calendar.getInstance();
-                nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + selectedPlan.getPeriod().getTimeUnit().toMillis(selectedPlan.getPeriod().getValidity()));
+                nextRecurringDateTime.setTimeInMillis(validity);
                 recurringPaymentManagerService.scheduleAtbTask(transaction, nextRecurringDateTime);
             }
         }

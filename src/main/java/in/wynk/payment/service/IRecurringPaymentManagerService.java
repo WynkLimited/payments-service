@@ -5,6 +5,7 @@ import in.wynk.common.enums.TransactionStatus;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
 import in.wynk.payment.core.dao.entity.Transaction;
 import in.wynk.payment.dto.request.AbstractTransactionRevisionRequest;
+import in.wynk.subscription.common.dto.PlanDTO;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -44,4 +45,6 @@ public interface IRecurringPaymentManagerService {
     Stream<PaymentRenewal> getNextDayRecurringPayments(String clientAlias);
 
     void scheduleToNonPeakHours(Calendar calendar);
+
+    long getClaimValidity(PlanDTO planDTO);
 }

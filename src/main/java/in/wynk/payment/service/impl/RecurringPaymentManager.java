@@ -43,7 +43,10 @@ import org.springframework.stereotype.Service;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -89,6 +92,58 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
     }};
 
     @Override
+    public long getClaimValidity(PlanDTO planDTO) {
+
+        if (planDTO.getPeriod().isCalendarMonth()) {
+
+            LocalDateTime currentDate = LocalDateTime.now();
+            int validity = planDTO.getPeriod().getValidity();
+
+            if (validity <= 7) {
+                return currentDate.plusWeeks(1)
+                        .minus(Duration.ofHours(5).plusMinutes(30))
+                        .atZone(ZoneOffset.UTC)
+                        .toInstant()
+                        .toEpochMilli();
+
+            } else if (validity <= 30) {
+                return currentDate.plusMonths(1)
+                        .minus(Duration.ofHours(5).plusMinutes(30))
+                        .atZone(ZoneOffset.UTC)
+                        .toInstant()
+                        .toEpochMilli();
+
+            } else if (validity <= 90) {
+                return currentDate.plusMonths(3)
+                        .minus(Duration.ofHours(5).plusMinutes(30))
+                        .atZone(ZoneOffset.UTC)
+                        .toInstant()
+                        .toEpochMilli();
+
+            } else if (validity <= 365) {
+                return currentDate.plusMonths(12)
+                        .minus(Duration.ofHours(5).plusMinutes(30))
+                        .atZone(ZoneOffset.UTC)
+                        .toInstant()
+                        .toEpochMilli();
+            }
+
+            // fallback
+            return System.currentTimeMillis()
+                    + planDTO.getPeriod()
+                    .getTimeUnit()
+                    .toMillis(validity);
+        }
+
+        // non-calendar flow
+        return System.currentTimeMillis()
+                + planDTO.getPeriod()
+                .getTimeUnit()
+                .toMillis(planDTO.getPeriod().getValidity());
+    }
+
+
+    @Override
     public void scheduleRecurringPayment (AbstractTransactionRevisionRequest request) {
         if (MigrationTransactionRevisionRequest.class.isAssignableFrom(request.getClass()) && request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS &&
                 request.getFinalTransactionStatus() == TransactionStatus.MIGRATED && request.getTransaction().getType() == PaymentEvent.SUBSCRIBE) {
@@ -103,11 +158,11 @@ public class RecurringPaymentManager implements IRecurringPaymentManagerService 
             if (request.getExistingTransactionStatus() != TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.SUCCESS &&
                     request.getTransaction().getPaymentChannel().isInternalRecurring()) {
                 if (EnumSet.of(PaymentEvent.SUBSCRIBE, PaymentEvent.TRIAL_SUBSCRIPTION).contains(request.getTransaction().getType())) {
-                    nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planDTO.getPeriod().getTimeUnit().toMillis(planDTO.getPeriod().getValidity()));
+                    nextRecurringDateTime.setTimeInMillis(getClaimValidity(planDTO));
                     createRenewalEntry(request.getTransaction().getIdStr(), request.getTransaction().getType(), nextRecurringDateTime, request.getTransaction(), request.getFinalTransactionStatus(), request.getTransaction().getPaymentChannel().getCode());
 
                 } else if (request.getTransaction().getType() == PaymentEvent.RENEW) {
-                    nextRecurringDateTime.setTimeInMillis(System.currentTimeMillis() + planDTO.getPeriod().getTimeUnit().toMillis(planDTO.getPeriod().getValidity()));
+                    nextRecurringDateTime.setTimeInMillis(getClaimValidity(planDTO));
                     updateRenewalEntry(request.getTransaction().getIdStr(), request.getLastSuccessTransactionId(), request.getTransaction().getType(),
                             request.getTransaction().getPaymentChannel().getCode(), nextRecurringDateTime, request.getTransaction(), request.getFinalTransactionStatus(),
                             renewal, request.isRetryForAps());

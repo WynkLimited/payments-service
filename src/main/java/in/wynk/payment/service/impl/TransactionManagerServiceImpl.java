@@ -299,26 +299,34 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                         subscriptionServiceManager.unSubscribePlan(AbstractUnSubscribePlanRequest.from(request));
                     }
                 } else {
+
+                    // MOVED: Schedule recurring payment moved to 'else' block to prevent scheduling zombies
+
                     if ((request.getExistingTransactionStatus() != TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.SUCCESS) ||
                             (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS && request.getFinalTransactionStatus() == TransactionStatus.MIGRATED)) {
-                        boolean isDelayedRenewal = false;
+
+                        boolean isZombieRenewal = false;
+
+                        // Check if this is a Zombie Renewal
                         if (transactionToSave.getType() == PaymentEvent.RENEW) {
                             String parentId = transactionToSave.getOriginalTransactionId();
                             if (StringUtils.isNotEmpty(parentId)) {
                                 try {
                                     Transaction parentTxn = this.get(parentId);
                                     if (parentTxn.getType() == PaymentEvent.UNSUBSCRIBE || parentTxn.getStatus() == TransactionStatus.CANCELLED) {
-                                        isDelayedRenewal = true;
+                                        isZombieRenewal = true;
                                     }
                                 } catch (Exception e) {
-                                    log.error("Error fetching parent for delayed renewal check", e);
+                                    log.error("Error fetching parent for race check", e);
                                 }
                             }
                         }
 
-                        if (isDelayedRenewal) {
-                            log.info("Fixing Delayed Renewal: Converting Txn {} to One-Time PURCHASE for User {}",
+                        if (isZombieRenewal) {
+                            log.info("Fixing Zombie Renewal: Converting Txn {} to One-Time PURCHASE for User {}",
                                     transactionToSave.getIdStr(), transactionToSave.getUid());
+
+                            // 1. Create Shadow Transaction (PURCHASE, SUCCESS, No Parent)
                             Transaction shadowTxn = Transaction.builder()
                                     .id(transactionToSave.getIdStr())
                                     .uid(transactionToSave.getUid())
@@ -329,20 +337,23 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                                     .discount(transactionToSave.getDiscount())
                                     .mandateAmount(transactionToSave.getMandateAmount())
                                     .coupon(transactionToSave.getCoupon())
-                                    .type(PaymentEvent.PURCHASE.name())
+                                    .type(PaymentEvent.PURCHASE.name())      // Force PURCHASE
                                     .paymentChannel(transactionToSave.getPaymentChannel().getCode())
                                     .itemId(transactionToSave.getItemId())
-                                    .status(TransactionStatus.SUCCESS.name())
-                                    .originalTransactionId("")
-                                    .initTime(Calendar.getInstance())
+                                    .status(TransactionStatus.SUCCESS.name()) // Force SUCCESS
+                                    .originalTransactionId("")               // Break Chain
+                                    .initTime(Calendar.getInstance())        // Reset Time
                                     .consent(transactionToSave.getConsent())
                                     .build();
+
+                            // 2. Build Request
                             AbstractTransactionRevisionRequest shadowRequest = null;
                             if (request instanceof AsyncTransactionRevisionRequest) {
                                 shadowRequest = AsyncTransactionRevisionRequest.builder()
                                         .transaction(shadowTxn)
                                         .finalTransactionStatus(TransactionStatus.SUCCESS)
                                         .existingTransactionStatus(TransactionStatus.INPROGRESS)
+                                        .retryForAps(request.isRetryForAps())
                                         .lastSuccessTransactionId(request.getLastSuccessTransactionId())
                                         .attemptSequence(0)
                                         .originalTransactionId("")
@@ -352,23 +363,34 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                                         .transaction(shadowTxn)
                                         .finalTransactionStatus(TransactionStatus.SUCCESS)
                                         .existingTransactionStatus(TransactionStatus.INPROGRESS)
-                                        .attemptSequence(0)
+                                        .retryForAps(request.isRetryForAps())
                                         .lastSuccessTransactionId(request.getLastSuccessTransactionId())
                                         .build();
                             }
+
+                            // 3. Try Provisioning - "Catch and Ignore" 401/Errors
                             try {
                                 subscriptionServiceManager.subscribePlan(AbstractSubscribePlanRequest.from(shadowRequest));
                             } catch (Exception e) {
-                                log.warn("Delayed Renewal Provisioning API failed (likely 401/Auth), but forcing DB Success to honor payment. Error: {}", e.getMessage());
+                                // This catches your 401 Unauthorized, PAY013, or NullPointers.
+                                // We Log it, but we PROCEED to save the transaction as SUCCESS anyway.
+                                log.warn("Zombie Provisioning API failed (likely 401/Auth), but forcing DB Success to honor payment. Error: {}", e.getMessage());
                             }
+
+                            // 4. Force the Finally Block to save the Shadow Transaction
                             transactionToSave = shadowTxn;
+
                         } else {
+                            // Standard Valid Renewal
                             recurringPaymentManagerService.scheduleRecurringPayment(request);
                             subscriptionServiceManager.subscribePlan(AbstractSubscribePlanRequest.from(request));
                         }
+
+                        // Settlement Logic using transactionToSave
                         if (StringUtils.isEmpty(transactionToSave.getItemId()) && cachingService.getPlan(transactionToSave.getPlanId()).getSettlementType() == SettlementType.SPLIT) {
                             applicationEventPublisher.publishEvent(PaymentSettlementEvent.builder().tid(request.getOriginalTransactionId()).build());
                         }
+                        // Merchant Reporting using transactionToSave
                         if (ApsConstant.APS.equals(transactionToSave.getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(transactionToSave.getPaymentChannel().getId())) {
                             initiateTransactionReportToMerchant(transactionToSave);
                         }
@@ -384,6 +406,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                 publishDataToWynkKafka(transactionToSave);
             }
         } finally {
+            // 5. Save logic using transactionToSave (The Shadow Transaction)
             if (transactionToSave.getStatus() != TransactionStatus.INPROGRESS && transactionToSave.getStatus() != TransactionStatus.UNKNOWN) {
                 transactionToSave.setExitTime(Calendar.getInstance());
             }

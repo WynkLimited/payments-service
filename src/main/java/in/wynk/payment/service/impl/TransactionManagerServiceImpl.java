@@ -290,47 +290,111 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     }
 
     @Override
-    public void revision (AbstractTransactionRevisionRequest request) {
+    public void revision(AbstractTransactionRevisionRequest request) {
+        Transaction transactionToSave = request.getTransaction();
         try {
-            if (!EnumSet.of(PaymentEvent.POINT_PURCHASE, PaymentEvent.REFUND).contains(request.getTransaction().getType())) {
-                if (EnumSet.of(PaymentEvent.UNSUBSCRIBE, PaymentEvent.CANCELLED).contains(request.getTransaction().getType())) {
+            if (!EnumSet.of(PaymentEvent.POINT_PURCHASE, PaymentEvent.REFUND).contains(transactionToSave.getType())) {
+                if (EnumSet.of(PaymentEvent.UNSUBSCRIBE, PaymentEvent.CANCELLED).contains(transactionToSave.getType())) {
                     if (request.getExistingTransactionStatus() != TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.SUCCESS) {
                         subscriptionServiceManager.unSubscribePlan(AbstractUnSubscribePlanRequest.from(request));
                     }
                 } else {
-                    recurringPaymentManagerService.scheduleRecurringPayment(request);
                     if ((request.getExistingTransactionStatus() != TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.SUCCESS) ||
                             (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS && request.getFinalTransactionStatus() == TransactionStatus.MIGRATED)) {
-                        subscriptionServiceManager.subscribePlan(AbstractSubscribePlanRequest.from(request));
-                        if (StringUtils.isEmpty(request.getTransaction().getItemId()) && cachingService.getPlan(request.getTransaction().getPlanId()).getSettlementType() == SettlementType.SPLIT) {
+                        boolean isDelayedRenewal = false;
+                        if (transactionToSave.getType() == PaymentEvent.RENEW) {
+                            String parentId = transactionToSave.getOriginalTransactionId();
+                            if (StringUtils.isNotEmpty(parentId)) {
+                                try {
+                                    Transaction parentTxn = this.get(parentId);
+                                    if (parentTxn.getType() == PaymentEvent.UNSUBSCRIBE || parentTxn.getStatus() == TransactionStatus.CANCELLED) {
+                                        isDelayedRenewal = true;
+                                    }
+                                } catch (Exception e) {
+                                    log.error("Error fetching parent for delayed renewal check", e);
+                                }
+                            }
+                        }
+
+                        if (isDelayedRenewal) {
+                            log.info("Fixing Delayed Renewal: Converting Txn {} to One-Time PURCHASE for User {}",
+                                    transactionToSave.getIdStr(), transactionToSave.getUid());
+                            Transaction shadowTxn = Transaction.builder()
+                                    .id(transactionToSave.getIdStr())
+                                    .uid(transactionToSave.getUid())
+                                    .msisdn(transactionToSave.getMsisdn())
+                                    .amount(transactionToSave.getAmount())
+                                    .planId(transactionToSave.getPlanId())
+                                    .clientAlias(transactionToSave.getClientAlias())
+                                    .discount(transactionToSave.getDiscount())
+                                    .mandateAmount(transactionToSave.getMandateAmount())
+                                    .coupon(transactionToSave.getCoupon())
+                                    .type(PaymentEvent.PURCHASE.name())
+                                    .paymentChannel(transactionToSave.getPaymentChannel().getCode())
+                                    .itemId(transactionToSave.getItemId())
+                                    .status(TransactionStatus.SUCCESS.name())
+                                    .originalTransactionId("")
+                                    .initTime(Calendar.getInstance())
+                                    .consent(transactionToSave.getConsent())
+                                    .build();
+                            AbstractTransactionRevisionRequest shadowRequest = null;
+                            if (request instanceof AsyncTransactionRevisionRequest) {
+                                shadowRequest = AsyncTransactionRevisionRequest.builder()
+                                        .transaction(shadowTxn)
+                                        .finalTransactionStatus(TransactionStatus.SUCCESS)
+                                        .existingTransactionStatus(TransactionStatus.INPROGRESS)
+                                        .lastSuccessTransactionId(request.getLastSuccessTransactionId())
+                                        .attemptSequence(0)
+                                        .originalTransactionId("")
+                                        .build();
+                            } else {
+                                shadowRequest = SyncTransactionRevisionRequest.builder()
+                                        .transaction(shadowTxn)
+                                        .finalTransactionStatus(TransactionStatus.SUCCESS)
+                                        .existingTransactionStatus(TransactionStatus.INPROGRESS)
+                                        .attemptSequence(0)
+                                        .lastSuccessTransactionId(request.getLastSuccessTransactionId())
+                                        .build();
+                            }
+                            try {
+                                subscriptionServiceManager.subscribePlan(AbstractSubscribePlanRequest.from(shadowRequest));
+                            } catch (Exception e) {
+                                log.warn("Delayed Renewal Provisioning API failed (likely 401/Auth), but forcing DB Success to honor payment. Error: {}", e.getMessage());
+                            }
+                            transactionToSave = shadowTxn;
+                        } else {
+                            recurringPaymentManagerService.scheduleRecurringPayment(request);
+                            subscriptionServiceManager.subscribePlan(AbstractSubscribePlanRequest.from(request));
+                        }
+                        if (StringUtils.isEmpty(transactionToSave.getItemId()) && cachingService.getPlan(transactionToSave.getPlanId()).getSettlementType() == SettlementType.SPLIT) {
                             applicationEventPublisher.publishEvent(PaymentSettlementEvent.builder().tid(request.getOriginalTransactionId()).build());
                         }
-                        if (ApsConstant.APS.equals(request.getTransaction().getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(request.getTransaction().getPaymentChannel().getId())) {
-                            initiateTransactionReportToMerchant(request.getTransaction());
+                        if (ApsConstant.APS.equals(transactionToSave.getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(transactionToSave.getPaymentChannel().getId())) {
+                            initiateTransactionReportToMerchant(transactionToSave);
                         }
                     }
                 }
-            } else if (PaymentEvent.POINT_PURCHASE == request.getTransaction().getType() && (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS &&
+            } else if (PaymentEvent.POINT_PURCHASE == transactionToSave.getType() && (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS &&
                     (request.getFinalTransactionStatus() == TransactionStatus.SUCCESS || request.getFinalTransactionStatus() == TransactionStatus.FAILURE))) {
+
                 if (request.getFinalTransactionStatus() == TransactionStatus.SUCCESS &&
-                        (ApsConstant.APS.equals(request.getTransaction().getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(request.getTransaction().getPaymentChannel().getId()))) {
-                    initiateTransactionReportToMerchant(request.getTransaction());
+                        (ApsConstant.APS.equals(transactionToSave.getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(transactionToSave.getPaymentChannel().getId()))) {
+                    initiateTransactionReportToMerchant(transactionToSave);
                 }
-                publishDataToWynkKafka(request.getTransaction());
+                publishDataToWynkKafka(transactionToSave);
             }
         } finally {
-            if (request.getTransaction().getStatus() != TransactionStatus.INPROGRESS && request.getTransaction().getStatus() != TransactionStatus.UNKNOWN) {
-                request.getTransaction().setExitTime(Calendar.getInstance());
+            if (transactionToSave.getStatus() != TransactionStatus.INPROGRESS && transactionToSave.getStatus() != TransactionStatus.UNKNOWN) {
+                transactionToSave.setExitTime(Calendar.getInstance());
             }
             if (!(request.getExistingTransactionStatus() == TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.FAILURE)) {
-                this.upsert(request.getTransaction());
+                this.upsert(transactionToSave);
             }
             if ((request.getExistingTransactionStatus() != request.getFinalTransactionStatus())) {
-                publishTransactionSnapShotEvent(request.getTransaction());
+                publishTransactionSnapShotEvent(transactionToSave);
             }
         }
     }
-
     private void publishTransactionSnapShotEvent (Transaction transaction) {
         final TransactionSnapshotEvent.TransactionSnapshotEventBuilder builder = TransactionSnapshotEvent.builder().transaction(transaction);
         Optional.ofNullable(purchaseDetailsManger.get(transaction)).ifPresent(builder::purchaseDetails);
@@ -400,5 +464,4 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         AnalyticService.update(PAYMENT_CODE, transaction.getPaymentChannel().getCode());
         AnalyticService.update(PaymentConstants.PAYMENT_METHOD, transaction.getPaymentChannel().getCode());
     }
-
 }

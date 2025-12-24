@@ -290,7 +290,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     }
 
     @Override
-    public void revision (AbstractTransactionRevisionRequest request) {
+    public void revision(AbstractTransactionRevisionRequest request) {
         try {
             if (!EnumSet.of(PaymentEvent.POINT_PURCHASE, PaymentEvent.REFUND).contains(request.getTransaction().getType())) {
                 if (EnumSet.of(PaymentEvent.UNSUBSCRIBE, PaymentEvent.CANCELLED).contains(request.getTransaction().getType())) {
@@ -298,10 +298,36 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                         subscriptionServiceManager.unSubscribePlan(AbstractUnSubscribePlanRequest.from(request));
                     }
                 } else {
-                    recurringPaymentManagerService.scheduleRecurringPayment(request);
                     if ((request.getExistingTransactionStatus() != TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.SUCCESS) ||
                             (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS && request.getFinalTransactionStatus() == TransactionStatus.MIGRATED)) {
-                        subscriptionServiceManager.subscribePlan(AbstractSubscribePlanRequest.from(request));
+                        boolean isZombieRenewal = false;
+                        if (request.getTransaction().getType() == PaymentEvent.RENEW) {
+                            String parentId = request.getTransaction().getOriginalTransactionId();
+                            if (StringUtils.isNotEmpty(parentId)) {
+                                Transaction parentTxn = this.get(parentId);
+                                if (parentTxn.getType() == PaymentEvent.UNSUBSCRIBE || parentTxn.getStatus() == TransactionStatus.CANCELLED) {
+                                    isZombieRenewal = true;
+                                }
+                            }
+                        }
+                        if (isZombieRenewal) {
+                            Transaction txn = request.getTransaction();
+                            log.info("Fixing Zombie Renewal: Converting Txn {} to One-Time PURCHASE for User {}", request.getTransaction().getIdStr(), request.getTransaction().getUid());
+                            txn.setType(PaymentEvent.PURCHASE.name());
+                            txn.setOriginalTransactionId("");
+                            txn.setInitTime(Calendar.getInstance());
+                            try {
+                                subscriptionServiceManager.subscribePlan(AbstractSubscribePlanRequest.from(request));
+                                log.info("Zombie Provisioning API call SUCCESSFUL (200 OK).");
+                            } catch (Exception e) {
+                                log.error("Unexpected error during Zombie Provisioning: {}", e.getMessage());
+                                txn.setStatus(TransactionStatus.FAILURE.name());
+                                throw e;
+                            }
+                        } else {
+                            recurringPaymentManagerService.scheduleRecurringPayment(request);
+                            subscriptionServiceManager.subscribePlan(AbstractSubscribePlanRequest.from(request));
+                        }
                         if (StringUtils.isEmpty(request.getTransaction().getItemId()) && cachingService.getPlan(request.getTransaction().getPlanId()).getSettlementType() == SettlementType.SPLIT) {
                             applicationEventPublisher.publishEvent(PaymentSettlementEvent.builder().tid(request.getOriginalTransactionId()).build());
                         }
@@ -330,7 +356,6 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             }
         }
     }
-
     private void publishTransactionSnapShotEvent (Transaction transaction) {
         final TransactionSnapshotEvent.TransactionSnapshotEventBuilder builder = TransactionSnapshotEvent.builder().transaction(transaction);
         Optional.ofNullable(purchaseDetailsManger.get(transaction)).ifPresent(builder::purchaseDetails);
@@ -400,5 +425,4 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
         AnalyticService.update(PAYMENT_CODE, transaction.getPaymentChannel().getCode());
         AnalyticService.update(PaymentConstants.PAYMENT_METHOD, transaction.getPaymentChannel().getCode());
     }
-
 }

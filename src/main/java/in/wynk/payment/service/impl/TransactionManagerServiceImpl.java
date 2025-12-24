@@ -290,46 +290,74 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     }
 
     @Override
-    public void revision (AbstractTransactionRevisionRequest request) {
+    public void revision(AbstractTransactionRevisionRequest request) {
         try {
-            if (!EnumSet.of(PaymentEvent.POINT_PURCHASE, PaymentEvent.REFUND).contains(transactionToSave.getType())) {
-                if (EnumSet.of(PaymentEvent.UNSUBSCRIBE, PaymentEvent.CANCELLED).contains(transactionToSave.getType())) {
+            if (!EnumSet.of(PaymentEvent.POINT_PURCHASE, PaymentEvent.REFUND).contains(request.getTransaction().getType())) {
+                if (EnumSet.of(PaymentEvent.UNSUBSCRIBE, PaymentEvent.CANCELLED).contains(request.getTransaction().getType())) {
                     if (request.getExistingTransactionStatus() != TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.SUCCESS) {
                         subscriptionServiceManager.unSubscribePlan(AbstractUnSubscribePlanRequest.from(request));
                     }
                 } else {
-                    recurringPaymentManagerService.scheduleRecurringPayment(request);
                     if ((request.getExistingTransactionStatus() != TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.SUCCESS) ||
                             (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS && request.getFinalTransactionStatus() == TransactionStatus.MIGRATED)) {
-                        subscriptionServiceManager.subscribePlan(AbstractSubscribePlanRequest.from(request));
+                        boolean isZombieRenewal = false;
+                        if (request.getTransaction().getType() == PaymentEvent.RENEW) {
+                            String parentId = request.getTransaction().getOriginalTransactionId();
+                            if (StringUtils.isNotEmpty(parentId)) {
+                                Transaction parentTxn = this.get(parentId);
+                                if (parentTxn.getType() == PaymentEvent.UNSUBSCRIBE || parentTxn.getStatus() == TransactionStatus.CANCELLED) {
+                                    isZombieRenewal = true;
+                                }
+                            }
+                        }
+                        if (isZombieRenewal) {
+                            Transaction txn = request.getTransaction();
+                            log.info("Fixing Zombie Renewal: Converting Txn {} to One-Time PURCHASE for User {}", request.getTransaction().getIdStr(), request.getTransaction().getUid());
+                            String originalType = txn.getType().name();
+                            String originalParentId = txn.getOriginalTransactionId();
+                            txn.setType(PaymentEvent.PURCHASE.name());
+                            txn.setOriginalTransactionId("");
+                            txn.setInitTime(Calendar.getInstance());
+                            try {
+                                subscriptionServiceManager.subscribePlan(AbstractSubscribePlanRequest.from(request));
+                                log.info("Zombie Provisioning API call SUCCESSFUL (200 OK).");
+                            } catch (Exception e) {
+                                log.error("Unexpected error during Zombie Provisioning: {}", e.getMessage());
+                                txn.setStatus(TransactionStatus.FAILURE.name());
+                                throw e;
+                            } finally {
+                            txn.setType(originalType);
+                            txn.setOriginalTransactionId(originalParentId);
+                        }
+                        } else {
+                            recurringPaymentManagerService.scheduleRecurringPayment(request);
+                            subscriptionServiceManager.subscribePlan(AbstractSubscribePlanRequest.from(request));
+                        }
                         if (StringUtils.isEmpty(request.getTransaction().getItemId()) && cachingService.getPlan(request.getTransaction().getPlanId()).getSettlementType() == SettlementType.SPLIT) {
                             applicationEventPublisher.publishEvent(PaymentSettlementEvent.builder().tid(request.getOriginalTransactionId()).build());
                         }
-                        // Merchant Reporting using transactionToSave
-                        if (ApsConstant.APS.equals(transactionToSave.getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(transactionToSave.getPaymentChannel().getId())) {
-                            initiateTransactionReportToMerchant(transactionToSave);
+                        if (ApsConstant.APS.equals(request.getTransaction().getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(request.getTransaction().getPaymentChannel().getId())) {
+                            initiateTransactionReportToMerchant(request.getTransaction());
                         }
                     }
                 }
-            } else if (PaymentEvent.POINT_PURCHASE == transactionToSave.getType() && (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS &&
+            } else if (PaymentEvent.POINT_PURCHASE == request.getTransaction().getType() && (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS &&
                     (request.getFinalTransactionStatus() == TransactionStatus.SUCCESS || request.getFinalTransactionStatus() == TransactionStatus.FAILURE))) {
-
                 if (request.getFinalTransactionStatus() == TransactionStatus.SUCCESS &&
-                        (ApsConstant.APS.equals(transactionToSave.getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(transactionToSave.getPaymentChannel().getId()))) {
-                    initiateTransactionReportToMerchant(transactionToSave);
+                        (ApsConstant.APS.equals(request.getTransaction().getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(request.getTransaction().getPaymentChannel().getId()))) {
+                    initiateTransactionReportToMerchant(request.getTransaction());
                 }
-                publishDataToWynkKafka(transactionToSave);
+                publishDataToWynkKafka(request.getTransaction());
             }
         } finally {
-            // 5. Save logic using transactionToSave (The Shadow Transaction)
-            if (transactionToSave.getStatus() != TransactionStatus.INPROGRESS && transactionToSave.getStatus() != TransactionStatus.UNKNOWN) {
-                transactionToSave.setExitTime(Calendar.getInstance());
+            if (request.getTransaction().getStatus() != TransactionStatus.INPROGRESS && request.getTransaction().getStatus() != TransactionStatus.UNKNOWN) {
+                request.getTransaction().setExitTime(Calendar.getInstance());
             }
             if (!(request.getExistingTransactionStatus() == TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.FAILURE)) {
-                this.upsert(transactionToSave);
+                this.upsert(request.getTransaction());
             }
             if ((request.getExistingTransactionStatus() != request.getFinalTransactionStatus())) {
-                publishTransactionSnapShotEvent(transactionToSave);
+                publishTransactionSnapShotEvent(request.getTransaction());
             }
         }
     }

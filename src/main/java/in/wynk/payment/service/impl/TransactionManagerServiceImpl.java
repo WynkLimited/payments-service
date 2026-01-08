@@ -47,6 +47,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -290,7 +291,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     }
 
     @Override
-    public void revision(AbstractTransactionRevisionRequest request) {
+    public void revision (AbstractTransactionRevisionRequest request) {
         try {
             if (!EnumSet.of(PaymentEvent.POINT_PURCHASE, PaymentEvent.REFUND).contains(request.getTransaction().getType())) {
                 if (EnumSet.of(PaymentEvent.UNSUBSCRIBE, PaymentEvent.CANCELLED).contains(request.getTransaction().getType())) {
@@ -298,41 +299,38 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                         subscriptionServiceManager.unSubscribePlan(AbstractUnSubscribePlanRequest.from(request));
                     }
                 } else {
-                    if ((request.getExistingTransactionStatus() != TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.SUCCESS) ||
-                            (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS && request.getFinalTransactionStatus() == TransactionStatus.MIGRATED)) {
-                        boolean isZombieRenewal = false;
-                        if (request.getTransaction().getType() == PaymentEvent.RENEW) {
-                            String parentId = request.getTransaction().getOriginalTransactionId();
-                            if (StringUtils.isNotEmpty(parentId)) {
-                                Transaction parentTxn = this.get(parentId);
-                                if (parentTxn.getType() == PaymentEvent.UNSUBSCRIBE || parentTxn.getStatus() == TransactionStatus.CANCELLED) {
-                                    isZombieRenewal = true;
+                    boolean convertRenewToPurchase = false;
+                    if (request.getTransaction().getType() == PaymentEvent.RENEW && request.getFinalTransactionStatus() == TransactionStatus.SUCCESS) {
+                        String initialTxnId = request.getTransaction().getOriginalTransactionId();
+
+                        if (StringUtils.isNotEmpty(initialTxnId)) {
+                            IPaymentRenewalDao paymentRenewalDao = RepositoryUtils.getRepositoryForClient(
+                                    ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT),
+                                    IPaymentRenewalDao.class
+                            );
+                            List<PaymentRenewal> renewals = paymentRenewalDao.findAllByInitialTransactionIdOrderByCreatedTimestampDesc(initialTxnId);
+                            if (renewals.size() >= 2) {
+                                PaymentRenewal secondLatest = renewals.get(1);
+                                PaymentEvent lastEvent = secondLatest.getTransactionEvent();
+                                if (lastEvent == PaymentEvent.UNSUBSCRIBE || lastEvent == PaymentEvent.CANCELLED) {
+                                    convertRenewToPurchase = true;
                                 }
                             }
                         }
-                        if (isZombieRenewal) {
+                    }
+                    if (!convertRenewToPurchase) {
+                        recurringPaymentManagerService.scheduleRecurringPayment(request);
+                    }
+                    if ((request.getExistingTransactionStatus() != TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.SUCCESS) ||
+                            (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS && request.getFinalTransactionStatus() == TransactionStatus.MIGRATED)) {
+
+                        if (convertRenewToPurchase) {
                             Transaction txn = request.getTransaction();
-                            log.info("Fixing Zombie Renewal: Converting Txn {} to One-Time PURCHASE for User {}", request.getTransaction().getIdStr(), request.getTransaction().getUid());
-                            String originalType = txn.getType().name();
-                            String originalParentId = txn.getOriginalTransactionId();
                             txn.setType(PaymentEvent.PURCHASE.name());
-                            txn.setOriginalTransactionId("");
+                            txn.setOriginalTransactionId(null);
                             txn.setInitTime(Calendar.getInstance());
-                            try {
-                                subscriptionServiceManager.subscribePlan(AbstractSubscribePlanRequest.from(request));
-                                log.info("Zombie Provisioning API call SUCCESSFUL (200 OK).");
-                            } catch (Exception e) {
-                                log.error("Unexpected error during Zombie Provisioning: {}", e.getMessage());
-                                txn.setStatus(TransactionStatus.FAILURE.name());
-                                throw e;
-                            } finally {
-                            txn.setType(originalType);
-                            txn.setOriginalTransactionId(originalParentId);
                         }
-                        } else {
-                            recurringPaymentManagerService.scheduleRecurringPayment(request);
-                            subscriptionServiceManager.subscribePlan(AbstractSubscribePlanRequest.from(request));
-                        }
+                        subscriptionServiceManager.subscribePlan(AbstractSubscribePlanRequest.from(request));
                         if (StringUtils.isEmpty(request.getTransaction().getItemId()) && cachingService.getPlan(request.getTransaction().getPlanId()).getSettlementType() == SettlementType.SPLIT) {
                             applicationEventPublisher.publishEvent(PaymentSettlementEvent.builder().tid(request.getOriginalTransactionId()).build());
                         }

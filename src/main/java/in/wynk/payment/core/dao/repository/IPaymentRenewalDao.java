@@ -2,6 +2,7 @@ package in.wynk.payment.core.dao.repository;
 
 import in.wynk.payment.core.constant.BeanConstant;
 import in.wynk.payment.core.dao.entity.PaymentRenewal;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -29,6 +30,10 @@ public interface IPaymentRenewalDao extends JpaRepository<PaymentRenewal, String
     @Query("FROM PaymentRenewal WHERE last_success_transaction_id= :lastSuccessTransactionId")
     List<PaymentRenewal> findByLastTransactionId(@Param("lastSuccessTransactionId") String lastSuccessTransactionId);
     List<PaymentRenewal> findByInitialTransactionIdOrderByCreatedTimestampDesc(String initialTransactionId, Pageable pageable);
+
+    @Query("SELECT p FROM PaymentRenewal p WHERE p.initialTransactionId = :initialTxnId " +
+            "ORDER BY p.createdTimestamp DESC")
+    List<PaymentRenewal> findAllByInitialTransactionIdOrderByCreatedTimestampDesc(@Param("initialTxnId") String initialTxnId);
 
     default Optional<PaymentRenewal> findTopByInitialTransactionIdOrderByCreatedTimestampDesc(String initialTransactionId) {
         return findByInitialTransactionIdOrderByCreatedTimestampDesc(initialTransactionId, PageRequest.of(0, 1))

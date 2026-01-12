@@ -323,9 +323,14 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                     }
                     if ((request.getExistingTransactionStatus() != TransactionStatus.SUCCESS && request.getFinalTransactionStatus() == TransactionStatus.SUCCESS) ||
                             (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS && request.getFinalTransactionStatus() == TransactionStatus.MIGRATED)) {
-
+                        Transaction txn = request.getTransaction();
+                        String originalType = null;
+                        String originalTxnId = null;
+                        Calendar originalInitTime = null;
                         if (convertRenewToPurchase) {
-                            Transaction txn = request.getTransaction();
+                            originalType = txn.getType().name();
+                            originalTxnId = txn.getOriginalTransactionId();
+                            originalInitTime = txn.getInitTime();
                             txn.setType(PaymentEvent.PURCHASE.name());
                             txn.setOriginalTransactionId(null);
                             txn.setInitTime(Calendar.getInstance());
@@ -336,6 +341,11 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                         }
                         if (ApsConstant.APS.equals(request.getTransaction().getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(request.getTransaction().getPaymentChannel().getId())) {
                             initiateTransactionReportToMerchant(request.getTransaction());
+                        }
+                        if (convertRenewToPurchase) {
+                            txn.setType(originalType);
+                            txn.setOriginalTransactionId(originalTxnId);
+                            txn.setInitTime(originalInitTime);
                         }
                     }
                 }

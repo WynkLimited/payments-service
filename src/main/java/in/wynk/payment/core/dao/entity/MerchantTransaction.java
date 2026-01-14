@@ -1,5 +1,6 @@
 package in.wynk.payment.core.dao.entity;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.github.annotation.analytic.core.annotations.Analysed;
 import com.github.annotation.analytic.core.annotations.AnalysedEntity;
 import com.vladmihalcea.hibernate.type.json.JsonStringType;
@@ -10,6 +11,8 @@ import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
 import javax.persistence.*;
+
+import static in.wynk.logging.utils.LogbackUtil.MAPPER;
 
 @Entity
 @Getter
@@ -60,6 +63,31 @@ public class MerchantTransaction extends AuditableEntity {
 
     public <T> T getResponse() {
         return (T) response;
+    }
+
+    public String getPaymentMode() {
+        return extractField("mode");
+    }
+
+    public String getErrorCode() {
+        return extractField("error_code");
+    }
+
+    public String getErrorReason() {
+        return extractField("error_Message");
+    }
+
+    private String extractField(String key) {
+        if (response == null) return null;
+        try {
+            JsonNode root = MAPPER.valueToTree(response);
+            JsonNode txnDetails = root.path("transaction_details");
+            if (txnDetails.isObject() && txnDetails.fields().hasNext()) {
+                JsonNode txnNode = txnDetails.fields().next().getValue();
+                return txnNode.path(key).asText(null);
+            }
+        } catch (Exception ignored) {}
+        return null;
     }
 
 }

@@ -46,9 +46,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
-import in.wynk.payment.core.dao.repository.IPaymentRenewalDao;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -72,6 +72,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     private final MongoAuditingListener auditingListener;
     private final ApplicationEventPublisher eventPublisher;
     private final IMerchantTransactionService merchantTransactionService;
+
 
     @Override
     public Transaction upsert (Transaction transaction) {
@@ -104,7 +105,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
     //Update new uid in all transactions & update uid in receipt_details
     public void migrateOldTransactions (String userId, String uid, String oldUid, String service) {
         final List<ReceiptDetails> allReceiptDetails =
-                RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByUid(oldUid);
+                RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ReceiptDetailsDao.class).findByUid(oldUid);
         //update new uid in all transactions
         updateTransactions(userId, uid, allReceiptDetails);
         //update new uid in all receipts
@@ -139,7 +140,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                     }
                 });
                 auditingListener.onBeforeSaveAll(allReceiptDetails);
-                RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PaymentConstants.PAYMENT_API_CLIENT), ReceiptDetailsDao.class).saveAll(allReceiptDetails);
+                RepositoryUtils.getRepositoryForClient(ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT), ReceiptDetailsDao.class).saveAll(allReceiptDetails);
                 log.info(PaymentLoggingMarker.USER_DEACTIVATION_RECEIPT_MIGRATION_INFO, "Receipt data updated to new uid : {} ", uid);
             }
         } catch (Exception e) {
@@ -301,7 +302,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                     }
                 } else {
                     boolean convertRenewToPurchase = false;
-                    if (request.getTransaction().getType() == PaymentEvent.RENEW && request.getFinalTransactionStatus() == TransactionStatus.SUCCESS) {
+                    if (request.getTransaction().getType() == PaymentEvent.RENEW && ApsConstant.APS.equals(request.getTransaction().getPaymentChannel().getId()) && request.getFinalTransactionStatus() == TransactionStatus.SUCCESS) {
                         String initialTxnId = request.getTransaction().getOriginalTransactionId();
 
                         if (StringUtils.isNotEmpty(initialTxnId)) {
@@ -309,14 +310,21 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                                     ClientContext.getClient().map(Client::getAlias).orElse(PAYMENT_API_CLIENT),
                                     IPaymentRenewalDao.class
                             );
-                            List<PaymentRenewal> renewals = paymentRenewalDao.findAllByInitialTransactionIdOrderByCreatedTimestampDesc(initialTxnId);
-                            if (renewals.size() >= 2) {
-                                PaymentRenewal secondLatest = renewals.get(1);
-                                PaymentEvent lastEvent = secondLatest.getTransactionEvent();
+                            List<PaymentRenewal> renewals = paymentRenewalDao.findByInitialTransactionIdOrderByCreatedTimestampDesc(initialTxnId, PageRequest.of(0, 2));
+                            PaymentRenewal currentRenewal = renewals.size() > 0 ? renewals.get(0) : null;
+                            PaymentRenewal ongoingRenewal = renewals.size() > 1 ? renewals.get(1) : null;
+                            if (ongoingRenewal != null) {
+                                PaymentEvent lastEvent = ongoingRenewal.getTransactionEvent();
                                 if (lastEvent == PaymentEvent.UNSUBSCRIBE || lastEvent == PaymentEvent.CANCELLED) {
                                     convertRenewToPurchase = true;
                                 }
                             }
+                            if (convertRenewToPurchase && currentRenewal != null) {
+                                currentRenewal.setTransactionEvent(PaymentEvent.CANCELLED.name());
+                                currentRenewal.setUpdatedTimestamp(Calendar.getInstance());
+                                paymentRenewalDao.save(currentRenewal);
+                            }
+
                         }
                     }
                     if (!convertRenewToPurchase) {
@@ -340,7 +348,7 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                         if (StringUtils.isEmpty(request.getTransaction().getItemId()) && cachingService.getPlan(request.getTransaction().getPlanId()).getSettlementType() == SettlementType.SPLIT) {
                             applicationEventPublisher.publishEvent(PaymentSettlementEvent.builder().tid(request.getOriginalTransactionId()).build());
                         }
-                        if (ApsConstant.APS.equals(request.getTransaction().getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(request.getTransaction().getPaymentChannel().getId())) {
+                        if (ApsConstant.APS.equals(request.getTransaction().getPaymentChannel().getId()) || PAYU.equals(request.getTransaction().getPaymentChannel().getId())) {
                             initiateTransactionReportToMerchant(request.getTransaction());
                         }
                         if (convertRenewToPurchase) {
@@ -348,12 +356,13 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
                             txn.setOriginalTransactionId(originalTxnId);
                             txn.setInitTime(originalInitTime);
                         }
+
                     }
                 }
             } else if (PaymentEvent.POINT_PURCHASE == request.getTransaction().getType() && (request.getExistingTransactionStatus() == TransactionStatus.INPROGRESS &&
                     (request.getFinalTransactionStatus() == TransactionStatus.SUCCESS || request.getFinalTransactionStatus() == TransactionStatus.FAILURE))) {
                 if (request.getFinalTransactionStatus() == TransactionStatus.SUCCESS &&
-                        (ApsConstant.APS.equals(request.getTransaction().getPaymentChannel().getId()) || PaymentConstants.PAYU.equals(request.getTransaction().getPaymentChannel().getId()))) {
+                        (ApsConstant.APS.equals(request.getTransaction().getPaymentChannel().getId()) || PAYU.equals(request.getTransaction().getPaymentChannel().getId()))) {
                     initiateTransactionReportToMerchant(request.getTransaction());
                 }
                 publishDataToWynkKafka(request.getTransaction());
@@ -437,6 +446,6 @@ public class TransactionManagerServiceImpl implements ITransactionManagerService
             AnalyticService.update(EXIT_TIMESTAMP, transaction.getExitTime().getTime().getTime());
         }
         AnalyticService.update(PAYMENT_CODE, transaction.getPaymentChannel().getCode());
-        AnalyticService.update(PaymentConstants.PAYMENT_METHOD, transaction.getPaymentChannel().getCode());
+        AnalyticService.update(PAYMENT_METHOD, transaction.getPaymentChannel().getCode());
     }
 }

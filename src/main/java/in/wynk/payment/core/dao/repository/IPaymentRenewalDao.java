@@ -31,10 +31,6 @@ public interface IPaymentRenewalDao extends JpaRepository<PaymentRenewal, String
     List<PaymentRenewal> findByLastTransactionId(@Param("lastSuccessTransactionId") String lastSuccessTransactionId);
     List<PaymentRenewal> findByInitialTransactionIdOrderByCreatedTimestampDesc(String initialTransactionId, Pageable pageable);
 
-    @Query("SELECT p FROM PaymentRenewal p WHERE p.initialTransactionId = :initialTxnId " +
-            "ORDER BY p.createdTimestamp DESC")
-    List<PaymentRenewal> findAllByInitialTransactionIdOrderByCreatedTimestampDesc(@Param("initialTxnId") String initialTxnId);
-
     default Optional<PaymentRenewal> findTopByInitialTransactionIdOrderByCreatedTimestampDesc(String initialTransactionId) {
         return findByInitialTransactionIdOrderByCreatedTimestampDesc(initialTransactionId, PageRequest.of(0, 1))
                 .stream()

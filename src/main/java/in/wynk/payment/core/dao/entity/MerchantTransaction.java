@@ -86,6 +86,18 @@ public class MerchantTransaction extends AuditableEntity {
                 JsonNode txnNode = txnDetails.fields().next().getValue();
                 return txnNode.path(key).asText(null);
             }
+            if (root.isArray() && root.size() > 0) {
+                JsonNode txnNode = root.get(0);
+
+                switch (key) {
+                    case "mode":
+                        return txnNode.path("paymentMode").asText(null);
+                    case "error_code":
+                        return txnNode.path("errorCode").asText(null);
+                    case "error_Message":
+                        return txnNode.path("errorDescription").asText(null);
+                }
+            }
         } catch (Exception ignored) {}
         return null;
     }

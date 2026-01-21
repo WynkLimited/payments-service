@@ -65,29 +65,32 @@ public class MerchantTransaction extends AuditableEntity {
         return (T) response;
     }
 
-    public String getPaymentMode() {
-        return extractField("mode");
-    }
+    public String getPaymentMode() {return extractField("paymentMode", "mode");}
+    public String getErrorCode() {return extractField("errorCode", "error_code");}
+    public String getErrorReason() {return extractField("errorDescription", "error_Message");}
 
-    public String getErrorCode() {
-        return extractField("error_code");
-    }
-
-    public String getErrorReason() {
-        return extractField("error_Message");
-    }
-
-    private String extractField(String key) {
-        if (response == null) return null;
+    private String extractField(String arrayKey, String objectKey) {
+        if (response == null) {
+            return null;
+        }
         try {
             JsonNode root = MAPPER.valueToTree(response);
             JsonNode txnDetails = root.path("transaction_details");
             if (txnDetails.isObject() && txnDetails.fields().hasNext()) {
                 JsonNode txnNode = txnDetails.fields().next().getValue();
-                return txnNode.path(key).asText(null);
+                JsonNode valueNode = txnNode.get(objectKey);
+                if (valueNode != null && !valueNode.isNull()) {
+                    return valueNode.asText();
+                }
             }
-        } catch (Exception ignored) {}
+            if (root.isArray() && root.size() > 0) {
+                JsonNode txnNode = root.get(0);
+                JsonNode valueNode = txnNode.get(arrayKey);
+                if (valueNode != null && !valueNode.isNull()) {
+                    return valueNode.asText();
+                }
+            }
+        } catch (Exception e) {}
         return null;
     }
-
 }

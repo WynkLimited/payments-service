@@ -12,6 +12,8 @@ import org.hibernate.annotations.TypeDef;
 
 import javax.persistence.*;
 
+import java.util.Iterator;
+
 import static in.wynk.logging.utils.LogbackUtil.MAPPER;
 
 @Entity
@@ -65,32 +67,93 @@ public class MerchantTransaction extends AuditableEntity {
         return (T) response;
     }
 
-    public String getPaymentMode() {return extractField("paymentMode", "mode");}
-    public String getErrorCode() {return extractField("errorCode", "error_code");}
-    public String getErrorReason() {return extractField("errorDescription", "error_Message");}
+    public String getPaymentMode() {
+        return extractField(
+                new String[]{"paymentMode", "mode"},
+                new String[]{"mode", "paymentMode"}
+        );
+    }
 
-    private String extractField(String arrayKey, String objectKey) {
+    public String getErrorCode() {
+        return extractField(
+                new String[]{"errorCode", "error_code"},
+                new String[]{"error_code", "errorCode"}
+        );
+    }
+
+    public String getErrorReason() {
+        return extractField(
+                new String[]{"errorDescription", "error_Message", "transactionFailureReason"},
+                new String[]{"error_Message", "errorDescription", "transactionFailureReason"}
+        );
+
+    }
+    private String extractField(String[] arrayKeys, String[] objectKeys) {
         if (response == null) {
             return null;
         }
+
         try {
             JsonNode root = MAPPER.valueToTree(response);
-            JsonNode txnDetails = root.path("transaction_details");
-            if (txnDetails.isObject() && txnDetails.fields().hasNext()) {
-                JsonNode txnNode = txnDetails.fields().next().getValue();
-                JsonNode valueNode = txnNode.get(objectKey);
-                if (valueNode != null && !valueNode.isNull()) {
-                    return valueNode.asText();
+
+            JsonNode txnDetails = root.get("transaction_details");
+            if (txnDetails != null && txnDetails.isObject()) {
+                Iterator<JsonNode> it = txnDetails.elements();
+                if (it.hasNext()) {
+                    JsonNode txnNode = it.next();
+                    for (String key : objectKeys) {
+                        JsonNode value = txnNode.get(key);
+                        if (value != null && !value.isNull()) {
+                            return value.asText();
+                        }
+                    }
                 }
             }
+
             if (root.isArray() && root.size() > 0) {
                 JsonNode txnNode = root.get(0);
-                JsonNode valueNode = txnNode.get(arrayKey);
-                if (valueNode != null && !valueNode.isNull()) {
-                    return valueNode.asText();
+                for (String key : arrayKeys) {
+                    JsonNode value = txnNode.get(key);
+                    if (value != null && !value.isNull()) {
+                        return value.asText();
+                    }
                 }
             }
-        } catch (Exception e) {}
+
+        } catch (Exception e) {
+        }
+
         return null;
     }
+
+
+
+//    public String getPaymentMode() {return extractField("paymentMode", "mode");}
+//    public String getErrorCode() {return extractField("errorCode", "error_code");}
+//    public String getErrorReason() {return extractField("errorDescription", "error_Message");}
+//
+//    private String extractField(String arrayKey, String objectKey) {
+//        if (response == null) {
+//            return null;
+//        }
+//        try {
+//            JsonNode root = MAPPER.valueToTree(response);
+//            JsonNode txnDetails = root.path("transaction_details");
+//            if (txnDetails.isObject() && txnDetails.fields().hasNext()) {
+//                JsonNode txnNode = txnDetails.fields().next().getValue();
+//                JsonNode valueNode = txnNode.get(objectKey);
+//                if (valueNode != null && !valueNode.isNull()) {
+//                    return valueNode.asText();
+//                }
+//            }
+//            if (root.isArray() && root.size() > 0) {
+//                JsonNode txnNode = root.get(0);
+//                JsonNode valueNode = txnNode.get(arrayKey);
+//                if (valueNode != null && !valueNode.isNull()) {
+//                    return valueNode.asText();
+//                }
+//            }
+//        } catch (Exception e) {}
+//        return null;
+//    }
 }

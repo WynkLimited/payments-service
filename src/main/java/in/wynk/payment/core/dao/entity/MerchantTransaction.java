@@ -7,6 +7,7 @@ import com.vladmihalcea.hibernate.type.json.JsonStringType;
 import in.wynk.audit.entity.AuditableEntity;
 import in.wynk.common.constant.BaseConstants;
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
@@ -15,7 +16,7 @@ import javax.persistence.*;
 import java.util.Iterator;
 
 import static in.wynk.logging.utils.LogbackUtil.MAPPER;
-
+@Slf4j
 @Entity
 @Getter
 @Setter
@@ -94,7 +95,15 @@ public class MerchantTransaction extends AuditableEntity {
         }
 
         try {
-            JsonNode root = MAPPER.valueToTree(response);
+            JsonNode root;
+            if (response instanceof String) {
+                root = MAPPER.readTree((String) response);
+            } else {
+                root = MAPPER.valueToTree(response);
+            }
+            log.info("merchant_response raw (class={}): {}",
+                    response.getClass().getName(), response);
+            log.info("merchant_response parsed: {}", root);
 
             JsonNode txnDetails = root.get("transaction_details");
             if (txnDetails != null && txnDetails.isObject()) {
@@ -121,39 +130,9 @@ public class MerchantTransaction extends AuditableEntity {
             }
 
         } catch (Exception e) {
+            log.warn("Failed to parse merchant_response for txnId={}", id, e);
         }
-
         return null;
     }
 
-
-
-//    public String getPaymentMode() {return extractField("paymentMode", "mode");}
-//    public String getErrorCode() {return extractField("errorCode", "error_code");}
-//    public String getErrorReason() {return extractField("errorDescription", "error_Message");}
-//
-//    private String extractField(String arrayKey, String objectKey) {
-//        if (response == null) {
-//            return null;
-//        }
-//        try {
-//            JsonNode root = MAPPER.valueToTree(response);
-//            JsonNode txnDetails = root.path("transaction_details");
-//            if (txnDetails.isObject() && txnDetails.fields().hasNext()) {
-//                JsonNode txnNode = txnDetails.fields().next().getValue();
-//                JsonNode valueNode = txnNode.get(objectKey);
-//                if (valueNode != null && !valueNode.isNull()) {
-//                    return valueNode.asText();
-//                }
-//            }
-//            if (root.isArray() && root.size() > 0) {
-//                JsonNode txnNode = root.get(0);
-//                JsonNode valueNode = txnNode.get(arrayKey);
-//                if (valueNode != null && !valueNode.isNull()) {
-//                    return valueNode.asText();
-//                }
-//            }
-//        } catch (Exception e) {}
-//        return null;
-//    }
 }

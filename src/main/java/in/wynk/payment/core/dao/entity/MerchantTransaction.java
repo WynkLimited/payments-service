@@ -96,28 +96,28 @@ public class MerchantTransaction extends AuditableEntity {
 
         try {
             JsonNode root;
-            if (response instanceof String) {
-                root = MAPPER.readTree((String) response);
-            } else {
+//            if (response instanceof String) {
+//                root = MAPPER.readTree((String) response);
+//            } else {
                 root = MAPPER.valueToTree(response);
-            }
+//            }
             log.info("merchant_response raw (class={}): {}",
                     response.getClass().getName(), response);
             log.info("merchant_response parsed: {}", root);
 
-            JsonNode txnDetails = root.get("transaction_details");
-            if (txnDetails != null && txnDetails.isObject()) {
-                Iterator<JsonNode> it = txnDetails.elements();
-                if (it.hasNext()) {
-                    JsonNode txnNode = it.next();
-                    for (String key : objectKeys) {
-                        JsonNode value = txnNode.get(key);
-                        if (value != null && !value.isNull()) {
-                            return value.asText();
-                        }
-                    }
-                }
-            }
+//            JsonNode txnDetails = root.get("transaction_details");
+//            if (txnDetails != null && txnDetails.isObject()) {
+//                Iterator<JsonNode> it = txnDetails.elements();
+//                if (it.hasNext()) {
+//                    JsonNode txnNode = it.next();
+//                    for (String key : objectKeys) {
+//                        JsonNode value = txnNode.get(key);
+//                        if (value != null && !value.isNull()) {
+//                            return value.asText();
+//                        }
+//                    }
+//                }
+//            }
 
             if (root.isArray() && root.size() > 0) {
                 JsonNode txnNode = root.get(0);

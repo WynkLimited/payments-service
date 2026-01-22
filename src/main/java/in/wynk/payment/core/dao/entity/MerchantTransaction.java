@@ -69,68 +69,56 @@ public class MerchantTransaction extends AuditableEntity {
     }
 
     public String getPaymentMode() {
-        return extractField(
-                new String[]{"paymentMode", "mode"},
-                new String[]{"mode", "paymentMode"}
-        );
+        return extractField("paymentMode");
     }
 
     public String getErrorCode() {
-        return extractField(
-                new String[]{"errorCode", "error_code"},
-                new String[]{"error_code", "errorCode"}
-        );
+        return extractField("errorCode");
     }
 
     public String getErrorReason() {
-        return extractField(
-                new String[]{"errorDescription", "error_Message", "transactionFailureReason"},
-                new String[]{"error_Message", "errorDescription", "transactionFailureReason"}
-        );
-
+        return extractField("errorDescription");
     }
-    private String extractField(String[] arrayKeys, String[] objectKeys) {
-        if (response == null) {
-            return null;
-        }
+
+    private String extractField(String key) {
+        if (response == null) return null;
 
         try {
-            JsonNode root;
-//            if (response instanceof String) {
-//                root = MAPPER.readTree((String) response);
-//            } else {
-                root = MAPPER.valueToTree(response);
-//            }
-            log.info("merchant_response raw (class={}): {}",
-                    response.getClass().getName(), response);
-            log.info("merchant_response parsed: {}", root);
+            // CASE 1: response stored as String
+            if (response instanceof String) {
+                JsonNode root = MAPPER.readTree((String) response);
+                return extractFromJsonNode(root, key);
+            }
 
-//            JsonNode txnDetails = root.get("transaction_details");
-//            if (txnDetails != null && txnDetails.isObject()) {
-//                Iterator<JsonNode> it = txnDetails.elements();
-//                if (it.hasNext()) {
-//                    JsonNode txnNode = it.next();
-//                    for (String key : objectKeys) {
-//                        JsonNode value = txnNode.get(key);
-//                        if (value != null && !value.isNull()) {
-//                            return value.asText();
-//                        }
-//                    }
-//                }
-//            }
-
-            if (root.isArray() && root.size() > 0) {
-                JsonNode txnNode = root.get(0);
-                for (String key : arrayKeys) {
-                    JsonNode value = txnNode.get(key);
+            // CASE 2: response stored as List (ARRAY case)
+            if (response instanceof Iterable) {
+                for (Object obj : (Iterable<?>) response) {
+                    JsonNode node = MAPPER.valueToTree(obj);
+                    JsonNode value = node.get(key);
                     if (value != null && !value.isNull()) {
                         return value.asText();
                     }
                 }
+                return null;
             }
+
+            // CASE 3: response stored as Map (OBJECT case)
+            JsonNode root = MAPPER.valueToTree(response);
+            return extractFromJsonNode(root, key);
 
         } catch (Exception e) {
             log.warn("Failed to parse merchant_response for txnId={}", id, e);
+            return null;
+        }
+    }
+
+    private String extractFromJsonNode(JsonNode root, String key) {
+        if (root.isArray() && root.size() > 0) {
+            JsonNode value = root.get(0).get(key);
+            if (value != null && !value.isNull()) return value.asText();
+        } else if (root.isObject()) {
+            JsonNode value = root.get(key);
+            if (value != null && !value.isNull()) return value.asText();
         }
         return null;
     }

@@ -3,9 +3,13 @@ package in.wynk.payment.controller;
 import com.github.annotation.analytic.core.annotations.AnalyseTransaction;
 import com.github.annotation.analytic.core.service.AnalyticService;
 import in.wynk.common.dto.IPresentation;
+
+import in.wynk.payment.core.constant.PaymentErrorType;
 import in.wynk.payment.dto.BestValuePlanPurchaseRequest;
 import in.wynk.payment.dto.BestValuePlanResponse;
 import in.wynk.payment.event.PurchaseRequestKafkaMessage;
+import in.wynk.payment.presentation.PurchaseSessionPresentation;
+import in.wynk.payment.publisher.PurchaseEventPublisher;
 import in.wynk.payment.service.ISubscriptionServiceManager;
 import in.wynk.stream.service.IDataPlatformKafkaService;
 import in.wynk.subscription.common.request.SessionRequest;
@@ -16,6 +20,7 @@ import in.wynk.payment.core.constant.PaymentConstants;
 import in.wynk.payment.dto.PurchaseRequest;
 import in.wynk.payment.service.IPurchaseSessionService;
 import in.wynk.payment.utils.LoadClientUtils;
+import in.wynk.exception.WynkRuntimeException;
 import io.swagger.annotations.ApiOperation;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +44,8 @@ public class PurchaseS2SController {
     private final IPurchaseSessionService sessionService;
 
     private final ISubscriptionServiceManager iSubscriptionServiceManager;
-    private final IDataPlatformKafkaService dataPlatformKafkaService;
+    private final PurchaseSessionPresentation purchaseSessionPresentation;
+    private final PurchaseEventPublisher purchaseEventPublisher;
 
     @PostMapping("/v1/point/purchase")
     @AnalyseTransaction(name = "pointPurchase")
@@ -58,14 +64,19 @@ public class PurchaseS2SController {
     @ApiOperation("Provides session Id and the webview URL for plan/point purchase")
     @PreAuthorize(PaymentConstants.PAYMENT_CLIENT_AUTHORIZATION + " && hasAuthority(\"PURCHASE_INIT\")")
     public WynkResponseEntity<SessionResponse.SessionData> init(@Valid @RequestBody PurchaseRequest request) {
-        LoadClientUtils.loadClient(true);
-        AnalyticService.update(request);
-        final String sid = sessionService.init(request);
-        final WynkResponseEntity<SessionResponse.SessionData> response = BeanLocatorFactory.getBean(new ParameterizedTypeReference<IPresentation<WynkResponseEntity<SessionResponse.SessionData>, Pair<String, PurchaseRequest>>>() {
-        }).transform(Pair.of(sid, request));
-        AnalyticService.update(response.getBody());
-        dataPlatformKafkaService.publish(PurchaseRequestKafkaMessage.from(request, response));
-        return response;
+        try {
+            LoadClientUtils.loadClient(true);
+            AnalyticService.update(request);
+            final String sid = sessionService.init(request);
+            WynkResponseEntity<SessionResponse.SessionData> response = purchaseSessionPresentation.transform(Pair.of(sid, request));
+            AnalyticService.update(response.getBody());
+            purchaseEventPublisher.publishAsync(request, response);
+            return response;
+        } catch (WynkRuntimeException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new WynkRuntimeException(PaymentErrorType.PAY929, ex);
+        }
     }
     @SneakyThrows
     @PostMapping(value = {"/v3/plan/purchase"})

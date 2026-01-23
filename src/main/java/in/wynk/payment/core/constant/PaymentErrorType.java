@@ -184,7 +184,8 @@ public enum PaymentErrorType implements IWynkErrorType {
     ATB03("ATB Status API Failure", "No matching status found at addToBill side", HttpStatus.BAD_REQUEST, PaymentLoggingMarker.ADDTOBILL_CHARGING_STATUS_VERIFICATION),
     /*Add to bill errorCodes end*/
 
-    PAY099("Renewal Schedule Failure", "Error occurred while scheduling renewal", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.RENEWAL_SCHEDULE_ERROR);
+    PAY099("Renewal Schedule Failure", "Error occurred while scheduling renewal", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.RENEWAL_SCHEDULE_ERROR),
+    PAY929("Purchase Initialization Error", "Unexpected error in purchase initialization", HttpStatus.INTERNAL_SERVER_ERROR, PaymentLoggingMarker.PURCHASE_INITIALIZATION_ERROR);
     /**
      * The error title.
      */

@@ -1,0 +1,259 @@
+######  Properties #########
+paytm:
+  native:
+    clientId: merchant-wynk
+    merchantKey: RrGHVFOJyEjbp4hN
+    merchantId: AirBSB68537227489657
+    secret: fd13c3f9-da62-47e2-b354-8f0f18fbe90b
+    accounts:
+      baseUrl: https://accounts.paytm.com
+    services:
+      baseUrl: https://securegw.paytm.in
+    wcf:
+      addMoneyUrl: https://wcfpay-new.wynk.in/paytm-native/add-money
+      callbackUrl: https://capi.wynk.in/wynk/v2/s2s/subscription/callback?sid=
+  requesting:
+    website: WCF
+
+apb:
+  txn:
+    inquiry:
+      url: https://apptest.airtelbank.com/ecom/v2/inquiry
+  callback:
+    url: http://localhost:8081/wynk/v1/payment/callback/
+  merchant:
+    id: 180704
+  salt: d41d8cd98f00a
+  init:
+    payment:
+      url: https://apptest.airtelbank.com/ecom/v2/initiatePayment
+
+###### Redis Store Props #######
+session:
+  duration: 1440
+  redis:
+    name: session-store:local
+    mode: cluster
+    usePooling: true
+    cluster:
+      nodes: wcf-redis-cluster.8hya7e.clustercfg.aps1.cache.amazonaws.com:6379
+    connection:
+      timeout: 1000
+      maxTotal: 200
+      minIdle: 50
+      maxIdle: 100
+
+##### mysql database props #####
+spring:
+  datasource:
+    url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
+    username: admin
+    password: o7QZ?!n=eu
+    ###### database connection pooling props ######
+    hikari:
+      jdbc-url: jdbc:mysql://wcf-payments-staging.cq59vpled07m.ap-south-1.rds.amazonaws.com:3306/payments
+      username: admin
+      password: o7QZ?!n=eu
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      registerMbeans: true
+      auto-commit: false
+      connectionTimeout: 5000
+      idleTimeout: 10000
+      maxLifetime: 30000
+      poolName: payment-datasource-pool-dev
+      minimum-idle: 10
+      maximumPoolSize: 100
+
+  #### JPA props ######
+  jpa:
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    show-sql: true
+    open-in-view: true
+    hibernate:
+      ddl-auto: validate
+      naming:
+        physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+        implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+    properties:
+      hibernate:format_sql: true
+      hibernate.id.new_generator_mappings: true
+      hibernate.connection.provider_disables_autocommit: true
+      hibernate.cache.use_second_level_cache: false
+      hibernate.cache.use_query_cache: false
+      hibernate.generate_statistics: false
+      hibernate.hbm2ddl.auto: validate
+      hibernate.jdbc.time_zone: Asia/Kolkata
+      hibernate.enable_lazy_load_no_trans: true
+      hibernate.types.print.banner: false
+
+#### logging props ####
+logging:
+  path: /tmp
+  level:
+    in.wynk.*: DEBUG
+
+####### payment props #######
+payment:
+  se:
+    s3:
+      bucket: wcf-logs
+  encKey: BSB$PORTAL@2014#
+  recurring:
+    offset:
+      day: 0
+      hour: 1
+  ###### lib-queue props ######
+  pooling:
+    queue:
+      reconciliation:
+        enabled: true
+        name: wcf-staging-payment-reconciliation
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+      renewal:
+        enabled: false
+        name: wcf-staging-payment-renewal
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+      charging:
+        enabled: false
+        name: wcf-staging-payment-charging.fifo
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+      subscription:
+        enabled: false
+        name: wcf-staging-subscription
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+      recurrence:
+        enabled: true
+        name: wcf-staging-payment-recurring
+        sqs:
+          messages:
+            extractor:
+              batchSize: 5
+              waitTimeInSeconds: 10
+          producer:
+            delayInSecond: 180
+          consumer:
+            delay: 20
+            delayTimeUnit: SECONDS
+  ###### webview status props #######
+  status:
+    web:
+      url: http://localhost:4200/status
+  merchant:
+    ####### payu props #########
+    payu:
+      key: aU2Uoi
+      salt: H0zduycMzRG5W0mhsk8IJA1y8aInAk3i
+      api:
+        info: https://info.payu.in/merchant/postservice.php?form=2
+      internal:
+        web:
+          url: https://wcfpay-new.wynk.in/wcf/payu
+        callback:
+          successUrl: http://localhost:8081/wynk/v1/payment/callback/
+          failureUrl: http://localhost:8081/wynk/v1/payment/callback/
+    #### PhonePe props ######
+    phonepe:
+      id: WYNK
+      api:
+        base:
+          url: https://mercury-t2.phonepe.com
+      callback:
+        url: http://localhost:8081/wynk/v1/payment/callback/
+      salt: 96229dff-07f5-4f92-9348-81bb7fc495b4
+    #### Itunes props ######
+    itunes:
+      secret: 820ea8abe1374b369eaa564dcfa6391c
+      api:
+        url: https://buy.itunes.apple.com/verifyReceipt
+    #### AmazonIap props ######
+    amazonIap:
+      secret: 2:kjHsKYZZfkIPxwxOKaNSkZWl_6aTK1czOJANNIll40h7tyer65YZRy-Gc6MpAj3i:IS0CrRbuGNrSlRFLGkZ-jg==
+      status:
+        baseUrl: http://localhost:8080/RVSSandbox/version/1.0/verifyReceiptId/developer/
+
+####### Http Client Props #######
+http:
+  enableTemplateRegistration: false
+
+###### Service Endpoints  ######
+
+service:
+  subscription:
+    api:
+      root : http://localhost:8082
+#      root: https://subscription-staging.wynk.in
+
+cors:
+  allowed:
+    origins: "*"
+
+debug: false
+
+webview:
+  host: https://pay-stage.wynk.in
+
+########### MONGO CONFIG ###########
+wynk:
+  mongodb:
+    enabled: true
+    sources:
+      payment:
+        nodes: 10.80.0.128,10.80.0.240
+        username: user_payments
+        password: zS7VvjYRSE
+        database: payments
+      coupons:
+        nodes: 10.80.0.128,10.80.0.240
+        username: user_coupons
+        password: Sk6kzU8GU5
+        database: coupons
+    ########### Mongo Pool Config ###########
+    minConnectionsPerHost: 1
+    maxConnectionsPerHost: 5
+    threadsAllowedToBlockForConnectionMultiplier: 5
+    serverSelectionTimeoutMs: 30000
+    maxWaitTime: 30000
+    connectTimeout: 20000
+    socketTimeout: 50000
+    readPreference: secondaryPreferred
+
+######## lib-auth props #######
+security:
+  exempt:
+    paths: /wynk/v1/**,/actuator/**,/v2/api-docs,/configuration/ui,/swagger-resources/**,/configuration/security,/swagger-ui.html,/webjars/**,/wynk/v1/**

@@ -1,0 +1,14 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="PAYMENT" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="in.wynk.payment.PaymentApplication" />
+    <module name="payments" />
+    <extension name="software.aws.toolkits.jetbrains.core.execution.JavaAwsConnectionExtension">
+      <option name="credential" />
+      <option name="region" />
+      <option name="useCurrentConnection" value="false" />
+    </extension>
+    <method v="2">
+      <option name="Maven.BeforeRunTask" enabled="true" file="$PROJECT_DIR$/pom.xml" goal="clean install -P revenue-payment -Denv=preprod -DskipTests" />
+    </method>
+  </configuration>
+</component>
